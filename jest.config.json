@@ -10,5 +10,11 @@
         "ts"
     ],
     "preset": "ts-jest",
-    "testEnvironment": "node"
+    "testEnvironment": "node",
+    "roots": [
+        "<rootDir>/__tests__"
+    ],
+    "transform": {
+        "^.+\\.(ts|tsx)$": "ts-jest"
+    }
 }
