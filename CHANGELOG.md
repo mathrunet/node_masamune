@@ -1,3 +1,17 @@
+## [0.0.4](https://github.com/mathrunet/node_masamune/compare/v0.0.3...v0.0.4) (2023-01-09)
+
+
+### chore
+
+* Change the placement of JS. ([d29b7cf](https://github.com/mathrunet/node_masamune/commit/d29b7cfbe95ddc10d1bd99df9cf372a9ba024920))
+* Changed package name. ([5acd023](https://github.com/mathrunet/node_masamune/commit/5acd0235504eb7b2d9760f2a0a9971e69cc52f2b))
+
+### fix
+
+* Changed the position of the JS definition. ([1aadcb7](https://github.com/mathrunet/node_masamune/commit/1aadcb7e975060e8e15ff80139757bc552edee2e))
+
+
+
 ## [0.0.3](https://github.com/mathrunet/node_masamune/compare/v0.0.2...v0.0.3) (2023-01-09)
 
 
