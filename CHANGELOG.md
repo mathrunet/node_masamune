@@ -1,3 +1,13 @@
+## [0.0.5](https://github.com/mathrunet/node_masamune/compare/v0.0.4...v0.0.5) (2023-01-09)
+
+
+### fix
+
+* Fix npmignore. ([5e4bd1e](https://github.com/mathrunet/node_masamune/commit/5e4bd1e25d2e930354f0621f167f9ff692f30689))
+* test maintenance. ([998743a](https://github.com/mathrunet/node_masamune/commit/998743a290d04545c4266e70ceb517c0727f71cc))
+
+
+
 ## [0.0.4](https://github.com/mathrunet/node_masamune/compare/v0.0.3...v0.0.4) (2023-01-09)
 
 
