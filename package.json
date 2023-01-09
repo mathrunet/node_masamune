@@ -1,5 +1,5 @@
 {
-  "name": "@masamune/functions",
+  "name": "@mathrunet/masamune",
   "version": "0.0.3",
   "description": "Manages packages for the server portion (NodeJS) of the Masamune framework.",
   "main": "index.js",
