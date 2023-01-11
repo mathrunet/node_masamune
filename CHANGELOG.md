@@ -1,3 +1,12 @@
+## [0.0.7](https://github.com/mathrunet/node_masamune/compare/v0.0.6...v0.0.7) (2023-01-11)
+
+
+### fix
+
+* The array type was wrong, so it was corrected. ([befbc78](https://github.com/mathrunet/node_masamune/commit/befbc784dc25202d65b6f51b4cd6584cd7e7c57f))
+
+
+
 ## [0.0.6](https://github.com/mathrunet/node_masamune/compare/v0.0.5...v0.0.6) (2023-01-11)
 
 
