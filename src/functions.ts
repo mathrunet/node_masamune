@@ -11,5 +11,5 @@ export const Functions = {
    * 
    * PUSH通知を送信するためのFunction。
    */
-  notification: new data.FunctionsData("notification", require("./functions/notification")),
+  sendNotification: new data.FunctionsData("send_notification", require("./functions/send_notification")),
 } as const;
