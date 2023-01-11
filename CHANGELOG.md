@@ -1,3 +1,20 @@
+## [0.0.6](https://github.com/mathrunet/node_masamune/compare/v0.0.5...v0.0.6) (2023-01-11)
+
+
+### chore
+
+* Delete unnecessary files. ([12975a1](https://github.com/mathrunet/node_masamune/commit/12975a1189839d269fd24f4b01b10cc182ef5650))
+
+### docs
+
+* Corrected keywords. ([2be21a6](https://github.com/mathrunet/node_masamune/commit/2be21a6276413769aedd9e83e53da3cab79a6e4c))
+
+### fix
+
+* Allow exports to be passed to deploy. ([bbf2c8b](https://github.com/mathrunet/node_masamune/commit/bbf2c8b50b036356a0630160fe1505dd04ca09c2))
+
+
+
 ## [0.0.5](https://github.com/mathrunet/node_masamune/compare/v0.0.4...v0.0.5) (2023-01-09)
 
 
