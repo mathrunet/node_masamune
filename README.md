@@ -20,3 +20,36 @@
 [[YouTube]](https://www.youtube.com/c/mathrunetchannel) | [[Packages]](https://pub.dev/publishers/mathru.net/packages) | [[Twitter]](https://twitter.com/mathru) | [[LinkedIn]](https://www.linkedin.com/in/mathrunet/)
 
 ---
+
+Just load the package in index.ts and pass the predefined data to the methods to implement the server side.
+
+Also, [katana_functions_firebase](https://pub.dev/packages/katana_functions_firebase/score) can be used to execute server-side functions from methods defined on the client side, allowing for safe implementation.
+
+# Installation
+
+Install the following packages
+
+```bash
+npm install @mathrunet/masamune
+```
+
+# Implementation
+
+Import the package as follows and pass the value of `exports` and the list of functions you wish to define to the `deploy` function.
+
+```dart
+import * as m from "@mathrunet/masamune";
+
+// Define [m.Functions.xxxx] for the functions to be added to Functions.
+// 
+// Functionsに追加する機能を[m.Functions.xxxx]を定義してください。
+m.deploy(
+    exports,
+    [
+        // Function for PUSH Notification.
+        m.Functions.notification,
+    ],
+);
+```
+
+Functions passed to deploy are deployed to Cloud Functions for Firebase.
