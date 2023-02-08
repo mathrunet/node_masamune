@@ -1,3 +1,16 @@
+# [0.1.0](https://github.com/mathrunet/node_masamune/compare/v0.0.8...v0.1.0) (2023-02-08)
+
+
+### chore
+
+* Edit .gitignore. ([de837ef](https://github.com/mathrunet/node_masamune/commit/de837ef8e831c6fba55e8fa94c0e33fa6cf8b7ff))
+
+### feat
+
+* Allow region to be specified externally. ([782d805](https://github.com/mathrunet/node_masamune/commit/782d805ac88c3991eabb3017f78cca083dd42f33))
+
+
+
 ## [0.0.8](https://github.com/mathrunet/node_masamune/compare/v0.0.7...v0.0.8) (2023-01-17)
 
 
