@@ -1,3 +1,12 @@
+## [0.1.2](https://github.com/mathrunet/node_masamune/compare/v0.1.1...v0.1.2) (2023-02-08)
+
+
+### fix
+
+* Fixed a bug that prevented successful deployment. ([c05dea1](https://github.com/mathrunet/node_masamune/commit/c05dea119d27de35cb265caff7ed37f4d5207281))
+
+
+
 ## [0.1.1](https://github.com/mathrunet/node_masamune/compare/v0.1.0...v0.1.1) (2023-02-08)
 
 
