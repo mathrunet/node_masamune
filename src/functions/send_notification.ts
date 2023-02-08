@@ -36,7 +36,7 @@ import * as admin from "firebase-admin";
  * 
  * FCMのトピックを指定します。
  */
-module.exports = functions.region("asia-northeast1").https.onCall(
+module.exports = (region: string) => functions.region(region).https.onCall(
     async (query) => {
         try {
             const title = query.title as string;
