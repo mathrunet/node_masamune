@@ -19,5 +19,5 @@ export class FunctionsData {
    * 
    * 実際の処理の中身を指定します。
    */
-  constructor(readonly id: string, readonly func: (...region: string[]) => Function) {}
+  constructor(readonly id: string, readonly func: (region: string[]) => Function) {}
 }
