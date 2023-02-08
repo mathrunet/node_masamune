@@ -36,7 +36,7 @@ import * as admin from "firebase-admin";
  * 
  * FCMのトピックを指定します。
  */
-module.exports = (region: string) => functions.region(region).https.onCall(
+module.exports = (regions: string[]) => functions.region(...regions).https.onCall(
     async (query) => {
         try {
             const title = query.title as string;
@@ -45,7 +45,7 @@ module.exports = (region: string) => functions.region(region).https.onCall(
             const data = query.data as { [key: string]: string } | undefined;
             const token = query.token as string | undefined;
             const topic = query.topic as string | undefined;
-            if (token === undefined || topic === undefined) { 
+            if (token === undefined || topic === undefined) {
                 throw new functions.https.HttpsError("invalid-argument", "Either [token] or [topic] must be specified.");
             }
             const res = await admin.messaging().send(

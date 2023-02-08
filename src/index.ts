@@ -1,5 +1,6 @@
 import * as data from "./lib/functions_data";
 import * as admin from "firebase-admin";
+import * as regions from "./lib/regions";
 export * from "./functions";
 export * from "./lib/functions_data";
 
@@ -23,11 +24,11 @@ export * from "./lib/functions_data";
  * 
  * [Functions]で定義された要素を配列として渡します。渡されたメソッドがデプロイされます。
  */
-export function deploy(exports: any, region: string, deployFunctions: data.FunctionsData[]){
+export function deploy(exports: any, region: regions.Regions, deployFunctions: data.FunctionsData[]){
     admin.initializeApp();
     for (const data of deployFunctions) {
         if (!process.env.FUNCTION_NAME || process.env.FUNCTION_NAME === data.id) {
-            exports[data.id] = data.func(region);
+            exports[data.id] = data.func(...region);
         }
     }
 }
