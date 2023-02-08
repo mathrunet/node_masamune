@@ -1,3 +1,12 @@
+## [0.1.1](https://github.com/mathrunet/node_masamune/compare/v0.1.0...v0.1.1) (2023-02-08)
+
+
+### fix
+
+* Suggestions and multiple designations of Regions are now possible. ([036c1d7](https://github.com/mathrunet/node_masamune/commit/036c1d723db1c0f57f3be34d17765c0b99926a17))
+
+
+
 # [0.1.0](https://github.com/mathrunet/node_masamune/compare/v0.0.8...v0.1.0) (2023-02-08)
 
 
