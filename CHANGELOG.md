@@ -1,3 +1,12 @@
+## [0.1.3](https://github.com/mathrunet/node_masamune/compare/v0.1.2...v0.1.3) (2023-02-09)
+
+
+### fix
+
+* Fixed a bug that Topic and Token could not be found. ([530a991](https://github.com/mathrunet/node_masamune/commit/530a991eeb5946d4ac82c5f9c7bc3a667605d783))
+
+
+
 ## [0.1.2](https://github.com/mathrunet/node_masamune/compare/v0.1.1...v0.1.2) (2023-02-08)
 
 
