@@ -45,33 +45,59 @@ module.exports = (regions: string[]) => functions.region(...regions).https.onCal
             const data = query.data as { [key: string]: string } | undefined;
             const token = query.token as string | undefined;
             const topic = query.topic as string | undefined;
-            if (token === undefined || topic === undefined) {
+            if (token === undefined && topic === undefined) {
                 throw new functions.https.HttpsError("invalid-argument", "Either [token] or [topic] must be specified.");
             }
-            const res = await admin.messaging().send(
-                {
-                    notification: {
-                        title: title,
-                        body: body,
-                    },
-                    android: {
-                        priority: "high",
+
+            if (token !== undefined) {
+                const res = await admin.messaging().send(
+                    {
                         notification: {
                             title: title,
                             body: body,
-                            clickAction: "FLUTTER_NOTIFICATION_CLICK",
-                            channelId: channelId,
                         },
-                    },
-                    data: data,
-                    token: token,
-                    topic: topic,
-                }
-            );
-            return {
-                success: true,
-                message_id: res,
-            };
+                        android: {
+                            priority: "high",
+                            notification: {
+                                title: title,
+                                body: body,
+                                clickAction: "FLUTTER_NOTIFICATION_CLICK",
+                                channelId: channelId,
+                            },
+                        },
+                        data: data,
+                        token: token,
+                    }
+                );
+                return {
+                    success: true,
+                    message_id: res,
+                };
+            } else if (topic !== undefined)  {
+                const res = await admin.messaging().send(
+                    {
+                        notification: {
+                            title: title,
+                            body: body,
+                        },
+                        android: {
+                            priority: "high",
+                            notification: {
+                                title: title,
+                                body: body,
+                                clickAction: "FLUTTER_NOTIFICATION_CLICK",
+                                channelId: channelId,
+                            },
+                        },
+                        data: data,
+                        topic: topic,
+                    }
+                );
+                return {
+                    success: true,
+                    message_id: res,
+                };
+            }
         } catch (err) {
             console.log(err);
             throw err;
