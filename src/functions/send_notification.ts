@@ -102,5 +102,8 @@ module.exports = (regions: string[]) => functions.region(...regions).https.onCal
             console.log(err);
             throw err;
         }
+        return {
+            success: true,
+        };
     }
 );
