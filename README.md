@@ -47,7 +47,7 @@ m.deploy(
     exports,
     [
         // Function for PUSH Notification.
-        m.Functions.notification,
+        m.Functions.send_notification,
     ],
 );
 ```
