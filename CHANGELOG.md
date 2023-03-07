@@ -1,3 +1,16 @@
+## [0.1.4](https://github.com/mathrunet/node_masamune/compare/v0.1.3...v0.1.4) (2023-03-07)
+
+
+### feat
+
+* Added Functions for ChatGPT. ([87170e6](https://github.com/mathrunet/node_masamune/commit/87170e6c1f14e0727a3656472923fc12885e8e27))
+
+### fix
+
+* Add success at the end. ([5611d82](https://github.com/mathrunet/node_masamune/commit/5611d82f2dac3bc0fc55caea49a26e40a6a89458))
+
+
+
 ## [0.1.3](https://github.com/mathrunet/node_masamune/compare/v0.1.2...v0.1.3) (2023-02-09)
 
 
