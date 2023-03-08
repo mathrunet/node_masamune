@@ -1,3 +1,12 @@
+## [0.1.5](https://github.com/mathrunet/node_masamune/compare/v0.1.4...v0.1.5) (2023-03-08)
+
+
+### fix
+
+* Changed to return all. ([db69ae6](https://github.com/mathrunet/node_masamune/commit/db69ae67fa65d2e9b83a5b80bb4c00dc37d9e430))
+
+
+
 ## [0.1.4](https://github.com/mathrunet/node_masamune/compare/v0.1.3...v0.1.4) (2023-03-07)
 
 
