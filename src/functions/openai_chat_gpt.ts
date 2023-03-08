@@ -47,8 +47,7 @@ module.exports = (regions: string[]) => functions.region(...regions).https.onCal
                 }),
             });
 
-            const data = (await res.json()) as { [key: string]: any };
-            return data.choices[0];
+            return (await res.json()) as { [key: string]: any };
 
         } catch (err) {
             console.log(err);
