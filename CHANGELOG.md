@@ -1,3 +1,12 @@
+## [0.1.6](https://github.com/mathrunet/node_masamune/compare/v0.1.5...v0.1.6) (2023-04-07)
+
+
+### fix
+
+* Drop the version of node-fetch to eliminate the error. ([36b2a89](https://github.com/mathrunet/node_masamune/commit/36b2a895943e4081d8cc51750172e594c73fe637))
+
+
+
 ## [0.1.5](https://github.com/mathrunet/node_masamune/compare/v0.1.4...v0.1.5) (2023-03-08)
 
 
