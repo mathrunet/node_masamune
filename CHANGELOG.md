@@ -1,3 +1,12 @@
+## [0.1.7](https://github.com/mathrunet/node_masamune/compare/v0.1.6...v0.1.7) (2023-04-07)
+
+
+### fix
+
+* Added because there is no type. ([f1bac47](https://github.com/mathrunet/node_masamune/commit/f1bac474d835a9581c2340c57f6da9bf8aad539a))
+
+
+
 ## [0.1.6](https://github.com/mathrunet/node_masamune/compare/v0.1.5...v0.1.6) (2023-04-07)
 
 
