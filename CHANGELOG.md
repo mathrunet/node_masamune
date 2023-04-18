@@ -1,3 +1,12 @@
+# [0.2.0](https://github.com/mathrunet/node_masamune/compare/v0.1.7...v0.2.0) (2023-04-18)
+
+
+### feat
+
+* Added functionality for Agora.io. ([29630f4](https://github.com/mathrunet/node_masamune/commit/29630f4c35a8aa266d5275b86b40e4759d50fca6))
+
+
+
 ## [0.1.7](https://github.com/mathrunet/node_masamune/compare/v0.1.6...v0.1.7) (2023-04-07)
 
 
