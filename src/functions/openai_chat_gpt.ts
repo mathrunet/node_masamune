@@ -6,6 +6,13 @@ import fetch from "node-fetch";
  * 
  * Open AIのChat GPTを利用して文章を生成します。
  * 
+ * @param openai.api_key
+ * Set the API key, which can be obtained from the following URL.
+ * 
+ * 下記URLから取得できるAPIキーを設定します。
+ * 
+ * https://platform.openai.com/account/api-keys
+ * 
  * @param message
  * Specify the actual message to be passed.
  * 
@@ -48,7 +55,6 @@ module.exports = (regions: string[]) => functions.region(...regions).https.onCal
             });
 
             return (await res.json()) as { [key: string]: any };
-
         } catch (err) {
             console.log(err);
             throw err;
