@@ -10,9 +10,9 @@
     "test": "jest",
     "postversion": "npm run changelog",
     "changelog": "conventional-changelog -p eslint -i CHANGELOG.md -s -r 0 && git add CHANGELOG.md && git commit -m 'chore(release): publish package'",
-    "minor_update": "npm verion minor",
-    "major_update": "npm verion major",
-    "patch_update": "npm verion patch"
+    "minor_update": "npm version minor",
+    "major_update": "npm version major",
+    "patch_update": "npm version patch"
   },
   "repository": {
     "type": "git",
