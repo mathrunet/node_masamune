@@ -1,3 +1,17 @@
+# [0.4.0](https://github.com/mathrunet/node_masamune/compare/v0.3.0...v0.4.0) (2023-05-26)
+
+
+### chore
+
+* command was added. ([bff8928](https://github.com/mathrunet/node_masamune/commit/bff8928505d5e411e061dcc45051463a7381e1b9))
+* Fixed a bug in the command. ([fef7d3c](https://github.com/mathrunet/node_masamune/commit/fef7d3c59b10e0e912920be9802389ebd45759fe))
+
+### feat
+
+* Added Functions for sending mail. ([7efe881](https://github.com/mathrunet/node_masamune/commit/7efe881e3481ebd6f651c5a1c1127a4d8399c9b8))
+
+
+
 # [0.3.0](https://github.com/mathrunet/node_masamune/compare/v0.2.0...v0.3.0) (2023-05-26)
 
 
