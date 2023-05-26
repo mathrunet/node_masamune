@@ -1,3 +1,16 @@
+# [0.3.0](https://github.com/mathrunet/node_masamune/compare/v0.2.0...v0.3.0) (2023-05-26)
+
+
+### feat
+
+* Added a series of Stripe features. ([4d430b7](https://github.com/mathrunet/node_masamune/commit/4d430b7df07e363c452877fcd21cc043d309ff6c))
+
+### fix
+
+* Package modifications. ([94807d9](https://github.com/mathrunet/node_masamune/commit/94807d976e18ea7a4e7c42453b9dd6147c21d289))
+
+
+
 # [0.2.0](https://github.com/mathrunet/node_masamune/compare/v0.1.7...v0.2.0) (2023-04-18)
 
 
