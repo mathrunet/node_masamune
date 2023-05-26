@@ -34,4 +34,60 @@ export const Functions = {
    * FirebaseStorageにファイルが保存されたタイミングで実行されます。
    */
   agoraCloudRecording: new data.FunctionsData("agora_cloud_recording", require("./functions/agora_cloud_recording")),
+  /**
+   * Performs various Stripe processes.
+   * 
+   * Firestore integration is a must; please make Firestore available as well.
+   *
+   * Stripeの各種処理を実行します。
+   * 
+   * Firestoreとの連携が必須です。Firestoreも利用可能にしてください。
+   */
+  stripe: new data.FunctionsData("stripe", require("./functions/stripe")),
+  /**
+   * Receives and processes webhooks from Stripe.
+   * 
+   * Please register the URL when you deploy this in your Stripe webhook settings.
+   * 
+   * Firestore integration is a must; please make Firestore available as well.
+   *
+   * StripeからのWebhookを受け取り処理を行います。
+   * 
+   * こちらをデプロイした際のURLをStripeのWebhook設定に登録してください。
+   * 
+   * Firestoreとの連携が必須です。Firestoreも利用可能にしてください。
+   */
+  stripe_hook: new data.FunctionsData("stripe_hook", require("./functions/stripe_hook")),
+  /**
+   * Receive and process webhooks for Stripe Connect.
+   * 
+   * If you do not use Stripe Connect, do not configure it as a Webhook.
+   * 
+   * Please register the URL when you deploy this in your Stripe webhook settings.
+   * 
+   * Firestore integration is a must; please make Firestore available as well.
+   *
+   * Stripe Connect用のWebhookを受信して処理します。
+   * 
+   * Stripe Connectを利用しない場合はWebhookとして設定しないでください。
+   * 
+   * こちらをデプロイした際のURLをStripeのWebhook設定に登録してください。
+   * 
+   * Firestoreとの連携が必須です。Firestoreも利用可能にしてください。
+   */
+  stripe_hook_connect: new data.FunctionsData("stripe_hook_connect", require("./functions/stripe_hook_connect")),
+  /**
+   * Webhook for proper redirection when 3D Secure authentication is required.
+   * 
+   * It is used by accessing the URL directly.
+   * 
+   * Please set here for [returnUrl].
+   *
+   * 3Dセキュア認証が必要な場合、適切なリダイレクトを行うためのWebhookです。
+   * 
+   * 直接URLにアクセスすることで利用します。
+   * 
+   * [returnUrl]にこちらを設定してください。
+   */
+  stripe_hook_secure: new data.FunctionsData("stripe_hook_secure", require("./functions/stripe_hook_secure")),
 } as const;
