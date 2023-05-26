@@ -57,7 +57,7 @@ export const Functions = {
    * 
    * Firestoreとの連携が必須です。Firestoreも利用可能にしてください。
    */
-  stripe_hook: new data.FunctionsData("stripe_hook", require("./functions/stripe_hook")),
+  stripeHook: new data.FunctionsData("stripe_hook", require("./functions/stripe_hook")),
   /**
    * Receive and process webhooks for Stripe Connect.
    * 
@@ -75,7 +75,7 @@ export const Functions = {
    * 
    * Firestoreとの連携が必須です。Firestoreも利用可能にしてください。
    */
-  stripe_hook_connect: new data.FunctionsData("stripe_hook_connect", require("./functions/stripe_hook_connect")),
+  stripeHookConnect: new data.FunctionsData("stripe_hook_connect", require("./functions/stripe_hook_connect")),
   /**
    * Webhook for proper redirection when 3D Secure authentication is required.
    * 
@@ -89,7 +89,7 @@ export const Functions = {
    * 
    * [returnUrl]にこちらを設定してください。
    */
-  stripe_hook_secure: new data.FunctionsData("stripe_hook_secure", require("./functions/stripe_hook_secure")),
+  stripeHookSecure: new data.FunctionsData("stripe_hook_secure", require("./functions/stripe_hook_secure")),
   /**
    * Send email via Gmail.
    *
@@ -101,5 +101,5 @@ export const Functions = {
    *
    * SendGridでメールを送信します。
    */
-  send_grid: new data.FunctionsData("send_grid", require("./functions/send_grid")),
+  sendGrid: new data.FunctionsData("send_grid", require("./functions/send_grid")),
 } as const;
