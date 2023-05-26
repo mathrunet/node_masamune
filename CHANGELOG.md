@@ -1,3 +1,12 @@
+## [0.4.1](https://github.com/mathrunet/node_masamune/compare/v0.4.0...v0.4.1) (2023-05-26)
+
+
+### fix
+
+* Correction of command names in Functions. ([dc3721c](https://github.com/mathrunet/node_masamune/commit/dc3721cd5719e4b654a9a3142f924ce475fdeefd))
+
+
+
 # [0.4.0](https://github.com/mathrunet/node_masamune/compare/v0.3.0...v0.4.0) (2023-05-26)
 
 
