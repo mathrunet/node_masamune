@@ -2,7 +2,7 @@ import * as functions from "firebase-functions";
 import * as stripe from "stripe";
 import * as admin from "firebase-admin";
 import * as sendgrid from "../lib/send_grid";
-import * as gmail from "../lib/send_gmail";
+import * as gmail from "../lib/gmail";
 import * as utils from "../lib/utils";
 
 /**
@@ -12,14 +12,14 @@ import * as utils from "../lib/utils";
  * Stripeの各種処理を実行します。
  * Firestoreとの連携が必須です。Firestoreも利用可能にしてください。
  *
- * @param {string} purchase.stripe.api_key
- * API key (publicly available key) to connect to Stripe.
+ * @param {string} purchase.stripe.secret_key
+ * API key (secret key) to connect to Stripe.
  * Log in to the following URL and create a project.
- * After creating a project, you can copy the publishable key.
+ * After the project is created, the secret key can be copied.
  *
- * Stripeへ接続するためのAPIキー（公開可能キー）。
+ * Stripeへ接続するためのAPIキー（シークレットキー）。
  * 下記URLにログインし、プロジェクトを作成します。
- * プロジェクト作成後、公開可能キーをコピーすることができます。
+ * プロジェクト作成後、シークレットキーをコピーすることができます。
  *
  * Production environment
  * https://dashboard.stripe.com/apikeys
@@ -69,7 +69,7 @@ import * as utils from "../lib/utils";
  *   - Before making a payment, the system performs a verification (authorization) to see if the card payment can be made. If payment is possible, [authorizedId] will be returned. If this is returned, complete the authorization with [confirm_authorization]. If it is not returned, payment cannot be made. 支払いを行う前にカード支払が可能かどうかを検証（オーソリ）を行います。支払いが可能な場合、[authorizedId]が返却されます。これが返却された場合[confirm_authorization]でオーソリを完了してください。返却されなかった場合、支払いはできません。
  * - confirm_authorization
  *   - Complete the authorization using the [authorizedId] returned by [authorization]. [authorization]で返却された[authorizedId]を利用してオーソリを完了します。
- * 
+ *
  * - create_purchase
  *   - Create a payment. After this, use [authorization_purchase] to authenticate 3D Secure, [confirm_purchase] to confirm the payment, and [capture_purchase] to make the actual payment. 決済を作成します。この跡に[authorization_purchase]で3Dセキュアの認証を行い、[confirm_purchase]で決済の確定、[capture_purchase]で実際の支払いを行います。
  * - confirm_purchase
@@ -178,7 +178,7 @@ module.exports = (regions: string[]) => functions.region(...regions).https.onCal
     try {
       const config = functions.config().purchase;
       const stripeConfig = config.stripe;
-      const apiKey = stripeConfig.api_key;
+      const apiKey = stripeConfig.secret_key;
       const stripeUserPath = stripeConfig.user_path;
       const stripePurchasePath = stripeConfig.purchase_path;
       const stripePaymentPath = stripeConfig.payment_path;

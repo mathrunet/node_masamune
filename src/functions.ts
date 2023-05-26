@@ -90,4 +90,16 @@ export const Functions = {
    * [returnUrl]にこちらを設定してください。
    */
   stripe_hook_secure: new data.FunctionsData("stripe_hook_secure", require("./functions/stripe_hook_secure")),
+  /**
+   * Send email via Gmail.
+   *
+   * Gmailでメールを送信します。
+   */
+  gmail: new data.FunctionsData("gmail", require("./functions/gmail")),
+  /**
+   * Send mail through SendGrid.
+   *
+   * SendGridでメールを送信します。
+   */
+  send_grid: new data.FunctionsData("send_grid", require("./functions/send_grid")),
 } as const;

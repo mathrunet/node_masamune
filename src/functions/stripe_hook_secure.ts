@@ -5,21 +5,19 @@ import * as utils from "../lib/utils";
 
 /**
  * Webhook for proper redirection when 3D Secure authentication is required.
- * It is used by accessing the URL directly.
  * Please set here for [returnUrl].
  *
  * 3Dセキュア認証が必要な場合、適切なリダイレクトを行うためのWebhookです。
- * 直接URLにアクセスすることで利用します。
  * [returnUrl]にこちらを設定してください。
  *
- * @param {string} purchase.stripe.api_key
- * API key (publicly available key) to connect to Stripe.
+ * @param {string} purchase.stripe.secret_key
+ * API key (secret key) to connect to Stripe.
  * Log in to the following URL and create a project.
- * After creating a project, you can copy the publishable key.
+ * After the project is created, the secret key can be copied.
  *
- * Stripeへ接続するためのAPIキー（公開可能キー）。
+ * Stripeへ接続するためのAPIキー（シークレットキー）。
  * 下記URLにログインし、プロジェクトを作成します。
- * プロジェクト作成後、公開可能キーをコピーすることができます。
+ * プロジェクト作成後、シークレットキーをコピーすることができます。
  *
  * Production environment
  * https://dashboard.stripe.com/apikeys
@@ -60,7 +58,7 @@ module.exports = (regions: string[]) => functions.region(...regions).https.onReq
     try {
       const config = functions.config().purchase;
       const stripeConfig = config.stripe;
-      const apiKey = stripeConfig.api_key;
+      const apiKey = stripeConfig.secret_key;
       const stripeUserPath = stripeConfig.user_path;
       const stripePurchasePath = stripeConfig.purchase_path;
       const firestoreInstance = admin.firestore();
