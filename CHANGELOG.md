@@ -1,3 +1,12 @@
+## [0.4.2](https://github.com/mathrunet/node_masamune/compare/v0.4.1...v0.4.2) (2023-05-30)
+
+
+### fix
+
+* Transfers are also deleted when deleting an account. ([fcc275c](https://github.com/mathrunet/node_masamune/commit/fcc275c87359e04c782f89471bb5e7603b19757c))
+
+
+
 ## [0.4.1](https://github.com/mathrunet/node_masamune/compare/v0.4.0...v0.4.1) (2023-05-26)
 
 
