@@ -272,6 +272,9 @@ module.exports = (regions: string[]) => functions.region(...regions).https.onCal
         await stripeClient.accounts.del(data["account"]);
         const update: { [key: string]: any } = {};
         update["account"] = admin.firestore.FieldValue.delete();
+        update["capability"] = admin.firestore.FieldValue.arrayRemove({
+          "transfers": true
+        });
         await doc.ref.set(update, {
           merge: true,
         });
