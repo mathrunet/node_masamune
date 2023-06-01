@@ -1,3 +1,12 @@
+## [0.4.3](https://github.com/mathrunet/node_masamune/compare/v0.4.2...v0.4.3) (2023-06-01)
+
+
+### fix
+
+* Fixed a bug in ID. ([f23a605](https://github.com/mathrunet/node_masamune/commit/f23a605ae3b7058b780c06a735cf2cac843f034b))
+
+
+
 ## [0.4.2](https://github.com/mathrunet/node_masamune/compare/v0.4.1...v0.4.2) (2023-05-30)
 
 
