@@ -427,7 +427,7 @@ module.exports = (regions: string[]) => functions.region(...regions).https.onCal
         await stripeClient.paymentMethods.detach(
           paymentData["id"],
         );
-        if (data["defaultPayment"] === paymentId) {
+        if (data["defaultPayment"] === paymentData["id"]) {
           const update: { [key: string]: any } = {};
           update["defaultPayment"] = admin.firestore.FieldValue.delete();
           await doc.ref.set(update, {

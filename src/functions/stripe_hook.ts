@@ -71,7 +71,7 @@ module.exports = (regions: string[]) => functions.region(...regions).https.onReq
         const payment = event.data.object as {
                         [key: string]: any
                     };
-        const paymentId = payment["id"];
+        const purchaseId = payment["id"];
         const customerId = payment["customer"];
         const status = payment["status"];
         if (!customerId) {
@@ -95,7 +95,7 @@ module.exports = (regions: string[]) => functions.region(...regions).https.onReq
         }
         const user = userCol.docs[0];
         const userId = user.id;
-        const purchaseCol = await firestoreInstance.collection(`${stripeUserPath}/${userId}/${stripePurchasePath}`).where("paymentId", "==", paymentId).get();
+        const purchaseCol = await firestoreInstance.collection(`${stripeUserPath}/${userId}/${stripePurchasePath}`).where("purchaseId", "==", purchaseId).get();
         if (purchaseCol.empty) {
           res.status(404).send(JSON.stringify({
             "error": "The purchase data is not found.",
@@ -142,7 +142,7 @@ module.exports = (regions: string[]) => functions.region(...regions).https.onReq
         const payment = event.data.object as {
                         [key: string]: any
                     };
-        const paymentId = payment["id"];
+        const purchaseId = payment["id"];
         const customerId = payment["customer"];
         if (!customerId) {
           res.status(404).send(JSON.stringify({
@@ -159,7 +159,7 @@ module.exports = (regions: string[]) => functions.region(...regions).https.onReq
         }
         const user = userCol.docs[0];
         const userId = user.id;
-        const purchaseCol = await firestoreInstance.collection(`${stripeUserPath}/${userId}/${stripePurchasePath}`).where("paymentId", "==", paymentId).get();
+        const purchaseCol = await firestoreInstance.collection(`${stripeUserPath}/${userId}/${stripePurchasePath}`).where("purchaseId", "==", purchaseId).get();
         if (purchaseCol.empty) {
           res.status(404).send(JSON.stringify({
             "error": "The purchase data is not found.",
@@ -197,7 +197,7 @@ module.exports = (regions: string[]) => functions.region(...regions).https.onReq
         const payment = event.data.object as {
                         [key: string]: any
                     };
-        const paymentId = payment["id"];
+        const purchaseId = payment["id"];
         const customerId = payment["customer"];
         const status = payment["status"];
         if (!customerId) {
@@ -215,7 +215,7 @@ module.exports = (regions: string[]) => functions.region(...regions).https.onReq
         }
         const user = userCol.docs[0];
         const userId = user.id;
-        const purchaseCol = await firestoreInstance.collection(`${stripeUserPath}/${userId}/${stripePurchasePath}`).where("paymentId", "==", paymentId).get();
+        const purchaseCol = await firestoreInstance.collection(`${stripeUserPath}/${userId}/${stripePurchasePath}`).where("purchaseId", "==", purchaseId).get();
         if (purchaseCol.empty) {
           res.status(404).send(JSON.stringify({
             "error": "The purchase data is not found.",
@@ -566,12 +566,12 @@ async function syncStripePayment(stripeClient : stripe.Stripe, firestoreInstance
         if (doc) {
           return;
         }
-        const uid = uuid.v4();
+        const uid = method.id;
         const update: { [key: string]: any } = {};
         const isDefault = method.id == defaultSource;
         update["@uid"] = uid;
         update["@time"] = new Date();
-        update["id"] = method.id;
+        update["id"] = uid;
         update["type"] = method.type;
         update["expMonth"] = card.exp_month;
         update["expYear"] = card.exp_year;
