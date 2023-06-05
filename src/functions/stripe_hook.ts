@@ -1,7 +1,6 @@
 import * as functions from "firebase-functions";
 import * as stripe from "stripe";
 import * as admin from "firebase-admin";
-import * as uuid from "uuid";
 
 /**
  * Receives and processes webhooks from Stripe.
