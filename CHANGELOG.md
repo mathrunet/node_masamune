@@ -1,3 +1,12 @@
+## [0.4.4](https://github.com/mathrunet/node_masamune/compare/v0.4.3...v0.4.4) (2023-06-05)
+
+
+### fix
+
+* Remove uuid package. ([3aee2ee](https://github.com/mathrunet/node_masamune/commit/3aee2ee193044ef233a9aa65c69ce61862e000b9))
+
+
+
 ## [0.4.3](https://github.com/mathrunet/node_masamune/compare/v0.4.2...v0.4.3) (2023-06-01)
 
 
