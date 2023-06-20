@@ -34,12 +34,17 @@ import * as functions from "firebase-functions";
  * Email content.
  * メール本文。
  */
-export async function send(
+export async function send({
+  from,
+  to,
+  title,
+  content,
+}: {
   from: string,
   to: string,
   title: string,
   content: string,
-) {
+}) {
   const config = functions.config().mail;
   const mailTransport = createTransport({
     service: "gmail",

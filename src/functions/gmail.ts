@@ -6,7 +6,7 @@ import * as gmail from "../lib/gmail";
  *
  * Gmailでメールを送信します。
  *
- * @param {string} purchase.mail.gmail.id
+ * @param {string} mail.gmail.id
  * Gmail user ID. Follow the steps below to obtain a Gmail user ID.
  * 1. Press your icon in the upper right corner of the Google top screen and open "Manage Google Account".
  * 2. open "Security" on the left side of the screen and open "App Password
@@ -14,7 +14,7 @@ import * as gmail from "../lib/gmail";
  * 1. Googleのトップ画面の画面右上の自分のアイコンを押下し、「Google アカウントを管理」を開く
  * 2. 画面左の「セキュリティ」を開き、「アプリ パスワード」を開く
  *
- * @param {string} purchase.mail.gmail.password
+ * @param {string} mail.gmail.password
  * Gmail user password. Enter the password obtained in the above procedure.
  * Gmailのユーザーパスワード。上記の手順で取得したパスワードを入力します。
  *
@@ -44,7 +44,12 @@ module.exports = (regions: string[]) => functions.region(...regions).https.onCal
             if (!from || !to || !title || !content) {
                 throw new functions.https.HttpsError("invalid-argument", "Query parameter is invalid.");
             }
-            await gmail.send(from, to, title, content);
+            await gmail.send({
+                from: from,
+                to: to,
+                title: title,
+                content: content,
+            });
             return {
                 success: true,
             };

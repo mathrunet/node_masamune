@@ -38,7 +38,12 @@ module.exports = (regions: string[]) => functions.region(...regions).https.onCal
             if (!from || !to || !title || !content) {
                 throw new functions.https.HttpsError("invalid-argument", "Query parameter is invalid.");
             }
-            await sendgrid.send(from, to, title, content);
+            await sendgrid.send({
+                from: from,
+                to: to,
+                title: title,
+                content: content,
+            });
             return {
                 success: true,
             };

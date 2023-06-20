@@ -28,12 +28,17 @@ import * as sendgrid from "@sendgrid/mail";
  * Email content.
  * メール本文。
  */
-export async function send(
+export async function send({
+  from,
+  to,
+  title,
+  content,
+}: {
   from: string,
   to: string,
   title: string,
   content: string,
-) {
+}) {
   const config = functions.config().mail;
   sendgrid.setApiKey(config.sendgrid.api_key);
   const msg = {

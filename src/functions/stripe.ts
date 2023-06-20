@@ -537,11 +537,21 @@ module.exports = (regions: string[]) => functions.region(...regions).https.onCal
           if (emailFrom && email && emailTitle && emailContent) {
             switch (stripeEmailProvider) {
             case "gmail": {
-              await gmail.send(emailFrom, email, emailTitle, emailContent.replace("{url}", nextActionUrl));
+                await gmail.send({
+                  from: emailFrom,
+                  to: email,
+                  title: emailTitle,
+                  content: emailContent.replace("{url}", nextActionUrl),
+                });
               break;
             }
             case "sendgrid": {
-              await sendgrid.send(emailFrom, email, emailTitle, emailContent.replace("{url}", nextActionUrl));
+                await sendgrid.send({
+                  from: emailFrom,
+                  to: email,
+                  title: emailTitle,
+                  content: emailContent.replace("{url}", nextActionUrl),
+                });
               break;
             }
             }
@@ -761,16 +771,16 @@ module.exports = (regions: string[]) => functions.region(...regions).https.onCal
           throw new functions.https.HttpsError("invalid-argument", "The user id is empty.");
         }
         if (!online) {
-          returnUrl = returnUrl + "?token=" + utils.encrypt(
-            JSON.stringify({
+          returnUrl = returnUrl + "?token=" + utils.encrypt({
+            raw: JSON.stringify({
               userId: userId,
               orderId: orderId,
               successUrl: successUrl,
               failureUrl: failureUrl,
             }),
-            apiKey.slice(0, 32),
-            apiKey.slice(-16),
-          );
+            key: apiKey.slice(0, 32),
+            ivKey: apiKey.slice(-16),
+          });
         }
         const doc = await firestoreInstance.doc(`${stripeUserPath}/${userId}/${stripePurchasePath}/${orderId}`).get();
         const data = doc.data();
@@ -798,11 +808,21 @@ module.exports = (regions: string[]) => functions.region(...regions).https.onCal
                 if (data["emailFrom"] && data["emailTo"] && data["emailTitle"] && data["emailContent"]) {
                   switch (stripeEmailProvider) {
                   case "gmail": {
-                    await gmail.send(data["emailFrom"], data["emailTo"], data["emailTitle"], data["emailContent"].replace("{url}", nextActionUrl));
+                      await gmail.send({
+                        from: data["emailFrom"],
+                        to: data["emailTo"],
+                        title: data["emailTitle"],
+                        content: data["emailContent"].replace("{url}", nextActionUrl),
+                    });
                     break;
                   }
                   case "sendgrid": {
-                    await sendgrid.send(data["emailFrom"], data["emailTo"], data["emailTitle"], data["emailContent"].replace("{url}", nextActionUrl));
+                      await sendgrid.send({
+                        from: data["emailFrom"],
+                        to: data["emailTo"],
+                        title: data["emailTitle"],
+                        content: data["emailContent"].replace("{url}", nextActionUrl),
+                      });
                     break;
                   }
                   }
@@ -858,11 +878,21 @@ module.exports = (regions: string[]) => functions.region(...regions).https.onCal
               if (data["emailFrom"] && data["emailTo"] && data["emailTitle"] && data["emailContent"]) {
                 switch (stripeEmailProvider) {
                 case "gmail": {
-                  await gmail.send(data["emailFrom"], data["emailTo"], data["emailTitle"], data["emailContent"].replace("{url}", nextActionUrl));
+                    await gmail.send({
+                      from: data["emailFrom"],
+                      to: data["emailTo"],
+                      title: data["emailTitle"],
+                      content: data["emailContent"].replace("{url}", nextActionUrl),
+                    });
                   break;
                 }
                 case "sendgrid": {
-                  await sendgrid.send(data["emailFrom"], data["emailTo"], data["emailTitle"], data["emailContent"].replace("{url}", nextActionUrl));
+                    await sendgrid.send({
+                      from: data["emailFrom"],
+                      to: data["emailTo"],
+                      title: data["emailTitle"],
+                      content: data["emailContent"].replace("{url}", nextActionUrl),
+                    });
                   break;
                 }
                 }

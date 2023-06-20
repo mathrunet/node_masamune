@@ -102,4 +102,66 @@ export const Functions = {
    * SendGridでメールを送信します。
    */
   sendGrid: new data.FunctionsData("send_grid", require("./functions/send_grid")),
+  /**
+   * After being redirected from [android_auth_code], you will get a refresh token to connect to Google's API. Applications Library System Users Volumes bin cores dev etc home opt private sbin tmp usr var Execute [android_auth_code] after registering the required information.
+   *
+   * [android_auth_code]からリダイレクトされた後、GoogleのAPIに接続するためのリフレッシュトークンを取得します。
+   * 必要情報を登録した後[android_auth_code]を実行してください。
+   */
+  android_auth_code: new data.FunctionsData("android_auth_code", require("./functions/android_auth_code")),
+  /**
+   * After being redirected from [android_auth_code], you will get a refresh token to connect to Google's API. Applications Library System Users Volumes bin cores dev etc home opt private sbin tmp usr var Execute [android_auth_code] after registering the required information.
+   *
+   * [android_auth_code]からリダイレクトされた後、GoogleのAPIに接続するためのリフレッシュトークンを取得します。
+   * 必要情報を登録した後[android_auth_code]を実行してください。
+   */
+  android_token: new data.FunctionsData("android_token", require("./functions/android_token")),
+  /**
+   * Performs a consumption-type in-app purchase. The value of the field in the document specified in [path] is added to [value].
+   *
+   * 消費型のアプリ内課金を行います。[path]に指定したドキュメント内のフィールドの値を[value]に加算します。
+   */
+  consumable_verify_android: new data.FunctionsData("consumable_verify_android", require("./functions/consumable_verify_android")),
+  /**
+   * Performs a consumption-type in-app purchase. The value of the field in the document specified in [path] is added to [value].
+   *
+   * 消費型のアプリ内課金を行います。[path]に指定したドキュメント内のフィールドの値を[value]に加算します。
+   */
+  consumable_verify_ios: new data.FunctionsData("consumable_verify_ios", require("./functions/consumable_verify_ios")),
+  /**
+   * Performs non-consumable in-app purchases. Unlock by setting the value of the field in the document specified in [path] to `true`.
+   *
+   * 非消費型のアプリ内課金を行います。[path]に指定したドキュメント内のフィールドの値を`true`にすることでアンロックを行います。
+   */
+  nonconsumable_verify_android: new data.FunctionsData("nonconsumable_verify_android", require("./functions/nonconsumable_verify_android")),
+  /**
+   * Performs non-consumable in-app purchases. Unlock by setting the value of the field in the document specified in [path] to `true`.
+   *
+   * 非消費型のアプリ内課金を行います。[path]に指定したドキュメント内のフィールドの値を`true`にすることでアンロックを行います。
+   */
+  nonconsumable_verify_ios: new data.FunctionsData("nonconsumable_verify_ios", require("./functions/nonconsumable_verify_ios")),
+  /**
+   * This is a webhook endpoint for Android. you can create a `purchasing` topic in GCP's pub/sub and set the principal to "google-play-developer-notifications@system.gserviceaccount.com" to receive notifications.
+   *
+   * Android用のWebhookのエンドポイントです。GCPのpub/subに`purchasing`のトピックを作成しプリンシパルに「google-play-developer-notifications@system.gserviceaccount.com」を設定することで通知を受け取ることができるようになります。
+   */
+  purchase_hook_android: new data.FunctionsData("purchase_hook_android", require("./functions/purchase_hook_android")),
+  /**
+   * Webhook endpoint for IOS, which allows you to receive notifications by setting the endpoint in AppStoreConnect's [App]->[App Information]->[App Store Server Notification].
+   *
+   * IOS用のWebhookのエンドポイントです。AppStoreConnectの[App]->[App情報]->[App Storeサーバ通知]にエンドポイントを設定することで通知を受け取ることができるようになります。
+   */
+  purchase_hook_ios: new data.FunctionsData("purchase_hook_ios", require("./functions/purchase_hook_ios")),
+  /**
+   * Verify subscriptions and add data.
+   *
+   * サブスクリプションの検証とデータの追加を行います。
+   */
+  subscription_verify_android: new data.FunctionsData("subscription_verify_android", require("./functions/subscription_verify_android")),
+  /**
+   * Verify subscriptions and add data.
+   *
+   * サブスクリプションの検証とデータの追加を行います。
+   */
+  subscription_verify_ios: new data.FunctionsData("subscription_verify_ios", require("./functions/subscription_verify_ios")),
 } as const;

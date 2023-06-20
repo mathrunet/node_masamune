@@ -55,7 +55,15 @@ export function parse(value: string | number) {
  * Encrypted string.
  * 暗号化された文字列。
  */
-export function encrypt(raw : string, key : string, ivKey : string) {
+export function encrypt({
+  raw,
+  key,
+  ivKey
+}: {
+  raw: string,
+  key: string,
+  ivKey: string
+}) {
   const iv = Buffer.from(ivKey);
   const cipher = crypto.createCipheriv("aes-256-cbc", Buffer.from(key), iv);
   let encrypted = cipher.update(raw);
@@ -82,7 +90,15 @@ export function encrypt(raw : string, key : string, ivKey : string) {
  * Decrypted string.
  * 復号化された文字列。
  */
-export function decrypt(encrypted : string, key : string, ivKey : string) {
+export function decrypt({
+  encrypted,
+  key,
+  ivKey,
+}: {
+  encrypted: string,
+  key: string,
+  ivKey: string,
+}) {
   const iv = Buffer.from(ivKey);
   const encryptedText = Buffer.from(encrypted, "hex");
   const decipher = crypto.createDecipheriv("aes-256-cbc", Buffer.from(key), iv);
