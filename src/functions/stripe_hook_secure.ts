@@ -72,11 +72,11 @@ module.exports = (regions: string[]) => functions.region(...regions).https.onReq
         }));
         return;
       }
-      const param = JSON.parse(utils.decrypt(
-        token,
-        apiKey.slice(0, 32),
-        apiKey.slice(-16),
-      ));
+      const param = JSON.parse(utils.decrypt({
+        encrypted: token,
+        key: apiKey.slice(0, 32),
+        ivKey: apiKey.slice(-16),
+      }));
       if (!param["userId"] || !param["orderId"] || !param["successUrl"] || !param["failureUrl"]) {
         res.status(403).send(JSON.stringify({
           "error": "Invalid parameters",
