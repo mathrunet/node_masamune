@@ -1,3 +1,12 @@
+## [0.5.1](https://github.com/mathrunet/node_masamune/compare/v0.5.0...v0.5.1) (2023-06-20)
+
+
+### fix
+
+* Name the parameter. ([1393a59](https://github.com/mathrunet/node_masamune/commit/1393a598e7c25835b13f869d8c3a153bcda9311e))
+
+
+
 # [0.5.0](https://github.com/mathrunet/node_masamune/compare/v0.4.4...v0.5.0) (2023-06-20)
 
 
