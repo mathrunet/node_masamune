@@ -1,3 +1,12 @@
+# [0.5.0](https://github.com/mathrunet/node_masamune/compare/v0.4.4...v0.5.0) (2023-06-20)
+
+
+### feat
+
+* Added Functions for mobile billing. ([62309a4](https://github.com/mathrunet/node_masamune/commit/62309a47dbde32101c521f3c0510f53c109f3844))
+
+
+
 ## [0.4.4](https://github.com/mathrunet/node_masamune/compare/v0.4.3...v0.4.4) (2023-06-05)
 
 
