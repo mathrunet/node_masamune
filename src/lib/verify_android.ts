@@ -72,9 +72,6 @@ export async function verifyAndroid({
     let res = await fetch("https://accounts.google.com/o/oauth2/token", {
         method: "POST",
         timeout: 30 * 1000,
-        headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-        },
         body: formData
     });
     if (!res) {

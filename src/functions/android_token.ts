@@ -59,9 +59,6 @@ module.exports = (regions: string[]) => functions.region(...regions).https.onReq
             const resp = await fetch("https://accounts.google.com/o/oauth2/token", {
                 method: "POST",
                 timeout: 30 * 1000,
-                headers: {
-                    "Content-Type": "application/x-www-form-urlencoded",
-                },
                 body: formData,
             });
             if (!resp) {
