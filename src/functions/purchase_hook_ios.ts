@@ -43,7 +43,7 @@ module.exports = (regions: string[]) => functions.region(...regions).https.onReq
                         if (!data) {
                             throw new Error("The purchased data is not found.");
                         }
-                        const user = data["user"];
+                        const user = data["userId"];
                         console.log(`notificationType: ${notificationType}`);
                         switch (notificationType) {
                             case "CONSUMPTION_REQUEST":

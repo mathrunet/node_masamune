@@ -90,7 +90,7 @@ module.exports = functions.pubsub
                     if (!data) {
                         throw new Error("The purchased data is not found.");
                     }
-                    const user = data["user"];
+                    const user = data["userId"];
                     console.log(`notificationType: ${notificationType}`);
                     switch (notificationType) {
                         case SubscriptionNotificationTypes.SUBSCRIPTION_RECOVERED:
@@ -158,7 +158,7 @@ module.exports = functions.pubsub
                         if (!data) {
                             throw new Error("The purchased data is not found.");
                         }
-                        const user = data["user"];
+                        const user = data["userId"];
                         data["expired"] = true;
                         data["@time"] = new Date();
                         await firestoreInstance.doc(path).set(data);

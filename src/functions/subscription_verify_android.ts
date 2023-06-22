@@ -68,7 +68,7 @@ import * as subscriber from "../lib/update_subscription";
  * 
  * 更新するドキュメントデータ。
  * 
- * @param user
+ * @param userId
  * ID of the user who purchased the subscription.
  * 
  * サブスクリプションを購入したユーザーのID。
@@ -77,7 +77,7 @@ module.exports = (regions: string[]) => functions.region(...regions).https.onCal
     async (query, context) => {
         try {
             /* ==== Android検証ここから ==== */
-            if (!query.user) {
+            if (!query.userId) {
                 throw new functions.https.HttpsError("invalid-argument", "User is empty.");
             }
             const config = functions.config().purchase;
@@ -106,7 +106,7 @@ module.exports = (regions: string[]) => functions.region(...regions).https.onCal
                 targetDocumentId: query.purchaseToken,
                 data: res,
                 additionalData: query.data,
-                userId: query.user,
+                userId: query.userId,
                 platform: "Android",
                 orderId: res["orderId"],
                 productId: query.productId,

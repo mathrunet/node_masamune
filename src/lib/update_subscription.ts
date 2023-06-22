@@ -120,7 +120,7 @@ export async function updateSubscription({
     update["expiredTime"] = expiryDate;
     update["orderId"] = orderId;
     if (userId) {
-        update["user"] = userId;
+        update["userId"] = userId;
     }
     update["@time"] = new Date();
     update["@uid"] = path.basename( targetCollectionPath );

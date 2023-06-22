@@ -26,9 +26,11 @@ export async function updateWallet({
     const update: { [key: string]: any } = {};
     const key = path.basename( targetDocumentFieldPath );
     const parent = targetDocumentFieldPath.replace( `/${key}`, "" );
+    const uid = path.basename(parent);
     const firestoreInstance = admin.firestore();
     const FieldValue = admin.firestore.FieldValue;
     update[key] = FieldValue.increment(value);
+    update["@uid"] = uid;
     update["@time"] = new Date();
     await firestoreInstance.doc(parent).set(update, {
         merge: true,
