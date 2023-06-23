@@ -1,3 +1,16 @@
+# [0.6.0](https://github.com/mathrunet/node_masamune/compare/v0.5.3...v0.6.0) (2023-06-23)
+
+
+### docs
+
+* Corrected variable names in the documentation. ([e17c24f](https://github.com/mathrunet/node_masamune/commit/e17c24f39ca0e578dbd846d034640caf4a6762cb))
+
+### feat
+
+* Topic is now configurable. ([36b70ec](https://github.com/mathrunet/node_masamune/commit/36b70ecd53db9d34a3fc19561158a08b1bb09e6e))
+
+
+
 ## [0.5.3](https://github.com/mathrunet/node_masamune/compare/v0.5.2...v0.5.3) (2023-06-22)
 
 
