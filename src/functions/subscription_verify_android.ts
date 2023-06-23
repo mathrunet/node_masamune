@@ -73,7 +73,7 @@ import * as subscriber from "../lib/update_subscription";
  * 
  * サブスクリプションを購入したユーザーのID。
  */
-module.exports = (regions: string[]) => functions.region(...regions).https.onCall(
+module.exports = (regions: string[], topics: { [key: string]: string }) => functions.region(...regions).https.onCall(
     async (query, context) => {
         try {
             /* ==== Android検証ここから ==== */

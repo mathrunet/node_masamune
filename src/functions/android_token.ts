@@ -42,7 +42,7 @@ import FormData from "form-data";
  * その後、認証情報からOAuth 2.0 クライアントIDを作成します。
  * https://console.cloud.google.com/apis/credentials
  */
-module.exports = (regions: string[]) => functions.region(...regions).https.onRequest(
+module.exports = (regions: string[], topics: { [key: string]: string }) => functions.region(...regions).https.onRequest(
     async (req, res) => {
         try {
             const config = functions.config().purchase;

@@ -36,7 +36,7 @@ import * as admin from "firebase-admin";
  * 
  * FCMのトピックを指定します。
  */
-module.exports = (regions: string[]) => functions.region(...regions).https.onCall(
+module.exports = (regions: string[], topics: { [key: string]: string }) => functions.region(...regions).https.onCall(
     async (query) => {
         try {
             const title = query.title as string;

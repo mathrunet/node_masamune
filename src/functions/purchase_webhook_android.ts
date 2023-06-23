@@ -44,8 +44,8 @@ import * as utils from "../lib/utils";
  * 
  * サブスクリプションのコレクションのパスを記述します。
  */
-module.exports = functions.pubsub
-    .topic("purchasing")
+module.exports = (regions: string[], topics: { [key: string]: string }) => functions.pubsub
+    .topic(topics["purchase_webhook_android"] ?? "purchasing")
     .onPublish(async (message) => {
         try {
             const messageBody = message.data ?
