@@ -39,7 +39,7 @@ import * as utils from "../lib/utils";
  * その後、認証情報からOAuth 2.0 クライアントIDを作成します。
  * https://console.cloud.google.com/apis/credentials
  * 
- * @param purchase.android.subscription_path
+ * @param purchase.subscription_path
  * Describes the path to the collection of subscriptions.
  * 
  * サブスクリプションのコレクションのパスを記述します。

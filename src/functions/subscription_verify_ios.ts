@@ -12,7 +12,7 @@ import * as subscriber from "../lib/update_subscription";
  * 
  * AppStoreのSharedSecret。AppStoreの[アプリ]->[App情報]->[App用共有シークレット]から取得します。
  * 
- * @param purchase.android.subscription_path
+ * @param purchase.subscription_path
  * Describes the path to the collection of subscriptions.
  * 
  * サブスクリプションのコレクションのパスを記述します。

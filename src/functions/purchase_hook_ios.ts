@@ -7,7 +7,7 @@ import * as utils from "../lib/utils";
  * 
  * IOS用のWebhookのエンドポイントです。AppStoreConnectの[App]->[App情報]->[App Storeサーバ通知]にエンドポイントを設定することで通知を受け取ることができるようになります。
  * 
- * @param purchase.android.subscription_path
+ * @param purchase.subscription_path
  * Describes the path to the collection of subscriptions.
  * 
  * サブスクリプションのコレクションのパスを記述します。
