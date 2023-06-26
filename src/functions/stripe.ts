@@ -111,7 +111,7 @@ import * as utils from "../lib/utils";
  * @param {string} productId
  * [required]
  * Specify the product ID.
- * 商品IDを指定します。サブスクリプションなどではこれが
+ * 商品IDを指定します。
  *
  * @param {string} currency
  * [optional]
