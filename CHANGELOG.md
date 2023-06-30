@@ -1,3 +1,13 @@
+## [0.6.1](https://github.com/mathrunet/node_masamune/compare/v0.6.0...v0.6.1) (2023-06-30)
+
+
+### docs
+
+* Comment Change. ([d48a8f1](https://github.com/mathrunet/node_masamune/commit/d48a8f1c233285e3b1be8c1fb76634d81a132e63))
+* ReadMe changes. ([8e55b7d](https://github.com/mathrunet/node_masamune/commit/8e55b7d10d6d3f8f61ff09541fafbfb9ea52b73a))
+
+
+
 # [0.6.0](https://github.com/mathrunet/node_masamune/compare/v0.5.3...v0.6.0) (2023-06-23)
 
 
