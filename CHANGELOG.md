@@ -1,3 +1,12 @@
+## [0.6.2](https://github.com/mathrunet/node_masamune/compare/v0.6.1...v0.6.2) (2023-07-06)
+
+
+### docs
+
+* Added ReadMe link. ([06ab906](https://github.com/mathrunet/node_masamune/commit/06ab906478297cff54ef9130e8be643f7716bac8))
+
+
+
 ## [0.6.1](https://github.com/mathrunet/node_masamune/compare/v0.6.0...v0.6.1) (2023-06-30)
 
 
