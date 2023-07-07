@@ -1,3 +1,12 @@
+## [0.6.3](https://github.com/mathrunet/node_masamune/compare/v0.6.2...v0.6.3) (2023-07-07)
+
+
+### docs
+
+* Added GithubSponsors to ReadMe. ([4c4b3f9](https://github.com/mathrunet/node_masamune/commit/4c4b3f9a28870aea7bcd38afaa0b64315ab8ed66))
+
+
+
 ## [0.6.2](https://github.com/mathrunet/node_masamune/compare/v0.6.1...v0.6.2) (2023-07-06)
 
 
