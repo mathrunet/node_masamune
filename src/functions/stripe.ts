@@ -173,7 +173,7 @@ import * as utils from "../lib/utils";
  * Specify the URL to redirect to after authentication.
  * 認証後のリダイレクト先URLを指定します。
  */
-module.exports = (regions: string[], topics: { [key: string]: string }) => functions.region(...regions).https.onCall(
+module.exports = (regions: string[], data: { [key: string]: string }) => functions.region(...regions).https.onCall(
   async (query) => {
     try {
       const config = functions.config().purchase;

@@ -30,7 +30,7 @@ import fetch from "node-fetch";
  * サンプリング温度(※)を 0〜1 の間で指定します。
  * 値が低いほど、より関連性の高い単語が選ばれやすくなり、値が高いほど、より多様な単語が選ばれやすくなります。
  */
-module.exports = (regions: string[], topics: { [key: string]: string }) => functions.region(...regions).https.onCall(
+module.exports = (regions: string[], data: { [key: string]: string }) => functions.region(...regions).https.onCall(
     async (query) => {
         try {
             const apiKey = functions.config().openai.api_key;

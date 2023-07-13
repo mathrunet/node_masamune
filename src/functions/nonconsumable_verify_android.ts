@@ -58,7 +58,7 @@ import * as updater from "../lib/update_unlock";
  * 
  * 購入したときに発行された購入トークン。
  */
-module.exports = (regions: string[], topics: { [key: string]: string }) => functions.region(...regions).https.onCall(
+module.exports = (regions: string[], data: { [key: string]: string }) => functions.region(...regions).https.onCall(
     async (query) => {
         try {
             const config = functions.config().purchase;

@@ -24,14 +24,16 @@ export * from "./lib/functions_data";
  * 
  * [Functions]で定義された要素を配列として渡します。渡されたメソッドがデプロイされます。
  * 
- * @param topic
- * pub/subで用いるトピック名を指定します。通常は``
+ * @param data
+ * Specify the topic name to be used for pub/sub and the length of the schedule.
+ * 
+ * pub/subで用いるトピック名やスケジュールの長さなどを指定します。
  */
-export function deploy(exports: any, region: regions.Regions, deployFunctions: data.FunctionsData[], topic: { [key: string]: string } = {}) {
+export function deploy(exports: any, region: regions.Regions, deployFunctions: data.FunctionsData[]) {
     admin.initializeApp();
-    for (const data of deployFunctions) {
-        if (!process.env.FUNCTION_NAME || process.env.FUNCTION_NAME === data.id) {
-            exports[data.id] = data.func(region, topic);
+    for (const func of deployFunctions) {
+        if (!process.env.FUNCTION_NAME || process.env.FUNCTION_NAME === func.id) {
+            exports[func.id] = func.func(region, func.data);
         }
     }
 }

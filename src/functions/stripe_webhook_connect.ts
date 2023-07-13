@@ -36,7 +36,7 @@ import * as admin from "firebase-admin";
  * Webhookとして設定したあとの**署名シークレット**を指定します。
  *
  */
-module.exports = (regions: string[], topics: { [key: string]: string }) => functions.region(...regions).https.onRequest(
+module.exports = (regions: string[], data: { [key: string]: string }) => functions.region(...regions).https.onRequest(
   async (req, res) => {
     try {
       const config = functions.config().purchase;
