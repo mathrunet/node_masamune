@@ -1,3 +1,12 @@
+# [1.0.0](https://github.com/mathrunet/node_masamune/compare/v0.6.3...v1.0.0) (2023-07-13)
+
+
+### feat
+
+* Change the structure of FunctionData. ([0ce6dd3](https://github.com/mathrunet/node_masamune/commit/0ce6dd341ad27202ea433d9f83edfce13d4a18ec))
+
+
+
 ## [0.6.3](https://github.com/mathrunet/node_masamune/compare/v0.6.2...v0.6.3) (2023-07-07)
 
 
