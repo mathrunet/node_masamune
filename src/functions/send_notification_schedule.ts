@@ -19,10 +19,10 @@ module.exports = (regions: string[], data: { [key: string]: string }) => functio
             const firestoreInstance = admin.firestore();
             const collection = await firestoreInstance.collection(collectionPath).where("sent", "==", false).where("time", "<=", admin.firestore.Timestamp.now()).orderBy("time", "asc") .get();
             for (var doc of collection.docs) {
-                const title = doc.get("name") as string;
+                const title = doc.get("title") as string;
                 const body = doc.get("text") as string;
                 const channelId = doc.get("channel") as string | undefined;
-                const data = doc.get("data") as { [key: string]: string } | undefined;
+                const data = doc.get("data") as { [key: string]: any } | undefined;
                 const token = doc.get("token") as string | undefined;
                 const topic = doc.get("topic") as string | undefined;
                 await sendNotification({
