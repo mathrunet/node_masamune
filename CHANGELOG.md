@@ -1,3 +1,13 @@
+# [1.1.0](https://github.com/mathrunet/node_masamune/compare/v1.0.0...v1.1.0) (2023-08-28)
+
+
+### feat
+
+* Create a SendNotificationSchedule. ([681a05e](https://github.com/mathrunet/node_masamune/commit/681a05e8f3c4546e0eff070462e364eb974a693d))
+* ProcessFunctionBaseを作成 ([ecc5da7](https://github.com/mathrunet/node_masamune/commit/ecc5da70f3f7e687309511923ba6156022ebb951))
+
+
+
 # [1.0.0](https://github.com/mathrunet/node_masamune/compare/v0.6.3...v1.0.0) (2023-07-13)
 
 
