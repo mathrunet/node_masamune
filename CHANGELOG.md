@@ -1,3 +1,12 @@
+## [1.1.1](https://github.com/mathrunet/node_masamune/compare/v1.1.0...v1.1.1) (2023-08-28)
+
+
+### fix
+
+* Change the key of the title. ([137a47e](https://github.com/mathrunet/node_masamune/commit/137a47ece9a1ce5fbbfa9bedd96bb734b7986b65))
+
+
+
 # [1.1.0](https://github.com/mathrunet/node_masamune/compare/v1.0.0...v1.1.0) (2023-08-28)
 
 
