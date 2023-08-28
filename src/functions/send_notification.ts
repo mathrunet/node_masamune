@@ -1,5 +1,6 @@
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
+import { sendNotification } from "../lib/send_notification";
 
 /**
  * Define the process for PUSH notification.
@@ -45,59 +46,14 @@ module.exports = (regions: string[], data: { [key: string]: string }) => functio
             const data = query.data as { [key: string]: string } | undefined;
             const token = query.token as string | undefined;
             const topic = query.topic as string | undefined;
-            if (token === undefined && topic === undefined) {
-                throw new functions.https.HttpsError("invalid-argument", "Either [token] or [topic] must be specified.");
-            }
-
-            if (token !== undefined) {
-                const res = await admin.messaging().send(
-                    {
-                        notification: {
-                            title: title,
-                            body: body,
-                        },
-                        android: {
-                            priority: "high",
-                            notification: {
-                                title: title,
-                                body: body,
-                                clickAction: "FLUTTER_NOTIFICATION_CLICK",
-                                channelId: channelId,
-                            },
-                        },
-                        data: data,
-                        token: token,
-                    }
-                );
-                return {
-                    success: true,
-                    message_id: res,
-                };
-            } else if (topic !== undefined)  {
-                const res = await admin.messaging().send(
-                    {
-                        notification: {
-                            title: title,
-                            body: body,
-                        },
-                        android: {
-                            priority: "high",
-                            notification: {
-                                title: title,
-                                body: body,
-                                clickAction: "FLUTTER_NOTIFICATION_CLICK",
-                                channelId: channelId,
-                            },
-                        },
-                        data: data,
-                        topic: topic,
-                    }
-                );
-                return {
-                    success: true,
-                    message_id: res,
-                };
-            }
+            await sendNotification({
+                title: title,
+                body: body,
+                channelId: channelId,
+                data: data,
+                token: token,
+                topic: topic,
+            });
         } catch (err) {
             console.log(err);
             throw err;

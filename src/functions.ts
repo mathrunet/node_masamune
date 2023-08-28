@@ -13,6 +13,12 @@ export const Functions = {
    */
   sendNotification: () => new data.FunctionsData("send_notification", require("./functions/send_notification")),
   /** 
+   * Function to send PUSH notifications periodically.
+   * 
+   * 定期的にPUSH通知を送信するためのFunction。
+   */
+  sendNotificationSchedule: (schedule: string = "every 1 minutes") => new data.FunctionsData("send_notification_schedule", require("./functions/send_notification_schedule"),  {"schedule": schedule}),
+  /** 
    * The text is generated using Open AI's GPT.
    * 
    * Open AIのChat GPTを利用して文章を生成します。
@@ -145,7 +151,7 @@ export const Functions = {
    *
    * Android用のWebhookのエンドポイントです。GCPのpub/subに`purchasing`のトピックを作成しプリンシパルに「google-play-developer-notifications@system.gserviceaccount.com」を設定することで通知を受け取ることができるようになります。
    */
-  purchaseWebhookAndroid: (topic: string = "purchasing") => new data.FunctionsData("purchase_webhook_android", require("./functions/purchase_webhook_android"), {topic: topic}),
+  purchaseWebhookAndroid: (topic: string = "purchasing") => new data.FunctionsData("purchase_webhook_android", require("./functions/purchase_webhook_android"), {"topic": topic}),
   /**
    * Webhook endpoint for IOS, which allows you to receive notifications by setting the endpoint in AppStoreConnect's [App]->[App Information]->[App Store Server Notification].
    *
