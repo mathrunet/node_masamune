@@ -1,9 +1,11 @@
+import { FunctionsBase } from "./functions_base";
+
 /**
  * Define Function data for FirebaseFunctions.
  * 
  * FirebaseFunctions用のFunctionのデータを定義します。
  */
-export class FunctionsData {
+export class FunctionsData extends FunctionsBase {
   /**
    * Define Function data for FirebaseFunctions.
    * 
@@ -18,6 +20,24 @@ export class FunctionsData {
    * Specify the actual contents of the process.
    * 
    * 実際の処理の中身を指定します。
+   * 
+   * @param data
+   * Specify the data to be passed to the process.
+   * 
+   * 処理に渡すデータを指定します。
    */
-  constructor(readonly id: string, readonly func: (region: string[], data: { [key: string]: string }) => Function, readonly data: { [key: string]: string } = {}) {}
+  constructor(
+    readonly id: string,
+    readonly func: (region: string[], data: { [key: string]: string }) => Function,
+    readonly data: { [key: string]: string } = {},
+  ) {
+    super();
+  }
+
+  build(
+    region: string[],
+    data: { [key: string]: string; },
+  ): Function {
+    return this.func(region, data);
+  }
 }

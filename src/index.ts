@@ -1,8 +1,9 @@
-import * as data from "./lib/functions_data";
+import * as base from "./lib/functions_base";
 import * as admin from "firebase-admin";
 import * as regions from "./lib/regions";
 export * from "./functions";
-export * from "./lib/functions_data";
+export * from "./lib/schedule_process_function_base";
+export * from "./lib/request_process_function_base";
 
 /**
  * Methods for deploying to Firebase Functions.
@@ -29,11 +30,11 @@ export * from "./lib/functions_data";
  * 
  * pub/subで用いるトピック名やスケジュールの長さなどを指定します。
  */
-export function deploy(exports: any, region: regions.Regions, deployFunctions: data.FunctionsData[]) {
+export function deploy(exports: any, region: regions.Regions, deployFunctions: base.FunctionsBase[]) {
     admin.initializeApp();
     for (const func of deployFunctions) {
         if (!process.env.FUNCTION_NAME || process.env.FUNCTION_NAME === func.id) {
-            exports[func.id] = func.func(region, func.data);
+            exports[func.id] = func.build(region, func.data);
         }
     }
 }
