@@ -13,11 +13,11 @@ export const Functions = {
    */
   sendNotification: () => new data.FunctionsData("send_notification", require("./functions/send_notification")),
   /** 
-   * Function to send PUSH notifications periodically.
+   * Function for periodic processing.
    * 
-   * 定期的にPUSH通知を送信するためのFunction。
+   * 定期的に処理するためのFunction。
    */
-  sendNotificationSchedule: (schedule: string = "every 1 minutes") => new data.FunctionsData("send_notification_schedule", require("./functions/send_notification_schedule"),  {"schedule": schedule}),
+  scheduler: (schedule: string = "every 1 minutes") => new data.FunctionsData("scheduler", require("./functions/scheduler"),  {"schedule": schedule}),
   /** 
    * The text is generated using Open AI's GPT.
    * 
