@@ -1,3 +1,12 @@
+# [1.2.0](https://github.com/mathrunet/node_masamune/compare/v1.1.1...v1.2.0) (2023-09-27)
+
+
+### fix
+
+* Consolidate notification_scheduler to scheduler. ([7252676](https://github.com/mathrunet/node_masamune/commit/72526768bf9ba790dfdeadb1e97fa31d40198c18))
+
+
+
 ## [1.1.1](https://github.com/mathrunet/node_masamune/compare/v1.1.0...v1.1.1) (2023-08-28)
 
 
