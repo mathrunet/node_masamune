@@ -41,13 +41,18 @@ module.exports = (regions: string[], data: { [key: string]: string }) => functio
                     case "copy_document":
                         const path = params["path"] as string;
                         const id = path.split("/")[path.length - 1];
+                        const docData = doc.data();
+                        const docKeys = Object.keys(docData);
+                        const update: { [key: string]: any } = {};
+                        for (const key of docKeys) {
+                            if (key == "command" || key == "#command" || key == "@uid") { 
+                                continue;
+                            }
+                            update[key] = docData[key];
+                        }
+                        update["@uid"] = id;
                         await firestoreInstance.doc(path).set(
-                            {
-                                ...doc.data().where((key: string, _: any) => {
-                                    return !key.startsWith("_") && key != "command" && key != "#command" && key != "@uid";
-                                }),
-                                "@uid": id,
-                            }, {
+                            update, {
                                 merge: true
                             }
                         );
