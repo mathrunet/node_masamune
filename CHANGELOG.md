@@ -1,3 +1,12 @@
+## [1.2.2](https://github.com/mathrunet/node_masamune/compare/v1.2.1...v1.2.2) (2023-09-29)
+
+
+### fix
+
+* Change key because it is not included in the search. ([c56a3b4](https://github.com/mathrunet/node_masamune/commit/c56a3b423f84848d5a101d2b726624d5edb0232d))
+
+
+
 ## [1.2.1](https://github.com/mathrunet/node_masamune/compare/v1.2.0...v1.2.1) (2023-09-29)
 
 
