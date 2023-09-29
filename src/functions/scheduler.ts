@@ -21,8 +21,6 @@ module.exports = (regions: string[], data: { [key: string]: string }) => functio
             for (var doc of collection.docs) {
                 const command = (doc.get("#command") as { [key: string]: any })["@command"];
                 const priParams = (doc.get("#command") as { [key: string]: any })["@private"] as { [key: string]: any };
-                console.log(doc.get("#command") as { [key: string]: any });
-                console.log(priParams);
                 switch (command) {
                     case "notification":
                         const title = priParams["title"] as string;
@@ -44,19 +42,16 @@ module.exports = (regions: string[], data: { [key: string]: string }) => functio
                         const path = priParams["path"] as string;
                         const paths = path.split("/");
                         const id = paths[paths.length - 1];
-                        console.log(path);
-                        console.log(id);
                         const docData = doc.data();
                         const docKeys = Object.keys(docData);
                         const update: { [key: string]: any } = {};
                         for (const key of docKeys) {
-                            if (key == "command" || key == "#command" || key == "@uid") { 
+                            if (key.startsWith("_") || key == "command" || key == "#command" || key == "@uid") { 
                                 continue;
                             }
                             update[key] = docData[key];
                         }
                         update["@uid"] = id;
-                        console.log(update);
                         await firestoreInstance.doc(path).set(
                             update, {
                                 merge: true
