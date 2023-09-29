@@ -1,3 +1,12 @@
+## [1.2.8](https://github.com/mathrunet/node_masamune/compare/v1.2.7...v1.2.8) (2023-09-29)
+
+
+### fix
+
+* Consider null in send_notification. ([643c800](https://github.com/mathrunet/node_masamune/commit/643c800cc565e1a6856ea8fd46854fe0d6841015))
+
+
+
 ## [1.2.7](https://github.com/mathrunet/node_masamune/compare/v1.2.6...v1.2.7) (2023-09-29)
 
 
