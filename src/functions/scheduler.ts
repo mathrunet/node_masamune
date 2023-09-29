@@ -17,18 +17,20 @@ module.exports = (regions: string[], data: { [key: string]: string }) => functio
         try {
             const collectionPath = functions.config().scheduler.collection_path;
             const firestoreInstance = admin.firestore();
-            const collection = await firestoreInstance.collection(collectionPath).where("_done", "==", false).where("_command", "<=", Date.now()).orderBy("_command", "asc").get();
+            const collection = await firestoreInstance.collection(collectionPath).where("_done", "==", false).where("_time", "<=", Date.now()).orderBy("_time", "asc").get();
             for (var doc of collection.docs) {
                 const command = (doc.get("#command") as { [key: string]: any })["@command"];
-                const params = (doc.get("#command") as { [key: string]: any })["@params"] as { [key: string]: any };
+                const priParams = (doc.get("#command") as { [key: string]: any })["@private"] as { [key: string]: any };
+                console.log(doc.get("#command") as { [key: string]: any });
+                console.log(priParams);
                 switch (command) {
                     case "notification":
-                        const title = params["title"] as string;
-                        const body = params["text"] as string;
-                        const channelId = params["channel"] as string | undefined;
-                        const data = params["data"] as { [key: string]: any } | undefined;
-                        const token = params["token"] as string | undefined;
-                        const topic = params["topic"] as string | undefined;
+                        const title = priParams["title"] as string;
+                        const body = priParams["text"] as string;
+                        const channelId = priParams["channel"] as string | undefined;
+                        const data = priParams["data"] as { [key: string]: any } | undefined;
+                        const token = priParams["token"] as string | undefined;
+                        const topic = priParams["topic"] as string | undefined;
                         await sendNotification({
                             title: title,
                             body: body,
@@ -39,8 +41,11 @@ module.exports = (regions: string[], data: { [key: string]: string }) => functio
                         });
                         break;
                     case "copy_document":
-                        const path = params["path"] as string;
-                        const id = path.split("/")[path.length - 1];
+                        const path = priParams["path"] as string;
+                        const paths = path.split("/");
+                        const id = paths[paths.length - 1];
+                        console.log(path);
+                        console.log(id);
                         const docData = doc.data();
                         const docKeys = Object.keys(docData);
                         const update: { [key: string]: any } = {};
@@ -51,6 +56,7 @@ module.exports = (regions: string[], data: { [key: string]: string }) => functio
                             update[key] = docData[key];
                         }
                         update["@uid"] = id;
+                        console.log(update);
                         await firestoreInstance.doc(path).set(
                             update, {
                                 merge: true
