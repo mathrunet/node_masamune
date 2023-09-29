@@ -1,3 +1,12 @@
+## [1.2.4](https://github.com/mathrunet/node_masamune/compare/v1.2.3...v1.2.4) (2023-09-29)
+
+
+### fix
+
+* Changed to a condition where _done is null. ([4ffe3d3](https://github.com/mathrunet/node_masamune/commit/4ffe3d37a145ddb82243462ccb26db6d61247c86))
+
+
+
 ## [1.2.3](https://github.com/mathrunet/node_masamune/compare/v1.2.2...v1.2.3) (2023-09-29)
 
 
