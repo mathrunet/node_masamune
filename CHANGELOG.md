@@ -1,3 +1,12 @@
+## [1.2.6](https://github.com/mathrunet/node_masamune/compare/v1.2.5...v1.2.6) (2023-09-29)
+
+
+### fix
+
+* Fixed a bug in the way data is saved. ([c4e1558](https://github.com/mathrunet/node_masamune/commit/c4e1558b69dcd96657e5d25d553a74dfe28c3d8c))
+
+
+
 ## [1.2.5](https://github.com/mathrunet/node_masamune/compare/v1.2.4...v1.2.5) (2023-09-29)
 
 
