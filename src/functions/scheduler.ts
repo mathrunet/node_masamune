@@ -17,7 +17,7 @@ module.exports = (regions: string[], data: { [key: string]: string }) => functio
         try {
             const collectionPath = functions.config().scheduler.collection_path;
             const firestoreInstance = admin.firestore();
-            const collection = await firestoreInstance.collection(collectionPath).where("@done", "!=", true).where("#command.@params.time", "<=", Date.now()).orderBy("#command.@params.time", "asc").get();
+            const collection = await firestoreInstance.collection(collectionPath).where("_done", "!=", true).where("_time", "<=", Date.now()).orderBy("_time", "asc").get();
             for (var doc of collection.docs) {
                 const command = (doc.get("#command") as { [key: string]: any })["@command"];
                 const params = (doc.get("#command") as { [key: string]: any })["@params"] as { [key: string]: any };
@@ -44,7 +44,7 @@ module.exports = (regions: string[], data: { [key: string]: string }) => functio
                         await firestoreInstance.doc(path).set(
                             {
                                 ...doc.data().where((key: string, _: any) => {
-                                    return key != "command" && key != "#command" && key != "@done" && key != "@uid";
+                                    return !key.startsWith("_") && key != "command" && key != "#command" && key != "@uid";
                                 }),
                                 "@uid": id,
                             }, {
@@ -54,7 +54,7 @@ module.exports = (regions: string[], data: { [key: string]: string }) => functio
                         break;
                 }
                 await doc.ref.set({
-                    "@done": true,
+                    "_done": true,
                 }, {
                     merge: true
                 });
