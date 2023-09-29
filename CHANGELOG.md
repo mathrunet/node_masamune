@@ -1,3 +1,12 @@
+## [1.2.1](https://github.com/mathrunet/node_masamune/compare/v1.2.0...v1.2.1) (2023-09-29)
+
+
+### fix
+
+* Fixes to the scheduler. ([12c30d9](https://github.com/mathrunet/node_masamune/commit/12c30d92a1b24edddef7754769095bf6ea558cea))
+
+
+
 # [1.2.0](https://github.com/mathrunet/node_masamune/compare/v1.1.1...v1.2.0) (2023-09-27)
 
 
