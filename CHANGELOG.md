@@ -1,3 +1,12 @@
+## [1.2.3](https://github.com/mathrunet/node_masamune/compare/v1.2.2...v1.2.3) (2023-09-29)
+
+
+### fix
+
+* Align the time key with the command key. ([f6e92a0](https://github.com/mathrunet/node_masamune/commit/f6e92a0b97528147d2d1eb4bee9a1fc73b358ada))
+
+
+
 ## [1.2.2](https://github.com/mathrunet/node_masamune/compare/v1.2.1...v1.2.2) (2023-09-29)
 
 
