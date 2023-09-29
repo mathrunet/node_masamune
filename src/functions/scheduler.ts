@@ -17,7 +17,7 @@ module.exports = (regions: string[], data: { [key: string]: string }) => functio
         try {
             const collectionPath = functions.config().scheduler.collection_path;
             const firestoreInstance = admin.firestore();
-            const collection = await firestoreInstance.collection(collectionPath).where("_done", "!=", true).where("_command", "<=", Date.now()).orderBy("_command", "asc").get();
+            const collection = await firestoreInstance.collection(collectionPath).where("_done", "==", null).where("_command", "<=", Date.now()).orderBy("_command", "asc").get();
             for (var doc of collection.docs) {
                 const command = (doc.get("#command") as { [key: string]: any })["@command"];
                 const params = (doc.get("#command") as { [key: string]: any })["@params"] as { [key: string]: any };
