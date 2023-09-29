@@ -46,16 +46,16 @@ export async function sendNotification({
 }:  {
     title: string,
     body: string,
-    channelId: string | undefined,
+    channelId: string | undefined | null,
     data: { [key: string]: string } | undefined,
-    token: string | undefined,
-    topic: string | undefined,
+    token: string | undefined | null,
+    topic: string | undefined | null,
     }) : Promise<{ [key: string]: any }> {
     try {
-        if (token === undefined && topic === undefined) {
+        if (token === undefined && topic === undefined && topic === null && token === null) {
             throw new functions.https.HttpsError("invalid-argument", "Either [token] or [topic] must be specified.");
         }
-        if (token !== undefined) {
+        if (token !== undefined && token !== null) {
             const res = await admin.messaging().send(
                 {
                     notification: {
@@ -68,7 +68,7 @@ export async function sendNotification({
                             title: title,
                             body: body,
                             clickAction: "FLUTTER_NOTIFICATION_CLICK",
-                            channelId: channelId,
+                            channelId: channelId ?? undefined,
                         },
                     },
                     data: data,
@@ -79,7 +79,7 @@ export async function sendNotification({
                 success: true,
                 message_id: res,
             };
-        } else if (topic !== undefined) {
+        } else if (topic !== undefined && topic !== null) {
             const res = await admin.messaging().send(
                 {
                     notification: {
@@ -92,7 +92,7 @@ export async function sendNotification({
                             title: title,
                             body: body,
                             clickAction: "FLUTTER_NOTIFICATION_CLICK",
-                            channelId: channelId,
+                            channelId: channelId ?? undefined,
                         },
                     },
                     data: data,

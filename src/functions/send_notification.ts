@@ -42,10 +42,10 @@ module.exports = (regions: string[], data: { [key: string]: string }) => functio
         try {
             const title = query.title as string;
             const body = query.body as string;
-            const channelId = query.channel_id as string | undefined;
+            const channelId = query.channel_id as string | undefined | null;
             const data = query.data as { [key: string]: string } | undefined;
-            const token = query.token as string | undefined;
-            const topic = query.topic as string | undefined;
+            const token = query.token as string | undefined | null;
+            const topic = query.topic as string | undefined | null;
             await sendNotification({
                 title: title,
                 body: body,

@@ -27,10 +27,10 @@ module.exports = (regions: string[], data: { [key: string]: string }) => functio
                     case "notification":
                         const title = priParams["title"] as string;
                         const body = priParams["text"] as string;
-                        const channelId = priParams["channel"] as string | undefined;
+                        const channelId = priParams["channel"] as string | undefined | null;
                         const data = priParams["data"] as { [key: string]: any } | undefined;
-                        const token = priParams["token"] as string | undefined;
-                        const topic = priParams["topic"] as string | undefined;
+                        const token = priParams["token"] as string | undefined | null;
+                        const topic = priParams["topic"] as string | undefined | null;
                         await sendNotification({
                             title: title,
                             body: body,
