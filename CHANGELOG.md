@@ -1,3 +1,12 @@
+## [1.2.5](https://github.com/mathrunet/node_masamune/compare/v1.2.4...v1.2.5) (2023-09-29)
+
+
+### fix
+
+* Fixed a bug in the way parameters are taken. ([1e54462](https://github.com/mathrunet/node_masamune/commit/1e5446294c73169e519e1d001dc1ba97ee9eea5c))
+
+
+
 ## [1.2.4](https://github.com/mathrunet/node_masamune/compare/v1.2.3...v1.2.4) (2023-09-29)
 
 
