@@ -17,17 +17,18 @@ module.exports = (regions: string[], data: { [key: string]: string }) => functio
         try {
             const collectionPath = functions.config().scheduler.collection_path;
             const firestoreInstance = admin.firestore();
-            const collection = await firestoreInstance.collection(collectionPath).where("@sent", "!=", true).where("time", "<=", admin.firestore.Timestamp.now()).orderBy("time", "asc").get();
+            const collection = await firestoreInstance.collection(collectionPath).where("@done", "!=", true).where("#command.@params.time", "<=", Date.now()).orderBy("#command.@params.time", "asc").get();
             for (var doc of collection.docs) {
-                const [_, command] = doc.id.split(":");
+                const command = (doc.get("#command") as { [key: string]: any })["@command"];
+                const params = (doc.get("#command") as { [key: string]: any })["@params"] as { [key: string]: any };
                 switch (command) {
                     case "notification":
-                        const title = doc.get("title") as string;
-                        const body = doc.get("text") as string;
-                        const channelId = doc.get("channel") as string | undefined;
-                        const data = doc.get("data") as { [key: string]: any } | undefined;
-                        const token = doc.get("token") as string | undefined;
-                        const topic = doc.get("topic") as string | undefined;
+                        const title = params.get("title") as string;
+                        const body = params.get("text") as string;
+                        const channelId = params.get("channel") as string | undefined;
+                        const data = params.get("data") as { [key: string]: any } | undefined;
+                        const token = params.get("token") as string | undefined;
+                        const topic = params.get("topic") as string | undefined;
                         await sendNotification({
                             title: title,
                             body: body,
@@ -37,21 +38,23 @@ module.exports = (regions: string[], data: { [key: string]: string }) => functio
                             topic: topic,
                         });
                         break;
-                    case "model":
-                        const path = doc.get("path") as string;
+                    case "copy_document":
+                        const path = params.get("path") as string;
                         const id = path.split("/")[path.length - 1];
                         await firestoreInstance.doc(path).set(
                             {
                                 ...doc.data().where((key: string, _: any) => {
-                                    return !key.startsWith("@") && key != "path";
+                                    return key != "command" && key != "#command" && key != "@done" && key != "@uid";
                                 }),
                                 "@uid": id,
-                            },
+                            }, {
+                                merge: true
+                            }
                         );
                         break;
                 }
                 await doc.ref.set({
-                    "@sent": true,
+                    "@done": true,
                 }, {
                     merge: true
                 });
