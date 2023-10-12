@@ -1,3 +1,12 @@
+## [1.3.1](https://github.com/mathrunet/node_masamune/compare/v1.3.0...v1.3.1) (2023-10-12)
+
+
+### fix
+
+* Some functions are exported. ([6864a06](https://github.com/mathrunet/node_masamune/commit/6864a06f7c43a2fa99774ebd2a5cb595728c9751))
+
+
+
 # [1.3.0](https://github.com/mathrunet/node_masamune/compare/v1.2.9...v1.3.0) (2023-10-12)
 
 
