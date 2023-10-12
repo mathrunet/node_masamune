@@ -1,3 +1,12 @@
+# [1.3.0](https://github.com/mathrunet/node_masamune/compare/v1.2.9...v1.3.0) (2023-10-12)
+
+
+### feat
+
+* Added string processing. ([2421fdc](https://github.com/mathrunet/node_masamune/commit/2421fdc2bd3dfa96e9c3f0439a3bb2eba43d5048))
+
+
+
 ## [1.2.9](https://github.com/mathrunet/node_masamune/compare/v1.2.8...v1.2.9) (2023-09-29)
 
 
