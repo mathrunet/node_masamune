@@ -1,7 +1,7 @@
 import * as functions from "firebase-functions";
 import * as stripe from "stripe";
 import * as admin from "firebase-admin";
-import * as utils from "../lib/utils";
+import "../exntension/string.extension"
 
 /**
  * Webhook for proper redirection when 3D Secure authentication is required.
@@ -72,8 +72,7 @@ module.exports = (regions: string[], data: { [key: string]: string }) => functio
         }));
         return;
       }
-      const param = JSON.parse(utils.decrypt({
-        encrypted: token,
+      const param = JSON.parse(token.decrypt({
         key: apiKey.slice(0, 32),
         ivKey: apiKey.slice(-16),
       }));

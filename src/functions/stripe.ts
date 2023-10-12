@@ -3,7 +3,8 @@ import * as stripe from "stripe";
 import * as admin from "firebase-admin";
 import * as sendgrid from "../lib/send_grid";
 import * as gmail from "../lib/gmail";
-import * as utils from "../lib/utils";
+import "../exntension/string.extension"
+
 
 /**
  * Performs various Stripe processes.
@@ -771,13 +772,12 @@ module.exports = (regions: string[], data: { [key: string]: string }) => functio
           throw new functions.https.HttpsError("invalid-argument", "The user id is empty.");
         }
         if (!online) {
-          returnUrl = returnUrl + "?token=" + utils.encrypt({
-            raw: JSON.stringify({
-              userId: userId,
-              orderId: orderId,
-              successUrl: successUrl,
-              failureUrl: failureUrl,
-            }),
+          returnUrl = returnUrl + "?token=" + JSON.stringify({
+            userId: userId,
+            orderId: orderId,
+            successUrl: successUrl,
+            failureUrl: failureUrl,
+          }).encrypt({
             key: apiKey.slice(0, 32),
             ivKey: apiKey.slice(-16),
           });
