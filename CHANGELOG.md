@@ -1,3 +1,12 @@
+# [1.4.0](https://github.com/mathrunet/node_masamune/compare/v1.3.1...v1.4.0) (2023-10-13)
+
+
+### feat
+
+* Add CallProcessFunctionBase. ([f5c72ab](https://github.com/mathrunet/node_masamune/commit/f5c72ab340239039e3ae4e63f1babe8cf4953f58))
+
+
+
 ## [1.3.1](https://github.com/mathrunet/node_masamune/compare/v1.3.0...v1.3.1) (2023-10-12)
 
 
