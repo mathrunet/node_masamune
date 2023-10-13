@@ -4,6 +4,7 @@ import * as regions from "./lib/regions";
 export * from "./functions";
 export * from "./lib/schedule_process_function_base";
 export * from "./lib/request_process_function_base";
+export * from "./lib/call_process_function_base";
 export * from "./exntension/string.extension";
 export * as gmail from "./lib/gmail";
 export * as sendGrid from "./lib/send_grid";
