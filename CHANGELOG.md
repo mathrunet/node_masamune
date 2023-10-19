@@ -1,3 +1,12 @@
+## [1.5.1](https://github.com/mathrunet/node_masamune/compare/v1.5.0...v1.5.1) (2023-10-19)
+
+
+### fix
+
+* Include type definition files in the package ([5b005a0](https://github.com/mathrunet/node_masamune/commit/5b005a078561cd50a698122e39479c7cf1407872))
+
+
+
 # [1.5.0](https://github.com/mathrunet/node_masamune/compare/v1.4.0...v1.5.0) (2023-10-19)
 
 
