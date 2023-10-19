@@ -2,6 +2,7 @@ import * as base from "./lib/functions_base";
 import * as admin from "firebase-admin";
 import * as regions from "./lib/regions";
 export * from "./functions";
+export * from "./lib/api";
 export * from "./lib/schedule_process_function_base";
 export * from "./lib/request_process_function_base";
 export * from "./lib/call_process_function_base";

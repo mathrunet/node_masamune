@@ -1,5 +1,5 @@
 import * as functions from "firebase-functions";
-import fetch from "node-fetch";
+import { Api } from "../lib/api";
 
 /**
  * The text is generated using Open AI's GPT.
@@ -40,14 +40,12 @@ module.exports = (regions: string[], data: { [key: string]: string }) => functio
             if (message.length <= 0) {
                 throw new functions.https.HttpsError("invalid-argument", "No content specified in `message`.");
             }
-
-            const res = await fetch("https://api.openai.com/v1/chat/completions", {
-                method: "POST",
+            const res = await Api.post("https://api.openai.com/v1/chat/completions", {
                 headers: {
                     "Content-Type": "application/json",
                     "Authorization": `Bearer ${apiKey}`,
                 },
-                body: JSON.stringify({
+                data: JSON.stringify({
                     "model": model,
                     "messages": message,
                     "temperature": temperature,

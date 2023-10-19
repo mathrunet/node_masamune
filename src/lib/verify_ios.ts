@@ -1,5 +1,5 @@
 import * as functions from "firebase-functions";
-import fetch from "node-fetch";
+import { Api } from "./api";
 
 /**
  * Perform IOS receipt verification.
@@ -28,14 +28,13 @@ export async function verifyIOS({
     receiptData: string,
     password: string
 }) {
-    let res = await fetch("https://buy.itunes.apple.com/verifyReceipt", {
-        method: "POST",
+    let res = await Api.post("https://buy.itunes.apple.com/verifyReceipt", {
         timeout: 30 * 1000,
         headers: {
             "Content-Type": "application/json",
             "Accept": "application/json",
         },
-        body: JSON.stringify({
+        data: JSON.stringify({
             "receipt-data": receiptData,
             "password": password,
             "exclude-old-transactions": true,
@@ -48,14 +47,13 @@ export async function verifyIOS({
     console.log(json);
     let status = json["status"];
     if (status === 21007 || status === 21008) {
-        res = await fetch("https://sandbox.itunes.apple.com/verifyReceipt", {
-            method: "POST",
+        res = await Api.post("https://sandbox.itunes.apple.com/verifyReceipt", {
             timeout: 30 * 1000,
             headers: {
                 "Content-Type": "application/json",
                 "Accept": "application/json",
             },
-            body: JSON.stringify({
+            data: JSON.stringify({
                 "receipt-data": receiptData,
                 "password": password,
                 "exclude-old-transactions": true,

@@ -1,6 +1,5 @@
 import * as functions from "firebase-functions";
-import fetch from "node-fetch";
-import FormData from "form-data";
+import { Api } from "./api";
 
 /**
  * Perform Android receipt verification.
@@ -64,15 +63,14 @@ export async function verifyAndroid({
     productId: string,
     purchaseToken: string,
 }) {
-    const formData = new FormData();
-    formData.append("grant_type", "refresh_token");
-    formData.append("client_id", clientId);
-    formData.append("client_secret", clientSecret);
-    formData.append("refresh_token", refreshToken);
-    let res = await fetch("https://accounts.google.com/o/oauth2/token", {
-        method: "POST",
+    let res = await Api.post("https://accounts.google.com/o/oauth2/token", {
         timeout: 30 * 1000,
-        body: formData
+        data: {
+            "grant_type": "refresh_token",
+            "client_id": clientId,
+            "client_secret": clientSecret,
+            "refresh_token": refreshToken,
+        }
     });
     if (!res) {
         throw new functions.https.HttpsError("not-found", "Cannot get access token.");
@@ -84,9 +82,8 @@ export async function verifyAndroid({
         throw new functions.https.HttpsError("not-found", "Cannot get access token.");
     }
     console.log(accessToken);
-    res = await fetch(
+    res = await Api.get(
         `https://www.googleapis.com/androidpublisher/v3/applications/"${packageName}/purchases/${type}/${productId}/tokens/${purchaseToken}?access_token=${accessToken}`, {
-        method: "GET",
         timeout: 30 * 1000,
         headers: {
             "Content-Type": "application/json",

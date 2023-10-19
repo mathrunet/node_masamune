@@ -1,6 +1,6 @@
 import * as functions from "firebase-functions";
-import fetch from "node-fetch";
-import FormData from "form-data";
+import { Api } from "../lib/api";
+
 
 /**
  * After being redirected from [android_auth_code], you will get a refresh token to connect to Google's API.
@@ -49,17 +49,16 @@ module.exports = (regions: string[], data: { [key: string]: string }) => functio
             if (!req.query.code || !config.android.client_id || !config.android.client_secret || !config.android.redirect_uri) {
                 throw new functions.https.HttpsError("invalid-argument", "Query parameter is invalid.");
             }
-            const formData = new FormData();
-            formData.append("grant_type", "authorization_code");
-            formData.append("client_id", config.android.client_id);
-            formData.append("client_secret", config.android.client_secret);
-            formData.append("redirect_uri", config.android.redirect_uri);
-            formData.append("access_type", "offline");
-            formData.append("code", req.query.code);
-            const resp = await fetch("https://accounts.google.com/o/oauth2/token", {
-                method: "POST",
+            const resp = await Api.post("https://accounts.google.com/o/oauth2/token", {
                 timeout: 30 * 1000,
-                body: formData,
+                data: {
+                    "grant_type": "authorization_code",
+                    "client_id": config.android.client_id,
+                    "client_secret": config.android.client_secret,
+                    "redirect_uri": config.android.redirect_uri,
+                    "access_type": "offline",
+                    "code": req.query.code,
+                },
             });
             if (!resp) {
                 throw new functions.https.HttpsError("data-loss", "Cannot get access token.");
