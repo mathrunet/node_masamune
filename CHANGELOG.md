@@ -1,3 +1,12 @@
+# [1.5.0](https://github.com/mathrunet/node_masamune/compare/v1.4.0...v1.5.0) (2023-10-19)
+
+
+### feat
+
+* Added Api methods. ([dc34146](https://github.com/mathrunet/node_masamune/commit/dc34146e396f0db2595b09c63acfaa78dd70b7a8))
+
+
+
 # [1.4.0](https://github.com/mathrunet/node_masamune/compare/v1.3.1...v1.4.0) (2023-10-13)
 
 
