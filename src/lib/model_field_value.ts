@@ -33,7 +33,7 @@ export class ModelFieldValue {
     static modelCounter({
         key, value, increment,
     }: {
-        key: string, value: number, increment: number | undefined, 
+        key: string, value: number, increment?: number | undefined, 
     }): { [key: string]: any } {
         const res: { [key: string]: any } = {};
         res[key] = value;
