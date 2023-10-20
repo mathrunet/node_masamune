@@ -1,3 +1,12 @@
+## [1.6.1](https://github.com/mathrunet/node_masamune/compare/v1.6.0...v1.6.1) (2023-10-20)
+
+
+### fix
+
+* Specify an optional value. ([7c34ac0](https://github.com/mathrunet/node_masamune/commit/7c34ac0c99b3988987cc40d269f8e970f1ffb3b9))
+
+
+
 # [1.6.0](https://github.com/mathrunet/node_masamune/compare/v1.5.1...v1.6.0) (2023-10-20)
 
 
