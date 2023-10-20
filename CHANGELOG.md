@@ -1,3 +1,12 @@
+## [1.6.2](https://github.com/mathrunet/node_masamune/compare/v1.6.1...v1.6.2) (2023-10-20)
+
+
+### fix
+
+* Add ModelFieldValue for searchable. ([62913e7](https://github.com/mathrunet/node_masamune/commit/62913e7c84eb6f33b134cb4e0429e6245aaf3d50))
+
+
+
 ## [1.6.1](https://github.com/mathrunet/node_masamune/compare/v1.6.0...v1.6.1) (2023-10-20)
 
 
