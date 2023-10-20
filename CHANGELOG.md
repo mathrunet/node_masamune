@@ -1,3 +1,12 @@
+# [1.6.0](https://github.com/mathrunet/node_masamune/compare/v1.5.1...v1.6.0) (2023-10-20)
+
+
+### feat
+
+* Create a class for ModelFieldValue. ([9d1d107](https://github.com/mathrunet/node_masamune/commit/9d1d10737d850d409e0f217d7055b73b3e8cca7f))
+
+
+
 ## [1.5.1](https://github.com/mathrunet/node_masamune/compare/v1.5.0...v1.5.1) (2023-10-19)
 
 
