@@ -1,3 +1,5 @@
+import {randomUUID} from "crypto";
+
 /**
  * Converts strings, numbers, etc. to the appropriate type.
  *
@@ -31,4 +33,16 @@ export function parse(value: string | number) {
   } else {
     return value;
   }
+}
+
+/**
+ * Generates a UUIDv4.
+ * 
+ * UUIDv4を生成します。
+ * 
+ * @return {string}
+ * UUIDv4.
+ */
+export function uuid() {
+  return randomUUID().replace(/-/g, "");
 }
