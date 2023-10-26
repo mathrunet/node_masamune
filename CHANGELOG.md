@@ -1,3 +1,16 @@
+## [1.6.3](https://github.com/mathrunet/node_masamune/compare/v1.6.2...v1.6.3) (2023-10-26)
+
+
+### chore
+
+* Add publish to npm run. ([58da6fb](https://github.com/mathrunet/node_masamune/commit/58da6fb5c9261c359943b4d3f1dce767e6ff713b))
+
+### feat
+
+* Added uuid functionality available. ([5b4fa76](https://github.com/mathrunet/node_masamune/commit/5b4fa76a3daef6f915f18ba60e7d00867de4517e))
+
+
+
 ## [1.6.2](https://github.com/mathrunet/node_masamune/compare/v1.6.1...v1.6.2) (2023-10-20)
 
 
