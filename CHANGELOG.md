@@ -1,3 +1,12 @@
+## [1.6.4](https://github.com/mathrunet/node_masamune/compare/v1.6.3...v1.6.4) (2023-11-02)
+
+
+### fix
+
+* Fixed a bug in the search target string. ([1d53a49](https://github.com/mathrunet/node_masamune/commit/1d53a4988598e3b6907b32ed00f822def1c27110))
+
+
+
 ## [1.6.3](https://github.com/mathrunet/node_masamune/compare/v1.6.2...v1.6.3) (2023-10-26)
 
 
