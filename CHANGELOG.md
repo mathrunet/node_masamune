@@ -1,3 +1,16 @@
+# [1.7.0](https://github.com/mathrunet/node_masamune/compare/v1.6.4...v1.7.0) (2023-11-03)
+
+
+### feat
+
+* Add SqlApiBase. ([ff6c5b2](https://github.com/mathrunet/node_masamune/commit/ff6c5b28905402f326904eb4052e86db82be4778))
+
+### fix
+
+* ver.1.6.5. ([33bb2ec](https://github.com/mathrunet/node_masamune/commit/33bb2ec9f27c208926b093699d65d1c74ad854e7))
+
+
+
 ## [1.6.4](https://github.com/mathrunet/node_masamune/compare/v1.6.3...v1.6.4) (2023-11-02)
 
 
