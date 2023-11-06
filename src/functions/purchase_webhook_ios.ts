@@ -12,7 +12,7 @@ import * as utils from "../lib/utils";
  * 
  * サブスクリプションのコレクションのパスを記述します。
  */
-module.exports = (regions: string[], data: { [key: string]: string }) => functions.region(...regions).https.onRequest(
+module.exports = (regions: string[], timeoutSeconds: number, data: { [key: string]: string }) => functions.runWith({timeoutSeconds: timeoutSeconds}).region(...regions).https.onRequest(
     async (req, res) => {
         try {
             const message = req.body;

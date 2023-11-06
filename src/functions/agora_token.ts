@@ -41,7 +41,7 @@ import { RtcTokenBuilder, RtcRole } from "agora-token";
  * 
  * 役割。"audience"か"broadcaster"が指定できます。
  */
-module.exports = (regions: string[], data: { [key: string]: string }) => functions.region(...regions).https.onCall(
+module.exports = (regions: string[], timeoutSeconds: number, data: { [key: string]: string }) => functions.runWith({timeoutSeconds: timeoutSeconds}).region(...regions).https.onCall(
     async (query) => {
         try {
             const config = functions.config().agora;

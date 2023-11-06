@@ -28,7 +28,8 @@ export class FunctionsData extends FunctionsBase {
    */
   constructor(
     readonly id: string,
-    readonly func: (region: string[], data: { [key: string]: string }) => Function,
+    readonly func: (region: string[], timeoutSeconds: number, data: { [key: string]: string }) => Function,
+    readonly timeoutSeconds: number = 60,
     readonly data: { [key: string]: string } = {},
   ) {
     super();
@@ -38,6 +39,6 @@ export class FunctionsData extends FunctionsBase {
     region: string[],
     data: { [key: string]: string; },
   ): Function {
-    return this.func(region, data);
+    return this.func(region, this.timeoutSeconds, data);
   }
 }

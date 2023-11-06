@@ -10,7 +10,7 @@ import * as admin from "firebase-admin";
  * 
  * FirebaseStorageにファイルが保存されたタイミングで実行されます。
  */
-module.exports = (regions: string[], data: { [key: string]: string }) => functions.storage.object().onFinalize(
+module.exports = (regions: string[], timeoutSeconds: number, data: { [key: string]: string }) => functions.runWith({timeoutSeconds: timeoutSeconds}).storage.object().onFinalize(
     async (object) => {
         try {
             const source = object.name;

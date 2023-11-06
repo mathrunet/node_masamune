@@ -42,7 +42,7 @@ import { Api } from "../lib/api";
  * その後、認証情報からOAuth 2.0 クライアントIDを作成します。
  * https://console.cloud.google.com/apis/credentials
  */
-module.exports = (regions: string[], data: { [key: string]: string }) => functions.region(...regions).https.onRequest(
+module.exports = (regions: string[], timeoutSeconds: number, data: { [key: string]: string }) => functions.runWith({timeoutSeconds: timeoutSeconds}).region(...regions).https.onRequest(
     async (req, res) => {
         try {
             const config = functions.config().purchase;

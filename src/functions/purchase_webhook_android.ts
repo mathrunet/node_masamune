@@ -44,7 +44,7 @@ import * as utils from "../lib/utils";
  * 
  * サブスクリプションのコレクションのパスを記述します。
  */
-module.exports = (regions: string[], data: { [key: string]: string }) => functions.pubsub
+module.exports = (regions: string[], timeoutSeconds: number, data: { [key: string]: string }) => functions.runWith({timeoutSeconds: timeoutSeconds}).pubsub
     .topic(data.topic ?? "purchasing")
     .onPublish(async (message) => {
         try {

@@ -22,7 +22,7 @@ import * as updater from "../lib/update_unlock";
  * 
  * 購入の際のレシートデータ。
  */
-module.exports = (regions: string[], data: { [key: string]: string }) => functions.region(...regions).https.onCall(
+module.exports = (regions: string[], timeoutSeconds: number, data: { [key: string]: string }) => functions.runWith({timeoutSeconds: timeoutSeconds}).region(...regions).https.onCall(
     async (query) => {
         try {
             const config = functions.config().purchase;

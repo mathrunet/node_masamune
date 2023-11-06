@@ -36,7 +36,7 @@ import { sendNotification } from "../lib/send_notification";
  * 
  * FCMのトピックを指定します。
  */
-module.exports = (regions: string[], data: { [key: string]: string }) => functions.region(...regions).https.onCall(
+module.exports = (regions: string[], timeoutSeconds: number, data: { [key: string]: string }) => functions.runWith({timeoutSeconds: timeoutSeconds}).region(...regions).https.onCall(
     async (query) => {
         try {
             const title = query.title as string;

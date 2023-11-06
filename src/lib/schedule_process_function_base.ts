@@ -39,7 +39,9 @@ export abstract class ScheduleProcessFunctionBase extends FunctionsBase {
 
     data: { [key: string]: string } = {};
     build(regions: string[], data: { [key: string]: string }): Function {
-        return functions.region(...regions).pubsub.schedule(this.schedule).onRun(async (event) => {
+        return functions.runWith({
+            timeoutSeconds: this.timeoutSeconds,
+        }).region(...regions).pubsub.schedule(this.schedule).onRun(async (event) => {
             const config = functions.config();
             return this.process(config);
         });

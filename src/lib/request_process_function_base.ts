@@ -40,7 +40,9 @@ export abstract class RequestProcessFunctionBase extends FunctionsBase {
 
     data: { [key: string]: string } = {};
     build(regions: string[], data: { [key: string]: string }): Function {
-        return functions.region(...regions).https.onRequest(async (req, res) => {
+        return functions.runWith({
+            timeoutSeconds: this.timeoutSeconds,
+        }).region(...regions).https.onRequest(async (req, res) => {
             const config = functions.config();
             return this.process(req, res, config);
         });

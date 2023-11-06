@@ -28,7 +28,7 @@ import * as sendgrid from "../lib/send_grid";
  * Email content.
  * メール本文。
  */
-module.exports = (regions: string[], data: { [key: string]: string }) => functions.region(...regions).https.onCall(
+module.exports = (regions: string[], timeoutSeconds: number, data: { [key: string]: string }) => functions.runWith({timeoutSeconds: timeoutSeconds}).region(...regions).https.onCall(
     async (query) => {
         try {
             const from = query.from;

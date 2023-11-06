@@ -37,9 +37,16 @@ export abstract class FunctionsBase {
     abstract data: { [key: string]: string };
 
     /**
+     * Specifies the timeout period.
+     * 
+     * タイムアウト時間を指定します。
+     */
+    timeoutSeconds: number = 60;
+
+    /**
      * Write code to generate FirebaseFunctions.
      * 
      * FirebaseFunctionsを生成するためのコードを記述します。
      */
-    abstract build(region: string[], data: { [key: string]: string }):  Function;
+    abstract build(region: string[], data: { [key: string]: string }): Function;
 }

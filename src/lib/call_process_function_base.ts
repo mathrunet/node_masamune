@@ -35,7 +35,9 @@ export abstract class CallProcessFunctionBase extends FunctionsBase {
 
     data: { [key: string]: string } = {};
     build(regions: string[], data: { [key: string]: string }): Function {
-        return functions.region(...regions).https.onCall(async (query) => {
+        return functions.runWith({
+            timeoutSeconds: this.timeoutSeconds,
+        }).region(...regions).https.onCall(async (query) => {
             const config = functions.config();
             return this.process(query, config);
         });

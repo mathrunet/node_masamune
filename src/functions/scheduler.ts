@@ -12,7 +12,7 @@ import { sendNotification } from "../lib/send_notification";
  * 
  * 監視するコレクションのパスを指定します。
  */
-module.exports = (regions: string[], data: { [key: string]: string }) => functions.region(...regions).pubsub.schedule(data["schedule"] ?? "every 1 minutes").onRun(
+module.exports = (regions: string[], timeoutSeconds: number, data: { [key: string]: string }) => functions.runWith({timeoutSeconds: timeoutSeconds}).region(...regions).pubsub.schedule(data["schedule"] ?? "every 1 minutes").onRun(
     async (event) => {
         try {
             const collectionPath = functions.config().scheduler.collection_path;

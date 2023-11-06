@@ -42,7 +42,7 @@ import * as subscriber from "../lib/update_subscription";
  * 
  * サブスクリプションを購入したユーザーのID。
  */
-module.exports = (regions: string[], data: { [key: string]: string }) => functions.region(...regions).https.onCall(
+module.exports = (regions: string[], timeoutSeconds: number, data: { [key: string]: string }) => functions.runWith({timeoutSeconds: timeoutSeconds}).region(...regions).https.onCall(
     async (query, context) => {
         try {
             /* ==== IOS検証ここから ==== */

@@ -53,7 +53,7 @@ import "../exntension/string.extension"
  * ブラウザの設定等による失敗時のリダイレクト先URLを指定します。
  *
  */
-module.exports = (regions: string[], data: { [key: string]: string }) => functions.region(...regions).https.onRequest(
+module.exports = (regions: string[], timeoutSeconds: number, data: { [key: string]: string }) => functions.runWith({timeoutSeconds: timeoutSeconds}).region(...regions).https.onRequest(
   async (req, res) => {
     try {
       const config = functions.config().purchase;
