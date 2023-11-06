@@ -1,3 +1,12 @@
+## [1.8.1](https://github.com/mathrunet/node_masamune/compare/v1.8.0...v1.8.1) (2023-11-06)
+
+
+### fix
+
+* Maintenance of default parameters for Functions. ([f22fa85](https://github.com/mathrunet/node_masamune/commit/f22fa858b3032614d69033a89168387eaed315e9))
+
+
+
 # [1.8.0](https://github.com/mathrunet/node_masamune/compare/v1.7.0...v1.8.0) (2023-11-06)
 
 
