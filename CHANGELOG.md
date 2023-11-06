@@ -1,3 +1,12 @@
+# [1.8.0](https://github.com/mathrunet/node_masamune/compare/v1.7.0...v1.8.0) (2023-11-06)
+
+
+### feat
+
+* Timeout parameters can now be added. ([183f68f](https://github.com/mathrunet/node_masamune/commit/183f68f7ae67c8c569a210670a6aef5d44a2f489))
+
+
+
 # [1.7.0](https://github.com/mathrunet/node_masamune/compare/v1.6.4...v1.7.0) (2023-11-03)
 
 
