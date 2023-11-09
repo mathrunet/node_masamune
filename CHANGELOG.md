@@ -1,3 +1,12 @@
+## [1.8.2](https://github.com/mathrunet/node_masamune/compare/v1.8.1...v1.8.2) (2023-11-09)
+
+
+### fix
+
+* Set the return value to CallProcessFunctionBase ([900c892](https://github.com/mathrunet/node_masamune/commit/900c89290bf9418d17a86a6f2e1a00b754b61964))
+
+
+
 ## [1.8.1](https://github.com/mathrunet/node_masamune/compare/v1.8.0...v1.8.1) (2023-11-06)
 
 
