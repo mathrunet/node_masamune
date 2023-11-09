@@ -21,17 +21,22 @@ export abstract class CallProcessFunctionBase extends FunctionsBase {
      * 
      * 実際の処理の中身を指定します。
      * 
-     * @param query
+     * @param {any} query
      * Query passed to Functions.
      * 
      * Functionsに渡されたクエリ。
      * 
-     * @param options 
+     * @param {Record<string, any>} options 
      * Options passed to Functions.
      * 
      * Functionsに渡されたオプション。
+     * 
+     * @returns {{ [key: string]: any }}
+     * Return value of the process.
+     * 
+     * 処理の戻り値。
      */
-    abstract process(query: any, options: Record<string, any>): Promise<void>;
+    abstract process(query: any, options: Record<string, any>): Promise<{ [key: string]: any }>;
 
     data: { [key: string]: string } = {};
     build(regions: string[], data: { [key: string]: string }): Function {
