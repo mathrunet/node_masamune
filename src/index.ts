@@ -1,6 +1,7 @@
 import * as base from "./lib/functions_base";
 import * as admin from "firebase-admin";
 import * as regions from "./lib/regions";
+import { Functions } from "./functions";
 export * from "./functions";
 export * from "./lib/api";
 export * from "./lib/sql_api_base";
