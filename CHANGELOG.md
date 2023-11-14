@@ -1,3 +1,12 @@
+## [1.8.3](https://github.com/mathrunet/node_masamune/compare/v1.8.2...v1.8.3) (2023-11-14)
+
+
+### fix
+
+* Modified to allow empty parameters to be specified. ([7f923bc](https://github.com/mathrunet/node_masamune/commit/7f923bcbfcc17079e423db2cbcea7c0da512d2ed))
+
+
+
 ## [1.8.2](https://github.com/mathrunet/node_masamune/compare/v1.8.1...v1.8.2) (2023-11-09)
 
 
