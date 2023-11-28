@@ -74,4 +74,40 @@ export class ModelFieldValue {
         };
         return res;
     }
+
+    /**
+     * Class for generating data for `ModelTimestamp`.
+     * 
+     * `ModelTimestamp`用のデータを生成するためのクラス。
+     * 
+     * @param {string} key
+     * Data key.
+     * 
+     * データのキー。
+     * 
+     * @param {Date} date
+     * Date and time.
+     * 
+     * 日時。
+     * 
+     * @returns { [key: string]: any }
+     * Data for `ModelCounter`.
+     * 
+     * `ModelCounter`用のデータ。
+     */
+    static modelTimestamp({
+        key, date,
+    }: {
+        key: string, date?: Date | undefined, 
+    }): { [key: string]: any } {
+        const res: { [key: string]: any } = {};
+        date ??= new Date();
+        res[key] = date;
+        res[`#${key}`] = {
+            "@time": date.getTime(),
+            "@target": key,
+            "@type": "ModelTimestamp",
+        };
+        return res;
+    }
 }
