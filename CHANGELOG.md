@@ -1,3 +1,12 @@
+## [1.8.4](https://github.com/mathrunet/node_masamune/compare/v1.8.3...v1.8.4) (2023-11-28)
+
+
+### fix
+
+* Added ModelTimestamp. ([2ff6bcf](https://github.com/mathrunet/node_masamune/commit/2ff6bcf1f76c8f1ae6f5033b2907a0467f415b4a))
+
+
+
 ## [1.8.3](https://github.com/mathrunet/node_masamune/compare/v1.8.2...v1.8.3) (2023-11-14)
 
 
