@@ -1,3 +1,12 @@
+## [1.9.1](https://github.com/mathrunet/node_masamune/compare/v1.9.0...v1.9.1) (2023-11-29)
+
+
+### fix
+
+* Config changes. ([b459970](https://github.com/mathrunet/node_masamune/commit/b45997023ff0f2d763dd41fe16bf0263cac056cb))
+
+
+
 # [1.9.0](https://github.com/mathrunet/node_masamune/compare/v1.8.5...v1.9.0) (2023-11-29)
 
 
