@@ -7,6 +7,12 @@ import * as data from "./lib/functions_data";
  */
 export const Functions = {
   /** 
+   * Get latitude and longitude with GeocodingAPI.
+   *
+   * GeocodingAPIで緯度経度を取得します。
+   */
+  geocoding: ({ timeoutSeconds = 60 }: { timeoutSeconds?: number | undefined } = {}) => new data.FunctionsData("geocoding", require("./functions/geocoding"), timeoutSeconds ?? 60),
+  /** 
    * Function for sending PUSH notifications.
    * 
    * PUSH通知を送信するためのFunction。

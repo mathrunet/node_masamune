@@ -6,7 +6,7 @@ import * as sendgrid from "../lib/send_grid";
  *
  * SendGridでメールを送信します。
  *
- * @param {string} purchase.mail.sendgrid.api_key
+ * @param {string} mail.sendgrid.api_key
  * API key for SendGrid. Issue it according to the following procedure.
  * https://mathru.notion.site/SendGrid-bb87b2ffa8174dbda944812f43856d6c
  * SendGridのAPIキー。下記の手順で発行します。
