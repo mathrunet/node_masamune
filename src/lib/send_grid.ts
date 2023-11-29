@@ -1,5 +1,5 @@
 import * as functions from "firebase-functions";
-import * as sendgrid from "@sendgrid/mail";
+import sendgrid from "@sendgrid/mail";
 
 /**
  * Send mail through SendGrid.
