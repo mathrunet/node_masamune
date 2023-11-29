@@ -1,3 +1,12 @@
+# [1.9.0](https://github.com/mathrunet/node_masamune/compare/v1.8.5...v1.9.0) (2023-11-29)
+
+
+### feat
+
+* Added GeocodingAPI. ([3f3f9a3](https://github.com/mathrunet/node_masamune/commit/3f3f9a3c355a0ecda013a7b34f6c8e2b06d70d8a))
+
+
+
 ## [1.8.5](https://github.com/mathrunet/node_masamune/compare/v1.8.4...v1.8.5) (2023-11-29)
 
 
