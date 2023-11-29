@@ -1,3 +1,12 @@
+## [1.8.5](https://github.com/mathrunet/node_masamune/compare/v1.8.4...v1.8.5) (2023-11-29)
+
+
+### fix
+
+* Fixed Sendgrid bug. ([c9baa20](https://github.com/mathrunet/node_masamune/commit/c9baa2061aaccfa753d3cf948c814ec56494d178))
+
+
+
 ## [1.8.4](https://github.com/mathrunet/node_masamune/compare/v1.8.3...v1.8.4) (2023-11-28)
 
 
