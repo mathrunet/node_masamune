@@ -1,3 +1,12 @@
+# [1.10.0](https://github.com/mathrunet/node_masamune/compare/v1.9.1...v1.10.0) (2023-12-14)
+
+
+### feat
+
+* Support for sending multiple tokens. ([6d16257](https://github.com/mathrunet/node_masamune/commit/6d16257242a9ad9d8b0709992c30892eb80fdb10))
+
+
+
 ## [1.9.1](https://github.com/mathrunet/node_masamune/compare/v1.9.0...v1.9.1) (2023-11-29)
 
 
