@@ -48,39 +48,46 @@ export async function sendNotification({
     body: string,
     channelId: string | undefined | null,
     data: { [key: string]: string } | undefined,
-    token: string | undefined | null,
+    token: string | string[] | undefined | null,
     topic: string | undefined | null,
     }) : Promise<{ [key: string]: any }> {
+    const res: { [key: string]: any } = {};
     try {
-        if (token === undefined && topic === undefined && topic === null && token === null) {
+        if ((token === undefined || token === null) && (topic === undefined || topic === null)) {
             throw new functions.https.HttpsError("invalid-argument", "Either [token] or [topic] must be specified.");
         }
         if (token !== undefined && token !== null) {
-            const res = await admin.messaging().send(
-                {
-                    notification: {
-                        title: title,
-                        body: body,
-                    },
-                    android: {
-                        priority: "high",
+            if (typeof token === "string") {
+                token = [token];
+            }
+            for (let t of token) {
+                const messageId = await admin.messaging().send(
+                    {
                         notification: {
                             title: title,
                             body: body,
-                            clickAction: "FLUTTER_NOTIFICATION_CLICK",
-                            channelId: channelId ?? undefined,
                         },
-                    },
-                    data: data,
-                    token: token,
-                }
-            );
+                        android: {
+                            priority: "high",
+                            notification: {
+                                title: title,
+                                body: body,
+                                clickAction: "FLUTTER_NOTIFICATION_CLICK",
+                                channelId: channelId ?? undefined,
+                            },
+                        },
+                        data: data,
+                        token: t,
+                    }
+                );
+                res[t] = messageId;
+            }
             return {
                 success: true,
-                message_id: res,
+                results: res,
             };
         } else if (topic !== undefined && topic !== null) {
-            const res = await admin.messaging().send(
+            const messageId = await admin.messaging().send(
                 {
                     notification: {
                         title: title,
@@ -99,9 +106,10 @@ export async function sendNotification({
                     topic: topic,
                 }
             );
+            res[topic] = messageId;
             return {
                 success: true,
-                message_id: res,
+                results: res,
             };
         }
     } catch (err) {
@@ -109,6 +117,7 @@ export async function sendNotification({
     }
     return {
         success: true,
+        results: res,
     };
     
 }

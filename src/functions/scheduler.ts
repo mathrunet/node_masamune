@@ -19,6 +19,7 @@ module.exports = (regions: string[], timeoutSeconds: number, data: { [key: strin
             const firestoreInstance = admin.firestore();
             const collection = await firestoreInstance.collection(collectionPath).where("_done", "==", false).where("_time", "<=", Date.now()).orderBy("_time", "asc").get();
             for (var doc of collection.docs) {
+                let res: { [key: string]: any } | null = null;
                 const command = (doc.get("#command") as { [key: string]: any })["@command"];
                 const priParams = (doc.get("#command") as { [key: string]: any })["@private"] as { [key: string]: any };
                 switch (command) {
@@ -27,9 +28,9 @@ module.exports = (regions: string[], timeoutSeconds: number, data: { [key: strin
                         const body = priParams["text"] as string;
                         const channelId = priParams["channel"] as string | undefined | null;
                         const data = priParams["data"] as { [key: string]: any } | undefined;
-                        const token = priParams["token"] as string | undefined | null;
+                        const token = priParams["token"] as string | string[] | undefined | null;
                         const topic = priParams["topic"] as string | undefined | null;
-                        await sendNotification({
+                        const response = await sendNotification({
                             title: title,
                             body: body,
                             channelId: channelId,
@@ -37,6 +38,7 @@ module.exports = (regions: string[], timeoutSeconds: number, data: { [key: strin
                             token: token,
                             topic: topic,
                         });
+                        res = response.results as { [key: string]: any } | null;
                         break;
                     case "copy_document":
                         const path = priParams["path"] as string;
@@ -59,11 +61,20 @@ module.exports = (regions: string[], timeoutSeconds: number, data: { [key: strin
                         );
                         break;
                 }
-                await doc.ref.set({
-                    "_done": true,
-                }, {
-                    merge: true
-                });
+                if (res !== null && Object.keys(res).length > 0) {
+                    await doc.ref.set({
+                        "_done": true,
+                        ...res,
+                    }, {
+                        merge: true
+                    });
+                } else {
+                    await doc.ref.set({
+                        "_done": true,
+                    }, {
+                        merge: true
+                    });
+                }
             }
         } catch (err) {
             console.log(err);

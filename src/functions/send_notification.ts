@@ -43,9 +43,9 @@ module.exports = (regions: string[], timeoutSeconds: number, data: { [key: strin
             const body = query.body as string;
             const channelId = query.channel_id as string | undefined | null;
             const data = query.data as { [key: string]: string } | undefined;
-            const token = query.token as string | undefined | null;
+            const token = query.token as string | string[] | undefined | null;
             const topic = query.topic as string | undefined | null;
-            await sendNotification({
+            const res = await sendNotification({
                 title: title,
                 body: body,
                 channelId: channelId,
@@ -53,12 +53,10 @@ module.exports = (regions: string[], timeoutSeconds: number, data: { [key: strin
                 token: token,
                 topic: topic,
             });
+            return res;
         } catch (err) {
             console.log(err);
             throw err;
         }
-        return {
-            success: true,
-        };
     }
 );
