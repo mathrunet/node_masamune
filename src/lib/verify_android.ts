@@ -81,9 +81,9 @@ export async function verifyAndroid({
     if (!accessToken) {
         throw new functions.https.HttpsError("not-found", "Cannot get access token.");
     }
-    console.log(accessToken);
+    console.log(`https://www.googleapis.com/androidpublisher/v3/applications/${packageName}/purchases/${type}/${productId}/tokens/${purchaseToken}?access_token=${accessToken}`);
     res = await Api.get(
-        `https://www.googleapis.com/androidpublisher/v3/applications/"${packageName}/purchases/${type}/${productId}/tokens/${purchaseToken}?access_token=${accessToken}`, {
+        `https://www.googleapis.com/androidpublisher/v3/applications/${packageName}/purchases/${type}/${productId}/tokens/${purchaseToken}?access_token=${accessToken}`, {
         timeout: 30 * 1000,
         headers: {
             "Content-Type": "application/json",
