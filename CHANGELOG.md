@@ -1,3 +1,12 @@
+## [1.10.2](https://github.com/mathrunet/node_masamune/compare/v1.10.1...v1.10.2) (2023-12-22)
+
+
+### fix
+
+* Data for debugging is given. ([76b28b3](https://github.com/mathrunet/node_masamune/commit/76b28b3624f7d58a396cb119af628b630de68ac5))
+
+
+
 ## [1.10.1](https://github.com/mathrunet/node_masamune/compare/v1.10.0...v1.10.1) (2023-12-20)
 
 
