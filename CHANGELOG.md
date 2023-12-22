@@ -1,3 +1,12 @@
+## [1.10.3](https://github.com/mathrunet/node_masamune/compare/v1.10.2...v1.10.3) (2023-12-22)
+
+
+### fix
+
+* Push notifications do not generate errors. ([1cf06f4](https://github.com/mathrunet/node_masamune/commit/1cf06f42197b59fb9edaf9938bcf796cbb335e0c))
+
+
+
 ## [1.10.2](https://github.com/mathrunet/node_masamune/compare/v1.10.1...v1.10.2) (2023-12-22)
 
 
