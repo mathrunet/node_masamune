@@ -61,23 +61,54 @@ export async function sendNotification({
                 token = [token];
             }
             for (let t of token) {
-                console.log({
-                    notification: {
-                        title: title,
-                        body: body,
-                    },
-                    android: {
-                        priority: "high",
+                try {
+                    const messageId = await admin.messaging().send(
+                        {
+                            notification: {
+                                title: title,
+                                body: body,
+                            },
+                            android: {
+                                priority: "high",
+                                notification: {
+                                    title: title,
+                                    body: body,
+                                    clickAction: "FLUTTER_NOTIFICATION_CLICK",
+                                    channelId: channelId ?? undefined,
+                                },
+                            },
+                            data: data,
+                            token: t,
+                        }
+                    );
+                    res[t] = messageId;
+                } catch (e) {
+                    console.log(e);
+                    console.log({
                         notification: {
                             title: title,
                             body: body,
-                            clickAction: "FLUTTER_NOTIFICATION_CLICK",
-                            channelId: channelId ?? undefined,
                         },
-                    },
-                    data: data,
-                    token: t,
-                });
+                        android: {
+                            priority: "high",
+                            notification: {
+                                title: title,
+                                body: body,
+                                clickAction: "FLUTTER_NOTIFICATION_CLICK",
+                                channelId: channelId ?? undefined,
+                            },
+                        },
+                        data: data,
+                        token: t,
+                    });
+                }
+            }
+            return {
+                success: true,
+                results: res,
+            };
+        } else if (topic !== undefined && topic !== null) {
+            try {
                 const messageId = await admin.messaging().send(
                     {
                         notification: {
@@ -94,35 +125,13 @@ export async function sendNotification({
                             },
                         },
                         data: data,
-                        token: t,
+                        topic: topic,
                     }
                 );
-                res[t] = messageId;
-            }
-            return {
-                success: true,
-                results: res,
-            };
-        } else if (topic !== undefined && topic !== null) {
-            console.log({
-                notification: {
-                    title: title,
-                    body: body,
-                },
-                android: {
-                    priority: "high",
-                    notification: {
-                        title: title,
-                        body: body,
-                        clickAction: "FLUTTER_NOTIFICATION_CLICK",
-                        channelId: channelId ?? undefined,
-                    },
-                },
-                data: data,
-                topic: topic,
-            });
-            const messageId = await admin.messaging().send(
-                {
+                res[topic] = messageId;
+            } catch (e) {
+                console.log(e);
+                console.log({
                     notification: {
                         title: title,
                         body: body,
@@ -138,9 +147,8 @@ export async function sendNotification({
                     },
                     data: data,
                     topic: topic,
-                }
-            );
-            res[topic] = messageId;
+                });
+            }
             return {
                 success: true,
                 results: res,
