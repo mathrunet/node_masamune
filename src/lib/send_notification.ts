@@ -61,6 +61,23 @@ export async function sendNotification({
                 token = [token];
             }
             for (let t of token) {
+                console.log({
+                    notification: {
+                        title: title,
+                        body: body,
+                    },
+                    android: {
+                        priority: "high",
+                        notification: {
+                            title: title,
+                            body: body,
+                            clickAction: "FLUTTER_NOTIFICATION_CLICK",
+                            channelId: channelId ?? undefined,
+                        },
+                    },
+                    data: data,
+                    token: t,
+                });
                 const messageId = await admin.messaging().send(
                     {
                         notification: {
@@ -87,6 +104,23 @@ export async function sendNotification({
                 results: res,
             };
         } else if (topic !== undefined && topic !== null) {
+            console.log({
+                notification: {
+                    title: title,
+                    body: body,
+                },
+                android: {
+                    priority: "high",
+                    notification: {
+                        title: title,
+                        body: body,
+                        clickAction: "FLUTTER_NOTIFICATION_CLICK",
+                        channelId: channelId ?? undefined,
+                    },
+                },
+                data: data,
+                topic: topic,
+            });
             const messageId = await admin.messaging().send(
                 {
                     notification: {
