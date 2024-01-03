@@ -1,3 +1,12 @@
+## [1.10.4](https://github.com/mathrunet/node_masamune/compare/v1.10.3...v1.10.4) (2024-01-03)
+
+
+### fix
+
+* Changed license. ([b77a5f2](https://github.com/mathrunet/node_masamune/commit/b77a5f24019b1ff94188aaa1f6053d968152148e))
+
+
+
 ## [1.10.3](https://github.com/mathrunet/node_masamune/compare/v1.10.2...v1.10.3) (2023-12-22)
 
 
