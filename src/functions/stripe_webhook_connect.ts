@@ -1,6 +1,7 @@
-import * as functions from "firebase-functions";
+import * as functions from "firebase-functions/v2";
 import * as stripe from "stripe";
 import * as admin from "firebase-admin";
+import { FunctionsOptions } from "../lib/functions_base";
 
 /**
  * Receive and process webhooks for Stripe Connect.
@@ -13,7 +14,7 @@ import * as admin from "firebase-admin";
  * こちらをデプロイした際のURLをStripeのWebhook設定に登録してください。
  * Firestoreとの連携が必須です。Firestoreも利用可能にしてください。
  *
- * @param {string} purchase.stripe.secret_key
+ * @param {string} process.env.PURCHASE_STRIPE_SECRETKEY
  * API key (secret key) to connect to Stripe.
  * Log in to the following URL and create a project.
  * After the project is created, the secret key can be copied.
@@ -27,23 +28,33 @@ import * as admin from "firebase-admin";
  * Development enveironment
  * https://dashboard.stripe.com/test/apikeys
  *
- * @param {string} purchase.stripe.user_path
+ * @param {string} process.env.PURCHASE_STRIPE_USERPATH
  * Stripe user (customer) pass.
  * Stripeのユーザー（カスタマー）用パス。
  *
- * @param {string} purchase.stripe.webhook_connect_secret
+ * @param {string} process.env.PURCHASE_STRIPE_WEBHOOKCONNECTSECRET
  * Specify the **Signature Secret** after setting it up as a webhook.
  * Webhookとして設定したあとの**署名シークレット**を指定します。
  *
  */
-module.exports = (regions: string[], timeoutSeconds: number, data: { [key: string]: string }) => functions.runWith({timeoutSeconds: timeoutSeconds}).region(...regions).https.onRequest(
+module.exports = (
+  regions: string[],
+  options: FunctionsOptions,
+  data: { [key: string]: string }
+) => functions.https.onRequest(
+  {
+    region: regions,
+    timeoutSeconds: options.timeoutSeconds,
+    memory: options.memory,
+    minInstances: options.minInstances,
+    concurrency: options.concurrency,
+    maxInstances: options.maxInstances ?? undefined,
+  },
   async (req, res) => {
     try {
-      const config = functions.config().purchase;
-      const stripeConfig = config.stripe;
-      const apiKey = stripeConfig.secret_key;
-      const stripeUserPath = stripeConfig.user_path;
-      const stripeWebhookConnectSecret = stripeConfig.webhook_connect_secret;
+      const apiKey = process.env.PURCHASE_STRIPE_SECRETKEY ?? "";
+      const stripeUserPath = process.env.PURCHASE_STRIPE_USERPATH ?? "plugins/stripe/user";
+      const stripeWebhookConnectSecret = process.env.PURCHASE_STRIPE_WEBHOOKCONNECTSECRET ?? "";
       const firestoreInstance = admin.firestore();
       const stripeClient = new stripe.Stripe(apiKey, {
         apiVersion: "2022-11-15",
@@ -58,50 +69,50 @@ module.exports = (regions: string[], timeoutSeconds: number, data: { [key: strin
       const event = stripeClient.webhooks.constructEvent(req.rawBody, signature, stripeWebhookConnectSecret);
 
       switch (event.type) {
-      case "account.updated": {
-        const account = event.data.object as {
-                        [key: string]: any
-                    };
-        const id = account["id"];
-        if (!id) {
-          res.status(404).send(JSON.stringify({
-            "error": "The account id is not found.",
-          }));
-          return;
-        }
-        const col = await firestoreInstance.collection(`${stripeUserPath}`).where("account", "==", id).get();
-        if (col.empty) {
-          res.status(404).send(JSON.stringify({
-            "error": "The account data is not found.",
-          }));
-          return;
-        }
-        const update: { [key: string]: any } = {};
-        if (account["capabilities"]) {
-          const capability : { [key: string]: any } = {};
-          if (account["capabilities"]["card_payments"]) {
-            capability["card_payments"] = true;
+        case "account.updated": {
+          const account = event.data.object as {
+            [key: string]: any
+          };
+          const id = account["id"];
+          if (!id) {
+            res.status(404).send(JSON.stringify({
+              "error": "The account id is not found.",
+            }));
+            return;
           }
-          if (account["capabilities"]["transfers"]) {
-            capability["transfers"] = true;
+          const col = await firestoreInstance.collection(`${stripeUserPath}`).where("account", "==", id).get();
+          if (col.empty) {
+            res.status(404).send(JSON.stringify({
+              "error": "The account data is not found.",
+            }));
+            return;
           }
-          update["capability"] = capability;
-        }
-        await col.docs[0].ref.set(update, {
-          merge: true,
-        });
+          const update: { [key: string]: any } = {};
+          if (account["capabilities"]) {
+            const capability: { [key: string]: any } = {};
+            if (account["capabilities"]["card_payments"]) {
+              capability["card_payments"] = true;
+            }
+            if (account["capabilities"]["transfers"]) {
+              capability["transfers"] = true;
+            }
+            update["capability"] = capability;
+          }
+          await col.docs[0].ref.set(update, {
+            merge: true,
+          });
 
-        res.status(200).send(JSON.stringify({
-          "success": true,
-        }));
-        return;
-      }
-      default: {
-        res.status(404).send(JSON.stringify({
-          "error": `Event ${event.type} is not found.`,
-        }));
-        return;
-      }
+          res.status(200).send(JSON.stringify({
+            "success": true,
+          }));
+          return;
+        }
+        default: {
+          res.status(404).send(JSON.stringify({
+            "error": `Event ${event.type} is not found.`,
+          }));
+          return;
+        }
       }
     } catch (err) {
       console.error(err);

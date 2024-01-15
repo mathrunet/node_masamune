@@ -1,18 +1,19 @@
-import * as functions from "firebase-functions";
+import * as functions from "firebase-functions/v2";
 import * as verifier from "../lib/verify_ios";
 import * as subscriber from "../lib/update_subscription";
+import { FunctionsOptions } from "../lib/functions_base";
 
 /**
  * Verify subscriptions and add data.
  * 
  * サブスクリプションの検証とデータの追加を行います。
  * 
- * @param purchase.ios.shared_secret
+ * @param process.env.PURCHASE_IOS_SHAREDSECRET
  * SharedSecret for AppStore, obtained from [Apps]->[App Info]->[Shared Secret for App] in the AppStore.
  * 
  * AppStoreのSharedSecret。AppStoreの[アプリ]->[App情報]->[App用共有シークレット]から取得します。
  * 
- * @param purchase.subscription_path
+ * @param process.env.PURCHASE_SUBSCRIPTIONPATH
  * Describes the path to the collection of subscriptions.
  * 
  * サブスクリプションのコレクションのパスを記述します。
@@ -42,17 +43,28 @@ import * as subscriber from "../lib/update_subscription";
  * 
  * サブスクリプションを購入したユーザーのID。
  */
-module.exports = (regions: string[], timeoutSeconds: number, data: { [key: string]: string }) => functions.runWith({timeoutSeconds: timeoutSeconds}).region(...regions).https.onCall(
-    async (query, context) => {
+module.exports = (
+    regions: string[],
+    options: FunctionsOptions,
+    data: { [key: string]: string }
+) => functions.https.onCall(
+    {
+        region: regions,
+        timeoutSeconds: options.timeoutSeconds,
+        memory: options.memory,
+        minInstances: options.minInstances,
+        concurrency: options.concurrency,
+        maxInstances: options.maxInstances ?? undefined,
+    },
+    async (query) => {
         try {
             /* ==== IOS検証ここから ==== */
-            if (!query.userId) {
+            if (!query.data.userId) {
                 throw new functions.https.HttpsError("invalid-argument", "User is empty.");
             }
-            const config = functions.config().purchase;
             const res = await verifier.verifyIOS({
-                receiptData: query.receiptData,
-                password: config.ios.shared_secret,
+                receiptData: query.data.receiptData,
+                password: process.env.PURCHASE_IOS_SHAREDSECRET ?? "",
             });
             const status = res["status"];
             if (status !== 0) {
@@ -71,17 +83,17 @@ module.exports = (regions: string[], timeoutSeconds: number, data: { [key: strin
             /* ==== ここまでIOS検証 ==== */
             /* ==== Firestoreの更新ここから ==== */
             await subscriber.updateSubscription({
-                targetCollectionPath: query.path ?? config.subscription_path,
+                targetCollectionPath: query.data.path ?? process.env.PURCHASE_SUBSCRIPTIONPATH,
                 targetDocumentId: info[info.length - 1]["original_transaction_id"],
                 data: info[info.length - 1],
                 additionalData: query.data,
-                userId: query.userId,
+                userId: query.data.userId,
                 platform: "IOS",
                 orderId: info[info.length - 1]["original_transaction_id"],
-                productId: query.productId,
-                purchaseId: query.purchaseId,
+                productId: query.data.productId,
+                purchaseId: query.data.purchaseId,
                 packageName: res["receipt"]["bundle_id"],
-                token: query.receiptData,
+                token: query.data.receiptData,
                 expiryDate: expiryTimeMillis,
             });
             /* ==== ここまでFirestoreの更新 ==== */

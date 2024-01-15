@@ -1,18 +1,19 @@
-import * as functions from "firebase-functions";
+import * as functions from "firebase-functions/v2";
 import * as verifier from "../lib/verify_android";
 import * as updater from "../lib/update_wallet";
+import { FunctionsOptions } from "../lib/functions_base";
 
 /**
  * Performs a consumption-type in-app purchase. The value of the field in the document specified in [path] is added to [value].
  * 
  * 消費型のアプリ内課金を行います。[path]に指定したドキュメント内のフィールドの値を[value]に加算します。
  * 
- * @param purchase.android.refresh_token
+ * @param process.env.PURCHASE_ANDROID_REFRESHTOKEN
  * Describe the refresh token that can be obtained by accessing [android_auth_code].
  * 
  * [android_auth_code]にアクセスすることで取得できるリフレッシュトークンを記述します。
  * 
- * @param purchase.android.client_id
+ * @param process.env.PURCHASE_ANDROID_CLIENTID
  * Google's OAuth 2.0 client ID.
  * Create an OAuth consent screen from the URL below.
  * https://console.cloud.google.com/apis/credentials/consent
@@ -25,7 +26,7 @@ import * as updater from "../lib/update_wallet";
  * その後、認証情報からOAuth 2.0 クライアントIDを作成します。
  * https://console.cloud.google.com/apis/credentials
  * 
- * @param purchase.android.client_secret
+ * @param process.env.PURCHASE_ANDROID_CLIENTSECRET
  * Google's OAuth 2.0 client secret.
  * Create an OAuth consent screen from the URL below.
  * https://console.cloud.google.com/apis/credentials/consent
@@ -63,31 +64,42 @@ import * as updater from "../lib/update_wallet";
  * 
  * 購入したときに発行された購入トークン。
  */
-module.exports = (regions: string[], timeoutSeconds: number, data: { [key: string]: string }) => functions.runWith({timeoutSeconds: timeoutSeconds}).region(...regions).https.onCall(
+module.exports = (
+    regions: string[],
+    options: FunctionsOptions,
+    data: { [key: string]: string }
+) => functions.https.onCall(
+    {
+        region: regions,
+        timeoutSeconds: options.timeoutSeconds,
+        memory: options.memory,
+        minInstances: options.minInstances,
+        concurrency: options.concurrency,
+        maxInstances: options.maxInstances ?? undefined,
+    },
     async (query) => {
         try {
-            const config = functions.config().purchase;
             /* ==== Android検証ここから ==== */
             const res = await verifier.verifyAndroid({
                 type: "products",
-                clientId: config.android.client_id,
-                clientSecret: config.android.client_secret,
-                refreshToken: config.android.refresh_token,
-                packageName: query.packageName,
-                productId: query.productId,
-                purchaseToken: query.purchaseToken,
+                clientId: process.env.PURCHASE_ANDROID_CLIENTID ?? "",
+                clientSecret: process.env.PURCHASE_ANDROID_CLIENTSECRET ?? "",
+                refreshToken: process.env.PURCHASE_ANDROID_REFRESHTOKEN ?? "",
+                packageName: query.data.packageName,
+                productId: query.data.productId,
+                purchaseToken: query.data.purchaseToken,
             });
             if (res["purchaseState"] !== 0) {
                 throw new functions.https.HttpsError("unauthenticated", "Illegal receipt.");
             }
             /* ==== ここまでAndroid検証 ==== */
-            if (!query.path || !query.value) {
+            if (!query.data.path || !query.data.value) {
                 return res;
             }
             /* ==== Firestoreの更新ここから ==== */
             await updater.updateWallet({
-                targetDocumentFieldPath: query.path,
-                value: query.value,
+                targetDocumentFieldPath: query.data.path,
+                value: query.data.value,
             });
             /* ==== ここまでFirestoreの更新 ==== */
             return res;

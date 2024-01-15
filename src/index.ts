@@ -44,7 +44,7 @@ export function deploy(exports: any, region: regions.Regions, deployFunctions: b
     admin.initializeApp();
     for (const func of deployFunctions) {
         if (!process.env.FUNCTION_NAME || process.env.FUNCTION_NAME === func.id) {
-            exports[func.id] = func.build(region, func.data);
+            exports[func.id] = func.build(region);
         }
     }
 }

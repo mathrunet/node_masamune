@@ -1,5 +1,6 @@
-import * as functions from "firebase-functions";
+import * as functions from "firebase-functions/v2";
 import { FunctionsBase } from "./functions_base";
+import * as express from "express";
 
 /**
  * Base class for defining Function data for HTTP request execution.
@@ -7,15 +8,6 @@ import { FunctionsBase } from "./functions_base";
  * HTTPリクエスト実行用のFunctionのデータを定義するためのベースクラス。
  */
 export abstract class RequestProcessFunctionBase extends FunctionsBase {
-    /**
-     * Base class for defining Function data for HTTP request execution.
-     * 
-     * HTTPリクエスト実行用のFunctionのデータを定義するためのベースクラス。
-     */
-    constructor() {
-        super();
-    }
-
     /**
      * Specify the actual contents of the process.
      * 
@@ -30,21 +22,23 @@ export abstract class RequestProcessFunctionBase extends FunctionsBase {
      * Response passed to Functions.
      * 
      * Functionsに渡されたResponse。
-     * 
-     * @param options 
-     * Options passed to Functions.
-     * 
-     * Functionsに渡されたオプション。
      */
-    abstract process(reqest: functions.https.Request, response: functions.Response, options: Record<string, any>): Promise<void>;
+    abstract process(reqest: functions.https.Request, response: express.Response<any>): Promise<void>;
 
     data: { [key: string]: string } = {};
-    build(regions: string[], data: { [key: string]: string }): Function {
-        return functions.runWith({
-            timeoutSeconds: this.timeoutSeconds,
-        }).region(...regions).https.onRequest(async (req, res) => {
-            const config = functions.config();
-            return this.process(req, res, config);
-        });
+    build(regions: string[]): Function {
+        return functions.https.onRequest(
+            {
+                region: regions,
+                timeoutSeconds: this.options.timeoutSeconds,
+                memory: this.options.memory,
+                minInstances: this.options.minInstances,
+                concurrency: this.options.concurrency,
+                maxInstances: this.options.maxInstances ?? undefined,
+            },
+            async (req, res) => {
+                return this.process(req, res);
+            }
+        );
     }
 }

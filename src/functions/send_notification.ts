@@ -1,5 +1,6 @@
-import * as functions from "firebase-functions";
+import * as functions from "firebase-functions/v2";
 import { sendNotification } from "../lib/send_notification";
+import { FunctionsOptions } from "../lib/functions_base";
 
 /**
  * Define the process for PUSH notification.
@@ -36,15 +37,30 @@ import { sendNotification } from "../lib/send_notification";
  * 
  * FCMのトピックを指定します。
  */
-module.exports = (regions: string[], timeoutSeconds: number, data: { [key: string]: string }) => functions.runWith({timeoutSeconds: timeoutSeconds}).region(...regions).https.onCall(
+module.exports = (
+    regions: string[],
+    options: FunctionsOptions,
+    data: { [key: string]: string }
+) => functions.https.onCall(
+    {
+        region: regions,
+        timeoutSeconds: options.timeoutSeconds,
+        memory: options.memory,
+        minInstances: options.minInstances,
+        concurrency: options.concurrency,
+        maxInstances: options.maxInstances ?? undefined,
+    },
     async (query) => {
         try {
-            const title = query.title as string;
-            const body = query.body as string;
-            const channelId = query.channel_id as string | undefined | null;
-            const data = query.data as { [key: string]: string } | undefined;
-            const token = query.token as string | string[] | undefined | null;
-            const topic = query.topic as string | undefined | null;
+            const title = query.data.title as string | undefined | null;
+            const body = query.data.body as string | undefined | null;
+            const channelId = query.data.channel_id as string | undefined | null;
+            const data = query.data.data as { [key: string]: string } | undefined;
+            const token = query.data.token as string | string[] | undefined | null;
+            const topic = query.data.topic as string | undefined | null;
+            if (!title || !body) {
+                throw new functions.https.HttpsError("invalid-argument", "Query parameter is invalid.");
+            }
             const res = await sendNotification({
                 title: title,
                 body: body,

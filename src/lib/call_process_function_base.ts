@@ -1,4 +1,4 @@
-import * as functions from "firebase-functions";
+import * as functions from "firebase-functions/v2";
 import { FunctionsBase } from "./functions_base";
 
 /**
@@ -7,15 +7,6 @@ import { FunctionsBase } from "./functions_base";
  * FunctionsのCallメソッド実行用のFunctionのデータを定義するためのベースクラス。
  */
 export abstract class CallProcessFunctionBase extends FunctionsBase {
-    /**
-     * Base class for defining the data of Functions for executing the Call method of Functions.
-     * 
-     * FunctionsのCallメソッド実行用のFunctionのデータを定義するためのベースクラス。
-     */
-    constructor() {
-        super();
-    }
-
     /**
      * Specify the actual contents of the process.
      * 
@@ -26,25 +17,27 @@ export abstract class CallProcessFunctionBase extends FunctionsBase {
      * 
      * Functionsに渡されたクエリ。
      * 
-     * @param {Record<string, any>} options 
-     * Options passed to Functions.
-     * 
-     * Functionsに渡されたオプション。
-     * 
      * @returns {{ [key: string]: any }}
      * Return value of the process.
      * 
      * 処理の戻り値。
      */
-    abstract process(query: any, options: Record<string, any>): Promise<{ [key: string]: any }>;
+    abstract process(query: any): Promise<{ [key: string]: any }>;
 
     data: { [key: string]: string } = {};
-    build(regions: string[], data: { [key: string]: string }): Function {
-        return functions.runWith({
-            timeoutSeconds: this.timeoutSeconds,
-        }).region(...regions).https.onCall(async (query) => {
-            const config = functions.config();
-            return this.process(query, config);
-        });
+    build(regions: string[]): Function {
+        return functions.https.onCall(        
+            {
+                region: regions,
+                timeoutSeconds: this.options.timeoutSeconds,
+                memory: this.options.memory,
+                minInstances: this.options.minInstances,
+                concurrency: this.options.concurrency,
+                maxInstances: this.options.maxInstances ?? undefined,
+            },
+            async (query) => {
+                return this.process(query);
+            }
+        );
     }
 }

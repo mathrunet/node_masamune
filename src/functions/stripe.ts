@@ -1,9 +1,10 @@
-import * as functions from "firebase-functions";
+import * as functions from "firebase-functions/v2";
 import * as stripe from "stripe";
 import * as admin from "firebase-admin";
 import * as sendgrid from "../lib/send_grid";
 import * as gmail from "../lib/gmail";
 import "../exntension/string.extension"
+import { FunctionsOptions } from "../lib/functions_base";
 
 
 /**
@@ -13,7 +14,7 @@ import "../exntension/string.extension"
  * Stripeの各種処理を実行します。
  * Firestoreとの連携が必須です。Firestoreも利用可能にしてください。
  *
- * @param {string} purchase.stripe.secret_key
+ * @param {string} process.env.PURCHASE_STRIPE_SECRETKEY
  * API key (secret key) to connect to Stripe.
  * Log in to the following URL and create a project.
  * After the project is created, the secret key can be copied.
@@ -27,19 +28,19 @@ import "../exntension/string.extension"
  * Development enveironment
  * https://dashboard.stripe.com/test/apikeys
  *
- * @param {string} purchase.stripe.user_path
+ * @param {string} process.env.PURCHASE_STRIPE_USERPATH
  * Stripe user (customer) pass.
  * Stripeのユーザー（カスタマー）用パス。
  *
- * @param {string} purchase.stripe.payment_path
- * Path for payment method information to be placed under [purchase.stripe.user_path].
- * [purchase.stripe.user_path]の下に配置する支払い方法の情報用パス。
+ * @param {string} process.env.PURCHASE_STRIPE_PAYMENTPATH
+ * Path for payment method information to be placed under [process.env.PURCHASE_STRIPE_USERPATH].
+ * [process.env.PURCHASE_STRIPE_USERPATH]の下に配置する支払い方法の情報用パス。
  *
- * @param {string} purchase.stripe.purchase_path
- * Path for purchase information to be placed under [purchase.stripe.user_path].
- * [purchase.stripe.user_path]の下に配置する購入情報用パス。
+ * @param {string} process.env.PURCHASE_STRIPE_PURCHASEPATH
+ * Path for purchase information to be placed under [process.env.PURCHASE_STRIPE_USERPATH].
+ * [process.env.PURCHASE_STRIPE_USERPATH]の下に配置する購入情報用パス。
  *
- * @param {string} purchase.stripe.email_provider
+ * @param {string} process.env.PURCHASE_STRIPE_EMAILPROVIDER
  * Mail provider when sending mail. (gmail | sendgrid)
  * メールを送信する際のメールプロバイダー。（gmail | sendgrid）
  *
@@ -174,657 +175,737 @@ import "../exntension/string.extension"
  * Specify the URL to redirect to after authentication.
  * 認証後のリダイレクト先URLを指定します。
  */
-module.exports = (regions: string[], timeoutSeconds: number, data: { [key: string]: string }) => functions.runWith({timeoutSeconds: timeoutSeconds}).region(...regions).https.onCall(
+module.exports = (
+  regions: string[],
+  options: FunctionsOptions,
+  data: { [key: string]: string }
+) => functions.https.onCall(
+  {
+    region: regions,
+    timeoutSeconds: options.timeoutSeconds,
+    memory: options.memory,
+    minInstances: options.minInstances,
+    concurrency: options.concurrency,
+    maxInstances: options.maxInstances ?? undefined,
+  },
   async (query) => {
     try {
-      const config = functions.config().purchase;
-      const stripeConfig = config.stripe;
-      const apiKey = stripeConfig.secret_key;
-      const stripeUserPath = stripeConfig.user_path;
-      const stripePurchasePath = stripeConfig.purchase_path;
-      const stripePaymentPath = stripeConfig.payment_path;
-      const stripeEmailProvider = stripeConfig.email_provider;
+      const apiKey = process.env.PURCHASE_STRIPE_SECRETKEY ?? "";
+      const stripeUserPath = process.env.PURCHASE_STRIPE_USERPATH ?? "plugins/stripe/user";
+      const stripePurchasePath = process.env.PURCHASE_STRIPE_PURCHASEPATH ?? "purchase";
+      const stripePaymentPath = process.env.PURCHASE_STRIPE_PAYMENTPATH ?? "payment";
+      const stripeEmailProvider = process.env.PURCHASE_STRIPE_EMAILPROVIDER ?? "gmail";
       const firestoreInstance = admin.firestore();
       const stripeClient = new stripe.Stripe(apiKey, {
         apiVersion: "2022-11-15",
       });
-      switch (query.mode) {
-      case "create_account": {
-        const userId = query.userId;
-        const locale = query.locale;
-        const refreshUrl = query.refreshUrl;
-        const returnUrl = query.returnUrl;
-        if (!locale) {
-          throw new functions.https.HttpsError("invalid-argument", "The locale is empty.");
-        }
-        if (!userId) {
-          throw new functions.https.HttpsError("invalid-argument", "The user id is empty.");
-        }
-        const country = locale.split("_")[1];
-        const doc = await firestoreInstance.doc(`${stripeUserPath}/${userId}`).get();
-        const data = doc.data();
-        if (!data || !data["account"]) {
-          const account = await stripeClient.accounts.create({
-            type: "express",
-            country: country ?? "JP",
-          });
-          const update: { [key: string]: any } = {};
-          update["@uid"] = userId;
-          update["@time"] = new Date();
-          update["user"] = userId;
-          update["account"] = account.id;
-          await firestoreInstance.doc(`${stripeUserPath}/${userId}`).set(update, {
-            merge: true,
-          });
-          const endpoint = await stripeClient.accountLinks.create({
-            type: "account_onboarding",
-            account: account.id,
-            refresh_url: refreshUrl,
-            return_url: returnUrl,
-          });
-          return {
-            next: "registration",
-            endpoint: endpoint.url,
-            accountId: account.id,
-          };
-        } else {
-          if (data["capability"] && data["capability"]["transfers"]) {
-            return {
-              next: "none",
-            };
+      switch (query.data.mode) {
+        case "create_account": {
+          const userId = query.data.userId;
+          const locale = query.data.locale;
+          const refreshUrl = query.data.refreshUrl;
+          const returnUrl = query.data.returnUrl;
+          if (!locale) {
+            throw new functions.https.HttpsError("invalid-argument", "The locale is empty.");
           }
-          const res = await stripeClient.accounts.retrieve(data["account"]);
-          if (res["capabilities"] && res["capabilities"]["transfers"] === "active") {
+          if (!userId) {
+            throw new functions.https.HttpsError("invalid-argument", "The user id is empty.");
+          }
+          const country = locale.split("_")[1];
+          const doc = await firestoreInstance.doc(`${stripeUserPath}/${userId}`).get();
+          const data = doc.data();
+          if (!data || !data["account"]) {
+            const account = await stripeClient.accounts.create({
+              type: "express",
+              country: country ?? "JP",
+            });
             const update: { [key: string]: any } = {};
-            update["capability"] = {
-              transfers: true,
-            };
-            await doc.ref.set(update, {
+            update["@uid"] = userId;
+            update["@time"] = new Date();
+            update["user"] = userId;
+            update["account"] = account.id;
+            await firestoreInstance.doc(`${stripeUserPath}/${userId}`).set(update, {
               merge: true,
             });
-            return {
-              next: "none",
-            };
-          } else {
             const endpoint = await stripeClient.accountLinks.create({
               type: "account_onboarding",
-              account: data["account"],
+              account: account.id,
               refresh_url: refreshUrl,
               return_url: returnUrl,
             });
             return {
               next: "registration",
               endpoint: endpoint.url,
-              accountId: data["account"],
+              accountId: account.id,
+            };
+          } else {
+            if (data["capability"] && data["capability"]["transfers"]) {
+              return {
+                next: "none",
+              };
+            }
+            const res = await stripeClient.accounts.retrieve(data["account"]);
+            if (res["capabilities"] && res["capabilities"]["transfers"] === "active") {
+              const update: { [key: string]: any } = {};
+              update["capability"] = {
+                transfers: true,
+              };
+              await doc.ref.set(update, {
+                merge: true,
+              });
+              return {
+                next: "none",
+              };
+            } else {
+              const endpoint = await stripeClient.accountLinks.create({
+                type: "account_onboarding",
+                account: data["account"],
+                refresh_url: refreshUrl,
+                return_url: returnUrl,
+              });
+              return {
+                next: "registration",
+                endpoint: endpoint.url,
+                accountId: data["account"],
+              };
+            }
+          }
+        }
+        case "delete_account": {
+          const userId = query.data.userId;
+          if (!userId) {
+            throw new functions.https.HttpsError("invalid-argument", "The user id is empty.");
+          }
+          const doc = await firestoreInstance.doc(`${stripeUserPath}/${userId}`).get();
+          const data = doc.data();
+          if (!data || !data["account"]) {
+            throw new functions.https.HttpsError("not-found", "Account id is not found.");
+          }
+          await stripeClient.accounts.del(data["account"]);
+          const update: { [key: string]: any } = {};
+          update["account"] = admin.firestore.FieldValue.delete();
+          update["capability"] = admin.firestore.FieldValue.arrayRemove({
+            "transfers": true
+          });
+          await doc.ref.set(update, {
+            merge: true,
+          });
+          return {
+            success: true,
+          };
+        }
+        case "get_account": {
+          const userId = query.data.userId;
+          if (!userId) {
+            throw new functions.https.HttpsError("invalid-argument", "The user id is empty.");
+          }
+          const doc = await firestoreInstance.doc(`${stripeUserPath}/${userId}`).get();
+          const data = doc.data();
+          if (!data || !data["account"]) {
+            throw new functions.https.HttpsError("not-found", "Account id is not found.");
+          }
+          const res = await stripeClient.accounts.retrieve(data["account"]);
+          return res;
+        }
+        case "dashboard_account": {
+          const userId = query.data.userId;
+          if (!userId) {
+            throw new functions.https.HttpsError("invalid-argument", "The user id is empty.");
+          }
+          const doc = await firestoreInstance.doc(`${stripeUserPath}/${userId}`).get();
+          const data = doc.data();
+          if (!data || !data["account"]) {
+            throw new functions.https.HttpsError("not-found", "Account id is not found.");
+          }
+          const res = await stripeClient.accounts.createLoginLink(data["account"]);
+          return {
+            endpoint: res["url"],
+          };
+        }
+        case "create_customer_and_payment": {
+          const userId = query.data.userId;
+          const successUrl = query.data.successUrl;
+          const cancelUrl = query.data.cancelUrl;
+          const authInstance = admin.auth();
+          if (!userId) {
+            throw new functions.https.HttpsError("invalid-argument", "The user id is empty.");
+          }
+          const user = await authInstance.getUser(userId);
+          if (!user) {
+            throw new functions.https.HttpsError("not-found", "The user is not found.");
+          }
+          const doc = await firestoreInstance.doc(`${stripeUserPath}/${userId}`).get();
+          const data = doc.data();
+          if (!data || !data["customer"]) {
+            const customer = await stripeClient.customers.create({
+              metadata: {
+                "user_id": userId,
+              },
+              email: user.email ?? (!data ? null : data["email"]),
+            });
+            const update: { [key: string]: any } = {};
+            update["@uid"] = userId;
+            update["@time"] = new Date();
+            update["user"] = userId;
+            update["customer"] = customer.id;
+            await firestoreInstance.doc(`${stripeUserPath}/${userId}`).set(update, {
+              merge: true,
+            });
+            const session = await stripeClient.checkout.sessions.create({
+              payment_method_types: ["card"],
+              mode: "setup",
+              customer: customer.id,
+              success_url: successUrl,
+              cancel_url: cancelUrl,
+              metadata: {
+                "user_id": userId,
+              },
+            });
+            return {
+              endpoint: session.url,
+              customerId: customer.id,
+            };
+          } else {
+            const session = await stripeClient.checkout.sessions.create({
+              payment_method_types: ["card"],
+              mode: "setup",
+              customer: data["customer"],
+              success_url: successUrl,
+              cancel_url: cancelUrl,
+            });
+            return {
+              endpoint: session.url,
+              customerId: data["customer"],
             };
           }
         }
-      }
-      case "delete_account": {
-        const userId = query.userId;
-        if (!userId) {
-          throw new functions.https.HttpsError("invalid-argument", "The user id is empty.");
-        }
-        const doc = await firestoreInstance.doc(`${stripeUserPath}/${userId}`).get();
-        const data = doc.data();
-        if (!data || !data["account"]) {
-          throw new functions.https.HttpsError("not-found", "Account id is not found.");
-        }
-        await stripeClient.accounts.del(data["account"]);
-        const update: { [key: string]: any } = {};
-        update["account"] = admin.firestore.FieldValue.delete();
-        update["capability"] = admin.firestore.FieldValue.arrayRemove({
-          "transfers": true
-        });
-        await doc.ref.set(update, {
-          merge: true,
-        });
-        return {
-          success: true,
-        };
-      }
-      case "get_account": {
-        const userId = query.userId;
-        if (!userId) {
-          throw new functions.https.HttpsError("invalid-argument", "The user id is empty.");
-        }
-        const doc = await firestoreInstance.doc(`${stripeUserPath}/${userId}`).get();
-        const data = doc.data();
-        if (!data || !data["account"]) {
-          throw new functions.https.HttpsError("not-found", "Account id is not found.");
-        }
-        const res = await stripeClient.accounts.retrieve(data["account"]);
-        return res;
-      }
-      case "dashboard_account": {
-        const userId = query.userId;
-        if (!userId) {
-          throw new functions.https.HttpsError("invalid-argument", "The user id is empty.");
-        }
-        const doc = await firestoreInstance.doc(`${stripeUserPath}/${userId}`).get();
-        const data = doc.data();
-        if (!data || !data["account"]) {
-          throw new functions.https.HttpsError("not-found", "Account id is not found.");
-        }
-        const res = await stripeClient.accounts.createLoginLink(data["account"]);
-        return {
-          endpoint: res["url"],
-        };
-      }
-      case "create_customer_and_payment": {
-        const userId = query.userId;
-        const successUrl = query.successUrl;
-        const cancelUrl = query.cancelUrl;
-        const authInstance = admin.auth();
-        if (!userId) {
-          throw new functions.https.HttpsError("invalid-argument", "The user id is empty.");
-        }
-        const user = await authInstance.getUser(userId);
-        if (!user) {
-          throw new functions.https.HttpsError("not-found", "The user is not found.");
-        }
-        const doc = await firestoreInstance.doc(`${stripeUserPath}/${userId}`).get();
-        const data = doc.data();
-        if (!data || !data["customer"]) {
-          const customer = await stripeClient.customers.create({
-            metadata: {
-              "user_id": userId,
-            },
-            email: user.email ?? (!data ? null : data["email"]),
-          });
-          const update: { [key: string]: any } = {};
-          update["@uid"] = userId;
-          update["@time"] = new Date();
-          update["user"] = userId;
-          update["customer"] = customer.id;
-          await firestoreInstance.doc(`${stripeUserPath}/${userId}`).set(update, {
-            merge: true,
-          });
-          const session = await stripeClient.checkout.sessions.create({
-            payment_method_types: ["card"],
-            mode: "setup",
-            customer: customer.id,
-            success_url: successUrl,
-            cancel_url: cancelUrl,
-            metadata: {
-              "user_id": userId,
-            },
-          });
-          return {
-            endpoint: session.url,
-            customerId: customer.id,
-          };
-        } else {
-          const session = await stripeClient.checkout.sessions.create({
-            payment_method_types: ["card"],
-            mode: "setup",
-            customer: data["customer"],
-            success_url: successUrl,
-            cancel_url: cancelUrl,
-          });
-          return {
-            endpoint: session.url,
-            customerId: data["customer"],
-          };
-        }
-      }
-      case "set_customer_default_payment": {
-        const userId = query.userId;
-        const paymentId = query.paymentId;
-        if (!paymentId) {
-          throw new functions.https.HttpsError("invalid-argument", "The payment id is empty.");
-        }
-        if (!userId) {
-          throw new functions.https.HttpsError("invalid-argument", "The user id is empty.");
-        }
-        const doc = await firestoreInstance.doc(`${stripeUserPath}/${userId}`).get();
-        const data = doc.data();
-        if (!data || !data["customer"]) {
-          throw new functions.https.HttpsError("not-found", "The customer is empty.");
-        }
-        const payment = await firestoreInstance.doc(`${stripeUserPath}/${userId}/${stripePaymentPath}/${paymentId}`).get();
-        const paymentData = payment.data();
-        if (!paymentData || !paymentData["id"]) {
-          throw new functions.https.HttpsError("not-found", "The payment method is empty.");
-        }
-        await stripeClient.customers.update(
-          data["customer"],
-          {
-            invoice_settings: {
-              default_payment_method: paymentData["id"],
-            },
+        case "set_customer_default_payment": {
+          const userId = query.data.userId;
+          const paymentId = query.data.paymentId;
+          if (!paymentId) {
+            throw new functions.https.HttpsError("invalid-argument", "The payment id is empty.");
           }
-        );
-        if (data["defaultPayment"] !== paymentData["id"]) {
-          const update: { [key: string]: any } = {};
-          update["defaultPayment"] = paymentData["id"];
-          await doc.ref.set(update, {
-            merge: true,
-          });
-        }
-        return {
-          success: true,
-        };
-      }
-      case "delete_payment": {
-        const userId = query.userId;
-        const paymentId = query.paymentId;
-        if (!paymentId) {
-          throw new functions.https.HttpsError("invalid-argument", "The payment id is empty.");
-        }
-        if (!userId) {
-          throw new functions.https.HttpsError("invalid-argument", "The user id is empty.");
-        }
-        const doc = await firestoreInstance.doc(`${stripeUserPath}/${userId}`).get();
-        const data = doc.data();
-        if (!data || !data["customer"]) {
-          throw new functions.https.HttpsError("not-found", "The customer is empty.");
-        }
-        const payment = await firestoreInstance.doc(`${stripeUserPath}/${userId}/${stripePaymentPath}/${paymentId}`).get();
-        const paymentData = payment.data();
-        if (!paymentData || !paymentData["id"]) {
-          throw new functions.https.HttpsError("not-found", "The payment method is empty.");
-        }
-        await stripeClient.paymentMethods.detach(
-          paymentData["id"],
-        );
-        if (data["defaultPayment"] === paymentData["id"]) {
-          const update: { [key: string]: any } = {};
-          update["defaultPayment"] = admin.firestore.FieldValue.delete();
-          await doc.ref.set(update, {
-            merge: true,
-          });
-        }
-        return {
-          success: true,
-        };
-      }
-      case "delete_customer": {
-        const userId = query.userId;
-        if (!userId) {
-          throw new functions.https.HttpsError("invalid-argument", "The user id is empty.");
-        }
-        const doc = await firestoreInstance.doc(`${stripeUserPath}/${userId}`).get();
-        const data = doc.data();
-        if (!data || !data["customer"]) {
-          throw new functions.https.HttpsError("not-found", "Customer id is not found.");
-        }
-        await stripeClient.customers.del(data["customer"]);
-        const update: { [key: string]: any } = {};
-        update["customer"] = admin.firestore.FieldValue.delete();
-        await doc.ref.set(update, {
-          merge: true,
-        });
-        return {
-          success: true,
-        };
-      }
-      case "authorization": {
-        const authInstance = admin.auth();
-        const amount = parseFloat(query.amount);
-        const currency = query.currency ?? "jpy";
-        const returnUrl = query.returnUrl;
-        const online = query.online == "true";
-        const emailFrom = query.from;
-        const emailTitle = query.title;
-        const emailContent = query.content;
-        const userId = query.userId;
-        if (!userId) {
-          throw new functions.https.HttpsError("invalid-argument", "The user id is empty.");
-        }
-        const userDoc = await firestoreInstance.doc(`${stripeUserPath}/${userId}`).get();
-        const userData = userDoc.data();
-        if (!userData || !userData["customer"]) {
-          throw new functions.https.HttpsError("not-found", "The customer id is not found.");
-        }
-        let defaultPayment = userData["defaultPayment"];
-        if (!defaultPayment) {
-          const customer = await stripeClient.customers.retrieve(
-            userData["customer"],
-          ) as stripe.Stripe.Customer;
-          defaultPayment = customer.invoice_settings.default_payment_method;
-          if (!defaultPayment) {
-            const payments = await firestoreInstance.collection(`${stripeUserPath}/${userId}/${stripePaymentPath}`).get();
-            if (payments.size <= 0) {
-              throw new functions.https.HttpsError("not-found", "The payment method is not found.");
+          if (!userId) {
+            throw new functions.https.HttpsError("invalid-argument", "The user id is empty.");
+          }
+          const doc = await firestoreInstance.doc(`${stripeUserPath}/${userId}`).get();
+          const data = doc.data();
+          if (!data || !data["customer"]) {
+            throw new functions.https.HttpsError("not-found", "The customer is empty.");
+          }
+          const payment = await firestoreInstance.doc(`${stripeUserPath}/${userId}/${stripePaymentPath}/${paymentId}`).get();
+          const paymentData = payment.data();
+          if (!paymentData || !paymentData["id"]) {
+            throw new functions.https.HttpsError("not-found", "The payment method is empty.");
+          }
+          await stripeClient.customers.update(
+            data["customer"],
+            {
+              invoice_settings: {
+                default_payment_method: paymentData["id"],
+              },
             }
-            defaultPayment = payments.docs[0].data()["id"];
-          }
-          const update: { [key: string]: any } = {};
-          update["defaultPayment"] = defaultPayment;
-          await userDoc.ref.set(update, {
-            merge: true,
-          });
-        }
-        const user = await authInstance.getUser(userId);
-        if (!user) {
-          throw new functions.https.HttpsError("not-found", "The user is not found.");
-        }
-        let email = user.email;
-        if (!email) {
-          const paymentMethod = await stripeClient.paymentMethods.retrieve(
-            defaultPayment,
           );
-          if (paymentMethod && paymentMethod["billing_details"] && paymentMethod["billing_details"]["email"]) {
-            email = paymentMethod["billing_details"]["email"];
+          if (data["defaultPayment"] !== paymentData["id"]) {
+            const update: { [key: string]: any } = {};
+            update["defaultPayment"] = paymentData["id"];
+            await doc.ref.set(update, {
+              merge: true,
+            });
           }
+          return {
+            success: true,
+          };
+        }
+        case "delete_payment": {
+          const userId = query.data.userId;
+          const paymentId = query.data.paymentId;
+          if (!paymentId) {
+            throw new functions.https.HttpsError("invalid-argument", "The payment id is empty.");
+          }
+          if (!userId) {
+            throw new functions.https.HttpsError("invalid-argument", "The user id is empty.");
+          }
+          const doc = await firestoreInstance.doc(`${stripeUserPath}/${userId}`).get();
+          const data = doc.data();
+          if (!data || !data["customer"]) {
+            throw new functions.https.HttpsError("not-found", "The customer is empty.");
+          }
+          const payment = await firestoreInstance.doc(`${stripeUserPath}/${userId}/${stripePaymentPath}/${paymentId}`).get();
+          const paymentData = payment.data();
+          if (!paymentData || !paymentData["id"]) {
+            throw new functions.https.HttpsError("not-found", "The payment method is empty.");
+          }
+          await stripeClient.paymentMethods.detach(
+            paymentData["id"],
+          );
+          if (data["defaultPayment"] === paymentData["id"]) {
+            const update: { [key: string]: any } = {};
+            update["defaultPayment"] = admin.firestore.FieldValue.delete();
+            await doc.ref.set(update, {
+              merge: true,
+            });
+          }
+          return {
+            success: true,
+          };
+        }
+        case "delete_customer": {
+          const userId = query.data.userId;
+          if (!userId) {
+            throw new functions.https.HttpsError("invalid-argument", "The user id is empty.");
+          }
+          const doc = await firestoreInstance.doc(`${stripeUserPath}/${userId}`).get();
+          const data = doc.data();
+          if (!data || !data["customer"]) {
+            throw new functions.https.HttpsError("not-found", "Customer id is not found.");
+          }
+          await stripeClient.customers.del(data["customer"]);
+          const update: { [key: string]: any } = {};
+          update["customer"] = admin.firestore.FieldValue.delete();
+          await doc.ref.set(update, {
+            merge: true,
+          });
+          return {
+            success: true,
+          };
+        }
+        case "authorization": {
+          const authInstance = admin.auth();
+          const amount = parseFloat(query.data.amount);
+          const currency = query.data.currency ?? "jpy";
+          const returnUrl = query.data.returnUrl;
+          const online = query.data.online == "true";
+          const emailFrom = query.data.from;
+          const emailTitle = query.data.title;
+          const emailContent = query.data.content;
+          const userId = query.data.userId;
+          if (!userId) {
+            throw new functions.https.HttpsError("invalid-argument", "The user id is empty.");
+          }
+          const userDoc = await firestoreInstance.doc(`${stripeUserPath}/${userId}`).get();
+          const userData = userDoc.data();
+          if (!userData || !userData["customer"]) {
+            throw new functions.https.HttpsError("not-found", "The customer id is not found.");
+          }
+          let defaultPayment = userData["defaultPayment"];
+          if (!defaultPayment) {
+            const customer = await stripeClient.customers.retrieve(
+              userData["customer"],
+            ) as stripe.Stripe.Customer;
+            defaultPayment = customer.invoice_settings.default_payment_method;
+            if (!defaultPayment) {
+              const payments = await firestoreInstance.collection(`${stripeUserPath}/${userId}/${stripePaymentPath}`).get();
+              if (payments.size <= 0) {
+                throw new functions.https.HttpsError("not-found", "The payment method is not found.");
+              }
+              defaultPayment = payments.docs[0].data()["id"];
+            }
+            const update: { [key: string]: any } = {};
+            update["defaultPayment"] = defaultPayment;
+            await userDoc.ref.set(update, {
+              merge: true,
+            });
+          }
+          const user = await authInstance.getUser(userId);
+          if (!user) {
+            throw new functions.https.HttpsError("not-found", "The user is not found.");
+          }
+          let email = user.email;
           if (!email) {
-            throw new functions.https.HttpsError("not-found", "The user's email is not found.");
+            const paymentMethod = await stripeClient.paymentMethods.retrieve(
+              defaultPayment,
+            );
+            if (paymentMethod && paymentMethod["billing_details"] && paymentMethod["billing_details"]["email"]) {
+              email = paymentMethod["billing_details"]["email"];
+            }
+            if (!email) {
+              throw new functions.https.HttpsError("not-found", "The user's email is not found.");
+            }
+          }
+          const paymentIntent = await stripeClient.paymentIntents.create({
+            payment_method_types: ["card"],
+            amount: amount,
+            confirm: false,
+            capture_method: "manual",
+            payment_method: defaultPayment,
+            description: "",
+            customer: userData["customer"],
+            receipt_email: email,
+            currency: currency ?? "usd",
+            setup_future_usage: "off_session",
+          });
+          if (!paymentIntent) {
+            throw new functions.https.HttpsError("data-loss", "The payment is failed.");
+          }
+          const confirmedPaymentIntent = await stripeClient.paymentIntents.confirm(
+            paymentIntent.id,
+            {
+              return_url: returnUrl,
+            }
+          );
+          const nextActionUrl = confirmedPaymentIntent.next_action?.redirect_to_url?.url ?? "";
+          if (nextActionUrl && !online) {
+            if (emailFrom && email && emailTitle && emailContent) {
+              switch (stripeEmailProvider) {
+                case "gmail": {
+                  await gmail.send({
+                    from: emailFrom,
+                    to: email,
+                    title: emailTitle,
+                    content: emailContent.replace("{url}", nextActionUrl),
+                  });
+                  break;
+                }
+                case "sendgrid": {
+                  await sendgrid.send({
+                    from: emailFrom,
+                    to: email,
+                    title: emailTitle,
+                    content: emailContent.replace("{url}", nextActionUrl),
+                  });
+                  break;
+                }
+              }
+            } else {
+              throw new functions.https.HttpsError("unavailable", "3D Secure authentication is required, but the user is offline and no email settings have been configured.");
+            }
+          }
+          return {
+            url: online ? nextActionUrl : "",
+            returnUrl: online ? confirmedPaymentIntent.next_action?.redirect_to_url?.return_url ?? "" : "",
+            authorizedId: paymentIntent.id,
+          };
+        }
+        case "confirm_authorization": {
+          const authorizedId = query.data.authorizedId;
+          if (!authorizedId) {
+            throw new functions.https.HttpsError("invalid-argument", "The authorized id is empty.");
+          }
+          await stripeClient.paymentIntents.cancel(
+            authorizedId,
+          );
+          return {
+            success: true,
+          };
+        }
+        case "create_purchase": {
+          const authInstance = admin.auth();
+          const amount = parseFloat(query.data.amount);
+          const revenue = parseFloat(query.data.revenueRatio ?? 0);
+          const currency = query.data.currency ?? "jpy";
+          const userId = query.data.userId;
+          const targetUserId = query.data.targetUserId;
+          const orderId = query.data.orderId;
+          const description = query.data.description;
+          const emailFrom = query.data.emailFrom;
+          const emailTitle = query.data.emailTitle;
+          const emailContent = query.data.emailContent;
+          const locale = query.data.locale;
+          if (!orderId) {
+            throw new functions.https.HttpsError("invalid-argument", "The order id is empty.");
+          }
+          if (!userId) {
+            throw new functions.https.HttpsError("invalid-argument", "The user id is empty.");
+          }
+          const userDoc = await firestoreInstance.doc(`${stripeUserPath}/${userId}`).get();
+          const userData = userDoc.data();
+          if (!userData || !userData["customer"]) {
+            throw new functions.https.HttpsError("not-found", "The customer id is not found.");
+          }
+          let defaultPayment = userData["defaultPayment"];
+          if (!defaultPayment) {
+            const customer = await stripeClient.customers.retrieve(
+              userData["customer"],
+            ) as stripe.Stripe.Customer;
+            defaultPayment = customer.invoice_settings.default_payment_method;
+            if (!defaultPayment) {
+              const payments = await firestoreInstance.collection(`${stripeUserPath}/${userId}/${stripePaymentPath}`).get();
+              if (payments.size <= 0) {
+                throw new functions.https.HttpsError("not-found", "The payment method is not found.");
+              }
+              defaultPayment = payments.docs[0].data()["id"];
+            }
+            const update: { [key: string]: any } = {};
+            update["defaultPayment"] = defaultPayment;
+            await userDoc.ref.set(update, {
+              merge: true,
+            });
+          }
+          const user = await authInstance.getUser(userId);
+          if (!user) {
+            throw new functions.https.HttpsError("not-found", "The user is not found.");
+          }
+          let email = user.email;
+          if (!email) {
+            const paymentMethod = await stripeClient.paymentMethods.retrieve(
+              defaultPayment,
+            );
+            if (paymentMethod && paymentMethod["billing_details"] && paymentMethod["billing_details"]["email"]) {
+              email = paymentMethod["billing_details"]["email"];
+            }
+            if (!email) {
+              throw new functions.https.HttpsError("not-found", "The user's email is not found.");
+            }
+          }
+          if (targetUserId) {
+            const targetDoc = await firestoreInstance.doc(`${stripeUserPath}/${targetUserId}`).get();
+            const targetData = targetDoc.data();
+            if (!targetData || !targetData["account"]) {
+              throw new functions.https.HttpsError("not-found", "The target data is not found.");
+            }
+            const paymentIntent = await stripeClient.paymentIntents.create({
+              payment_method_types: ["card"],
+              amount: amount,
+              confirm: false,
+              capture_method: "manual",
+              payment_method: defaultPayment,
+              description: description,
+              customer: userData["customer"],
+              metadata: {
+                "order_id": orderId,
+              },
+              receipt_email: email,
+              currency: currency,
+              setup_future_usage: "off_session",
+              application_fee_amount: amount * revenue,
+              transfer_data: {
+                destination: targetData["account"],
+              },
+            });
+            if (!paymentIntent) {
+              throw new functions.https.HttpsError("data-loss", "The payment is failed.");
+            }
+            const update: { [key: string]: any } = {};
+            update["@uid"] = orderId;
+            update["orderId"] = orderId;
+            update["purchaseId"] = paymentIntent.id;
+            update["paymentMethodId"] = defaultPayment;
+            update["confirm"] = false;
+            update["verify"] = false;
+            update["capture"] = false;
+            update["success"] = false;
+            update["user"] = userId;
+            update["target"] = targetUserId;
+            update["nextAction"] = {
+              url: paymentIntent.next_action?.redirect_to_url?.url ?? "",
+              returnUrl: paymentIntent.next_action?.redirect_to_url?.return_url ?? "",
+            };
+            update["targetAccount"] = targetData["account"];
+            update["customer"] = userData["customer"];
+            update["amount"] = paymentIntent.amount;
+            update["application"] = paymentIntent.application;
+            update["applicationFeeAmount"] = paymentIntent.application_fee_amount;
+            update["transferAmount"] = paymentIntent.transfer_data?.amount ?? 0;
+            update["transferDistination"] = paymentIntent.transfer_data?.destination ?? "";
+            update["currency"] = paymentIntent.currency;
+            update["clientSecret"] = paymentIntent.client_secret;
+            update["createdTime"] = new Date(paymentIntent.created * 1000);
+            update["updatedTime"] = new Date();
+            update["emailFrom"] = emailFrom;
+            update["emailTo"] = email;
+            update["emailTitle"] = emailTitle;
+            update["emailContent"] = emailContent;
+            update["locale"] = locale;
+            await firestoreInstance.doc(`${stripeUserPath}/${userId}/${stripePurchasePath}/${orderId}`).set(update, {
+              merge: true,
+            });
+            return {
+              purchaseId: paymentIntent.id,
+            };
+          } else {
+            const paymentIntent = await stripeClient.paymentIntents.create({
+              payment_method_types: ["card"],
+              amount: amount,
+              confirm: false,
+              capture_method: "manual",
+              payment_method: defaultPayment,
+              description: description,
+              customer: userData["customer"],
+              metadata: {
+                "order_id": orderId,
+              },
+              receipt_email: email,
+              currency: currency,
+              setup_future_usage: "off_session",
+            });
+            if (!paymentIntent) {
+              throw new functions.https.HttpsError("data-loss", "The payment is failed.");
+            }
+            const update: { [key: string]: any } = {};
+            update["@uid"] = orderId;
+            update["orderId"] = orderId;
+            update["purchaseId"] = paymentIntent.id;
+            update["paymentMethodId"] = defaultPayment;
+            update["confirm"] = false;
+            update["verify"] = false;
+            update["capture"] = false;
+            update["success"] = false;
+            update["user"] = userId;
+            update["nextAction"] = {
+              url: paymentIntent.next_action?.redirect_to_url?.url ?? "",
+              returnUrl: paymentIntent.next_action?.redirect_to_url?.return_url ?? "",
+            };
+            update["customer"] = userData["customer"];
+            update["amount"] = paymentIntent.amount;
+            update["application"] = paymentIntent.application;
+            update["applicationFeeAmount"] = paymentIntent.application_fee_amount;
+            update["transferAmount"] = paymentIntent.transfer_data?.amount ?? 0;
+            update["transferDistination"] = paymentIntent.transfer_data?.destination ?? "";
+            update["currency"] = paymentIntent.currency;
+            update["clientSecret"] = paymentIntent.client_secret;
+            update["createdTime"] = new Date(paymentIntent.created * 1000);
+            update["updatedTime"] = new Date();
+            update["emailFrom"] = emailFrom;
+            update["emailTo"] = email;
+            update["emailTitle"] = emailTitle;
+            update["emailContent"] = emailContent;
+            update["locale"] = locale;
+            await firestoreInstance.doc(`${stripeUserPath}/${userId}/${stripePurchasePath}/${orderId}`).set(update, {
+              merge: true,
+            });
+            return {
+              purchaseId: paymentIntent.id,
+            };
           }
         }
-        const paymentIntent = await stripeClient.paymentIntents.create({
-          payment_method_types: ["card"],
-          amount: amount,
-          confirm: false,
-          capture_method: "manual",
-          payment_method: defaultPayment,
-          description: "",
-          customer: userData["customer"],
-          receipt_email: email,
-          currency: currency ?? "usd",
-          setup_future_usage: "off_session",
-        });
-        if (!paymentIntent) {
-          throw new functions.https.HttpsError("data-loss", "The payment is failed.");
-        }
-        const confirmedPaymentIntent = await stripeClient.paymentIntents.confirm(
-          paymentIntent.id,
-          {
-            return_url: returnUrl,
+        case "confirm_purchase": {
+          const userId = query.data.userId;
+          const orderId = query.data.orderId;
+          const successUrl = query.data.successUrl;
+          const failureUrl = query.data.failureUrl;
+          let returnUrl = query.data.returnUrl;
+          const online = query.data.online == "true";
+          if (!orderId) {
+            throw new functions.https.HttpsError("invalid-argument", "The order id is empty.");
           }
-        );
-        const nextActionUrl = confirmedPaymentIntent.next_action?.redirect_to_url?.url ?? "";
-        if (nextActionUrl && !online) {
-          if (emailFrom && email && emailTitle && emailContent) {
-            switch (stripeEmailProvider) {
-            case "gmail": {
-                await gmail.send({
-                  from: emailFrom,
-                  to: email,
-                  title: emailTitle,
-                  content: emailContent.replace("{url}", nextActionUrl),
-                });
-              break;
+          if (!userId) {
+            throw new functions.https.HttpsError("invalid-argument", "The user id is empty.");
+          }
+          if (!online) {
+            returnUrl = returnUrl + "?token=" + JSON.stringify({
+              userId: userId,
+              orderId: orderId,
+              successUrl: successUrl,
+              failureUrl: failureUrl,
+            }).encrypt({
+              key: apiKey.slice(0, 32),
+              ivKey: apiKey.slice(-16),
+            });
+          }
+          const doc = await firestoreInstance.doc(`${stripeUserPath}/${userId}/${stripePurchasePath}/${orderId}`).get();
+          const data = doc.data();
+          if (!data || !data["purchaseId"]) {
+            throw new functions.https.HttpsError("not-found", "The purchase data is invalid.");
+          }
+          if (data["error"]) {
+            throw new functions.https.HttpsError("aborted", "The purchase data has some errors");
+          }
+          if (data["cancel"]) {
+            throw new functions.https.HttpsError("cancelled", "The purchase data is already canceled.");
+          }
+          if (data["confirm"]) {
+            if (data["verify"]) {
+              throw new functions.https.HttpsError("ok", "The purchase data is already confirmed.");
             }
-            case "sendgrid": {
-                await sendgrid.send({
-                  from: emailFrom,
-                  to: email,
-                  title: emailTitle,
-                  content: emailContent.replace("{url}", nextActionUrl),
+            try {
+              const paymentIntent = await stripeClient.paymentIntents.retrieve(
+                data["purchaseId"],
+              );
+              const nextActionUrl = paymentIntent.next_action?.redirect_to_url?.url ?? "";
+              const update: { [key: string]: any } = {};
+              if (nextActionUrl) {
+                if (!online) {
+                  if (data["emailFrom"] && data["emailTo"] && data["emailTitle"] && data["emailContent"]) {
+                    switch (stripeEmailProvider) {
+                      case "gmail": {
+                        await gmail.send({
+                          from: data["emailFrom"],
+                          to: data["emailTo"],
+                          title: data["emailTitle"],
+                          content: data["emailContent"].replace("{url}", nextActionUrl),
+                        });
+                        break;
+                      }
+                      case "sendgrid": {
+                        await sendgrid.send({
+                          from: data["emailFrom"],
+                          to: data["emailTo"],
+                          title: data["emailTitle"],
+                          content: data["emailContent"].replace("{url}", nextActionUrl),
+                        });
+                        break;
+                      }
+                    }
+                  } else {
+                    update["error"] = true;
+                    update["errorMessage"] = "3D Secure authentication is required, but the user is offline and no email settings have been configured.";
+                  }
+                }
+                update["nextAction"] = {
+                  url: nextActionUrl,
+                  returnUrl: paymentIntent.next_action?.redirect_to_url?.return_url ?? "",
+                };
+                await doc.ref.set(update, {
+                  merge: true,
                 });
-              break;
-            }
+                return {
+                  url: online ? nextActionUrl : "",
+                  returnUrl: online ? paymentIntent.next_action?.redirect_to_url?.return_url ?? "" : "",
+                  purchaseId: data["purchaseId"],
+                };
+              } else {
+                update["verify"] = true;
+                update["nextAction"] = admin.firestore.FieldValue.delete();
+                await doc.ref.set(update, {
+                  merge: true,
+                });
+                return {
+                  url: "",
+                  returnUrl: "",
+                  purchaseId: data["purchaseId"],
+                };
+              }
+            } catch (err) {
+              const update: { [key: string]: any } = {};
+              update["error"] = true;
+              update["errorMessage"] = "The Purchase confirmation failed. Please replace the billing information and Refresh.";
+              await doc.ref.set(update, {
+                merge: true,
+              });
+              throw err;
             }
           } else {
-            throw new functions.https.HttpsError("unavailable", "3D Secure authentication is required, but the user is offline and no email settings have been configured.");
-          }
-        }
-        return {
-          url: online ? nextActionUrl : "",
-          returnUrl: online ? confirmedPaymentIntent.next_action?.redirect_to_url?.return_url ?? "" : "",
-          authorizedId: paymentIntent.id,
-        };
-      }
-      case "confirm_authorization": {
-        const authorizedId = query.authorizedId;
-        if (!authorizedId) {
-          throw new functions.https.HttpsError("invalid-argument", "The authorized id is empty.");
-        }
-        await stripeClient.paymentIntents.cancel(
-          authorizedId,
-        );
-        return {
-          success: true,
-        };
-      }
-      case "create_purchase": {
-        const authInstance = admin.auth();
-        const amount = parseFloat(query.amount);
-        const revenue = parseFloat(query.revenueRatio ?? 0);
-        const currency = query.currency ?? "jpy";
-        const userId = query.userId;
-        const targetUserId = query.targetUserId;
-        const orderId = query.orderId;
-        const description = query.description;
-        const emailFrom = query.emailFrom;
-        const emailTitle = query.emailTitle;
-        const emailContent = query.emailContent;
-        const locale = query.locale;
-        if (!orderId) {
-          throw new functions.https.HttpsError("invalid-argument", "The order id is empty.");
-        }
-        if (!userId) {
-          throw new functions.https.HttpsError("invalid-argument", "The user id is empty.");
-        }
-        const userDoc = await firestoreInstance.doc(`${stripeUserPath}/${userId}`).get();
-        const userData = userDoc.data();
-        if (!userData || !userData["customer"]) {
-          throw new functions.https.HttpsError("not-found", "The customer id is not found.");
-        }
-        let defaultPayment = userData["defaultPayment"];
-        if (!defaultPayment) {
-          const customer = await stripeClient.customers.retrieve(
-            userData["customer"],
-          ) as stripe.Stripe.Customer;
-          defaultPayment = customer.invoice_settings.default_payment_method;
-          if (!defaultPayment) {
-            const payments = await firestoreInstance.collection(`${stripeUserPath}/${userId}/${stripePaymentPath}`).get();
-            if (payments.size <= 0) {
-              throw new functions.https.HttpsError("not-found", "The payment method is not found.");
-            }
-            defaultPayment = payments.docs[0].data()["id"];
-          }
-          const update: { [key: string]: any } = {};
-          update["defaultPayment"] = defaultPayment;
-          await userDoc.ref.set(update, {
-            merge: true,
-          });
-        }
-        const user = await authInstance.getUser(userId);
-        if (!user) {
-          throw new functions.https.HttpsError("not-found", "The user is not found.");
-        }
-        let email = user.email;
-        if (!email) {
-          const paymentMethod = await stripeClient.paymentMethods.retrieve(
-            defaultPayment,
-          );
-          if (paymentMethod && paymentMethod["billing_details"] && paymentMethod["billing_details"]["email"]) {
-            email = paymentMethod["billing_details"]["email"];
-          }
-          if (!email) {
-            throw new functions.https.HttpsError("not-found", "The user's email is not found.");
-          }
-        }
-        if (targetUserId) {
-          const targetDoc = await firestoreInstance.doc(`${stripeUserPath}/${targetUserId}`).get();
-          const targetData = targetDoc.data();
-          if (!targetData || !targetData["account"]) {
-            throw new functions.https.HttpsError("not-found", "The target data is not found.");
-          }
-          const paymentIntent = await stripeClient.paymentIntents.create({
-            payment_method_types: ["card"],
-            amount: amount,
-            confirm: false,
-            capture_method: "manual",
-            payment_method: defaultPayment,
-            description: description,
-            customer: userData["customer"],
-            metadata: {
-              "order_id": orderId,
-            },
-            receipt_email: email,
-            currency: currency,
-            setup_future_usage: "off_session",
-            application_fee_amount: amount * revenue,
-            transfer_data: {
-              destination: targetData["account"],
-            },
-          });
-          if (!paymentIntent) {
-            throw new functions.https.HttpsError("data-loss", "The payment is failed.");
-          }
-          const update: { [key: string]: any } = {};
-          update["@uid"] = orderId;
-          update["orderId"] = orderId;
-          update["purchaseId"] = paymentIntent.id;
-          update["paymentMethodId"] = defaultPayment;
-          update["confirm"] = false;
-          update["verify"] = false;
-          update["capture"] = false;
-          update["success"] = false;
-          update["user"] = userId;
-          update["target"] = targetUserId;
-          update["nextAction"] = {
-            url: paymentIntent.next_action?.redirect_to_url?.url ?? "",
-            returnUrl: paymentIntent.next_action?.redirect_to_url?.return_url ?? "",
-          };
-          update["targetAccount"] = targetData["account"];
-          update["customer"] = userData["customer"];
-          update["amount"] = paymentIntent.amount;
-          update["application"] = paymentIntent.application;
-          update["applicationFeeAmount"] = paymentIntent.application_fee_amount;
-          update["transferAmount"] = paymentIntent.transfer_data?.amount ?? 0;
-          update["transferDistination"] = paymentIntent.transfer_data?.destination ?? "";
-          update["currency"] = paymentIntent.currency;
-          update["clientSecret"] = paymentIntent.client_secret;
-          update["createdTime"] = new Date(paymentIntent.created * 1000);
-          update["updatedTime"] = new Date();
-          update["emailFrom"] = emailFrom;
-          update["emailTo"] = email;
-          update["emailTitle"] = emailTitle;
-          update["emailContent"] = emailContent;
-          update["locale"] = locale;
-          await firestoreInstance.doc(`${stripeUserPath}/${userId}/${stripePurchasePath}/${orderId}`).set(update, {
-            merge: true,
-          });
-          return {
-            purchaseId: paymentIntent.id,
-          };
-        } else {
-          const paymentIntent = await stripeClient.paymentIntents.create({
-            payment_method_types: ["card"],
-            amount: amount,
-            confirm: false,
-            capture_method: "manual",
-            payment_method: defaultPayment,
-            description: description,
-            customer: userData["customer"],
-            metadata: {
-              "order_id": orderId,
-            },
-            receipt_email: email,
-            currency: currency,
-            setup_future_usage: "off_session",
-          });
-          if (!paymentIntent) {
-            throw new functions.https.HttpsError("data-loss", "The payment is failed.");
-          }
-          const update: { [key: string]: any } = {};
-          update["@uid"] = orderId;
-          update["orderId"] = orderId;
-          update["purchaseId"] = paymentIntent.id;
-          update["paymentMethodId"] = defaultPayment;
-          update["confirm"] = false;
-          update["verify"] = false;
-          update["capture"] = false;
-          update["success"] = false;
-          update["user"] = userId;
-          update["nextAction"] = {
-            url: paymentIntent.next_action?.redirect_to_url?.url ?? "",
-            returnUrl: paymentIntent.next_action?.redirect_to_url?.return_url ?? "",
-          };
-          update["customer"] = userData["customer"];
-          update["amount"] = paymentIntent.amount;
-          update["application"] = paymentIntent.application;
-          update["applicationFeeAmount"] = paymentIntent.application_fee_amount;
-          update["transferAmount"] = paymentIntent.transfer_data?.amount ?? 0;
-          update["transferDistination"] = paymentIntent.transfer_data?.destination ?? "";
-          update["currency"] = paymentIntent.currency;
-          update["clientSecret"] = paymentIntent.client_secret;
-          update["createdTime"] = new Date(paymentIntent.created * 1000);
-          update["updatedTime"] = new Date();
-          update["emailFrom"] = emailFrom;
-          update["emailTo"] = email;
-          update["emailTitle"] = emailTitle;
-          update["emailContent"] = emailContent;
-          update["locale"] = locale;
-          await firestoreInstance.doc(`${stripeUserPath}/${userId}/${stripePurchasePath}/${orderId}`).set(update, {
-            merge: true,
-          });
-          return {
-            purchaseId: paymentIntent.id,
-          };
-        }
-      }
-      case "confirm_purchase": {
-        const userId = query.userId;
-        const orderId = query.orderId;
-        const successUrl = query.successUrl;
-        const failureUrl = query.failureUrl;
-        let returnUrl = query.returnUrl;
-        const online = query.online == "true";
-        if (!orderId) {
-          throw new functions.https.HttpsError("invalid-argument", "The order id is empty.");
-        }
-        if (!userId) {
-          throw new functions.https.HttpsError("invalid-argument", "The user id is empty.");
-        }
-        if (!online) {
-          returnUrl = returnUrl + "?token=" + JSON.stringify({
-            userId: userId,
-            orderId: orderId,
-            successUrl: successUrl,
-            failureUrl: failureUrl,
-          }).encrypt({
-            key: apiKey.slice(0, 32),
-            ivKey: apiKey.slice(-16),
-          });
-        }
-        const doc = await firestoreInstance.doc(`${stripeUserPath}/${userId}/${stripePurchasePath}/${orderId}`).get();
-        const data = doc.data();
-        if (!data || !data["purchaseId"]) {
-          throw new functions.https.HttpsError("not-found", "The purchase data is invalid.");
-        }
-        if (data["error"]) {
-          throw new functions.https.HttpsError("aborted", "The purchase data has some errors");
-        }
-        if (data["cancel"]) {
-          throw new functions.https.HttpsError("cancelled", "The purchase data is already canceled.");
-        }
-        if (data["confirm"]) {
-          if (data["verify"]) {
-            throw new functions.https.HttpsError("ok", "The purchase data is already confirmed.");
-          }
-          try {
-            const paymentIntent = await stripeClient.paymentIntents.retrieve(
-              data["purchaseId"],
-            );
-            const nextActionUrl = paymentIntent.next_action?.redirect_to_url?.url ?? "";
-            const update: { [key: string]: any } = {};
-            if (nextActionUrl) {
-              if (!online) {
+            try {
+              const paymentIntent = await stripeClient.paymentIntents.confirm(
+                data["purchaseId"],
+                {
+                  return_url: returnUrl,
+                }
+              );
+              const nextActionUrl = paymentIntent.next_action?.redirect_to_url?.url ?? "";
+              const update: { [key: string]: any } = {};
+              if (nextActionUrl && !online) {
                 if (data["emailFrom"] && data["emailTo"] && data["emailTitle"] && data["emailContent"]) {
                   switch (stripeEmailProvider) {
-                  case "gmail": {
+                    case "gmail": {
                       await gmail.send({
                         from: data["emailFrom"],
                         to: data["emailTo"],
                         title: data["emailTitle"],
                         content: data["emailContent"].replace("{url}", nextActionUrl),
-                    });
-                    break;
-                  }
-                  case "sendgrid": {
+                      });
+                      break;
+                    }
+                    case "sendgrid": {
                       await sendgrid.send({
                         from: data["emailFrom"],
                         to: data["emailTo"],
                         title: data["emailTitle"],
                         content: data["emailContent"].replace("{url}", nextActionUrl),
                       });
-                    break;
-                  }
+                      break;
+                    }
                   }
                 } else {
                   update["error"] = true;
@@ -843,79 +924,216 @@ module.exports = (regions: string[], timeoutSeconds: number, data: { [key: strin
                 returnUrl: online ? paymentIntent.next_action?.redirect_to_url?.return_url ?? "" : "",
                 purchaseId: data["purchaseId"],
               };
-            } else {
-              update["verify"] = true;
-              update["nextAction"] = admin.firestore.FieldValue.delete();
+            } catch (err) {
+              const update: { [key: string]: any } = {};
+              update["error"] = true;
+              update["errorMessage"] = "The Purchase confirmation failed. Please replace the billing information and Refresh.";
               await doc.ref.set(update, {
                 merge: true,
               });
-              return {
-                url: "",
-                returnUrl: "",
-                purchaseId: data["purchaseId"],
-              };
+              throw err;
             }
-          } catch (err) {
-            const update: { [key: string]: any } = {};
-            update["error"] = true;
-            update["errorMessage"] = "The Purchase confirmation failed. Please replace the billing information and Refresh.";
-            await doc.ref.set(update, {
-              merge: true,
-            });
-            throw err;
           }
-        } else {
+        }
+        case "capture_purchase": {
+          const userId = query.data.userId;
+          const orderId = query.data.orderId;
+          const amount = parseFloat(query.data.amount ?? 0.0);
+          if (!orderId) {
+            throw new functions.https.HttpsError("invalid-argument", "The order id is empty.");
+          }
+          if (!userId) {
+            throw new functions.https.HttpsError("invalid-argument", "The user id is empty.");
+          }
+          const doc = await firestoreInstance.doc(`${stripeUserPath}/${userId}/${stripePurchasePath}/${orderId}`).get();
+          const data = doc.data();
+          if (!data || !data["purchaseId"]) {
+            throw new functions.https.HttpsError("not-found", "The purchase data is invalid.");
+          }
+          if (data["error"]) {
+            throw new functions.https.HttpsError("aborted", "The purchase data has some errors");
+          }
+          if (data["cancel"]) {
+            throw new functions.https.HttpsError("cancelled", "This purchase data has already been cancelled.");
+          }
+          if (!data["confirm"] || !data["verify"]) {
+            throw new functions.https.HttpsError("failed-precondition", "The purchase data is not confirmed.");
+          }
+          if (data["capture"]) {
+            throw new functions.https.HttpsError("ok", "The purchase data is already captured.");
+          }
+          if (data["amount"] < amount) {
+            throw new functions.https.HttpsError("invalid-argument", "You cannot capture an amount higher than the billing amount already saved.");
+          }
           try {
-            const paymentIntent = await stripeClient.paymentIntents.confirm(
+            const paymentIntent = await (amount > 0 ? stripeClient.paymentIntents.capture(
               data["purchaseId"],
               {
-                return_url: returnUrl,
+                amount_to_capture: amount,
               }
-            );
-            const nextActionUrl = paymentIntent.next_action?.redirect_to_url?.url ?? "";
-            const update: { [key: string]: any } = {};
-            if (nextActionUrl && !online) {
-              if (data["emailFrom"] && data["emailTo"] && data["emailTitle"] && data["emailContent"]) {
-                switch (stripeEmailProvider) {
-                case "gmail": {
-                    await gmail.send({
-                      from: data["emailFrom"],
-                      to: data["emailTo"],
-                      title: data["emailTitle"],
-                      content: data["emailContent"].replace("{url}", nextActionUrl),
-                    });
-                  break;
-                }
-                case "sendgrid": {
-                    await sendgrid.send({
-                      from: data["emailFrom"],
-                      to: data["emailTo"],
-                      title: data["emailTitle"],
-                      content: data["emailContent"].replace("{url}", nextActionUrl),
-                    });
-                  break;
-                }
-                }
-              } else {
-                update["error"] = true;
-                update["errorMessage"] = "3D Secure authentication is required, but the user is offline and no email settings have been configured.";
-              }
+            ) : stripeClient.paymentIntents.capture(
+              data["purchaseId"],
+            ));
+            if (paymentIntent.status !== "succeeded") {
+              throw new functions.https.HttpsError("aborted", "The Payment capture failed.");
             }
-            update["nextAction"] = {
-              url: nextActionUrl,
-              returnUrl: paymentIntent.next_action?.redirect_to_url?.return_url ?? "",
-            };
-            await doc.ref.set(update, {
-              merge: true,
-            });
             return {
-              url: online ? nextActionUrl : "",
-              returnUrl: online ? paymentIntent.next_action?.redirect_to_url?.return_url ?? "" : "",
               purchaseId: data["purchaseId"],
             };
           } catch (err) {
             const update: { [key: string]: any } = {};
             update["error"] = true;
+            update["errorMessage"] = "The Purchase capture failed. Please replace the billing information and Refresh.";
+            await doc.ref.set(update, {
+              merge: true,
+            });
+            throw err;
+          }
+        }
+        case "refresh_purchase": {
+          const orderId = query.data.orderId;
+          const userId = query.data.userId;
+          if (!orderId) {
+            throw new functions.https.HttpsError("invalid-argument", "The order id is empty.");
+          }
+          if (!userId) {
+            throw new functions.https.HttpsError("invalid-argument", "The user id is empty.");
+          }
+          const doc = await firestoreInstance.doc(`${stripeUserPath}/${userId}/${stripePurchasePath}/${orderId}`).get();
+          const data = doc.data();
+          if (!data || !data["purchaseId"]) {
+            throw new functions.https.HttpsError("not-found", "The purchase data is invalid.");
+          }
+          if (data["success"]) {
+            throw new functions.https.HttpsError("already-exists", "The payment has already been succeed.");
+          }
+          if (!data["error"]) {
+            return {
+              success: true,
+            };
+          }
+          const userDoc = await firestoreInstance.doc(`${stripeUserPath}/${userId}`).get();
+          const userData = userDoc.data();
+          if (!userData || !userData["customer"]) {
+            throw new functions.https.HttpsError("not-found", "The customer id is not found.");
+          }
+          let defaultPayment = userData["defaultPayment"];
+          if (!defaultPayment) {
+            const customer = await stripeClient.customers.retrieve(
+              userData["customer"],
+            ) as stripe.Stripe.Customer;
+            defaultPayment = customer.invoice_settings.default_payment_method;
+            if (!defaultPayment) {
+              const payments = await firestoreInstance.collection(`${stripeUserPath}/${userId}/${stripePaymentPath}`).get();
+              if (payments.size <= 0) {
+                throw new functions.https.HttpsError("not-found", "The payment method is not found.");
+              }
+              defaultPayment = payments.docs[0].data()["id"];
+            }
+            const update: { [key: string]: any } = {};
+            update["defaultPayment"] = defaultPayment;
+            await userDoc.ref.set(update, {
+              merge: true,
+            });
+          }
+          if (defaultPayment === data["payment_method"]) {
+            throw new functions.https.HttpsError("failed-precondition", "There was no change in the Payment method.");
+          }
+          await stripeClient.paymentIntents.update(
+            data["purchaseId"],
+            {
+              payment_method: defaultPayment,
+            }
+          );
+          const update: { [key: string]: any } = {};
+          update["paymentMethodId"] = defaultPayment;
+          update["error"] = admin.firestore.FieldValue.delete();
+          update["errorMessage"] = admin.firestore.FieldValue.delete();
+          await doc.ref.set(update, {
+            merge: true,
+          });
+          return {
+            success: true,
+          };
+        }
+        case "cancel_purchase": {
+          const orderId = query.data.orderId;
+          const userId = query.data.userId;
+          if (!orderId) {
+            throw new functions.https.HttpsError("invalid-argument", "The order id is empty.");
+          }
+          if (!userId) {
+            throw new functions.https.HttpsError("invalid-argument", "The user id is empty.");
+          }
+          const doc = await firestoreInstance.doc(`${stripeUserPath}/${userId}/${stripePurchasePath}/${orderId}`).get();
+          const data = doc.data();
+          if (!data || !data["purchaseId"]) {
+            throw new functions.https.HttpsError("not-found", "The purchase data is invalid.");
+          }
+          if (data["cancel"]) {
+            throw new functions.https.HttpsError("ok", "The purchase data is already canceled.");
+          }
+          if (data["capture"] || data["success"]) {
+            throw new functions.https.HttpsError("failed-precondition", "The payment has already been completed.");
+          }
+          await stripeClient.paymentIntents.cancel(
+            data["purchaseId"],
+          );
+          const update: { [key: string]: any } = {};
+          update["cancel"] = true;
+          update["error"] = admin.firestore.FieldValue.delete();
+          update["errorMessage"] = admin.firestore.FieldValue.delete();
+          await doc.ref.set(update, {
+            merge: true,
+          });
+          return {
+            success: true,
+          };
+        }
+        case "refund_purchase": {
+          const orderId = query.data.orderId;
+          const userId = query.data.userId;
+          const amount = parseFloat(query.data.amount ?? 0.0);
+          if (!orderId) {
+            throw new functions.https.HttpsError("invalid-argument", "The order id is empty.");
+          }
+          if (!userId) {
+            throw new functions.https.HttpsError("invalid-argument", "The user id is empty.");
+          }
+          const doc = await firestoreInstance.doc(`${stripeUserPath}/${userId}/${stripePurchasePath}/${orderId}`).get();
+          const data = doc.data();
+          if (!data || !data["purchaseId"]) {
+            throw new functions.https.HttpsError("not-found", "The purchase data is invalid.");
+          }
+          if (!data["capture"] || !data["success"]) {
+            throw new functions.https.HttpsError("failed-precondition", "The payment is not yet in your jurisdiction.");
+          }
+          if (data["amount"] < amount) {
+            throw new functions.https.HttpsError("invalid-argument", "The amount to be refunded exceeds the original amount.");
+          }
+          try {
+            if (amount > 0) {
+              await stripeClient.refunds.create({
+                payment_intent: data["purchaseId"],
+                amount: amount,
+              });
+            } else {
+              await stripeClient.refunds.create({
+                payment_intent: data["purchaseId"],
+              });
+            }
+            const update: { [key: string]: any } = {};
+            update["refund"] = true;
+            update["cancel"] = true;
+            await doc.ref.set(update, {
+              merge: true,
+            });
+            return {
+              success: true,
+            };
+          } catch (err) {
+            const update: { [key: string]: any } = {};
+            update["error"] = true;
             update["errorMessage"] = "The Purchase confirmation failed. Please replace the billing information and Refresh.";
             await doc.ref.set(update, {
               merge: true,
@@ -923,270 +1141,63 @@ module.exports = (regions: string[], timeoutSeconds: number, data: { [key: strin
             throw err;
           }
         }
-      }
-      case "capture_purchase": {
-        const userId = query.userId;
-        const orderId = query.orderId;
-        const amount = parseFloat(query.amount ?? 0.0);
-        if (!orderId) {
-          throw new functions.https.HttpsError("invalid-argument", "The order id is empty.");
-        }
-        if (!userId) {
-          throw new functions.https.HttpsError("invalid-argument", "The user id is empty.");
-        }
-        const doc = await firestoreInstance.doc(`${stripeUserPath}/${userId}/${stripePurchasePath}/${orderId}`).get();
-        const data = doc.data();
-        if (!data || !data["purchaseId"]) {
-          throw new functions.https.HttpsError("not-found", "The purchase data is invalid.");
-        }
-        if (data["error"]) {
-          throw new functions.https.HttpsError("aborted", "The purchase data has some errors");
-        }
-        if (data["cancel"]) {
-          throw new functions.https.HttpsError("cancelled", "This purchase data has already been cancelled.");
-        }
-        if (!data["confirm"] || !data["verify"]) {
-          throw new functions.https.HttpsError("failed-precondition", "The purchase data is not confirmed.");
-        }
-        if (data["capture"]) {
-          throw new functions.https.HttpsError("ok", "The purchase data is already captured.");
-        }
-        if (data["amount"] < amount) {
-          throw new functions.https.HttpsError("invalid-argument", "You cannot capture an amount higher than the billing amount already saved.");
-        }
-        try {
-          const paymentIntent = await (amount > 0 ? stripeClient.paymentIntents.capture(
-            data["purchaseId"],
-            {
-              amount_to_capture: amount,
-            }
-          ) : stripeClient.paymentIntents.capture(
-            data["purchaseId"],
-          ));
-          if (paymentIntent.status !== "succeeded") {
-            throw new functions.https.HttpsError("aborted", "The Payment capture failed.");
+        case "create_subscription": {
+          const productId = query.data.productId;
+          const orderId = query.data.orderId;
+          const userId = query.data.userId;
+          const count = query.data.count ?? 1;
+          const successUrl = query.data.successUrl;
+          const cancelUrl = query.data.cancelUrl;
+          if (!orderId) {
+            throw new functions.https.HttpsError("invalid-argument", "The order id is empty.");
           }
-          return {
-            purchaseId: data["purchaseId"],
-          };
-        } catch (err) {
-          const update: { [key: string]: any } = {};
-          update["error"] = true;
-          update["errorMessage"] = "The Purchase capture failed. Please replace the billing information and Refresh.";
-          await doc.ref.set(update, {
-            merge: true,
-          });
-          throw err;
-        }
-      }
-      case "refresh_purchase": {
-        const orderId = query.orderId;
-        const userId = query.userId;
-        if (!orderId) {
-          throw new functions.https.HttpsError("invalid-argument", "The order id is empty.");
-        }
-        if (!userId) {
-          throw new functions.https.HttpsError("invalid-argument", "The user id is empty.");
-        }
-        const doc = await firestoreInstance.doc(`${stripeUserPath}/${userId}/${stripePurchasePath}/${orderId}`).get();
-        const data = doc.data();
-        if (!data || !data["purchaseId"]) {
-          throw new functions.https.HttpsError("not-found", "The purchase data is invalid.");
-        }
-        if (data["success"]) {
-          throw new functions.https.HttpsError("already-exists", "The payment has already been succeed.");
-        }
-        if (!data["error"]) {
-          return {
-            success: true,
-          };
-        }
-        const userDoc = await firestoreInstance.doc(`${stripeUserPath}/${userId}`).get();
-        const userData = userDoc.data();
-        if (!userData || !userData["customer"]) {
-          throw new functions.https.HttpsError("not-found", "The customer id is not found.");
-        }
-        let defaultPayment = userData["defaultPayment"];
-        if (!defaultPayment) {
-          const customer = await stripeClient.customers.retrieve(
-            userData["customer"],
-          ) as stripe.Stripe.Customer;
-          defaultPayment = customer.invoice_settings.default_payment_method;
-          if (!defaultPayment) {
-            const payments = await firestoreInstance.collection(`${stripeUserPath}/${userId}/${stripePaymentPath}`).get();
-            if (payments.size <= 0) {
-              throw new functions.https.HttpsError("not-found", "The payment method is not found.");
-            }
-            defaultPayment = payments.docs[0].data()["id"];
+          if (!userId) {
+            throw new functions.https.HttpsError("invalid-argument", "The user id is empty.");
           }
-          const update: { [key: string]: any } = {};
-          update["defaultPayment"] = defaultPayment;
-          await userDoc.ref.set(update, {
-            merge: true,
-          });
-        }
-        if (defaultPayment === data["payment_method"]) {
-          throw new functions.https.HttpsError("failed-precondition", "There was no change in the Payment method.");
-        }
-        await stripeClient.paymentIntents.update(
-          data["purchaseId"],
-          {
-            payment_method: defaultPayment,
+          if (!productId) {
+            throw new functions.https.HttpsError("invalid-argument", "The product id is empty.");
           }
-        );
-        const update: { [key: string]: any } = {};
-        update["paymentMethodId"] = defaultPayment;
-        update["error"] = admin.firestore.FieldValue.delete();
-        update["errorMessage"] = admin.firestore.FieldValue.delete();
-        await doc.ref.set(update, {
-          merge: true,
-        });
-        return {
-          success: true,
-        };
-      }
-      case "cancel_purchase": {
-        const orderId = query.orderId;
-        const userId = query.userId;
-        if (!orderId) {
-          throw new functions.https.HttpsError("invalid-argument", "The order id is empty.");
-        }
-        if (!userId) {
-          throw new functions.https.HttpsError("invalid-argument", "The user id is empty.");
-        }
-        const doc = await firestoreInstance.doc(`${stripeUserPath}/${userId}/${stripePurchasePath}/${orderId}`).get();
-        const data = doc.data();
-        if (!data || !data["purchaseId"]) {
-          throw new functions.https.HttpsError("not-found", "The purchase data is invalid.");
-        }
-        if (data["cancel"]) {
-          throw new functions.https.HttpsError("ok", "The purchase data is already canceled.");
-        }
-        if (data["capture"] || data["success"]) {
-          throw new functions.https.HttpsError("failed-precondition", "The payment has already been completed.");
-        }
-        await stripeClient.paymentIntents.cancel(
-          data["purchaseId"],
-        );
-        const update: { [key: string]: any } = {};
-        update["cancel"] = true;
-        update["error"] = admin.firestore.FieldValue.delete();
-        update["errorMessage"] = admin.firestore.FieldValue.delete();
-        await doc.ref.set(update, {
-          merge: true,
-        });
-        return {
-          success: true,
-        };
-      }
-      case "refund_purchase": {
-        const orderId = query.orderId;
-        const userId = query.userId;
-        const amount = parseFloat(query.amount ?? 0.0);
-        if (!orderId) {
-          throw new functions.https.HttpsError("invalid-argument", "The order id is empty.");
-        }
-        if (!userId) {
-          throw new functions.https.HttpsError("invalid-argument", "The user id is empty.");
-        }
-        const doc = await firestoreInstance.doc(`${stripeUserPath}/${userId}/${stripePurchasePath}/${orderId}`).get();
-        const data = doc.data();
-        if (!data || !data["purchaseId"]) {
-          throw new functions.https.HttpsError("not-found", "The purchase data is invalid.");
-        }
-        if (!data["capture"] || !data["success"]) {
-          throw new functions.https.HttpsError("failed-precondition", "The payment is not yet in your jurisdiction.");
-        }
-        if (data["amount"] < amount) {
-          throw new functions.https.HttpsError("invalid-argument", "The amount to be refunded exceeds the original amount.");
-        }
-        try {
-          if (amount > 0) {
-            await stripeClient.refunds.create({
-              payment_intent: data["purchaseId"],
-              amount: amount,
-            });
-          } else {
-            await stripeClient.refunds.create({
-              payment_intent: data["purchaseId"],
-            });
-          }
-          const update: { [key: string]: any } = {};
-          update["refund"] = true;
-          update["cancel"] = true;
-          await doc.ref.set(update, {
-            merge: true,
-          });
-          return {
-            success: true,
-          };
-        } catch (err) {
-          const update: { [key: string]: any } = {};
-          update["error"] = true;
-          update["errorMessage"] = "The Purchase confirmation failed. Please replace the billing information and Refresh.";
-          await doc.ref.set(update, {
-            merge: true,
-          });
-          throw err;
-        }
-      }
-      case "create_subscription": {
-        const productId = query.productId;
-        const orderId = query.orderId;
-        const userId = query.userId;
-        const count = query.count ?? 1;
-        const successUrl = query.successUrl;
-        const cancelUrl = query.cancelUrl;
-        if (!orderId) {
-          throw new functions.https.HttpsError("invalid-argument", "The order id is empty.");
-        }
-        if (!userId) {
-          throw new functions.https.HttpsError("invalid-argument", "The user id is empty.");
-        }
-        if (!productId) {
-          throw new functions.https.HttpsError("invalid-argument", "The product id is empty.");
-        }
-        const res = await stripeClient.checkout.sessions.create({
-          billing_address_collection: "auto",
-          subscription_data: {
-            metadata: {
-              "userId": userId,
-              "orderId": orderId,
+          const res = await stripeClient.checkout.sessions.create({
+            billing_address_collection: "auto",
+            subscription_data: {
+              metadata: {
+                "userId": userId,
+                "orderId": orderId,
+              },
             },
-          },
-          line_items: [
-            {
-              price: productId,
-              quantity: count,
-            },
-          ],
-          mode: "subscription",
-          success_url: successUrl,
-          cancel_url: cancelUrl,
-        });
-        return {
-          endpoint: res["url"],
-        };
-      }
-      case "delete_subscription": {
-        const orderId = query.orderId;
-        if (!orderId) {
-          throw new functions.https.HttpsError("invalid-argument", "The order id is empty.");
+            line_items: [
+              {
+                price: productId,
+                quantity: count,
+              },
+            ],
+            mode: "subscription",
+            success_url: successUrl,
+            cancel_url: cancelUrl,
+          });
+          return {
+            endpoint: res["url"],
+          };
         }
-        const doc = await firestoreInstance.doc(`${stripePurchasePath}/${orderId}`).get();
-        if (!doc.exists || !doc.get("subscription")) {
-          throw new functions.https.HttpsError("not-found", "The orderId data is not found");
+        case "delete_subscription": {
+          const orderId = query.data.orderId;
+          if (!orderId) {
+            throw new functions.https.HttpsError("invalid-argument", "The order id is empty.");
+          }
+          const doc = await firestoreInstance.doc(`${stripePurchasePath}/${orderId}`).get();
+          if (!doc.exists || !doc.get("subscription")) {
+            throw new functions.https.HttpsError("not-found", "The orderId data is not found");
+          }
+          const res = await stripeClient.subscriptions.update(doc.get("subscription"), {
+            cancel_at_period_end: true,
+          });
+          return {
+            success: res["cancel_at_period_end"],
+          };
         }
-        const res = await stripeClient.subscriptions.update(doc.get("subscription"), {
-          cancel_at_period_end: true,
-        });
-        return {
-          success: res["cancel_at_period_end"],
-        };
-      }
-      default: {
-        throw new functions.https.HttpsError("not-found", "There is no mode:" + query.mode);
-      }
+        default: {
+          throw new functions.https.HttpsError("not-found", "There is no mode:" + query.data.mode);
+        }
       }
     } catch (err) {
       console.error(err);

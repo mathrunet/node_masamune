@@ -1,12 +1,13 @@
-import * as functions from "firebase-functions";
+import * as functions from "firebase-functions/v2";
 import { Api } from "../lib/api";
+import { FunctionsOptions } from "../lib/functions_base";
 
 /**
  * Get latitude and longitude with GeocodingAPI.
  *
  * GeocodingAPIで緯度経度を取得します。
  *
- * @param {string} map.geocoding.api_key
+ * @param {string} process.env.MAP_GEOCODING_APIKEY
  * API key for GoogleMapGeocodingAPI. Follow the steps below to issue it.
  * https://mathru.notion.site/Google-Map-API-API-e9a65fba9795450fb9a252ab4e631ace?pvs=4
  * GoogleMapGeocodingAPI用のAPIキー。下記の手順で発行します。
@@ -16,12 +17,23 @@ import { Api } from "../lib/api";
  * Address or postal code.
  * アドレスもしくは郵便番号。
  */
-module.exports = (regions: string[], timeoutSeconds: number, data: { [key: string]: string }) => functions.runWith({timeoutSeconds: timeoutSeconds}).region(...regions).https.onCall(
+module.exports = (
+    regions: string[],
+    options: FunctionsOptions,
+    data: { [key: string]: string }
+) => functions.https.onCall(
+    {
+        region: regions,
+        timeoutSeconds: options.timeoutSeconds,
+        memory: options.memory,
+        minInstances: options.minInstances,
+        concurrency: options.concurrency,
+        maxInstances: options.maxInstances ?? undefined,
+    },
     async (query) => {
         try {
-            const address = query.address;
-            const config = functions.config().map.geocoding;
-            const apiKey = config.api_key;
+            const address = query.data.address as string | null | undefined;
+            const apiKey = process.env.MAP_GEOCODING_APIKEY ?? "";
             if (!address) {
                 throw new functions.https.HttpsError("invalid-argument", "Query parameter is invalid.");
             }

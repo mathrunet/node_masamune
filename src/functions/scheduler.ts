@@ -1,21 +1,35 @@
-import * as functions from "firebase-functions";
+import * as functions from "firebase-functions/v2";
 import * as admin from "firebase-admin";
 import { sendNotification } from "../lib/send_notification";
+import { FunctionsOptions, SchedulerFunctionsOptions } from "../lib/functions_base";
 
 /**
  * Define a process for notifications while scaling to monitor the DB and register future PUSH notifications and data.
  * 
  * DBを監視し未来のPUSH通知やデータの登録をするスケーリングしながら通知を行うための処理を定義します。
  * 
- * @param scheduler.collection_path
+ * @param process.env.SCHEDULER_COLLECTION_PATH
  * Specify the path of the collection to be monitored.
  * 
  * 監視するコレクションのパスを指定します。
  */
-module.exports = (regions: string[], timeoutSeconds: number, data: { [key: string]: string }) => functions.runWith({timeoutSeconds: timeoutSeconds}).region(...regions).pubsub.schedule(data["schedule"] ?? "every 1 minutes").onRun(
+module.exports = (
+    regions: string[],
+    options: SchedulerFunctionsOptions,
+    data: { [key: string]: string }
+) => functions.scheduler.onSchedule(
+    {
+        schedule: options.schedule ?? "every 1 minutes",
+        region: regions[0],
+        timeoutSeconds: options.timeoutSeconds,
+        memory: options.memory,
+        minInstances: options.minInstances,
+        concurrency: options.concurrency,
+        maxInstances: options.maxInstances ?? undefined,
+    },
     async (event) => {
         try {
-            const collectionPath = functions.config().scheduler.collection_path;
+            const collectionPath = process.env.SCHEDULER_COLLECTION_PATH ?? "schedule";
             const firestoreInstance = admin.firestore();
             const collection = await firestoreInstance.collection(collectionPath).where("_done", "==", false).where("_time", "<=", Date.now()).orderBy("_time", "asc").get();
             for (var doc of collection.docs) {
@@ -48,7 +62,7 @@ module.exports = (regions: string[], timeoutSeconds: number, data: { [key: strin
                         const docKeys = Object.keys(docData);
                         const update: { [key: string]: any } = {};
                         for (const key of docKeys) {
-                            if (key.startsWith("_") || key == "command" || key == "#command" || key == "@uid") { 
+                            if (key.startsWith("_") || key == "command" || key == "#command" || key == "@uid") {
                                 continue;
                             }
                             update[key] = docData[key];
@@ -56,8 +70,8 @@ module.exports = (regions: string[], timeoutSeconds: number, data: { [key: strin
                         update["@uid"] = id;
                         await firestoreInstance.doc(path).set(
                             update, {
-                                merge: true
-                            }
+                            merge: true
+                        }
                         );
                         break;
                 }
@@ -80,8 +94,5 @@ module.exports = (regions: string[], timeoutSeconds: number, data: { [key: strin
             console.log(err);
             throw err;
         }
-        return {
-            success: true,
-        };
     }
 );

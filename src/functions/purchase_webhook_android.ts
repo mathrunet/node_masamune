@@ -1,19 +1,20 @@
-import * as functions from "firebase-functions";
+import * as functions from "firebase-functions/v2";
 import * as admin from "firebase-admin";
 import * as verifier from "../lib/verify_android";
 import * as utils from "../lib/utils";
+import { FunctionsOptions, PubsubFunctionsOptions } from "../lib/functions_base";
 
 /**
  * This is a webhook endpoint for Android. you can create a `purchasing` topic in GCP's pub/sub and set the principal to "google-play-developer-notifications@system.gserviceaccount.com" to receive notifications.
  * 
  * Android用のWebhookのエンドポイントです。GCPのpub/subに`purchasing`のトピックを作成しプリンシパルに「google-play-developer-notifications@system.gserviceaccount.com」を設定することで通知を受け取ることができるようになります。
  * 
- * @param purchase.android.refresh_token
+ * @param process.env.PURCHASE_ANDROID_REFRESHTOKEN
  * Describe the refresh token that can be obtained by accessing [android_auth_code].
  * 
  * [android_auth_code]にアクセスすることで取得できるリフレッシュトークンを記述します。
  * 
- * @param purchase.android.client_id
+ * @param process.env.PURCHASE_ANDROID_CLIENTID
  * Google's OAuth 2.0 client ID.
  * Create an OAuth consent screen from the URL below.
  * https://console.cloud.google.com/apis/credentials/consent
@@ -26,7 +27,7 @@ import * as utils from "../lib/utils";
  * その後、認証情報からOAuth 2.0 クライアントIDを作成します。
  * https://console.cloud.google.com/apis/credentials
  * 
- * @param purchase.android.client_secret
+ * @param process.env.PURCHASE_ANDROID_CLIENTSECRET
  * Google's OAuth 2.0 client secret.
  * Create an OAuth consent screen from the URL below.
  * https://console.cloud.google.com/apis/credentials/consent
@@ -39,23 +40,37 @@ import * as utils from "../lib/utils";
  * その後、認証情報からOAuth 2.0 クライアントIDを作成します。
  * https://console.cloud.google.com/apis/credentials
  * 
- * @param purchase.subscription_path
+ * @param process.env.PURCHASE_SUBSCRIPTIONPATH
  * Describes the path to the collection of subscriptions.
  * 
  * サブスクリプションのコレクションのパスを記述します。
  */
-module.exports = (regions: string[], timeoutSeconds: number, data: { [key: string]: string }) => functions.runWith({timeoutSeconds: timeoutSeconds}).pubsub
-    .topic(data.topic ?? "purchasing")
-    .onPublish(async (message) => {
+module.exports = (
+    regions: string[],
+    options: PubsubFunctionsOptions,
+    data: { [key: string]: string }
+) => functions.pubsub.onMessagePublished(
+    {
+        topic: options.topic ?? "purchasing",
+        region: regions[0],
+        timeoutSeconds: options.timeoutSeconds,
+        memory: options.memory,
+        minInstances: options.minInstances,
+        concurrency: options.concurrency,
+        maxInstances: options.maxInstances ?? undefined,
+    },
+    async (message) => {
         try {
-            const messageBody = message.data ?
-                JSON.parse(Buffer.from(message.data, "base64").toString()) :
+            const messageBody = message.data.message.data ?
+                JSON.parse(Buffer.from(message.data.message.data, "base64").toString()) :
                 null;
             if (messageBody) {
                 const firestoreInstance = admin.firestore();
-                const config = functions.config().purchase;
-                const targetPath = config.subscription_path;
-                if (!config.android.client_id || !config.android.client_secret || !config.android.refresh_token || !targetPath) {
+                const targetPath = process.env.PURCHASE_SUBSCRIPTIONPATH;
+                const androidClientId = process.env.PURCHASE_ANDROID_CLIENTID;
+                const androidClientSecret = process.env.PURCHASE_ANDROID_CLIENTSECRET;
+                const androidRefreshToken = process.env.PURCHASE_ANDROID_REFRESHTOKEN;
+                if (!androidClientId || !androidClientSecret || !androidRefreshToken || !targetPath) {
                     throw new Error("The data is invalid.");
                 }
                 const {
@@ -73,9 +88,9 @@ module.exports = (regions: string[], timeoutSeconds: number, data: { [key: strin
                     }
                     const res = await verifier.verifyAndroid({
                         type: "subscriptions",
-                        clientId: config.android.client_id,
-                        clientSecret: config.android.client_secret,
-                        refreshToken: config.android.refresh_token,
+                        clientId: androidClientId,
+                        clientSecret: androidClientSecret,
+                        refreshToken: androidRefreshToken,
                         packageName: packageName,
                         productId: subscriptionId,
                         purchaseToken: purchaseToken,

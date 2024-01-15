@@ -1,12 +1,13 @@
-import * as functions from "firebase-functions";
+import * as functions from "firebase-functions/v2";
 import { Api } from "../lib/api";
+import { FunctionsOptions } from "../lib/functions_base";
 
 /**
  * The text is generated using Open AI's GPT.
  * 
  * Open AIのChat GPTを利用して文章を生成します。
  * 
- * @param openai.api_key
+ * @param process.env.OPENAI_APIKEY
  * Set the API key, which can be obtained from the following URL.
  * 
  * 下記URLから取得できるAPIキーを設定します。
@@ -30,13 +31,25 @@ import { Api } from "../lib/api";
  * サンプリング温度(※)を 0〜1 の間で指定します。
  * 値が低いほど、より関連性の高い単語が選ばれやすくなり、値が高いほど、より多様な単語が選ばれやすくなります。
  */
-module.exports = (regions: string[], timeoutSeconds: number, data: { [key: string]: string }) => functions.runWith({timeoutSeconds: timeoutSeconds}).region(...regions).https.onCall(
+module.exports = (
+    regions: string[],
+    options: FunctionsOptions,
+    data: { [key: string]: string }
+) => functions.https.onCall(
+    {
+        region: regions,
+        timeoutSeconds: options.timeoutSeconds,
+        memory: options.memory,
+        minInstances: options.minInstances,
+        concurrency: options.concurrency,
+        maxInstances: options.maxInstances ?? undefined,
+    },
     async (query) => {
         try {
-            const apiKey = functions.config().openai.api_key;
-            const message = query.message as { [key: string]: any }[];
-            const model = query.model as string | undefined ?? "gpt-3.5-turbo";
-            const temperature = query.temperature as number | undefined ?? 1;
+            const apiKey = process.env.OPENAI_APIKEY ?? "";
+            const message = query.data.message as { [key: string]: any }[] | undefined ?? [];
+            const model = query.data.model as string | undefined ?? "gpt-3.5-turbo";
+            const temperature = query.data.temperature as number | undefined ?? 1;
             if (message.length <= 0) {
                 throw new functions.https.HttpsError("invalid-argument", "No content specified in `message`.");
             }

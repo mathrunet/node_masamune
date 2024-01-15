@@ -1,12 +1,13 @@
-import * as functions from "firebase-functions";
+import * as functions from "firebase-functions/v2";
 import { RtcTokenBuilder, RtcRole } from "agora-token";
+import { FunctionsOptions } from "../lib/functions_base";
 
 /**
  * Obtain an Agora.io security token.
  * 
  * Agora.ioのセキュリティトークンを取得します。
  * 
- * @param agora.app_id
+ * @param process.env.AGORA_APPID
  * AppID for Agora.
  * Log in to the following URL and create a project.
  * After the project is created, the AppID can be copied.
@@ -17,7 +18,7 @@ import { RtcTokenBuilder, RtcRole } from "agora-token";
  * 
  * https://console.agora.io/projects
  * 
- * @param agora.app_certificate
+ * @param process.env.AGORA_APPCERTIFICATE
  * AppCertificate for Agora.
  * You can obtain the certificate after entering the project you created and activating it in Security -> App certificate.
  * 
@@ -41,21 +42,32 @@ import { RtcTokenBuilder, RtcRole } from "agora-token";
  * 
  * 役割。"audience"か"broadcaster"が指定できます。
  */
-module.exports = (regions: string[], timeoutSeconds: number, data: { [key: string]: string }) => functions.runWith({timeoutSeconds: timeoutSeconds}).region(...regions).https.onCall(
+module.exports = (
+    regions: string[],
+    options: FunctionsOptions,
+    data: { [key: string]: string }
+) => functions.https.onCall(
+    {
+        region: regions,
+        timeoutSeconds: options.timeoutSeconds,
+        memory: options.memory,
+        minInstances: options.minInstances,
+        concurrency: options.concurrency,
+        maxInstances: options.maxInstances ?? undefined,
+    },
     async (query) => {
         try {
-            const config = functions.config().agora;
-            const appId = config.app_id;
-            const appCertificate = config.app_certificate;
+            const appId = process.env.AGORA_APPID ?? "";
+            const appCertificate = process.env.AGORA_APPCERTIFICATE ?? "";
             const expirationTimeInSeconds = 3600;
             let role = RtcRole.PUBLISHER;
-            if (query.role === "audience") {
+            if (query.data.role === "audience") {
                 role = RtcRole.SUBSCRIBER;
             }
-            const channelName = query.name;
+            const channelName = query.data.name;
             let uid = 0;
-            if (query.uid) {
-                uid = query.uid;
+            if (query.data.uid) {
+                uid = query.data.uid;
             }
             if (!channelName) {
                 throw new functions.https.HttpsError("invalid-argument", "Channel is invalid.");

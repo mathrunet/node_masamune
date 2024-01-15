@@ -1,4 +1,4 @@
-import * as functions from "firebase-functions";
+import * as functions from "firebase-functions/v2";
 import sendgrid from "@sendgrid/mail";
 
 /**
@@ -6,7 +6,7 @@ import sendgrid from "@sendgrid/mail";
  *
  * SendGridでメールを送信します。
  *
- * @param {string} purchase.mail.sendgrid.api_key
+ * @param {string} process.env.MAIL_SENDGRID_APIKEY
  * API key for SendGrid. Issue it according to the following procedure.
  * https://mathru.notion.site/SendGrid-bb87b2ffa8174dbda944812f43856d6c
  * SendGridのAPIキー。下記の手順で発行します。
@@ -39,8 +39,7 @@ export async function send({
   title: string,
   content: string,
 }) {
-  const config = functions.config().mail;
-  sendgrid.setApiKey(config.sendgrid.api_key);
+  sendgrid.setApiKey(process.env.MAIL_SENDGRID_APIKEY ?? "");
   const msg = {
     to: to,
     from: from,

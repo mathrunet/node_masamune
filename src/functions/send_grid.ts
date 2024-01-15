@@ -1,12 +1,13 @@
-import * as functions from "firebase-functions";
+import * as functions from "firebase-functions/v2";
 import * as sendgrid from "../lib/send_grid";
+import { FunctionsOptions } from "../lib/functions_base";
 
 /**
  * Send mail through SendGrid.
  *
  * SendGridでメールを送信します。
  *
- * @param {string} mail.sendgrid.api_key
+ * @param {string} process.env.MAIL_SENDGRID_APIKEY
  * API key for SendGrid. Issue it according to the following procedure.
  * https://mathru.notion.site/SendGrid-bb87b2ffa8174dbda944812f43856d6c
  * SendGridのAPIキー。下記の手順で発行します。
@@ -28,13 +29,25 @@ import * as sendgrid from "../lib/send_grid";
  * Email content.
  * メール本文。
  */
-module.exports = (regions: string[], timeoutSeconds: number, data: { [key: string]: string }) => functions.runWith({timeoutSeconds: timeoutSeconds}).region(...regions).https.onCall(
+module.exports = (
+    regions: string[],
+    options: FunctionsOptions,
+    data: { [key: string]: string }
+) => functions.https.onCall(
+    {
+        region: regions,
+        timeoutSeconds: options.timeoutSeconds,
+        memory: options.memory,
+        minInstances: options.minInstances,
+        concurrency: options.concurrency,
+        maxInstances: options.maxInstances ?? undefined,
+    },
     async (query) => {
         try {
-            const from = query.from;
-            const to = query.to;
-            const title = query.title;
-            const content = query.content;
+            const from = query.data.from as string | null | undefined;
+            const to = query.data.to as string | null | undefined;
+            const title = query.data.title as string | null | undefined;
+            const content = query.data.content as string | null | undefined;
             if (!from || !to || !title || !content) {
                 throw new functions.https.HttpsError("invalid-argument", "Query parameter is invalid.");
             }

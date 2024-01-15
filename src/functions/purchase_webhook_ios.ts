@@ -1,18 +1,36 @@
-import * as functions from "firebase-functions";
+import * as functions from "firebase-functions/v2";
 import * as admin from "firebase-admin";
 import * as utils from "../lib/utils";
+import { FunctionsOptions } from "../lib/functions_base";
 
 /**
  * Webhook endpoint for IOS, which allows you to receive notifications by setting the endpoint in AppStoreConnect's [App]->[App Information]->[App Store Server Notification].
  * 
  * IOS用のWebhookのエンドポイントです。AppStoreConnectの[App]->[App情報]->[App Storeサーバ通知]にエンドポイントを設定することで通知を受け取ることができるようになります。
  * 
- * @param purchase.subscription_path
+ * @param process.env.PURCHASE_IOS_SHAREDSECRET
+ * SharedSecret for AppStore, obtained from [Apps]->[App Info]->[Shared Secret for App] in the AppStore.
+ * 
+ * AppStoreのSharedSecret。AppStoreの[アプリ]->[App情報]->[App用共有シークレット]から取得します。
+ * 
+ * @param process.env.PURCHASE_SUBSCRIPTIONPATH
  * Describes the path to the collection of subscriptions.
  * 
  * サブスクリプションのコレクションのパスを記述します。
  */
-module.exports = (regions: string[], timeoutSeconds: number, data: { [key: string]: string }) => functions.runWith({timeoutSeconds: timeoutSeconds}).region(...regions).https.onRequest(
+module.exports = (
+    regions: string[],
+    options: FunctionsOptions,
+    data: { [key: string]: string }
+) => functions.https.onRequest(
+    {
+        region: regions,
+        timeoutSeconds: options.timeoutSeconds,
+        memory: options.memory,
+        minInstances: options.minInstances,
+        concurrency: options.concurrency,
+        maxInstances: options.maxInstances ?? undefined,
+    },
     async (req, res) => {
         try {
             const message = req.body;
@@ -33,8 +51,7 @@ module.exports = (regions: string[], timeoutSeconds: number, data: { [key: strin
                     const transactionInfo = JSON.parse(Buffer.from(signedTransactionInfoBody, "base64").toString());
 
                     const firestoreInstance = admin.firestore();
-                    const config = functions.config().purchase;
-                    const targetPath = config.subscription_path;
+                    const targetPath = process.env.PURCHASE_SUBSCRIPTIONPATH;
                     if (transactionInfo) {
                         const transactionId = transactionInfo.originalTransactionId;
                         const doc = await firestoreInstance.doc(`${targetPath}/${transactionId}`).get();

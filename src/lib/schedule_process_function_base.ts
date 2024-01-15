@@ -1,5 +1,5 @@
-import * as functions from "firebase-functions";
-import { FunctionsBase } from "./functions_base";
+import * as functions from "firebase-functions/v2";
+import { FunctionsBase, FunctionsOptions, SchedulerFunctionsOptions } from "./functions_base";
 
 /**
  * Base class for defining the data of Functions for periodic scheduled execution.
@@ -12,8 +12,22 @@ export abstract class ScheduleProcessFunctionBase extends FunctionsBase {
      * 
      * 定期スケジュール実行用のFunctionのデータを定義するためのベースクラス。
      */
-    constructor() {
-        super();
+    constructor({
+        id,
+        func,
+        data = {},
+        options,
+    }: {
+        id: string,
+        func: (
+            region: string[],
+            options: SchedulerFunctionsOptions,
+            data: { [key: string]: string },
+        ) => Function,
+        data?: { [key: string]: string },
+        options?: SchedulerFunctionsOptions | undefined | null,
+    }) {
+        super({ id: id, func: func, data: data, options: options });
     }
 
     /** 
@@ -29,21 +43,24 @@ export abstract class ScheduleProcessFunctionBase extends FunctionsBase {
      * Specify the actual contents of the process.
      * 
      * 実際の処理の中身を指定します。
-     * 
-     * @param options 
-     * Options passed to Functions.
-     * 
-     * Functionsに渡されたオプション。
      */
-    abstract process(options: Record<string, any>): Promise<void>;
+    abstract process(): Promise<void>;
 
     data: { [key: string]: string } = {};
-    build(regions: string[], data: { [key: string]: string }): Function {
-        return functions.runWith({
-            timeoutSeconds: this.timeoutSeconds,
-        }).region(...regions).pubsub.schedule(this.schedule).onRun(async (event) => {
-            const config = functions.config();
-            return this.process(config);
-        });
+    build(regions: string[]): Function {
+        return functions.scheduler.onSchedule(
+            {
+                schedule: (this.options as SchedulerFunctionsOptions | undefined)?.schedule ?? this.schedule,
+                region: regions[0],
+                timeoutSeconds: this.options.timeoutSeconds,
+                memory: this.options.memory,
+                minInstances: this.options.minInstances,
+                concurrency: this.options.concurrency,
+                maxInstances: this.options.maxInstances ?? undefined,
+            },
+            async (event) => {
+                return this.process();
+            },
+        );
     }
 }
