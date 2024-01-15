@@ -1,5 +1,6 @@
 import * as functions from "firebase-functions/v2";
 import { FunctionsBase } from "./functions_base";
+export { CallableRequest } from "firebase-functions/v2/https";
 
 /**
  * Base class for defining the data of Functions for executing the Call method of Functions.
@@ -22,7 +23,7 @@ export abstract class CallProcessFunctionBase extends FunctionsBase {
      * 
      * 処理の戻り値。
      */
-    abstract process(query: any): Promise<{ [key: string]: any }>;
+    abstract process(query: functions.https.CallableRequest<any>): Promise<{ [key: string]: any }>;
 
     data: { [key: string]: string } = {};
     build(regions: string[]): Function {
@@ -33,7 +34,7 @@ export abstract class CallProcessFunctionBase extends FunctionsBase {
                 memory: this.options.memory,
                 minInstances: this.options.minInstances,
                 concurrency: this.options.concurrency,
-                maxInstances: this.options.maxInstances ?? undefined,
+                maxInstances: this.options.maxInstances,
             },
             async (query) => {
                 return this.process(query);

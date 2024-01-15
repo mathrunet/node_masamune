@@ -1,6 +1,8 @@
 import * as functions from "firebase-functions/v2";
 import { FunctionsBase } from "./functions_base";
 import * as express from "express";
+export { Request } from "firebase-functions/v2/https";
+export { Response } from "express";
 
 /**
  * Base class for defining Function data for HTTP request execution.
@@ -34,7 +36,7 @@ export abstract class RequestProcessFunctionBase extends FunctionsBase {
                 memory: this.options.memory,
                 minInstances: this.options.minInstances,
                 concurrency: this.options.concurrency,
-                maxInstances: this.options.maxInstances ?? undefined,
+                maxInstances: this.options.maxInstances,
             },
             async (req, res) => {
                 return this.process(req, res);

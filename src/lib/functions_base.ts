@@ -43,6 +43,7 @@ export abstract class FunctionsBase {
             memory: "256MiB",
             minInstances: 0,
             concurrency: 80,
+            maxInstances: 100,
         };
     }
 
@@ -157,7 +158,7 @@ export interface FunctionsOptions {
      * 
      * maxInstancesを指定します。
      */
-    maxInstances?: number | undefined | null;
+    maxInstances?: number | undefined;
 
     /**
      * Specifies the concurrency.

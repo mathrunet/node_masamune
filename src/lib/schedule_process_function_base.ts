@@ -1,5 +1,5 @@
 import * as functions from "firebase-functions/v2";
-import { FunctionsBase, FunctionsOptions, SchedulerFunctionsOptions } from "./functions_base";
+import { FunctionsBase, SchedulerFunctionsOptions } from "./functions_base";
 
 /**
  * Base class for defining the data of Functions for periodic scheduled execution.
@@ -56,7 +56,7 @@ export abstract class ScheduleProcessFunctionBase extends FunctionsBase {
                 memory: this.options.memory,
                 minInstances: this.options.minInstances,
                 concurrency: this.options.concurrency,
-                maxInstances: this.options.maxInstances ?? undefined,
+                maxInstances: this.options.maxInstances,
             },
             async (event) => {
                 return this.process();

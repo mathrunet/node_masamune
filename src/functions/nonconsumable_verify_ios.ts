@@ -34,7 +34,7 @@ module.exports = (
         memory: options.memory,
         minInstances: options.minInstances,
         concurrency: options.concurrency,
-        maxInstances: options.maxInstances ?? undefined,
+        maxInstances: options.maxInstances,
     },
     async (query) => {
         try {
