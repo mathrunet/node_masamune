@@ -1,3 +1,12 @@
+## [2.0.1](https://github.com/mathrunet/node_masamune/compare/v2.0.0...v2.0.1) (2024-01-15)
+
+
+### fix
+
+* Set the value of MaxInstances to 100. ([076b75d](https://github.com/mathrunet/node_masamune/commit/076b75d453792d8f3eb2a019b1abce154b2edb2c))
+
+
+
 # [2.0.0](https://github.com/mathrunet/node_masamune/compare/v1.10.4...v2.0.0) (2024-01-15)
 
 
