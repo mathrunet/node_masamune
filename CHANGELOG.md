@@ -1,3 +1,12 @@
+# [2.0.0](https://github.com/mathrunet/node_masamune/compare/v1.10.4...v2.0.0) (2024-01-15)
+
+
+### feat
+
+* Compatible with FirebaseFunctionsV2. ([df2cc6d](https://github.com/mathrunet/node_masamune/commit/df2cc6d050fe249781fe42afb5633e6d39b32f74))
+
+
+
 ## [1.10.4](https://github.com/mathrunet/node_masamune/compare/v1.10.3...v1.10.4) (2024-01-03)
 
 
