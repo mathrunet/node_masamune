@@ -1,3 +1,12 @@
+## [2.2.10](https://github.com/mathrunet/node_masamune/compare/v2.2.9...v2.2.10) (2024-01-18)
+
+
+### fix
+
+* Changed the order of type checks. ([a05e2d7](https://github.com/mathrunet/node_masamune/commit/a05e2d79cdd567a33a31a2bc544e8ae9e51deeb2))
+
+
+
 ## [2.2.9](https://github.com/mathrunet/node_masamune/compare/v2.2.8...v2.2.9) (2024-01-18)
 
 
