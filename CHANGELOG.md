@@ -1,3 +1,12 @@
+# [2.2.0](https://github.com/mathrunet/node_masamune/compare/v2.1.1...v2.2.0) (2024-01-18)
+
+
+### feat
+
+* The region can be specified by option. ([df36f5f](https://github.com/mathrunet/node_masamune/commit/df36f5fc62c494bb94a9e44b91c13d764c48c93f))
+
+
+
 ## [2.1.1](https://github.com/mathrunet/node_masamune/compare/v2.1.0...v2.1.1) (2024-01-18)
 
 
