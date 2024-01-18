@@ -2,6 +2,8 @@ import * as functions from "firebase-functions/v2";
 import * as firestore from "firebase-admin/firestore";
 import * as algolia from "algoliasearch";
 import { PathFunctionsOptions } from "../lib/functions_base";
+import { FirestoreModelFieldValueConverter } from "../lib/firestore_model_field_value_converter";
+import { updateArrowFunction } from "typescript";
 
 /**
  * Synchronize data to Algolia.
@@ -59,13 +61,15 @@ module.exports = (
                 if (!key || !data) {
                     return;
                 }
-                const algoliaObject = {
-                    ...data,
-                    "@uid": key,
-                    objectID: key,
-                };
+                const update: { [field: string]: any } = {};
+                for (const k in data) {
+                    const v = data[k];
+                    update[k] = _convert(v);
+                }
+                update["@uid"] = key;
+                update["objectID"] = key;
                 const index = client.initIndex(indexName);
-                await index.saveObject(algoliaObject);
+                await index.saveObject(update);
             // update
             } else if (beforeExists && afterExists) {
                 const data = event.data?.after.data();
@@ -74,13 +78,15 @@ module.exports = (
                 if (!key || !data) {
                     return;
                 }
-                const algoliaObject = {
-                    ...data,
-                    "@uid": key,
-                    objectID: key,
-                };
+                const update: { [field: string]: any } = {};
+                for (const k in data) {
+                    const v = data[k];
+                    update[k] = _convert(v);
+                }
+                update["@uid"] = key;
+                update["objectID"] = key;
                 const index = client.initIndex(indexName);
-                await index.saveObject(algoliaObject);
+                await index.saveObject(update);
             // delete
             } else if (beforeExists && !afterExists) {
                 const key = event.data?.after.id;
@@ -96,4 +102,27 @@ module.exports = (
             throw err;
         }
     }
-);
+    );
+
+function _convert(data: { [field: string]: any }): { [field: string]: any } {
+    var update: { [field: string]: any } = {};
+    var replaced: { [field: string]: any } | null = null;    
+    for (const key in data) {
+        const val = data[key];
+        for (const converter of FirestoreModelFieldValueConverter.defaultConverters) {
+            replaced = converter.convertFrom(key, val, data);
+            if (replaced != null) {
+                break;
+            }
+        }
+        if (replaced != null) {
+            update = {
+                ...update,
+                ...replaced,
+            };
+        } else {
+            update[key] = val;
+        }
+    }
+    return update;
+}
