@@ -6,6 +6,15 @@ import { FirestoreModelFieldValueConverter } from "../lib/firestore_model_field_
  * 通常のFirestoreConverter。
  */
 export class FirestoreBasicConverter extends FirestoreModelFieldValueConverter {
+  /**
+   * Normal FirestoreConverter.
+   * 
+   * 通常のFirestoreConverter。
+   */
+  constructor() {
+    super();
+  }
+
   type: string = "Object";
 
   convertFrom(

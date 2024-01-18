@@ -7,6 +7,15 @@ import { isDynamicMap } from "../lib/utils";
  * [ModelLocale]用のFirestoreConverter。
  */
 export class FirestoreModelLocaleConverter extends FirestoreModelFieldValueConverter {
+  /**
+   * FirestoreConverter for [ModelLocale].
+   * 
+   * [ModelLocale]用のFirestoreConverter。
+   */
+  constructor() {
+    super();
+  }
+
   type: string = "ModelLocale";
 
   convertFrom(

@@ -8,6 +8,15 @@ import { DocumentReference } from "firebase-admin/firestore";
  * [ModelRef]用のFirestoreConverter。
  */
 export class FirestoreModelRefConverter extends FirestoreModelFieldValueConverter {
+  /**
+   * FirestoreConverter for [ModelRef].
+   * 
+   * [ModelRef]用のFirestoreConverter。
+   */
+  constructor() {
+    super();
+  }
+
   type: string = "ModelRefBase";
 
   convertFrom(

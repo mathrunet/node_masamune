@@ -6,6 +6,15 @@ import { FirestoreModelFieldValueConverter } from "../lib/firestore_model_field_
  * [Enum]用のFirestoreConverter。
  */
 export class FirestoreEnumConverter extends FirestoreModelFieldValueConverter {
+  /**
+   * FirestoreConverter for [Enum].
+   * 
+   * [Enum]用のFirestoreConverter。
+   */
+  constructor() {
+    super();
+  }
+
   type: string = "Enum";
 
   convertFrom(

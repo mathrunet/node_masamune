@@ -6,6 +6,15 @@ import { FirestoreModelFieldValueConverter } from "../lib/firestore_model_field_
  * [ModelServerCommandBase]用のFirestoreConverter。
  */
 export class FirestoreModelCommandBaseConverter extends FirestoreModelFieldValueConverter {
+  /**
+   * FirestoreConverter for [ModelServerCommandBase].
+   * 
+   * [ModelServerCommandBase]用のFirestoreConverter。
+   */
+  constructor() {
+    super();
+  }
+
   type: string = "ModelServerCommandBase";
 
   convertFrom(

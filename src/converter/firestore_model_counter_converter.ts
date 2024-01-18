@@ -7,6 +7,15 @@ import { isDynamicMap } from "../lib/utils";
  * [ModelCounter]用のFirestoreConverter。
  */
 export class FirestoreModelCounterConverter extends FirestoreModelFieldValueConverter {
+  /**
+   * FirestoreConverter for [ModelCounter].
+   * 
+   * [ModelCounter]用のFirestoreConverter。
+   */
+  constructor() {
+    super();
+  }
+
   type: string = "ModelCounter";
 
   convertFrom(

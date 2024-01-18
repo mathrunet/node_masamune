@@ -6,6 +6,15 @@ import { FirestoreModelFieldValueConverter } from "../lib/firestore_model_field_
  * [ModelLocalizedValue]用のFirestoreConverter。
  */
 export class FirestoreModelLocalizedValueConverter extends FirestoreModelFieldValueConverter {
+  /**
+   * FirestoreConverter for [ModelLocalizedValue].
+   * 
+   * [ModelLocalizedValue]用のFirestoreConverter。
+   */
+  constructor() {
+    super();
+  }
+
   type: string = "ModelLocalizedValue";
 
   convertFrom(

@@ -6,6 +6,15 @@ import { FirestoreModelFieldValueConverter } from "../lib/firestore_model_field_
  * [ModelSearch]用のFirestoreConverter。
  */
 export class FirestoreModelSearchConverter extends FirestoreModelFieldValueConverter {
+  /**
+   * FirestoreConverter for [ModelSearch].
+   * 
+   * [ModelSearch]用のFirestoreConverter。
+   */
+  constructor() {
+    super();
+  }
+
   type: string = "ModelSearch";
 
   convertFrom(

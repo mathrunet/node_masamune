@@ -8,6 +8,15 @@ import { Timestamp } from "firebase-admin/firestore";
  * [ModelTimestamp]用のFirestoreConverter。
  */
 export class FirestoreModelTimestampConverter extends FirestoreModelFieldValueConverter {
+  /**
+   * FirestoreConverter for [ModelTimestamp].
+   * 
+   * [ModelTimestamp]用のFirestoreConverter。
+   */
+  constructor() {
+    super();
+  }
+
   type: string = "ModelTimestamp";
 
   convertFrom(

@@ -1,9 +1,7 @@
 import * as functions from "firebase-functions/v2";
-import * as firestore from "firebase-admin/firestore";
 import * as algolia from "algoliasearch";
 import { PathFunctionsOptions } from "../lib/functions_base";
-import { FirestoreModelFieldValueConverter } from "../lib/firestore_model_field_value_converter";
-import { updateArrowFunction } from "typescript";
+import { defaultConverters } from "../lib/default_firestore_model_field_value_converter";
 
 /**
  * Synchronize data to Algolia.
@@ -109,7 +107,7 @@ function _convert(data: { [field: string]: any }): { [field: string]: any } {
     var replaced: { [field: string]: any } | null = null;    
     for (const key in data) {
         const val = data[key];
-        for (const converter of FirestoreModelFieldValueConverter.defaultConverters) {
+        for (const converter of defaultConverters) {
             replaced = converter.convertFrom(key, val, data);
             if (replaced != null) {
                 break;

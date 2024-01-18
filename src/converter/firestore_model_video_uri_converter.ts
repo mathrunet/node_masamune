@@ -7,6 +7,15 @@ import { isDynamicMap } from "../lib/utils";
  * [ModelVideoUri]用のFirestoreConverter。
  */
 export class FirestoreModelVideoUriConverter extends FirestoreModelFieldValueConverter {
+  /**
+   * FirestoreConverter for [ModelVideoUri].
+   * 
+   * [ModelVideoUri]用のFirestoreConverter。
+   */
+  constructor() {
+    super();
+  }
+
   type: string = "ModelVideoUri";
 
   convertFrom(

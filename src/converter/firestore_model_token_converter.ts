@@ -6,6 +6,15 @@ import { FirestoreModelFieldValueConverter } from "../lib/firestore_model_field_
  * [ModelToken]用のFirestoreConverter。
  */
 export class FirestoreModelTokenConverter extends FirestoreModelFieldValueConverter {
+  /**
+   * FirestoreConverter for [ModelToken].
+   * 
+   * [ModelToken]用のFirestoreConverter。
+   */
+  constructor() {
+    super();
+  }
+
   type: string = "ModelToken";
 
   convertFrom(

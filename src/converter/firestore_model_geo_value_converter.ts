@@ -8,6 +8,15 @@ import { GeoPoint } from "firebase-admin/firestore";
  * [ModelGeoValue]用のFirestoreConverter。
  */
 export class FirestoreModelGeoValueConverter extends FirestoreModelFieldValueConverter {
+  /**
+   * FirestoreConverter for [ModelGeoValue].
+   * 
+   * [ModelGeoValue]用のFirestoreConverter。
+   */
+  constructor() {
+    super();
+  }
+
   type: string = "ModelGeoValue";
 
   convertFrom(
