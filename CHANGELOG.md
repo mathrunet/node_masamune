@@ -1,3 +1,12 @@
+## [2.2.2](https://github.com/mathrunet/node_masamune/compare/v2.2.1...v2.2.2) (2024-01-18)
+
+
+### fix
+
+* Added a converter for data to be stored in Algolia. ([3c0f7bc](https://github.com/mathrunet/node_masamune/commit/3c0f7bc6f74cde7ad52dab1e554dedb320ffe958))
+
+
+
 ## [2.2.1](https://github.com/mathrunet/node_masamune/compare/v2.2.0...v2.2.1) (2024-01-18)
 
 
