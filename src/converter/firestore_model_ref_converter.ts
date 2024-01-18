@@ -35,17 +35,17 @@ export class FirestoreModelRefConverter extends FirestoreModelFieldValueConverte
       }
       if (res.length > 0) {
         return {
-          key: res,
+          [key]: res,
         };
       }
     } else if (isDynamicMap(value)) {
       const res: {
         [field: string]: { [field: string]: any }
       } = {};
-      for (const key in value) {
-        const val = value[key];
+      for (const k in value) {
+        const val = value[k];
         if (val instanceof DocumentReference) {
-          res[key] = {
+          res[k] = {
             "@ref": val.path,
             ...this.header(),
           };
@@ -53,12 +53,12 @@ export class FirestoreModelRefConverter extends FirestoreModelFieldValueConverte
       }
       if (Object.keys(res).length > 0) {
         return {
-          key: res,
+          [key]: res,
         };
       }
     } else if (value instanceof DocumentReference) {
       return {
-        key: {
+        [key]: {
           "@ref": value.path,
           ...this.header(),
         },

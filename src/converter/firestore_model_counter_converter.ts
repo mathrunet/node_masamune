@@ -34,7 +34,7 @@ export class FirestoreModelCounterConverter extends FirestoreModelFieldValueConv
         }
         if (res.length > 0) {
           return {
-            key: res,
+            [key]: res,
           };
         }
       }
@@ -59,7 +59,7 @@ export class FirestoreModelCounterConverter extends FirestoreModelFieldValueConv
         }
         if (Object.keys(res).length > 0) {
           return {
-            key: res,
+            [key]: res,
           };
         }
       }
@@ -69,7 +69,7 @@ export class FirestoreModelCounterConverter extends FirestoreModelFieldValueConv
       const type = targetMap["@type"] as string | null | undefined ?? "";
       if (type == this.type) {
         return {
-          key: value,
+          [key]: value,
         };
       }
     }

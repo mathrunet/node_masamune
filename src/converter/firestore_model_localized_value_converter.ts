@@ -27,7 +27,7 @@ export class FirestoreModelLocalizedValueConverter extends FirestoreModelFieldVa
       const type = targetMap["@type"] as string | null | undefined ?? "";
       if (type == this.type) {
         return {
-          key: targetMap["@localized"],
+          [key]: targetMap["@localized"],
         };
       }
     }

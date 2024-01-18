@@ -37,7 +37,7 @@ export class FirestoreModelDateConverter extends FirestoreModelFieldValueConvert
         }
         if (res.length > 0) {
           return {
-            key: res,
+            [key]: res,
           };
         }
       }
@@ -64,7 +64,7 @@ export class FirestoreModelDateConverter extends FirestoreModelFieldValueConvert
         }
         if (Object.keys(res).length > 0) {
           return {
-            key: res,
+            [key]: res,
           };
         }
       }
@@ -74,7 +74,7 @@ export class FirestoreModelDateConverter extends FirestoreModelFieldValueConvert
       const type = targetMap["@type"] as string | null | undefined ?? "";
       if (type == this.type) {
         return {
-          key: value,
+          [key]: value,
         };
       }
     } else if (value instanceof Timestamp) {
@@ -83,7 +83,7 @@ export class FirestoreModelDateConverter extends FirestoreModelFieldValueConvert
       const type = targetMap["@type"] as string | null | undefined ?? "";
       if (type == this.type) {
         return {
-          key: value.toMillis(),
+          [key]: value.toMillis(),
         };
       }
     }

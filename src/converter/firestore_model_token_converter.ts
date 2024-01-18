@@ -27,7 +27,7 @@ export class FirestoreModelTokenConverter extends FirestoreModelFieldValueConver
       const type = targetMap["@type"] as string | null | undefined ?? "";
       if (type == this.type) {
         return {
-          key: value.map((e) => String(e)),
+          [key]: value.map((e) => String(e)),
         };
       }
     }

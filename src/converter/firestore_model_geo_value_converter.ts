@@ -35,7 +35,7 @@ export class FirestoreModelGeoValueConverter extends FirestoreModelFieldValueCon
         }
         if (res.length > 0) {
           return {
-            key: res,
+            [key]: res,
           };
         }
       }
@@ -60,7 +60,7 @@ export class FirestoreModelGeoValueConverter extends FirestoreModelFieldValueCon
         }
         if (Object.keys(res).length > 0) {
           return {
-            key: res,
+            [key]: res,
           };
         }
       }
@@ -70,7 +70,7 @@ export class FirestoreModelGeoValueConverter extends FirestoreModelFieldValueCon
       const type = targetMap["@type"] as string | null | undefined ?? "";
       if (type == this.type) {
         return {
-          key: targetMap["@geoHash"] as string | null | undefined ?? "",
+          [key]: targetMap["@geoHash"] as string | null | undefined ?? "",
         };
       }
     }

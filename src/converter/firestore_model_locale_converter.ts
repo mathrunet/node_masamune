@@ -32,7 +32,7 @@ export class FirestoreModelLocaleConverter extends FirestoreModelFieldValueConve
         }
         if (res.length > 0) {
           return {
-            key: res,
+            [key]: res,
           };
         }
       }
@@ -55,7 +55,7 @@ export class FirestoreModelLocaleConverter extends FirestoreModelFieldValueConve
         }
         if (Object.keys(res).length > 0) {
           return {
-            key: res,
+            [key]: res,
           };
         }
       }
@@ -65,7 +65,7 @@ export class FirestoreModelLocaleConverter extends FirestoreModelFieldValueConve
       const type = targetMap["@type"] as string | null | undefined ?? "";
       if (type == this.type) {
         return {
-          key: String(value),
+          [key]: String(value),
         };
       }
     }
