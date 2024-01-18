@@ -103,21 +103,22 @@ module.exports = (
     );
 
 function _convert(data: { [field: string]: any }): { [field: string]: any } {
-    var update: { [field: string]: any } = {};
+    const update: { [field: string]: any } = {};
     var replaced: { [field: string]: any } | null = null;    
     for (const key in data) {
         const val = data[key];
         for (const converter of defaultConverters) {
             replaced = converter.convertFrom(key, val, data);
-            if (replaced != null) {
+            console.log(`Convert(${converter.type}): ${key} : ${val} to ${replaced}`);
+            if (replaced !== null) {
                 break;
             }
         }
-        if (replaced != null) {
-            update = {
-                ...update,
-                ...replaced,
-            };
+        if (replaced !== null) {
+            for (const k in replaced) {
+                const v = replaced[k];
+                update[k] = v;            
+            }
         } else {
             update[key] = val;
         }
