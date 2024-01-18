@@ -7,6 +7,12 @@ import * as data from "./lib/functions_data";
  */
 export const Functions = {
   /** 
+ * Synchronize data to Algolia.
+ *
+ * Algoliaにデータを同期します。
+   */
+  algolia: (options: data.PathFunctionsOptions = {}) => new data.FunctionsData({ id: "algolia", func: require("./functions/algolia"), options: options }),
+  /** 
    * Get latitude and longitude with GeocodingAPI.
    *
    * GeocodingAPIで緯度経度を取得します。

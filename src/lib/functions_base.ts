@@ -109,6 +109,19 @@ export interface SchedulerFunctionsOptions extends FunctionsOptions {
     schedule?: string | undefined | null;
 }
 
+/**
+ * Specifies the options for the process.
+ * 
+ * 処理のオプションを指定します。
+ */
+export interface PathFunctionsOptions extends FunctionsOptions {
+    /**
+     * Specify the path to the target database.
+     * 
+     * 対象のデータベースのパスを指定します。
+     */
+    path?: string | undefined | null;
+}
 
 /**
  * Specifies the options for the process.
