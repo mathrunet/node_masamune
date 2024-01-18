@@ -1,3 +1,12 @@
+# [2.1.0](https://github.com/mathrunet/node_masamune/compare/v2.0.1...v2.1.0) (2024-01-18)
+
+
+### feat
+
+* Added Algolia data synchronization. ([65c3dbb](https://github.com/mathrunet/node_masamune/commit/65c3dbb5ac3162868ed6517e2e63a2946bfb5f34))
+
+
+
 ## [2.0.1](https://github.com/mathrunet/node_masamune/compare/v2.0.0...v2.0.1) (2024-01-15)
 
 
