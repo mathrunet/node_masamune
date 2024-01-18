@@ -1,3 +1,12 @@
+## [2.2.7](https://github.com/mathrunet/node_masamune/compare/v2.2.6...v2.2.7) (2024-01-18)
+
+
+### fix
+
+* I tried to get Console out. ([df230e0](https://github.com/mathrunet/node_masamune/commit/df230e0662e0bdefa9e84752939f46d7a50a0e89))
+
+
+
 ## [2.2.6](https://github.com/mathrunet/node_masamune/compare/v2.2.5...v2.2.6) (2024-01-18)
 
 
