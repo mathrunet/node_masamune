@@ -26,7 +26,7 @@ export class FirestoreModelCommandBaseConverter extends FirestoreModelFieldValue
       const targetMap = original[targetKey] as { [field: string]: any } | null ?? {};
       const publicParameters = original["@public"] as { [field: string]: any } | null ?? {};
       const privateParameters = original["@private"] as { [field: string]: any } | null ?? {};
-      const type = targetMap.get("@type", "");
+      const type = targetMap["@type"] as string | null ?? "";
       if (type == this.type) {
         return {
           key: {
