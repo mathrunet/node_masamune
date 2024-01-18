@@ -25,12 +25,12 @@ export class FirestoreModelGeoValueConverter extends FirestoreModelFieldValueCon
     original: { [field: string]: any }): { [field: string]: any } | null {
     if (Array.isArray(value)) {
       const targetKey = `#${key}`;
-      const targetList = original[targetKey] as { [field: string]: any }[] | null ?? [];
+      const targetList = original[targetKey] as { [field: string]: any }[] | null | undefined ?? [];
       if (targetList != null && targetList.length > 0 && targetList.every((e) => e["@type"] === this.type)) {
         const res: string[] = [];
         for (const tmp of targetList) {
           res.push(
-            tmp["@geoHash"] as string | null ?? "",
+            tmp["@geoHash"] as string | null | undefined ?? "",
           );
         }
         if (res.length > 0) {
@@ -41,7 +41,7 @@ export class FirestoreModelGeoValueConverter extends FirestoreModelFieldValueCon
       }
     } else if (isDynamicMap(value)) {
       const targetKey = `#${key}`;
-      const targetMap = original[targetKey] as { [field: string]: { [field: string]: any } } | null ?? {};
+      const targetMap = original[targetKey] as { [field: string]: { [field: string]: any } } | null | undefined ?? {};
       targetMap
       if (targetMap != null) {
         const res: {
@@ -49,13 +49,13 @@ export class FirestoreModelGeoValueConverter extends FirestoreModelFieldValueCon
         } = {};
         for (const key in value) {
           const val = value[key];
-          const mapVal = targetMap[key];
-          const type = mapVal["@type"] as string | null ?? "";
+          const mapVal = targetMap[key] as { [field: string]: any } | null | undefined ?? {};
+          const type = mapVal["@type"] as string | null | undefined ?? "";
           if (type != this.type) {
             continue;
           }
           if (typeof val === "string" || val instanceof GeoPoint) {
-            res[key] = mapVal["@geoHash"] as string | null ?? "";
+            res[key] = mapVal["@geoHash"] as string | null | undefined ?? "";
           }
         }
         if (Object.keys(res).length > 0) {
@@ -66,11 +66,11 @@ export class FirestoreModelGeoValueConverter extends FirestoreModelFieldValueCon
       }
     } else if (typeof value === "string" || value instanceof GeoPoint) {
       const targetKey = `#${key}`;
-      const targetMap = original[targetKey] as { [field: string]: any } | null ?? {};
-      const type = targetMap["@type"] as string | null ?? "";
+      const targetMap = original[targetKey] as { [field: string]: any } | null | undefined ?? {};
+      const type = targetMap["@type"] as string | null | undefined ?? "";
       if (type == this.type) {
         return {
-          key: targetMap["@geoHash"] as string | null ?? "",
+          key: targetMap["@geoHash"] as string | null | undefined ?? "",
         };
       }
     }

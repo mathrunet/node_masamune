@@ -25,7 +25,7 @@ export class FirestoreModelTimestampConverter extends FirestoreModelFieldValueCo
     original: { [field: string]: any }): { [field: string]: any } | null {
     if (Array.isArray(value)) {
       const targetKey = `#${key}`;
-      const targetList = original[targetKey] as { [field: string]: any }[] | null ?? [];
+      const targetList = original[targetKey] as { [field: string]: any }[] | null | undefined ?? [];
       if (targetList != null && targetList.length > 0 && targetList.every((e) => e["@type"] === this.type)) {
         const res: number[] = [];
         for (const tmp of value) {
@@ -43,7 +43,7 @@ export class FirestoreModelTimestampConverter extends FirestoreModelFieldValueCo
       }
     } else if (isDynamicMap(value)) {
       const targetKey = `#${key}`;
-      const targetMap = original[targetKey] as { [field: string]: { [field: string]: any } } | null ?? {};
+      const targetMap = original[targetKey] as { [field: string]: { [field: string]: any } } | null | undefined ?? {};
       targetMap
       if (targetMap != null) {
         const res: {
@@ -51,8 +51,8 @@ export class FirestoreModelTimestampConverter extends FirestoreModelFieldValueCo
         } = {};
         for (const key in value) {
           const val = value[key];
-          const mapVal = targetMap[key];
-          const type = mapVal["@type"] as string | null ?? "";
+          const mapVal = targetMap[key] as { [field: string]: any } | null | undefined ?? {};
+          const type = mapVal["@type"] as string | null | undefined ?? "";
           if (type != this.type) {
             continue;
           }
@@ -70,8 +70,8 @@ export class FirestoreModelTimestampConverter extends FirestoreModelFieldValueCo
       }
     } else if (typeof value === "number") {
       const targetKey = `#${key}`;
-      const targetMap = original[targetKey] as { [field: string]: any } | null ?? {};
-      const type = targetMap["@type"] as string | null ?? "";
+      const targetMap = original[targetKey] as { [field: string]: any } | null | undefined ?? {};
+      const type = targetMap["@type"] as string | null | undefined ?? "";
       if (type == this.type) {
         return {
           key: value,
@@ -79,8 +79,8 @@ export class FirestoreModelTimestampConverter extends FirestoreModelFieldValueCo
       }
     } else if (value instanceof Timestamp) {
       const targetKey = `#${key}`;
-      const targetMap = original[targetKey] as { [field: string]: any } | null ?? {};
-      const type = targetMap["@type"] as string | null ?? "";
+      const targetMap = original[targetKey] as { [field: string]: any } | null | undefined ?? {};
+      const type = targetMap["@type"] as string | null | undefined ?? "";
       if (type == this.type) {
         return {
           key: value.toMillis(),

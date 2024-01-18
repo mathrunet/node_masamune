@@ -23,8 +23,8 @@ export class FirestoreModelSearchConverter extends FirestoreModelFieldValueConve
     original: { [field: string]: any }): { [field: string]: any } | null {
     if (Array.isArray(value)) {
       const targetKey = `#${key}`;
-      const targetMap = original[targetKey] as { [field: string]: any } | null ?? {};
-      const type = targetMap["@type"] as string | null ?? "";
+      const targetMap = original[targetKey] as { [field: string]: any } | null | undefined ?? {};
+      const type = targetMap["@type"] as string | null | undefined ?? "";
       if (type == this.type) {
         return {
           key: value.map((e) => String(e)),
