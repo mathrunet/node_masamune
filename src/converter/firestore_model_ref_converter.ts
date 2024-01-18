@@ -23,7 +23,15 @@ export class FirestoreModelRefConverter extends FirestoreModelFieldValueConverte
     key: string,
     value: any,
     original: { [field: string]: any }): { [field: string]: any } | null {
-    if (Array.isArray(value)) {
+    console.log(`${key} is ${typeof value}`);
+    if (value instanceof DocumentReference) {
+      return {
+        [key]: {
+          "@ref": value.path,
+          ...this.header(),
+        },
+      };
+    } else if (Array.isArray(value)) {
         const res: { [field: string]: any }[] = [];
       for (const tmp of value) {
         if (tmp instanceof DocumentReference) {
@@ -56,13 +64,6 @@ export class FirestoreModelRefConverter extends FirestoreModelFieldValueConverte
           [key]: res,
         };
       }
-    } else if (value instanceof DocumentReference) {
-      return {
-        [key]: {
-          "@ref": value.path,
-          ...this.header(),
-        },
-      };
     }
     return null;
   }

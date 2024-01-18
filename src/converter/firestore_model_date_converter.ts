@@ -23,7 +23,25 @@ export class FirestoreModelDateConverter extends FirestoreModelFieldValueConvert
     key: string,
     value: any,
     original: { [field: string]: any }): { [field: string]: any } | null {
-    if (Array.isArray(value)) {
+    if (typeof value === "number") {
+      const targetKey = `#${key}`;
+      const targetMap = original[targetKey] as { [field: string]: any } | null | undefined ?? {};
+      const type = targetMap["@type"] as string | null | undefined ?? "";
+      if (type == this.type) {
+        return {
+          [key]: value,
+        };
+      }
+    } else if (value instanceof Timestamp) {
+      const targetKey = `#${key}`;
+      const targetMap = original[targetKey] as { [field: string]: any } | null | undefined ?? {};
+      const type = targetMap["@type"] as string | null | undefined ?? "";
+      if (type == this.type) {
+        return {
+          [key]: value.toMillis(),
+        };
+      }
+    } else if (Array.isArray(value)) {
       const targetKey = `#${key}`;
       const targetList = original[targetKey] as { [field: string]: any }[] | null | undefined ?? [];
       if (targetList != null && targetList.length > 0 && targetList.every((e) => e["@type"] === this.type)) {
@@ -67,24 +85,6 @@ export class FirestoreModelDateConverter extends FirestoreModelFieldValueConvert
             [key]: res,
           };
         }
-      }
-    } else if (typeof value === "number") {
-      const targetKey = `#${key}`;
-      const targetMap = original[targetKey] as { [field: string]: any } | null | undefined ?? {};
-      const type = targetMap["@type"] as string | null | undefined ?? "";
-      if (type == this.type) {
-        return {
-          [key]: value,
-        };
-      }
-    } else if (value instanceof Timestamp) {
-      const targetKey = `#${key}`;
-      const targetMap = original[targetKey] as { [field: string]: any } | null | undefined ?? {};
-      const type = targetMap["@type"] as string | null | undefined ?? "";
-      if (type == this.type) {
-        return {
-          [key]: value.toMillis(),
-        };
       }
     }
     return null;
