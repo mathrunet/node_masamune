@@ -45,14 +45,17 @@ module.exports = (
             const afterExists = event.data?.after.exists ?? false;
             const beforeExists = event.data?.before.exists ?? false;
             const indexName = options.path?.split("/").pop() ?? "";
+            console.log(`Algolia: ${process.env.ALGOLIA_APPID}`);
             const client = algolia.default(
                 process.env.ALGOLIA_APPID ?? "",
                 process.env.ALGOLIA_APIKEY ?? "",
             );
+            console.log(`Start: ${options.path} to ${indexName}`);
             // create
             if (!beforeExists && afterExists) {
                 const data = event.data?.after.data();
                 const key = event.data?.after.id;
+                console.log(`Create: ${key} to ${data}`);
                 if (!key || !data) {
                     return;
                 }
@@ -67,6 +70,7 @@ module.exports = (
             } else if (beforeExists && afterExists) {
                 const data = event.data?.after.data();
                 const key = event.data?.after.id;
+                console.log(`Update: ${key} to ${data}`);
                 if (!key || !data) {
                     return;
                 }
@@ -80,6 +84,7 @@ module.exports = (
             // delete
             } else if (beforeExists && !afterExists) {
                 const key = event.data?.after.id;
+                console.log(`Delete: ${key}`);
                 if (!key) {
                     return;
                 }
