@@ -1,3 +1,12 @@
+## [2.2.3](https://github.com/mathrunet/node_masamune/compare/v2.2.2...v2.2.3) (2024-01-18)
+
+
+### fix
+
+* Fixed errors around constructors. ([8f7e53e](https://github.com/mathrunet/node_masamune/commit/8f7e53ea9fbf66248fe02bf61fefd2a643d94d6d))
+
+
+
 ## [2.2.2](https://github.com/mathrunet/node_masamune/compare/v2.2.1...v2.2.2) (2024-01-18)
 
 
