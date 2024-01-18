@@ -1,3 +1,12 @@
+## [2.2.6](https://github.com/mathrunet/node_masamune/compare/v2.2.5...v2.2.6) (2024-01-18)
+
+
+### fix
+
+* Resolved undefined error. ([0bc3678](https://github.com/mathrunet/node_masamune/commit/0bc367854f67302699290b4186ef0617dcb7391e))
+
+
+
 ## [2.2.5](https://github.com/mathrunet/node_masamune/compare/v2.2.4...v2.2.5) (2024-01-18)
 
 
