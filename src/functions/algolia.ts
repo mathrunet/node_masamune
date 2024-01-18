@@ -59,13 +59,12 @@ module.exports = (
                 if (!key || !data) {
                     return;
                 }
-                const update: { [field: string]: any } = {};
-                for (const k in data) {
-                    const v = data[k];
-                    update[k] = _convert(v);
-                }
-                update["@uid"] = key;
-                update["objectID"] = key;
+                const converted = _convert(data);
+                const update: { [field: string]: any } = {
+                    ...converted,
+                    "@uid": key,
+                    "objectID": key,
+                };
                 const index = client.initIndex(indexName);
                 await index.saveObject(update);
             // update
@@ -76,13 +75,12 @@ module.exports = (
                 if (!key || !data) {
                     return;
                 }
-                const update: { [field: string]: any } = {};
-                for (const k in data) {
-                    const v = data[k];
-                    update[k] = _convert(v);
-                }
-                update["@uid"] = key;
-                update["objectID"] = key;
+                const converted = _convert(data);
+                const update: { [field: string]: any } = {
+                    ...converted,
+                    "@uid": key,
+                    "objectID": key,
+                };
                 const index = client.initIndex(indexName);
                 await index.saveObject(update);
             // delete
