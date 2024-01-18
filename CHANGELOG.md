@@ -1,3 +1,12 @@
+## [2.2.9](https://github.com/mathrunet/node_masamune/compare/v2.2.8...v2.2.9) (2024-01-18)
+
+
+### fix
+
+* Fixed a bug that caused duplicate keys. ([31332c1](https://github.com/mathrunet/node_masamune/commit/31332c1bb4799c2bd6ad0956d99db5c31aac9dba))
+
+
+
 ## [2.2.8](https://github.com/mathrunet/node_masamune/compare/v2.2.7...v2.2.8) (2024-01-18)
 
 
