@@ -1,3 +1,12 @@
+## [2.1.1](https://github.com/mathrunet/node_masamune/compare/v2.1.0...v2.1.1) (2024-01-18)
+
+
+### fix
+
+* Apply Algolia to firestore. ([77157c4](https://github.com/mathrunet/node_masamune/commit/77157c41fa320bb624779e9d18ef5a0cab3ecf04))
+
+
+
 # [2.1.0](https://github.com/mathrunet/node_masamune/compare/v2.0.1...v2.1.0) (2024-01-18)
 
 
