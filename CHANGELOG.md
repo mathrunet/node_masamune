@@ -1,3 +1,12 @@
+## [2.2.4](https://github.com/mathrunet/node_masamune/compare/v2.2.3...v2.2.4) (2024-01-18)
+
+
+### fix
+
+* Fixed a circular reference that seems to be happening. ([fdf1349](https://github.com/mathrunet/node_masamune/commit/fdf13493db02d8c6bafd120846f0db6a7aebe137))
+
+
+
 ## [2.2.3](https://github.com/mathrunet/node_masamune/compare/v2.2.2...v2.2.3) (2024-01-18)
 
 
