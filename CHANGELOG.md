@@ -1,3 +1,12 @@
+## [2.2.1](https://github.com/mathrunet/node_masamune/compare/v2.2.0...v2.2.1) (2024-01-18)
+
+
+### chore
+
+* Console logs are displayed. ([b7d7fed](https://github.com/mathrunet/node_masamune/commit/b7d7fed26e3e8067640b531b49f55f34a676fa1c))
+
+
+
 # [2.2.0](https://github.com/mathrunet/node_masamune/compare/v2.1.1...v2.2.0) (2024-01-18)
 
 
