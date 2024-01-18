@@ -1,5 +1,5 @@
 import * as functions from "firebase-functions/v2";
-import { FunctionsBase } from "./functions_base";
+import { FunctionsBase, HttpFunctionsOptions } from "./functions_base";
 export { CallableRequest } from "firebase-functions/v2/https";
 
 /**
@@ -8,6 +8,29 @@ export { CallableRequest } from "firebase-functions/v2/https";
  * FunctionsのCallメソッド実行用のFunctionのデータを定義するためのベースクラス。
  */
 export abstract class CallProcessFunctionBase extends FunctionsBase {
+    /**
+     * Base class for defining the data of Functions for executing the Call method of Functions.
+     * 
+     * FunctionsのCallメソッド実行用のFunctionのデータを定義するためのベースクラス。
+     */
+    constructor({
+        id,
+        func,
+        data = {},
+        options,
+    }: {
+        id: string,
+        func: (
+            region: string[],
+            options: HttpFunctionsOptions,
+            data: { [key: string]: string },
+        ) => Function,
+        data?: { [key: string]: string },
+        options?: HttpFunctionsOptions | undefined | null,
+    }) {
+        super({ id: id, func: func, data: data, options: options });
+    }
+
     /**
      * Specify the actual contents of the process.
      * 
@@ -27,14 +50,15 @@ export abstract class CallProcessFunctionBase extends FunctionsBase {
 
     data: { [key: string]: string } = {};
     build(regions: string[]): Function {
+        const options = this.options as HttpFunctionsOptions | undefined | null;
         return functions.https.onCall(        
             {
-                region: regions,
-                timeoutSeconds: this.options.timeoutSeconds,
-                memory: this.options.memory,
-                minInstances: this.options.minInstances,
-                concurrency: this.options.concurrency,
-                maxInstances: this.options.maxInstances,
+                region: options?.region ?? regions,
+                timeoutSeconds: options?.timeoutSeconds,
+                memory: options?.memory,
+                minInstances: options?.minInstances,
+                concurrency: options?.concurrency,
+                maxInstances: options?.maxInstances,
             },
             async (query) => {
                 return this.process(query);

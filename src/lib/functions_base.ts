@@ -107,6 +107,13 @@ export interface SchedulerFunctionsOptions extends FunctionsOptions {
      * * AppEngine形式の場合は、`every 1 minutes`のように指定します。
      */
     schedule?: string | undefined | null;
+
+    /**
+     * Specifies an alternate region.
+     * 
+     * 代替のリージョンを指定します。
+     */
+    region?: string | null;
 }
 
 /**
@@ -121,6 +128,13 @@ export interface PathFunctionsOptions extends FunctionsOptions {
      * 対象のデータベースのパスを指定します。
      */
     path?: string | undefined | null;
+
+    /**
+     * Specifies an alternate region.
+     * 
+     * 代替のリージョンを指定します。
+     */
+    region?: string | null;
 }
 
 /**
@@ -137,6 +151,41 @@ export interface PubsubFunctionsOptions extends FunctionsOptions {
      * GCPのpub/subに`purchasing`のトピックを作成しプリンシパルに「google-play-developer-notifications@system.gserviceaccount.com」を設定することで通知を受け取ることができるようになります。
      */
     topic?: string | undefined | null;
+
+    /**
+     * Specifies an alternate region.
+     * 
+     * 代替のリージョンを指定します。
+     */
+    region?: string | null;
+}
+
+/**
+ * Specifies the options for the process.
+ * 
+ * 処理のオプションを指定します。
+ */
+export interface HttpFunctionsOptions extends FunctionsOptions {
+    /**
+     * Specifies an alternate region.
+     * 
+     * 代替のリージョンを指定します。
+     */
+    region?: string | string[] | null;
+}
+
+/**
+ * Specifies the options for the process.
+ * 
+ * 処理のオプションを指定します。
+ */
+export interface StorageFunctionsOptions extends FunctionsOptions {
+    /**
+     * Specifies an alternate region.
+     * 
+     * 代替のリージョンを指定します。
+     */
+    region?: string | null;
 }
 
 /**

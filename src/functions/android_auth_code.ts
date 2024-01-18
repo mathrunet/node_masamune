@@ -1,5 +1,5 @@
 import * as functions from "firebase-functions/v2";
-import { FunctionsOptions } from "../lib/functions_base";
+import { HttpFunctionsOptions } from "../lib/functions_base";
 
 /**
  * After being redirected from [android_auth_code], you will get a refresh token to connect to Google's API.
@@ -30,11 +30,11 @@ import { FunctionsOptions } from "../lib/functions_base";
  */
 module.exports = (
     regions: string[],
-    options: FunctionsOptions,
+    options: HttpFunctionsOptions,
     data: { [key: string]: string }
 ) => functions.https.onRequest(
     {
-        region: regions,
+        region: options.region ?? regions,
         timeoutSeconds: options.timeoutSeconds,
         memory: options.memory,
         minInstances: options.minInstances,

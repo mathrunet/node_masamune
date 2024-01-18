@@ -48,15 +48,16 @@ export abstract class ScheduleProcessFunctionBase extends FunctionsBase {
 
     data: { [key: string]: string } = {};
     build(regions: string[]): Function {
+        const options = this.options as SchedulerFunctionsOptions | undefined | null;
         return functions.scheduler.onSchedule(
             {
-                schedule: (this.options as SchedulerFunctionsOptions | undefined)?.schedule ?? this.schedule,
-                region: regions[0],
-                timeoutSeconds: this.options.timeoutSeconds,
-                memory: this.options.memory,
-                minInstances: this.options.minInstances,
-                concurrency: this.options.concurrency,
-                maxInstances: this.options.maxInstances,
+                schedule: options?.schedule ?? this.schedule,
+                region: options?.region ?? regions[0],
+                timeoutSeconds: options?.timeoutSeconds,
+                memory: options?.memory,
+                minInstances: options?.minInstances,
+                concurrency: options?.concurrency,
+                maxInstances: options?.maxInstances,
             },
             async (event) => {
                 return this.process();

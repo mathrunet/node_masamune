@@ -1,6 +1,6 @@
 import * as functions from "firebase-functions/v2";
 import { Api } from "../lib/api";
-import { FunctionsOptions } from "../lib/functions_base";
+import { HttpFunctionsOptions } from "../lib/functions_base";
 
 
 /**
@@ -45,11 +45,11 @@ import { FunctionsOptions } from "../lib/functions_base";
  */
 module.exports = (
     regions: string[],
-    options: FunctionsOptions,
+    options: HttpFunctionsOptions,
     data: { [key: string]: string }
 ) => functions.https.onRequest(
     {
-        region: regions,
+        region: options.region ?? regions,
         timeoutSeconds: options.timeoutSeconds,
         memory: options.memory,
         minInstances: options.minInstances,

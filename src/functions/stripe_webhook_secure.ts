@@ -2,7 +2,7 @@ import * as functions from "firebase-functions/v2";
 import * as stripe from "stripe";
 import * as admin from "firebase-admin";
 import "../exntension/string.extension"
-import { FunctionsOptions } from "../lib/functions_base";
+import { HttpFunctionsOptions } from "../lib/functions_base";
 
 /**
  * Webhook for proper redirection when 3D Secure authentication is required.
@@ -56,11 +56,11 @@ import { FunctionsOptions } from "../lib/functions_base";
  */
 module.exports = (
   regions: string[],
-  options: FunctionsOptions,
+  options: HttpFunctionsOptions,
   data: { [key: string]: string }
 ) => functions.https.onRequest(
   {
-    region: regions,
+    region: options.region ?? regions,
     timeoutSeconds: options.timeoutSeconds,
     memory: options.memory,
     minInstances: options.minInstances,

@@ -1,7 +1,7 @@
 import * as functions from "firebase-functions/v2";
 import * as admin from "firebase-admin";
 import { sendNotification } from "../lib/send_notification";
-import { FunctionsOptions, SchedulerFunctionsOptions } from "../lib/functions_base";
+import { SchedulerFunctionsOptions } from "../lib/functions_base";
 
 /**
  * Define a process for notifications while scaling to monitor the DB and register future PUSH notifications and data.
@@ -20,7 +20,7 @@ module.exports = (
 ) => functions.scheduler.onSchedule(
     {
         schedule: options.schedule ?? "every 1 minutes",
-        region: regions[0],
+        region: options.region ?? regions[0],
         timeoutSeconds: options.timeoutSeconds,
         memory: options.memory,
         minInstances: options.minInstances,

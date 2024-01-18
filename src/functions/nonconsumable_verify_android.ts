@@ -1,7 +1,7 @@
 import * as functions from "firebase-functions/v2";
 import * as verifier from "../lib/verify_android";
 import * as updater from "../lib/update_unlock";
-import { FunctionsOptions } from "../lib/functions_base";
+import { HttpFunctionsOptions } from "../lib/functions_base";
 
 /**
  * Performs non-consumable in-app purchases. Unlock by setting the value of the field in the document specified in [path] to `true`.
@@ -61,11 +61,11 @@ import { FunctionsOptions } from "../lib/functions_base";
  */
 module.exports = (
     regions: string[],
-    options: FunctionsOptions,
+    options: HttpFunctionsOptions,
     data: { [key: string]: string }
 ) => functions.https.onCall(
     {
-        region: regions,
+        region: options.region ?? regions,
         timeoutSeconds: options.timeoutSeconds,
         memory: options.memory,
         minInstances: options.minInstances,

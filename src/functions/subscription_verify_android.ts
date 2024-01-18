@@ -1,7 +1,7 @@
 import * as functions from "firebase-functions/v2";
 import * as verifier from "../lib/verify_android";
 import * as subscriber from "../lib/update_subscription";
-import { FunctionsOptions } from "../lib/functions_base";
+import { HttpFunctionsOptions } from "../lib/functions_base";
 
 /**
  * Verify subscriptions and add data.
@@ -76,11 +76,11 @@ import { FunctionsOptions } from "../lib/functions_base";
  */
 module.exports = (
     regions: string[],
-    options: FunctionsOptions,
+    options: HttpFunctionsOptions,
     data: { [key: string]: string }
 ) => functions.https.onCall(
     {
-        region: regions,
+        region: options.region ?? regions,
         timeoutSeconds: options.timeoutSeconds,
         memory: options.memory,
         minInstances: options.minInstances,

@@ -2,7 +2,7 @@ import * as functions from "firebase-functions/v2";
 import * as admin from "firebase-admin";
 import * as verifier from "../lib/verify_android";
 import * as utils from "../lib/utils";
-import { FunctionsOptions, PubsubFunctionsOptions } from "../lib/functions_base";
+import { PubsubFunctionsOptions } from "../lib/functions_base";
 
 /**
  * This is a webhook endpoint for Android. you can create a `purchasing` topic in GCP's pub/sub and set the principal to "google-play-developer-notifications@system.gserviceaccount.com" to receive notifications.
@@ -52,7 +52,7 @@ module.exports = (
 ) => functions.pubsub.onMessagePublished(
     {
         topic: options.topic ?? "purchasing",
-        region: regions[0],
+        region: options.region ?? regions[0],
         timeoutSeconds: options.timeoutSeconds,
         memory: options.memory,
         minInstances: options.minInstances,

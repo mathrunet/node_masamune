@@ -33,7 +33,7 @@ module.exports = (
 ) => functions.firestore.onDocumentWritten(
     {
         document: `${options.path}/{docId}`,
-        region: regions[0],
+        region: options.region ?? regions[0],
         timeoutSeconds: options.timeoutSeconds,
         memory: options.memory,
         minInstances: options.minInstances,

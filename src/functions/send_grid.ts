@@ -1,6 +1,6 @@
 import * as functions from "firebase-functions/v2";
 import * as sendgrid from "../lib/send_grid";
-import { FunctionsOptions } from "../lib/functions_base";
+import { HttpFunctionsOptions } from "../lib/functions_base";
 
 /**
  * Send mail through SendGrid.
@@ -31,11 +31,11 @@ import { FunctionsOptions } from "../lib/functions_base";
  */
 module.exports = (
     regions: string[],
-    options: FunctionsOptions,
+    options: HttpFunctionsOptions,
     data: { [key: string]: string }
 ) => functions.https.onCall(
     {
-        region: regions,
+        region: options.region ?? regions,
         timeoutSeconds: options.timeoutSeconds,
         memory: options.memory,
         minInstances: options.minInstances,
