@@ -23,6 +23,13 @@ import { FirestoreNullConverter } from "../converter/firestore_null_converter";
  */
 export abstract class FirestoreModelFieldValueConverter {
     /**
+     * Base class for converting [ModelFieldValue] for use in Firestore.
+     * 
+     * Firestoreで利用するための[ModelFieldValue]の変換を行うベースクラス。
+     */
+    constructor() { }
+
+    /**
      * List of converters for converting Firestore values.
      * 
      * Firestoreの値を変換するためのコンバーター一覧。
