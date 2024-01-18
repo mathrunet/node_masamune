@@ -1,4 +1,5 @@
 import * as functions from "firebase-functions/v2";
+import * as firestore from "firebase-admin/firestore";
 import * as algolia from "algoliasearch";
 import { PathFunctionsOptions } from "../lib/functions_base";
 
@@ -29,9 +30,9 @@ module.exports = (
     regions: string[],
     options: PathFunctionsOptions,
     data: { [key: string]: string }
-) => functions.database.onValueWritten(
+) => functions.firestore.onDocumentWritten(
     {
-        ref: options.path ?? "",
+        document: `${options.path}/{docId}`,
         region: regions[0],
         timeoutSeconds: options.timeoutSeconds,
         memory: options.memory,
@@ -41,17 +42,17 @@ module.exports = (
     },
     async (event) => {
         try {
-            const after = event.data.after;
-            const before = event.data.before;
+            const afterExists = event.data?.after.exists ?? false;
+            const beforeExists = event.data?.before.exists ?? false;
             const indexName = options.path?.split("/").pop() ?? "";
             const client = algolia.default(
                 process.env.ALGOLIA_APPID ?? "",
                 process.env.ALGOLIA_APIKEY ?? "",
             );
             // create
-            if (!before.exists() && after.exists()) {
-                const data = after.val();
-                const key = after.key;
+            if (!beforeExists && afterExists) {
+                const data = event.data?.after.data();
+                const key = event.data?.after.id;
                 if (!key || !data) {
                     return;
                 }
@@ -63,9 +64,9 @@ module.exports = (
                 const index = client.initIndex(indexName);
                 await index.saveObject(algoliaObject);
             // update
-            } else if (before.exists() && after.exists()) {
-                const data = after.val();
-                const key = after.key;
+            } else if (beforeExists && afterExists) {
+                const data = event.data?.after.data();
+                const key = event.data?.after.id;
                 if (!key || !data) {
                     return;
                 }
@@ -77,8 +78,8 @@ module.exports = (
                 const index = client.initIndex(indexName);
                 await index.saveObject(algoliaObject);
             // delete
-            } else if (before.exists() && !after.exists()) {
-                const key = before.key;
+            } else if (beforeExists && !afterExists) {
+                const key = event.data?.after.id;
                 if (!key) {
                     return;
                 }
