@@ -89,6 +89,9 @@ module.exports = (
             }
             /* ==== ここまでAndroid検証 ==== */
             if (!query.data.path) {
+                throw new functions.https.HttpsError(
+                    "invalid-argument", `The required parameters are not set. path: ${query.data.path}`,
+                );
                 return res;
             }
             /* ==== Firestoreの更新ここから ==== */

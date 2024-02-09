@@ -54,7 +54,9 @@ module.exports = (
             }
             /* ==== ここまでIOS検証 ==== */
             if (!query.data.path || !query.data.value) {
-                return res;
+                throw new functions.https.HttpsError(
+                    "invalid-argument", `The required parameters are not set. path: ${query.data.path} value: ${query.data.value}`,
+                );
             }
             /* ==== Firestoreの更新ここから ==== */
             await updater.updateWallet({
