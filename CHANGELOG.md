@@ -1,3 +1,12 @@
+## [2.2.11](https://github.com/mathrunet/node_masamune/compare/v2.2.10...v2.2.11) (2024-02-09)
+
+
+### fix
+
+* I made sure to get the errors right. ([f00fe56](https://github.com/mathrunet/node_masamune/commit/f00fe56951d2a1ec5f4433bd50db08636d42a79f))
+
+
+
 ## [2.2.10](https://github.com/mathrunet/node_masamune/compare/v2.2.9...v2.2.10) (2024-01-18)
 
 
