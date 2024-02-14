@@ -1,3 +1,12 @@
+## [2.2.13](https://github.com/mathrunet/node_masamune/compare/v2.2.12...v2.2.13) (2024-02-14)
+
+
+### fix
+
+* Set initial options. ([96558ec](https://github.com/mathrunet/node_masamune/commit/96558ecc35f4577b3c83f8069684efb46beb0432))
+
+
+
 ## [2.2.12](https://github.com/mathrunet/node_masamune/compare/v2.2.11...v2.2.12) (2024-02-14)
 
 
