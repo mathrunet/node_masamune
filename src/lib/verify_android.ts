@@ -58,6 +58,8 @@ export async function verifyAndroid({
     purchaseToken: string,
 }): Promise<{ [key: string]: any; }> {
     try {
+        console.log(serviceAccountEmail);
+        console.log(serviceAccountPrivateKey);
         const authClient = new google.auth.JWT({
             email: serviceAccountEmail,
             key: serviceAccountPrivateKey,
