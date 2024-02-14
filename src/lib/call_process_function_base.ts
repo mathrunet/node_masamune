@@ -1,5 +1,5 @@
 import * as functions from "firebase-functions/v2";
-import { FunctionsBase, HttpFunctionsOptions } from "./functions_base";
+import { FunctionsBase, HttpFunctionsOptions, FunctionsOptions } from "./functions_base";
 export { CallableRequest } from "firebase-functions/v2/https";
 
 /**
@@ -13,14 +13,8 @@ export abstract class CallProcessFunctionBase extends FunctionsBase {
      * 
      * FunctionsのCallメソッド実行用のFunctionのデータを定義するためのベースクラス。
      */
-    constructor({
-        data = {},
-        options,
-    }: {
-        data?: { [key: string]: string },
-        options?: HttpFunctionsOptions | undefined | null,
-    }) {
-        super({ data: data, options: options });
+    constructor(options: HttpFunctionsOptions = {}) {
+        super({ options: options });
     }
 
     /**

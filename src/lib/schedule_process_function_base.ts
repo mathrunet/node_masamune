@@ -12,14 +12,8 @@ export abstract class ScheduleProcessFunctionBase extends FunctionsBase {
      * 
      * 定期スケジュール実行用のFunctionのデータを定義するためのベースクラス。
      */
-    constructor({
-        data = {},
-        options,
-    }: {
-        data?: { [key: string]: string },
-        options?: SchedulerFunctionsOptions | undefined | null,
-    }) {
-        super({ data: data, options: options });
+    constructor(options: SchedulerFunctionsOptions = {}) {
+        super({ options: options });
     }
 
     /** 

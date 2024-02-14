@@ -15,14 +15,8 @@ export abstract class RequestProcessFunctionBase extends FunctionsBase {
      * 
      * HTTPリクエスト実行用のFunctionのデータを定義するためのベースクラス。
      */
-    constructor({
-        data = {},
-        options,
-    }: {
-        data?: { [key: string]: string },
-        options?: HttpFunctionsOptions | undefined | null,
-    }) {
-        super({ data: data, options: options });
+    constructor(options: HttpFunctionsOptions = {}) {
+        super({ options: options });
     }
 
     /**
