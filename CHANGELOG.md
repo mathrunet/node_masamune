@@ -1,3 +1,12 @@
+## [2.3.2](https://github.com/mathrunet/node_masamune/compare/v2.3.1...v2.3.2) (2024-02-14)
+
+
+### fix
+
+* Changed line breaks. ([a38d02b](https://github.com/mathrunet/node_masamune/commit/a38d02bb5b1696e539368f15efdb3c17a14b087f))
+
+
+
 ## [2.3.1](https://github.com/mathrunet/node_masamune/compare/v2.3.0...v2.3.1) (2024-02-14)
 
 
