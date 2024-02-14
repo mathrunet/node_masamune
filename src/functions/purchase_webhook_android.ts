@@ -9,36 +9,35 @@ import { PubsubFunctionsOptions } from "../lib/functions_base";
  * 
  * Android用のWebhookのエンドポイントです。GCPのpub/subに`purchasing`のトピックを作成しプリンシパルに「google-play-developer-notifications@system.gserviceaccount.com」を設定することで通知を受け取ることができるようになります。
  * 
- * @param process.env.PURCHASE_ANDROID_REFRESHTOKEN
- * Describe the refresh token that can be obtained by accessing [android_auth_code].
- * 
- * [android_auth_code]にアクセスすることで取得できるリフレッシュトークンを記述します。
- * 
- * @param process.env.PURCHASE_ANDROID_CLIENTID
- * Google's OAuth 2.0 client ID.
+ * @param process.env.PURCHASE_ANDROID_SERVICEACCOUNT_EMAIL
+ * The email address of your Google service account.
  * Create an OAuth consent screen from the URL below.
  * https://console.cloud.google.com/apis/credentials/consent
- * Then create an OAuth 2.0 client ID from the credentials.
- * https://console.cloud.google.com/apis/credentials
+ * It is then created from the service account.
+ * https://console.cloud.google.com/iam-admin/serviceaccounts
  * 
- * GoogleのOAuth2.0のクライアントID。
+ * Googleのサービスアカウントのメールアドレス。
  * 下記のURLからOAuthの同意画面を作成します。
  * https://console.cloud.google.com/apis/credentials/consent
- * その後、認証情報からOAuth 2.0 クライアントIDを作成します。
- * https://console.cloud.google.com/apis/credentials
+ * その後、サービスアカウントから作成します。
+ * https://console.cloud.google.com/iam-admin/serviceaccounts
  * 
- * @param process.env.PURCHASE_ANDROID_CLIENTSECRET
- * Google's OAuth 2.0 client secret.
+ * @param process.env.PURCHASE_ANDROID_SERVICEACCOUNT_PRIVATE_KEY
+ * A private key for your Google service account.
  * Create an OAuth consent screen from the URL below.
  * https://console.cloud.google.com/apis/credentials/consent
- * Then create an OAuth 2.0 client ID from the credentials.
- * https://console.cloud.google.com/apis/credentials
+ * It is then created from the service account.
+ * https://console.cloud.google.com/iam-admin/serviceaccounts
+ * After creating a service account, create a key in Json format from the Key tab.
+ * The private key is described there.
  * 
- * GoogleのOAuth2.0のクライアントシークレット。
+ * Googleのサービスアカウントのプライベートキー。
  * 下記のURLからOAuthの同意画面を作成します。
  * https://console.cloud.google.com/apis/credentials/consent
- * その後、認証情報からOAuth 2.0 クライアントIDを作成します。
- * https://console.cloud.google.com/apis/credentials
+ * その後、サービスアカウントから作成します。
+ * https://console.cloud.google.com/iam-admin/serviceaccounts
+ * サービスアカウント作成後、キーのタブからJson形式でキーを作成します。
+ * プライベートキーはそこに記述されています。
  * 
  * @param process.env.PURCHASE_SUBSCRIPTIONPATH
  * Describes the path to the collection of subscriptions.
@@ -67,10 +66,9 @@ module.exports = (
             if (messageBody) {
                 const firestoreInstance = admin.firestore();
                 const targetPath = process.env.PURCHASE_SUBSCRIPTIONPATH;
-                const androidClientId = process.env.PURCHASE_ANDROID_CLIENTID;
-                const androidClientSecret = process.env.PURCHASE_ANDROID_CLIENTSECRET;
-                const androidRefreshToken = process.env.PURCHASE_ANDROID_REFRESHTOKEN;
-                if (!androidClientId || !androidClientSecret || !androidRefreshToken || !targetPath) {
+                const androidServiceAccountEmail = process.env.PURCHASE_ANDROID_SERVICEACCOUNT_EMAIL;
+                const androidServiceAccountPrivateKey = process.env.PURCHASE_ANDROID_SERVICEACCOUNT_PRIVATE_KEY;
+                if (!androidServiceAccountEmail || !androidServiceAccountPrivateKey || !targetPath) {
                     throw new Error("The data is invalid.");
                 }
                 const {
@@ -88,9 +86,8 @@ module.exports = (
                     }
                     const res = await verifier.verifyAndroid({
                         type: "subscriptions",
-                        clientId: androidClientId,
-                        clientSecret: androidClientSecret,
-                        refreshToken: androidRefreshToken,
+                        serviceAccountEmail: androidServiceAccountEmail,
+                        serviceAccountPrivateKey: androidServiceAccountPrivateKey,
                         packageName: packageName,
                         productId: subscriptionId,
                         purchaseToken: purchaseToken,

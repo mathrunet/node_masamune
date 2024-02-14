@@ -1,30 +1,26 @@
 import * as functions from "firebase-functions/v2";
 import { Api } from "./api";
+import { google } from "googleapis";
 
 /**
  * Perform Android receipt verification.
  * 
  * Android の受信確認を実行します。
  * 
- * @param {String} type
+ * @param {"products" | "subscriptions"} type
  * Item type（products or subscriptions）
  * 
  * アイテムの種類（製品またはサブスクリプション）
  * 
- * @param {String} clientId
- * Google OAuth client ID.
+ * @param {String} serviceAccountEmail
+ * The email address of your Google Services account.
  * 
- * Google OAuth クライアントID。
+ * Googleサービスアカウントのメールアドレス。
  * 
- * @param {String} clientSecret
- * Google OAuth client secret.
+ * @param {String} serviceAccountPrivateKey
+ * A private key for your Google Services account.
  * 
- * Google OAuth クライアントシークレット。
- * 
- * @param {String} refreshToken
- * Refresh token obtained by accessing [android_auth_code].
- * 
- * [android_auth_code]にアクセスして取得したリフレッシュトークン。
+ * Googleサービスアカウントのプライベートキー。
  * 
  * @param {String} packageName
  * Application package name.
@@ -48,51 +44,53 @@ import { Api } from "./api";
  */
 export async function verifyAndroid({
     type,
-    clientId,
-    clientSecret,
-    refreshToken,
+    serviceAccountEmail,
+    serviceAccountPrivateKey,
     packageName,
     productId,
     purchaseToken,
 }: {
-    type: string,
-    clientId: string,
-    clientSecret: string,
-    refreshToken: string,
+    type: "products" | "subscriptions",
+    serviceAccountEmail: string,
+    serviceAccountPrivateKey: string,
     packageName: string,
     productId: string,
     purchaseToken: string,
-}) {
-    let res = await Api.post("https://accounts.google.com/o/oauth2/token", {
-        timeout: 30 * 1000,
-        data: {
-            "grant_type": "refresh_token",
-            "client_id": clientId,
-            "client_secret": clientSecret,
-            "refresh_token": refreshToken,
+}): Promise<{ [key: string]: any; }> {
+    try {
+        const authClient = new google.auth.JWT({
+            email: serviceAccountEmail,
+            key: serviceAccountPrivateKey,
+            scopes: ["https://www.googleapis.com/auth/androidpublisher"]
+        });
+        const playDeveloperApiClient = google.androidpublisher({
+            version: "v3",
+            auth: authClient,
+        });
+        await authClient.authorize();
+        if (type === "products") {
+            const res = await playDeveloperApiClient.purchases.products.get({
+                packageName: packageName,
+                productId: productId,
+                token: purchaseToken,
+            });
+            if (res.status !== 200) {
+                throw new functions.https.HttpsError("not-found", "The validation data is empty.");
+            }
+            return res.data;
+        } else if (type === "subscriptions") {
+            const res = await playDeveloperApiClient.purchases.subscriptions.get({
+                packageName: packageName,
+                subscriptionId: productId,
+                token: purchaseToken,
+            });
+            if (res.status !== 200) {
+                throw new functions.https.HttpsError("not-found", "The validation data is empty.");
+            }
+            return res.data;
         }
-    });
-    if (!res) {
-        throw new functions.https.HttpsError("not-found", "Cannot get access token.");
+    } catch (error) {
+        console.log(error);
     }
-    let json = (await res.json()) as { [key: string]: any };
-    console.log(json);
-    const accessToken = json["access_token"];
-    if (!accessToken) {
-        throw new functions.https.HttpsError("not-found", "Cannot get access token.");
-    }
-    console.log(`https://www.googleapis.com/androidpublisher/v3/applications/${packageName}/purchases/${type}/${productId}/tokens/${purchaseToken}?access_token=${accessToken}`);
-    res = await Api.get(
-        `https://www.googleapis.com/androidpublisher/v3/applications/${packageName}/purchases/${type}/${productId}/tokens/${purchaseToken}?access_token=${accessToken}`, {
-        timeout: 30 * 1000,
-        headers: {
-            "Content-Type": "application/json",
-        },
-    });
-    if (!res) {
-        throw new functions.https.HttpsError("not-found", "The validation data is empty.");
-    }
-    json = (await res.json()) as { [key: string]: any };
-    console.log(json);
-    return json;
+    throw new functions.https.HttpsError("not-found", "The validation data is empty.");    
 }
