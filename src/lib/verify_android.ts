@@ -59,10 +59,10 @@ export async function verifyAndroid({
 }): Promise<{ [key: string]: any; }> {
     try {
         console.log(serviceAccountEmail);
-        console.log(serviceAccountPrivateKey);
+        console.log(serviceAccountPrivateKey.replace(/\\n/g, '\n'));
         const authClient = new google.auth.JWT({
             email: serviceAccountEmail,
-            key: serviceAccountPrivateKey,
+            key: serviceAccountPrivateKey.replace(/\\n/g, "\n"),
             scopes: ["https://www.googleapis.com/auth/androidpublisher"]
         });
         const playDeveloperApiClient = google.androidpublisher({
