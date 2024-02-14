@@ -16,21 +16,13 @@ export abstract class RequestProcessFunctionBase extends FunctionsBase {
      * HTTPリクエスト実行用のFunctionのデータを定義するためのベースクラス。
      */
     constructor({
-        id,
-        func,
         data = {},
         options,
     }: {
-        id: string,
-        func: (
-            region: string[],
-            options: HttpFunctionsOptions,
-            data: { [key: string]: string },
-        ) => Function,
         data?: { [key: string]: string },
         options?: HttpFunctionsOptions | undefined | null,
     }) {
-        super({ id: id, func: func, data: data, options: options });
+        super({ data: data, options: options });
     }
 
     /**
@@ -50,6 +42,7 @@ export abstract class RequestProcessFunctionBase extends FunctionsBase {
      */
     abstract process(reqest: functions.https.Request, response: express.Response<any>): Promise<void>;
 
+    abstract id: string;
     data: { [key: string]: string } = {};
     build(regions: string[]): Function {
         const options = this.options as HttpFunctionsOptions | undefined | null;

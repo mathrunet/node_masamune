@@ -14,21 +14,13 @@ export abstract class CallProcessFunctionBase extends FunctionsBase {
      * FunctionsのCallメソッド実行用のFunctionのデータを定義するためのベースクラス。
      */
     constructor({
-        id,
-        func,
         data = {},
         options,
     }: {
-        id: string,
-        func: (
-            region: string[],
-            options: HttpFunctionsOptions,
-            data: { [key: string]: string },
-        ) => Function,
         data?: { [key: string]: string },
         options?: HttpFunctionsOptions | undefined | null,
     }) {
-        super({ id: id, func: func, data: data, options: options });
+        super({ data: data, options: options });
     }
 
     /**
@@ -48,6 +40,7 @@ export abstract class CallProcessFunctionBase extends FunctionsBase {
      */
     abstract process(query: functions.https.CallableRequest<any>): Promise<{ [key: string]: any }>;
 
+    abstract id: string;
     data: { [key: string]: string } = {};
     build(regions: string[]): Function {
         const options = this.options as HttpFunctionsOptions | undefined | null;

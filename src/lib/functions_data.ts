@@ -8,6 +8,9 @@ export { FunctionsOptions, SchedulerFunctionsOptions, PubsubFunctionsOptions, Pa
  */
 export class FunctionsData extends FunctionsBase {
   build(region: string[]): Function {
+    if (!this.func) {
+      return () => { };
+    }
     return this.func(
       region,
       this.options,

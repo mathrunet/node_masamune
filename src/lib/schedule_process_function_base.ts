@@ -13,21 +13,13 @@ export abstract class ScheduleProcessFunctionBase extends FunctionsBase {
      * 定期スケジュール実行用のFunctionのデータを定義するためのベースクラス。
      */
     constructor({
-        id,
-        func,
         data = {},
         options,
     }: {
-        id: string,
-        func: (
-            region: string[],
-            options: SchedulerFunctionsOptions,
-            data: { [key: string]: string },
-        ) => Function,
         data?: { [key: string]: string },
         options?: SchedulerFunctionsOptions | undefined | null,
     }) {
-        super({ id: id, func: func, data: data, options: options });
+        super({ data: data, options: options });
     }
 
     /** 
@@ -46,6 +38,7 @@ export abstract class ScheduleProcessFunctionBase extends FunctionsBase {
      */
     abstract process(): Promise<void>;
 
+    abstract id: string;
     data: { [key: string]: string } = {};
     build(regions: string[]): Function {
         const options = this.options as SchedulerFunctionsOptions | undefined | null;

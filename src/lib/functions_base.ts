@@ -26,18 +26,18 @@ export abstract class FunctionsBase {
         data = {},
         options,
     }: {
-        id: string,
-        func: (
+        id?: string | undefined | null,
+        func?: ((
             region: string[],
             options: FunctionsOptions,
             data: { [key: string]: string },
-        ) => Function,
-        data?: { [key: string]: string },
+        ) => Function) | undefined | null,
+        data?: { [key: string]: string } | undefined | null,
         options?: FunctionsOptions | undefined | null,
     }) {
-        this.id = id;
+        this.id = id ?? "";
         this.func = func;
-        this.data = data;
+        this.data = data ?? {};
         this.options = options ?? {
             timeoutSeconds: 60,
             memory: "256MiB",
@@ -61,11 +61,11 @@ export abstract class FunctionsBase {
      * 
      * 実際の処理の中身を指定します。
      */
-    readonly func: (
+    readonly func: ((
         region: string[],
         options: FunctionsOptions,
         data: { [key: string]: string }
-    ) => Function;
+    ) => Function) | undefined | null;
 
     /**
      * Specify the data to be passed to the process.
