@@ -1,3 +1,12 @@
+## [2.2.12](https://github.com/mathrunet/node_masamune/compare/v2.2.11...v2.2.12) (2024-02-14)
+
+
+### fix
+
+* Bug in not being able to use homebrew functions. ([57f0823](https://github.com/mathrunet/node_masamune/commit/57f0823701bf87f84ce0112361334685aaad62a5))
+
+
+
 ## [2.2.11](https://github.com/mathrunet/node_masamune/compare/v2.2.10...v2.2.11) (2024-02-09)
 
 
