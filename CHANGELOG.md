@@ -1,3 +1,12 @@
+# [2.3.0](https://github.com/mathrunet/node_masamune/compare/v2.2.13...v2.3.0) (2024-02-14)
+
+
+### feat
+
+* Changed Android receipt verification to authentication by service account. ([c7b92f3](https://github.com/mathrunet/node_masamune/commit/c7b92f371b2d9e938ea25b4e0f3e268a894e169e))
+
+
+
 ## [2.2.13](https://github.com/mathrunet/node_masamune/compare/v2.2.12...v2.2.13) (2024-02-14)
 
 
