@@ -91,6 +91,7 @@ module.exports = (
                                     data[key] = utils.parse(transactionInfo[key]);
                                 }
                                 data["expired"] = false;
+                                data["paused"] = false;
                                 data["expiredTime"] = parseInt(transactionInfo["expiresDate"]);
                                 data["orderId"] = transactionInfo["transactionId"];
                                 await firestoreInstance.doc(path).set(data);
@@ -108,6 +109,7 @@ module.exports = (
                                     data[key] = utils.parse(transactionInfo[key]);
                                 }
                                 data["expired"] = true;
+                                data["paused"] = false;
                                 await firestoreInstance.doc(path).set(data);
                                 console.log(`Expired subscription: ${data["productId"]}:${user}`);
                                 break;

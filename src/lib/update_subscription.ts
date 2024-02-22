@@ -112,6 +112,7 @@ export async function updateSubscription({
     }
     targetCollectionPath = `${targetCollectionPath}/${targetDocumentId}`;
     update["expired"] = false;
+    update["paused"] = false;
     update["token"] = token;
     update["platform"] = platform;
     update["productId"] = productId;

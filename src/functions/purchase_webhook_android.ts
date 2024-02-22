@@ -116,6 +116,7 @@ module.exports = (
                                 data[key] = utils.parse(res[key]);
                             }
                             data["expired"] = false;
+                            data["paused"] = false;
                             data["expiredTime"] = parseInt(res["expiryTimeMillis"]);
                             data["orderId"] = res["orderId"];
                             data["@time"] = new Date();
@@ -151,9 +152,16 @@ module.exports = (
                                 data[key] = utils.parse(res[key]);
                             }
                             data["expired"] = true;
-                            await firestoreInstance.doc(path).set(data);
-                            console.log(`Expired subscription: ${data["productId"]}:${user}`);
-                            break;
+                            if (SubscriptionNotificationTypes.SUBSCRIPTION_PAUSED || SubscriptionNotificationTypes.SUBSCRIPTION_ON_HOLD) {
+                                data["paused"] = true;
+                                await firestoreInstance.doc(path).set(data);
+                                console.log(`Paused subscription: ${data["productId"]}:${user}`);
+                            } else {
+                                data["paused"] = false;
+                                await firestoreInstance.doc(path).set(data);
+                                console.log(`Expired subscription: ${data["productId"]}:${user}`);
+                            }
+                            break;                                
                         }
                         default:
                             break;
@@ -172,6 +180,7 @@ module.exports = (
                         }
                         const user = data["userId"];
                         data["expired"] = true;
+                        data["paused"] = false;
                         data["@time"] = new Date();
                         await firestoreInstance.doc(path).set(data);
                         console.log(`Expired subscription: ${data["productId"]}:${user}`);
