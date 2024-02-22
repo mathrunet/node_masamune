@@ -1,3 +1,12 @@
+## [2.3.9](https://github.com/mathrunet/node_masamune/compare/v2.3.8...v2.3.9) (2024-02-22)
+
+
+### fix
+
+* Fixed an error in simultaneous registration. ([a688b64](https://github.com/mathrunet/node_masamune/commit/a688b64caee7a76e61d33c9891ee1c00b85ec38d))
+
+
+
 ## [2.3.8](https://github.com/mathrunet/node_masamune/compare/v2.3.7...v2.3.8) (2024-02-22)
 
 
