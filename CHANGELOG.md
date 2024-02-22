@@ -1,3 +1,12 @@
+## [2.3.6](https://github.com/mathrunet/node_masamune/compare/v2.3.5...v2.3.6) (2024-02-22)
+
+
+### fix
+
+* Added flag for paused. ([61f1ff8](https://github.com/mathrunet/node_masamune/commit/61f1ff86109b2d7f65b65f819cd20c7e7b91f8ea))
+
+
+
 ## [2.3.5](https://github.com/mathrunet/node_masamune/compare/v2.3.4...v2.3.5) (2024-02-22)
 
 
