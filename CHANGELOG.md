@@ -1,3 +1,12 @@
+## [2.3.10](https://github.com/mathrunet/node_masamune/compare/v2.3.9...v2.3.10) (2024-02-22)
+
+
+### fix
+
+* Fixed a bug that caused no response to requests. ([1f94470](https://github.com/mathrunet/node_masamune/commit/1f9447014bcc725b9c359ca46279dcaa56ed650f))
+
+
+
 ## [2.3.9](https://github.com/mathrunet/node_masamune/compare/v2.3.8...v2.3.9) (2024-02-22)
 
 
