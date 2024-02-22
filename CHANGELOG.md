@@ -1,3 +1,12 @@
+## [2.3.7](https://github.com/mathrunet/node_masamune/compare/v2.3.6...v2.3.7) (2024-02-22)
+
+
+### fix
+
+* Fixed a bug that caused forced cancellation when canceling. ([d1d249b](https://github.com/mathrunet/node_masamune/commit/d1d249b4bd5e36e71bf40dfd698ec365d45bb204))
+
+
+
 ## [2.3.6](https://github.com/mathrunet/node_masamune/compare/v2.3.5...v2.3.6) (2024-02-22)
 
 
