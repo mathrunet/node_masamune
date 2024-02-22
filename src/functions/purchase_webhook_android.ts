@@ -140,9 +140,32 @@ module.exports = (
                             console.log(`Updated subscription: ${data["productId"]}:${user}`);
                             break;
                         }
+                        case SubscriptionNotificationTypes.SUBSCRIPTION_CANCELED: {
+                            for (const key in res) {
+                                if (!data[key]) {
+                                    continue;
+                                }
+                                data[key] = utils.parse(res[key]);
+                            }
+                            const time = new Date().getTime();
+                            const expiryTimeMillis = data["expiredTime"] = parseInt(res["expiryTimeMillis"]);
+                            data["orderId"] = res["orderId"];
+                            data["@time"] = new Date();
+                            if (expiryTimeMillis <= time) {
+                                data["expired"] = true;
+                                data["paused"] = false;
+                                await firestoreInstance.doc(path).set(data);
+                                console.log(`Expired subscription: ${data["productId"]}:${user}`);
+                            } else {
+                                data["expired"] = false;
+                                data["paused"] = false;
+                                await firestoreInstance.doc(path).set(data);
+                                console.log(`Updated subscription: ${data["productId"]}:${user}`);
+                            }
+                            break;
+                        }
                         case SubscriptionNotificationTypes.SUBSCRIPTION_REVOKED:
                         case SubscriptionNotificationTypes.SUBSCRIPTION_EXPIRED:
-                        case SubscriptionNotificationTypes.SUBSCRIPTION_CANCELED:
                         case SubscriptionNotificationTypes.SUBSCRIPTION_PAUSED:
                         case SubscriptionNotificationTypes.SUBSCRIPTION_ON_HOLD: {
                             for (const key in res) {
