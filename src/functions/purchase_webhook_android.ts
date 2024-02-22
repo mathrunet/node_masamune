@@ -191,13 +191,17 @@ module.exports = (
                     }
                     if (res["linkedPurchaseToken"]) {
                         const linkedPurchaseToken = res["linkedPurchaseToken"];
+                        console.log(linkedPurchaseToken);
                         const search = await firestoreInstance.collection(targetPath).where("token", "==", linkedPurchaseToken).get();
                         if (search.empty) {
                             return;
                         }
+                        console.log(search.docs);
                         const doc = search.docs[0];
                         const data = doc?.data();
                         const path = doc?.ref.path;
+                        console.log(data);
+                        console.log(path);
                         if (!data) {
                             throw new Error("The purchased data is not found.");
                         }
