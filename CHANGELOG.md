@@ -1,3 +1,12 @@
+## [2.3.5](https://github.com/mathrunet/node_masamune/compare/v2.3.4...v2.3.5) (2024-02-22)
+
+
+### fix
+
+* Response to Suspension ([63ad4c5](https://github.com/mathrunet/node_masamune/commit/63ad4c54e8b4771b64d85bcb9f2c9d3b950155f4))
+
+
+
 ## [2.3.4](https://github.com/mathrunet/node_masamune/compare/v2.3.3...v2.3.4) (2024-02-22)
 
 
