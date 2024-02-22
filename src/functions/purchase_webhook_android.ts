@@ -125,7 +125,7 @@ module.exports = (
                         }
                         case SubscriptionNotificationTypes.SUBSCRIPTION_DEFERRED:
                         case SubscriptionNotificationTypes.SUBSCRIPTION_PRICE_CHANGE_CONFIRMED:
-                        case SubscriptionNotificationTypes.SUBSCRIPTION_PAUSE_SCHEDULE_CHANGED: {
+                        case SubscriptionNotificationTypes.SUBSCRIPTION_REVOKED: {
                             for (const key in res) {
                                 if (!data[key]) {
                                     continue;
@@ -139,11 +139,11 @@ module.exports = (
                             console.log(`Updated subscription: ${data["productId"]}:${user}`);
                             break;
                         }
-                        case SubscriptionNotificationTypes.SUBSCRIPTION_REVOKED:
                         case SubscriptionNotificationTypes.SUBSCRIPTION_EXPIRED:
                         case SubscriptionNotificationTypes.SUBSCRIPTION_CANCELED:
                         case SubscriptionNotificationTypes.SUBSCRIPTION_PAUSED:
-                        case SubscriptionNotificationTypes.SUBSCRIPTION_ON_HOLD: {
+                        case SubscriptionNotificationTypes.SUBSCRIPTION_ON_HOLD:
+                        case SubscriptionNotificationTypes.SUBSCRIPTION_PAUSE_SCHEDULE_CHANGED: {
                             for (const key in res) {
                                 if (!data[key]) {
                                     continue;
