@@ -1,3 +1,12 @@
+## [2.3.11](https://github.com/mathrunet/node_masamune/compare/v2.3.10...v2.3.11) (2024-02-22)
+
+
+### fix
+
+* Corresponding to IOS grade changes. ([dd33ce5](https://github.com/mathrunet/node_masamune/commit/dd33ce59ed6965ac89850bf9fb43969aaf34ce37))
+
+
+
 ## [2.3.10](https://github.com/mathrunet/node_masamune/compare/v2.3.9...v2.3.10) (2024-02-22)
 
 
