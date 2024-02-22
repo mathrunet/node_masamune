@@ -1,3 +1,12 @@
+## [2.3.8](https://github.com/mathrunet/node_masamune/compare/v2.3.7...v2.3.8) (2024-02-22)
+
+
+### chore
+
+* Log output. ([557826a](https://github.com/mathrunet/node_masamune/commit/557826a5be81c931a00565ee5a128346f5ca9a9a))
+
+
+
 ## [2.3.7](https://github.com/mathrunet/node_masamune/compare/v2.3.6...v2.3.7) (2024-02-22)
 
 
