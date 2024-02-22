@@ -1,3 +1,12 @@
+## [2.3.4](https://github.com/mathrunet/node_masamune/compare/v2.3.3...v2.3.4) (2024-02-22)
+
+
+### fix
+
+* Change in billing status. ([95cac67](https://github.com/mathrunet/node_masamune/commit/95cac67c4abfd6761a5a1f400310408c0df69670))
+
+
+
 ## [2.3.3](https://github.com/mathrunet/node_masamune/compare/v2.3.2...v2.3.3) (2024-02-14)
 
 
