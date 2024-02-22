@@ -120,9 +120,10 @@ module.exports = (
                     }
                 }
             }
+            res.send({ "status": 1 });
         } catch (err) {
             console.error(err);
-            throw new functions.https.HttpsError("unknown", "Unknown error.");
+            res.end();
         }
     }
 );
