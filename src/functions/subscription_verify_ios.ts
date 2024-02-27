@@ -86,7 +86,6 @@ module.exports = (
             }
             /* ==== ここまでIOS検証 ==== */
             /* ==== Firestoreの更新ここから ==== */
-            // ダウングレードの場合は
             await subscriber.updateSubscription({
                 targetCollectionPath: query.data.path ?? process.env.PURCHASE_SUBSCRIPTIONPATH,
                 targetDocumentId: info[info.length - 1]["original_transaction_id"],

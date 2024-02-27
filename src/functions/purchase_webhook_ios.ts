@@ -76,8 +76,9 @@ module.exports = (
                                     data[key] = utils.parse(transactionInfo[key]);
                                 }
                                 data["expiredTime"] = parseInt(transactionInfo["expiresDate"]);
-                                data["productId"] = transactionInfo["productId"];
+                                data["productId"] = data["product_id"] = transactionInfo["productId"];
                                 data["orderId"] = transactionInfo["transactionId"];
+                                console.log(data);
                                 await firestoreInstance.doc(path).set(data);
                                 console.log(`Updated subscription: ${data["productId"]}:${user}`);
                                 break;
@@ -96,8 +97,9 @@ module.exports = (
                                 data["expired"] = false;
                                 data["paused"] = false;
                                 data["expiredTime"] = parseInt(transactionInfo["expiresDate"]);
-                                data["productId"] = transactionInfo["productId"];
+                                data["productId"] = data["product_id"] = transactionInfo["productId"];
                                 data["orderId"] = transactionInfo["transactionId"];
+                                console.log(data);
                                 await firestoreInstance.doc(path).set(data);
                                 console.log(`Updated subscription: ${data["productId"]}:${user}`);
                                 break;
@@ -114,8 +116,9 @@ module.exports = (
                                 }
                                 data["expired"] = true;
                                 data["paused"] = false;
-                                data["productId"] = transactionInfo["productId"];
+                                data["productId"] = data["product_id"] = transactionInfo["productId"];
                                 data["orderId"] = transactionInfo["transactionId"];
+                                console.log(data);
                                 await firestoreInstance.doc(path).set(data);
                                 console.log(`Expired subscription: ${data["productId"]}:${user}`);
                                 break;
