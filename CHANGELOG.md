@@ -1,3 +1,12 @@
+## [2.3.13](https://github.com/mathrunet/node_masamune/compare/v2.3.12...v2.3.13) (2024-02-27)
+
+
+### chore
+
+* Grant logs ([4a1d2f0](https://github.com/mathrunet/node_masamune/commit/4a1d2f092b15d9b52a91ad210cbda1067ea2dc25))
+
+
+
 ## [2.3.12](https://github.com/mathrunet/node_masamune/compare/v2.3.11...v2.3.12) (2024-02-27)
 
 
