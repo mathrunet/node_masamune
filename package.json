@@ -1,6 +1,6 @@
 {
   "name": "@mathrunet/masamune",
-  "version": "2.3.12",
+  "version": "2.3.13",
   "description": "Manages packages for the server portion (NodeJS) of the Masamune framework.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
