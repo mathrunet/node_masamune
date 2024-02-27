@@ -1,3 +1,12 @@
+## [2.3.12](https://github.com/mathrunet/node_masamune/compare/v2.3.11...v2.3.12) (2024-02-27)
+
+
+### fix
+
+* Fixed a missing data error. ([cd63c50](https://github.com/mathrunet/node_masamune/commit/cd63c50dc58d13fe4388652675f28c6e6239f822))
+
+
+
 ## [2.3.11](https://github.com/mathrunet/node_masamune/compare/v2.3.10...v2.3.11) (2024-02-22)
 
 
