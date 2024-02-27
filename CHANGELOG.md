@@ -1,3 +1,12 @@
+## [2.3.14](https://github.com/mathrunet/node_masamune/compare/v2.3.13...v2.3.14) (2024-02-27)
+
+
+### chore
+
+* Comment Deleted ([a4a7ee3](https://github.com/mathrunet/node_masamune/commit/a4a7ee3490b18e9d66f6f44efb5edc3b405e265a))
+
+
+
 ## [2.3.13](https://github.com/mathrunet/node_masamune/compare/v2.3.12...v2.3.13) (2024-02-27)
 
 
