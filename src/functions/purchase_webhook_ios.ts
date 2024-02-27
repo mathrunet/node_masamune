@@ -62,7 +62,6 @@ module.exports = (
                         }
                         const user = data["userId"];
                         console.log(`notificationType: ${notificationType}`);
-                        console.log(transactionInfo);
                         switch (notificationType) {
                             case "CONSUMPTION_REQUEST":
                             case "DID_CHANGE_RENEWAL_STATUS":
@@ -78,7 +77,6 @@ module.exports = (
                                 data["expiredTime"] = parseInt(transactionInfo["expiresDate"]);
                                 data["productId"] = data["product_id"] = transactionInfo["productId"];
                                 data["orderId"] = transactionInfo["transactionId"];
-                                console.log(data);
                                 await firestoreInstance.doc(path).set(data);
                                 console.log(`Updated subscription: ${data["productId"]}:${user}`);
                                 break;
@@ -99,7 +97,6 @@ module.exports = (
                                 data["expiredTime"] = parseInt(transactionInfo["expiresDate"]);
                                 data["productId"] = data["product_id"] = transactionInfo["productId"];
                                 data["orderId"] = transactionInfo["transactionId"];
-                                console.log(data);
                                 await firestoreInstance.doc(path).set(data);
                                 console.log(`Updated subscription: ${data["productId"]}:${user}`);
                                 break;
@@ -118,7 +115,6 @@ module.exports = (
                                 data["paused"] = false;
                                 data["productId"] = data["product_id"] = transactionInfo["productId"];
                                 data["orderId"] = transactionInfo["transactionId"];
-                                console.log(data);
                                 await firestoreInstance.doc(path).set(data);
                                 console.log(`Expired subscription: ${data["productId"]}:${user}`);
                                 break;

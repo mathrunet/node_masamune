@@ -73,8 +73,6 @@ module.exports = (
             const time = new Date().getTime();
             const info = res["latest_receipt_info"];
             const pending = res["pending_renewal_info"];
-            console.log(info);
-            console.log(pending);
             const startTimeMillis = parseInt(info[info.length - 1]["purchase_date_ms"]);
             const expiryTimeMillis = parseInt(info[info.length - 1]["expires_date_ms"]);
             const currentProductId = info[info.length - 1]["product_id"];
