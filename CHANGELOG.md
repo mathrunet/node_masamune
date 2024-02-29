@@ -1,3 +1,12 @@
+## [2.3.16](https://github.com/mathrunet/node_masamune/compare/v2.3.15...v2.3.16) (2024-02-29)
+
+
+### fix
+
+* Corrected the wrong name for env. ([8dae0f7](https://github.com/mathrunet/node_masamune/commit/8dae0f79e18fda07966dc1e7318663ff691ae3ef))
+
+
+
 ## [2.3.15](https://github.com/mathrunet/node_masamune/compare/v2.3.14...v2.3.15) (2024-02-29)
 
 
