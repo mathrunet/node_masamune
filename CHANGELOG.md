@@ -1,3 +1,12 @@
+## [2.3.15](https://github.com/mathrunet/node_masamune/compare/v2.3.14...v2.3.15) (2024-02-29)
+
+
+### fix
+
+* comment-adding ([c3d7864](https://github.com/mathrunet/node_masamune/commit/c3d7864ede2fa60359eb64a8542abf930b80f121))
+
+
+
 ## [2.3.14](https://github.com/mathrunet/node_masamune/compare/v2.3.13...v2.3.14) (2024-02-27)
 
 
