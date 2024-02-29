@@ -7,7 +7,7 @@ import { HttpFunctionsOptions } from "../lib/functions_base";
  * 
  * Agora.ioのセキュリティトークンを取得します。
  * 
- * @param process.env.AGORA_APPID
+ * @param process.env.AGORA_APP_ID
  * AppID for Agora.
  * Log in to the following URL and create a project.
  * After the project is created, the AppID can be copied.
@@ -18,7 +18,7 @@ import { HttpFunctionsOptions } from "../lib/functions_base";
  * 
  * https://console.agora.io/projects
  * 
- * @param process.env.AGORA_APPCERTIFICATE
+ * @param process.env.AGORA_APP_CERTIFICATE
  * AppCertificate for Agora.
  * You can obtain the certificate after entering the project you created and activating it in Security -> App certificate.
  * 
@@ -57,8 +57,8 @@ module.exports = (
     },
     async (query) => {
         try {
-            const appId = process.env.AGORA_APPID ?? "";
-            const appCertificate = process.env.AGORA_APPCERTIFICATE ?? "";
+            const appId = process.env.AGORA_APP_ID ?? "";
+            const appCertificate = process.env.AGORA_APP_CERTIFICATE ?? "";
             const expirationTimeInSeconds = 3600;
             let role = RtcRole.PUBLISHER;
             if (query.data.role === "audience") {
