@@ -81,6 +81,13 @@ module.exports = (
                 expirationTimeInSeconds,
                 expirationTimeInSeconds,
             );
+            console.log(appId);
+            console.log(appCertificate);
+            console.log(channelName);
+            console.log(uid);
+            console.log(role);
+            console.log(expirationTimeInSeconds);
+            console.log(token);
             return {
                 channel: channelName,
                 token: token,
