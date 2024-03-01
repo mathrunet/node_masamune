@@ -1,3 +1,12 @@
+## [2.3.18](https://github.com/mathrunet/node_masamune/compare/v2.3.17...v2.3.18) (2024-03-01)
+
+
+### chore
+
+* comment-adding ([a32f048](https://github.com/mathrunet/node_masamune/commit/a32f048a8d93c14411094624102ecbfcae19a49c))
+
+
+
 ## [2.3.17](https://github.com/mathrunet/node_masamune/compare/v2.3.16...v2.3.17) (2024-02-29)
 
 
