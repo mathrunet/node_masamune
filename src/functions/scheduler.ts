@@ -31,11 +31,15 @@ module.exports = (
         try {
             const collectionPath = process.env.SCHEDULER_COLLECTION_PATH ?? "schedule";
             const firestoreInstance = admin.firestore();
+            console.log(`Time: ${Date.now()}`);
             const collection = await firestoreInstance.collection(collectionPath).where("_done", "==", false).where("_time", "<=", Date.now()).orderBy("_time", "asc").get();
+            console.log(`Length: ${collection.size}`);
             for (var doc of collection.docs) {
+                console.log(`Doc: ${doc.id} ${doc.data()}`);
                 let res: { [key: string]: any } | null = null;
                 const command = (doc.get("#command") as { [key: string]: any })["@command"];
                 const priParams = (doc.get("#command") as { [key: string]: any })["@private"] as { [key: string]: any };
+                console.log(`Command: ${command}`);
                 switch (command) {
                     case "notification":
                         const title = priParams["title"] as string;
