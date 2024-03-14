@@ -48,6 +48,8 @@ module.exports = (
                         const data = priParams["data"] as { [key: string]: any } | undefined;
                         const token = priParams["token"] as string | string[] | undefined | null;
                         const topic = priParams["topic"] as string | undefined | null;
+                        const badgeCount = priParams["badgeCount"] as number | undefined | null;
+                        const sound = priParams["sound"] as string | undefined | null;
                         const response = await sendNotification({
                             title: title,
                             body: body,
@@ -55,6 +57,8 @@ module.exports = (
                             data: data,
                             token: token,
                             topic: topic,
+                            badgeCount: badgeCount,
+                            sound: sound,
                         });
                         res = response.results as { [key: string]: any } | null;
                         break;

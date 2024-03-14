@@ -35,6 +35,16 @@ import * as admin from "firebase-admin";
  * Specifies the topic of the FCM.
  * 
  * FCMのトピックを指定します。
+ * 
+ * @param badgeCount
+ * Specifies the badge count of the notification.
+ * 
+ * 通知のバッジカウントを指定します。
+ * 
+ * @param sound
+ * Specifies the sound of the notification.
+ * 
+ * 通知のサウンドを指定します。
  */
 export async function sendNotification({
     title,
@@ -43,13 +53,17 @@ export async function sendNotification({
     channelId,
     token,
     topic,
+    badgeCount,
+    sound,
 }:  {
     title: string,
     body: string,
     channelId: string | undefined | null,
     data: { [key: string]: string } | undefined,
     token: string | string[] | undefined | null,
-    topic: string | undefined | null,
+        topic: string | undefined | null,
+        badgeCount: number | undefined | null,
+        sound: string | undefined | null,
     }) : Promise<{ [key: string]: any }> {
     const res: { [key: string]: any } = {};
     try {
@@ -75,7 +89,17 @@ export async function sendNotification({
                                     body: body,
                                     clickAction: "FLUTTER_NOTIFICATION_CLICK",
                                     channelId: channelId ?? undefined,
-                                },
+                                    sound: sound ?? undefined,
+                                    notificationCount: badgeCount ?? undefined,
+                                },                             
+                            },
+                            apns: {
+                                payload: {
+                                    aps: {
+                                        sound: sound ?? undefined,
+                                        notificationCount: badgeCount ?? undefined,
+                                    },
+                                }
                             },
                             data: data,
                             token: t,
@@ -96,7 +120,17 @@ export async function sendNotification({
                                 body: body,
                                 clickAction: "FLUTTER_NOTIFICATION_CLICK",
                                 channelId: channelId ?? undefined,
+                                sound: sound ?? undefined,
+                                notificationCount: badgeCount ?? undefined,
                             },
+                        },
+                        apns: {
+                            payload: {
+                                aps: {
+                                    sound: sound ?? undefined,
+                                    notificationCount: badgeCount ?? undefined,
+                                },
+                            }
                         },
                         data: data,
                         token: t,

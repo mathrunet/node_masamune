@@ -36,6 +36,16 @@ import { HttpFunctionsOptions } from "../lib/functions_base";
  * Specifies the topic of the FCM.
  * 
  * FCMのトピックを指定します。
+ * 
+ * @param badgeCount
+ * Specifies the badge count of the notification.
+ * 
+ * 通知のバッジカウントを指定します。
+ * 
+ * @param sound
+ * Specifies the sound of the notification.
+ * 
+ * 通知のサウンドを指定します。
  */
 module.exports = (
     regions: string[],
@@ -58,6 +68,8 @@ module.exports = (
             const data = query.data.data as { [key: string]: string } | undefined;
             const token = query.data.token as string | string[] | undefined | null;
             const topic = query.data.topic as string | undefined | null;
+            const sound = query.data.sound as string | undefined | null;
+            const badgeCount = query.data.badgeCount as number | undefined | null;
             if (!title || !body) {
                 throw new functions.https.HttpsError("invalid-argument", "Query parameter is invalid.");
             }
@@ -68,6 +80,8 @@ module.exports = (
                 data: data,
                 token: token,
                 topic: topic,
+                badgeCount: badgeCount,
+                sound: sound,
             });
             return res;
         } catch (err) {
