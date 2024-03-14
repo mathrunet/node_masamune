@@ -1,3 +1,12 @@
+## [2.3.19](https://github.com/mathrunet/node_masamune/compare/v2.3.18...v2.3.19) (2024-03-14)
+
+
+### fix
+
+* Setup badges and sounds for PUSH notifications. ([45eb7e4](https://github.com/mathrunet/node_masamune/commit/45eb7e43eb7a0a2c905aa567e3656ae8865d7b49))
+
+
+
 ## [2.3.18](https://github.com/mathrunet/node_masamune/compare/v2.3.17...v2.3.18) (2024-03-01)
 
 
