@@ -197,7 +197,7 @@ module.exports = (
       const stripeEmailProvider = process.env.PURCHASE_STRIPE_EMAILPROVIDER ?? "gmail";
       const firestoreInstance = admin.firestore();
       const stripeClient = new stripe.Stripe(apiKey, {
-        apiVersion: "2022-11-15",
+        apiVersion: "2023-10-16",
       });
       switch (query.data.mode) {
         case "create_account": {
