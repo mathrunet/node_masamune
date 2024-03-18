@@ -1,3 +1,12 @@
+# [2.4.0](https://github.com/mathrunet/node_masamune/compare/v2.3.19...v2.4.0) (2024-03-18)
+
+
+### fix
+
+* Package Update. ([4c3bac3](https://github.com/mathrunet/node_masamune/commit/4c3bac34781dec6225fbf4de923292b602624519))
+
+
+
 ## [2.3.19](https://github.com/mathrunet/node_masamune/compare/v2.3.18...v2.3.19) (2024-03-14)
 
 
