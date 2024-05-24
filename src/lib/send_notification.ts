@@ -90,14 +90,14 @@ export async function sendNotification({
                                     clickAction: "FLUTTER_NOTIFICATION_CLICK",
                                     channelId: channelId ?? undefined,
                                     sound: sound ?? undefined,
-                                    notificationCount: badgeCount ?? undefined,
+                                    notificationCount: badgeCount ?? 0,
                                 },                             
                             },
                             apns: {
                                 payload: {
                                     aps: {
                                         sound: sound ?? undefined,
-                                        notificationCount: badgeCount ?? undefined,
+                                        notificationCount: badgeCount ?? 0,
                                     },
                                 }
                             },
