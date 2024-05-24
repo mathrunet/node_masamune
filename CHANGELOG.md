@@ -1,3 +1,12 @@
+## [2.4.3](https://github.com/mathrunet/node_masamune/compare/v2.4.2...v2.4.3) (2024-05-24)
+
+
+### fix
+
+* Fixed API for badges. ([78ee4af](https://github.com/mathrunet/node_masamune/commit/78ee4af51be2d61262750aa718ddda996ddf37f4))
+
+
+
 ## [2.4.2](https://github.com/mathrunet/node_masamune/compare/v2.4.1...v2.4.2) (2024-05-24)
 
 
