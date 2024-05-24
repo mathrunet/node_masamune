@@ -1,3 +1,12 @@
+## [2.4.2](https://github.com/mathrunet/node_masamune/compare/v2.4.1...v2.4.2) (2024-05-24)
+
+
+### fix
+
+* The number of badges defaults to 0. ([d656826](https://github.com/mathrunet/node_masamune/commit/d6568264e119c3477bdd246eb679e74a744b4989))
+
+
+
 ## [2.4.1](https://github.com/mathrunet/node_masamune/compare/v2.4.0...v2.4.1) (2024-03-18)
 
 
