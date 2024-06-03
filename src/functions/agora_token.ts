@@ -33,9 +33,14 @@ import { HttpFunctionsOptions } from "../lib/functions_base";
  * チャンネル名。
  * 
  * @param uid
- * User ID. Default is 0.
+ * User ID. either `acount` or one will be used.
  * 
- * ユーザーID。デフォルトは0です。
+ * ユーザーID。`acount`とどちらかが利用されます。
+ * 
+ * @param account
+ * Account name. Either `acount` or one of the two will be used.
+ * 
+ * アカウント名。`acount`とどちらかが利用されます。
  * 
  * @param role
  * Role. You can specify either "audience" or "broadcaster".
@@ -65,26 +70,42 @@ module.exports = (
                 role = RtcRole.SUBSCRIBER;
             }
             const channelName = query.data.name;
-            let uid = 0;
-            if (query.data.uid) {
-                uid = query.data.uid;
-            }
+            const uid = query.data.uid as number | undefined | null;
+            const account = query.data.account as string | undefined | null;
             if (!channelName) {
                 throw new functions.https.HttpsError("invalid-argument", "Channel is invalid.");
             }
-            const token = RtcTokenBuilder.buildTokenWithUid(
-                appId,
-                appCertificate,
-                channelName,
-                uid,
-                role,
-                expirationTimeInSeconds,
-                expirationTimeInSeconds,
-            );
-            return {
-                channel: channelName,
-                token: token,
-            };
+            if (uid) {
+                const token = RtcTokenBuilder.buildTokenWithUid(
+                    appId,
+                    appCertificate,
+                    channelName,
+                    uid,
+                    role,
+                    expirationTimeInSeconds,
+                    expirationTimeInSeconds,
+                );
+                return {
+                    channel: channelName,
+                    token: token,
+                };
+            } else if (account) {
+                const token = RtcTokenBuilder.buildTokenWithUserAccount(
+                    appId,
+                    appCertificate,
+                    channelName,
+                    account,
+                    role,
+                    expirationTimeInSeconds,
+                    expirationTimeInSeconds,
+                );
+                return {
+                    channel: channelName,
+                    token: token,
+                };
+            } else {
+                throw new functions.https.HttpsError("invalid-argument", "uid or account is required.");
+            }
         } catch (err) {
             console.error(err);
             throw err;
