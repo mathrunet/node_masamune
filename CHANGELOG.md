@@ -1,3 +1,12 @@
+## [2.4.4](https://github.com/mathrunet/node_masamune/compare/v2.4.3...v2.4.4) (2024-06-03)
+
+
+### fix
+
+* Account name support. ([63f9ce7](https://github.com/mathrunet/node_masamune/commit/63f9ce7e64477bdd00f5d177cf5032898cad4af3))
+
+
+
 ## [2.4.3](https://github.com/mathrunet/node_masamune/compare/v2.4.2...v2.4.3) (2024-05-24)
 
 
