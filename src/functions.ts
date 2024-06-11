@@ -1,4 +1,4 @@
-import * as data from "./lib/functions_data";
+import * as data from "./lib/src/functions_data";
 
 /**
  * Define a list of applicable Functions for FirebaseFunctions.

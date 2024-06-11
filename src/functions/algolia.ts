@@ -1,7 +1,7 @@
 import * as functions from "firebase-functions/v2";
 import * as algolia from "algoliasearch";
-import { PathFunctionsOptions } from "../lib/functions_base";
-import { defaultConverters } from "../lib/default_firestore_model_field_value_converter";
+import { PathFunctionsOptions } from "../lib/src/functions_base";
+import { defaultConverters } from "../lib/model_field_value/default_firestore_model_field_value_converter";
 
 /**
  * Synchronize data to Algolia.

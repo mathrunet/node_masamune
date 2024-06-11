@@ -65,3 +65,36 @@ export function parse(value: string | number) {
 export function uuid() {
   return randomUUID().replace(/-/g, "");
 }
+
+/**
+ * Divides an array into pieces of the specified size.
+ * 
+ * 配列を指定したサイズで分割します。
+ * 
+ * @param array
+ * Array to be divided.
+ * 
+ * 分割したい配列。
+ * 
+ * @param chunkSize
+ * Size of each piece.
+ * 
+ * 1つのピースのサイズ。
+ * 
+ * @returns {T[][]}
+ * Array divided into pieces.
+ * 
+ * 分割された配列。
+ */
+export function splitArray<T>(array: T[], chunkSize: number): T[][] {
+    let index = 0;
+    let arrayLength = array.length;
+    let tempArray = [];
+    
+    for (index = 0; index < arrayLength; index += chunkSize) {
+        let chunk = array.slice(index, index+chunkSize);
+        tempArray.push(chunk);
+    }
+
+    return tempArray;
+}

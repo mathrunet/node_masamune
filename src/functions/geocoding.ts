@@ -1,6 +1,6 @@
 import * as functions from "firebase-functions/v2";
 import { Api } from "../lib/api";
-import { HttpFunctionsOptions } from "../lib/functions_base";
+import { HttpFunctionsOptions } from "../lib/src/functions_base";
 
 /**
  * Get latitude and longitude with GeocodingAPI.

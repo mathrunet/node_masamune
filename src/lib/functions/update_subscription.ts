@@ -1,5 +1,5 @@
 import * as path from "path";
-import * as utils from "./utils";
+import * as utils from "../utils";
 import * as admin from "firebase-admin";
 
 /**

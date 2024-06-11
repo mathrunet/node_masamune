@@ -1,5 +1,5 @@
 import * as functions from "firebase-functions/v2";
-import { HttpFunctionsOptions } from "../lib/functions_base";
+import { HttpFunctionsOptions } from "../lib/src/functions_base";
 
 /**
  * After being redirected from [android_auth_code], you will get a refresh token to connect to Google's API.

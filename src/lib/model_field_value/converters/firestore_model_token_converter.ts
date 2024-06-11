@@ -1,4 +1,4 @@
-import { FirestoreModelFieldValueConverter } from "../lib/firestore_model_field_value_converter";
+import { FirestoreModelFieldValueConverter } from "../firestore_model_field_value_converter";
 
 /**
  * FirestoreConverter for [ModelToken].

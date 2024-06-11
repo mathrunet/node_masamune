@@ -1,7 +1,7 @@
 import * as functions from "firebase-functions/v2";
 import * as stripe from "stripe";
 import * as admin from "firebase-admin";
-import { HttpFunctionsOptions } from "../lib/functions_base";
+import { HttpFunctionsOptions } from "../lib/src/functions_base";
 
 /**
  * Receives and processes webhooks from Stripe.

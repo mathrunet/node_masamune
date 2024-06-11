@@ -1,6 +1,6 @@
 import * as functions from "firebase-functions/v2";
-import * as sendgrid from "../lib/send_grid";
-import { HttpFunctionsOptions } from "../lib/functions_base";
+import * as sendgrid from "../lib/functions/send_grid";
+import { HttpFunctionsOptions } from "../lib/src/functions_base";
 
 /**
  * Send mail through SendGrid.

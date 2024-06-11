@@ -1,6 +1,6 @@
 import * as functions from "firebase-functions/v2";
-import { sendNotification } from "../lib/send_notification";
-import { HttpFunctionsOptions } from "../lib/functions_base";
+import { sendNotification } from "../lib/functions/send_notification";
+import { HttpFunctionsOptions } from "../lib/src/functions_base";
 
 /**
  * Define the process for PUSH notification.
@@ -46,6 +46,26 @@ import { HttpFunctionsOptions } from "../lib/functions_base";
  * Specifies the sound of the notification.
  * 
  * 通知のサウンドを指定します。
+ * 
+ * @param targetCollectionPath
+ * Specifies the path of the collection to be notified.
+ * 
+ * 通知対象のコレクションのパスを指定します。
+ * 
+ * @param targetTokenFieldKey
+ * Specifies the key of the field used to retrieve the token to be notified.
+ * 
+ * 通知対象のトークンを取得する際のフィールドのキーを指定します。
+ * 
+ * @param targetWhere
+ * Specify the conditions for retrieving the collections to be notified.
+ * 
+ * 通知対象のコレクションを取得する際の条件を指定します。
+ * 
+ * @param targetConditions
+ * Specify the conditions under which data is to be notified.
+ * 
+ * データを通知対象とする条件を指定します。
  */
 module.exports = (
     regions: string[],
@@ -70,6 +90,10 @@ module.exports = (
             const topic = query.data.topic as string | undefined | null;
             const sound = query.data.sound as string | undefined | null;
             const badgeCount = query.data.badgeCount as number | undefined | null;
+            const targetCollectionPath = query.data.targetCollectionPath as string | undefined | null;
+            const targetTokenFieldKey = query.data.targetTokenFieldKey as string | undefined | null;
+            const targetWhere = query.data.targetWhere as { [key: string]: string }[] | undefined;
+            const targetConditions = query.data.targetConditions as { [key: string]: string }[] | undefined;
             if (!title || !body) {
                 throw new functions.https.HttpsError("invalid-argument", "Query parameter is invalid.");
             }
@@ -82,6 +106,10 @@ module.exports = (
                 topic: topic,
                 badgeCount: badgeCount,
                 sound: sound,
+                targetCollectionPath: targetCollectionPath,
+                targetTokenFieldKey: targetTokenFieldKey,
+                targetWhere: targetWhere,
+                targetConditions: targetConditions,
             });
             return res;
         } catch (err) {

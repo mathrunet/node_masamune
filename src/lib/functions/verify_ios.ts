@@ -1,5 +1,5 @@
 import * as functions from "firebase-functions/v2";
-import { Api } from "./api";
+import { Api } from "../api";
 
 /**
  * Perform IOS receipt verification.

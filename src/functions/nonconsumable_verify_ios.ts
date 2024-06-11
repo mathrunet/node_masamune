@@ -1,7 +1,7 @@
 import * as functions from "firebase-functions/v2";
-import * as verifier from "../lib/verify_ios";
-import * as updater from "../lib/update_unlock";
-import { HttpFunctionsOptions } from "../lib/functions_base";
+import * as verifier from "../lib/functions/verify_ios";
+import * as updater from "../lib/functions/update_unlock";
+import { HttpFunctionsOptions } from "../lib/src/functions_base";
 
 /**
  * Performs non-consumable in-app purchases. Unlock by setting the value of the field in the document specified in [path] to `true`.

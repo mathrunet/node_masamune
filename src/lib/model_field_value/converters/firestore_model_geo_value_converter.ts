@@ -1,57 +1,46 @@
-import { FirestoreModelFieldValueConverter } from "../lib/firestore_model_field_value_converter";
-import { isDynamicMap } from "../lib/utils";
-import { Timestamp } from "firebase-admin/firestore";
+import { FirestoreModelFieldValueConverter } from "../firestore_model_field_value_converter";
+import { isDynamicMap } from "../../utils";
+import { GeoPoint } from "firebase-admin/firestore";
 
 /**
- * FirestoreConverter for [ModelTimestamp].
+ * FirestoreConverter for [ModelGeoValue].
  * 
- * [ModelTimestamp]用のFirestoreConverter。
+ * [ModelGeoValue]用のFirestoreConverter。
  */
-export class FirestoreModelTimestampConverter extends FirestoreModelFieldValueConverter {
+export class FirestoreModelGeoValueConverter extends FirestoreModelFieldValueConverter {
   /**
-   * FirestoreConverter for [ModelTimestamp].
+   * FirestoreConverter for [ModelGeoValue].
    * 
-   * [ModelTimestamp]用のFirestoreConverter。
+   * [ModelGeoValue]用のFirestoreConverter。
    */
   constructor() {
     super();
   }
 
-  type: string = "ModelTimestamp";
+  type: string = "ModelGeoValue";
 
   convertFrom(
     key: string,
     value: any,
     original: { [field: string]: any }): { [field: string]: any } | null {
-    if (typeof value === "number") {
+    if (typeof value === "string" || value instanceof GeoPoint) {
       const targetKey = `#${key}`;
       const targetMap = original[targetKey] as { [field: string]: any } | null | undefined ?? {};
       const type = targetMap["@type"] as string | null | undefined ?? "";
       if (type == this.type) {
         return {
-          [key]: value,
-        };
-      }
-    } else if (value instanceof Timestamp) {
-      const targetKey = `#${key}`;
-      const targetMap = original[targetKey] as { [field: string]: any } | null | undefined ?? {};
-      const type = targetMap["@type"] as string | null | undefined ?? "";
-      if (type == this.type) {
-        return {
-          [key]: value.toMillis(),
+          [key]: targetMap["@geoHash"] as string | null | undefined ?? "",
         };
       }
     } else if (Array.isArray(value)) {
       const targetKey = `#${key}`;
       const targetList = original[targetKey] as { [field: string]: any }[] | null | undefined ?? [];
       if (targetList != null && targetList.length > 0 && targetList.every((e) => e["@type"] === this.type)) {
-        const res: number[] = [];
-        for (const tmp of value) {
-          if (typeof tmp === "number") {
-            res.push(tmp);
-          } else if (tmp instanceof Timestamp) {
-            res.push(tmp.toMillis());
-          }
+        const res: string[] = [];
+        for (const tmp of targetList) {
+          res.push(
+            tmp["@geoHash"] as string | null | undefined ?? "",
+          );
         }
         if (res.length > 0) {
           return {
@@ -65,7 +54,7 @@ export class FirestoreModelTimestampConverter extends FirestoreModelFieldValueCo
       targetMap
       if (targetMap != null) {
         const res: {
-          [field: string]: number
+          [field: string]: string
         } = {};
         for (const key in value) {
           const val = value[key];
@@ -74,10 +63,8 @@ export class FirestoreModelTimestampConverter extends FirestoreModelFieldValueCo
           if (type != this.type) {
             continue;
           }
-          if (typeof val === "number") {
-            res[key] = val;
-          } else if (val instanceof Timestamp) {
-            res[key] = val.toMillis();
+          if (typeof val === "string" || val instanceof GeoPoint) {
+            res[key] = mapVal["@geoHash"] as string | null | undefined ?? "";
           }
         }
         if (Object.keys(res).length > 0) {

@@ -1,21 +1,21 @@
-import { FirestoreModelFieldValueConverter } from "../lib/firestore_model_field_value_converter";
+import { FirestoreModelFieldValueConverter } from "../firestore_model_field_value_converter";
 
 /**
- * FirestoreConverter for [ModelSearch].
+ * FirestoreConverter for [ModelLocalizedValue].
  * 
- * [ModelSearch]用のFirestoreConverter。
+ * [ModelLocalizedValue]用のFirestoreConverter。
  */
-export class FirestoreModelSearchConverter extends FirestoreModelFieldValueConverter {
+export class FirestoreModelLocalizedValueConverter extends FirestoreModelFieldValueConverter {
   /**
-   * FirestoreConverter for [ModelSearch].
+   * FirestoreConverter for [ModelLocalizedValue].
    * 
-   * [ModelSearch]用のFirestoreConverter。
+   * [ModelLocalizedValue]用のFirestoreConverter。
    */
   constructor() {
     super();
   }
 
-  type: string = "ModelSearch";
+  type: string = "ModelLocalizedValue";
 
   convertFrom(
     key: string,
@@ -27,7 +27,7 @@ export class FirestoreModelSearchConverter extends FirestoreModelFieldValueConve
       const type = targetMap["@type"] as string | null | undefined ?? "";
       if (type == this.type) {
         return {
-          [key]: value.map((e) => String(e)),
+          [key]: targetMap["@localized"],
         };
       }
     }

@@ -1,5 +1,7 @@
 import * as functions from "firebase-functions/v2";
 import * as admin from "firebase-admin";
+import * as firestore from "./firestore";
+import { splitArray } from "../utils";
 
 /**
  * Define the process for PUSH notification.
@@ -45,6 +47,26 @@ import * as admin from "firebase-admin";
  * Specifies the sound of the notification.
  * 
  * 通知のサウンドを指定します。
+ * 
+ * @param targetCollectionPath
+ * Specifies the path of the collection to be notified.
+ * 
+ * 通知対象のコレクションのパスを指定します。
+ * 
+ * @param targetTokenFieldKey
+ * Specifies the key of the field used to retrieve the token to be notified.
+ * 
+ * 通知対象のトークンを取得する際のフィールドのキーを指定します。
+ * 
+ * @param targetWhere
+ * Specify the conditions for retrieving the collections to be notified.
+ * 
+ * 通知対象のコレクションを取得する際の条件を指定します。
+ * 
+ * @param targetConditions
+ * Specify the conditions under which data is to be notified.
+ * 
+ * データを通知対象とする条件を指定します。
  */
 export async function sendNotification({
     title,
@@ -55,28 +77,37 @@ export async function sendNotification({
     topic,
     badgeCount,
     sound,
+    targetCollectionPath,
+    targetTokenFieldKey,
+    targetWhere,
+    targetConditions,
 }:  {
-    title: string,
-    body: string,
-    channelId: string | undefined | null,
-    data: { [key: string]: string } | undefined,
-    token: string | string[] | undefined | null,
-        topic: string | undefined | null,
-        badgeCount: number | undefined | null,
-        sound: string | undefined | null,
+        title: string,
+        body: string,
+        channelId?: string | undefined | null,
+        data?: { [key: string]: string } | undefined,
+        token?: string | string[] | undefined | null,
+        topic?: string | undefined | null,
+        badgeCount?: number | undefined | null,
+        sound?: string | undefined | null,
+        targetCollectionPath?: string | undefined | null,
+        targetTokenFieldKey?: string | undefined | null,
+        targetWhere?: { [key: string]: string }[] | undefined,
+        targetConditions?: { [key: string]: string }[] | undefined,
     }) : Promise<{ [key: string]: any }> {
     const res: { [key: string]: any } = {};
     try {
-        if ((token === undefined || token === null) && (topic === undefined || topic === null)) {
-            throw new functions.https.HttpsError("invalid-argument", "Either [token] or [topic] must be specified.");
+        if ((token === undefined || token === null) && (topic === undefined || topic === null) && (targetCollectionPath === undefined || targetCollectionPath === null)) {
+            throw new functions.https.HttpsError("invalid-argument", "Either [token] or [topic], [targetCollectionPath] must be specified.");
         }
         if (token !== undefined && token !== null) {
             if (typeof token === "string") {
                 token = [token];
             }
-            for (let t of token) {
+            const tokenList = splitArray([...new Set(token)], 450);
+            for (let t in tokenList) {
                 try {
-                    const messageId = await admin.messaging().send(
+                    const messageId = await admin.messaging().sendEachForMulticast(
                         {
                             notification: {
                                 title: title,
@@ -90,7 +121,7 @@ export async function sendNotification({
                                     clickAction: "FLUTTER_NOTIFICATION_CLICK",
                                     channelId: channelId ?? undefined,
                                     sound: sound ?? undefined,
-                                },                             
+                                },
                             },
                             apns: {
                                 payload: {
@@ -101,7 +132,7 @@ export async function sendNotification({
                                 }
                             },
                             data: data,
-                            token: t,
+                            tokens: tokenList[t],
                         }
                     );
                     res[t] = messageId;
@@ -131,7 +162,7 @@ export async function sendNotification({
                             }
                         },
                         data: data,
-                        token: t,
+                        tokens: tokenList[t],
                     });
                 }
             }
@@ -185,6 +216,35 @@ export async function sendNotification({
                 success: true,
                 results: res,
             };
+        } else if (targetCollectionPath !== undefined && targetCollectionPath !== null && targetTokenFieldKey != undefined && targetTokenFieldKey !== null) {
+            const firestoreInstance = admin.firestore();
+            const collectionRef = firestore.where({
+                query: firestoreInstance.collection(targetCollectionPath),
+                wheres: targetWhere,
+            });
+            const tokens: string[] = [];
+            const collection = await collectionRef.get();
+            for (let doc of collection.docs) {
+                const data = doc.data();
+                if (!await firestore.hasMatch({ data, conditions: targetConditions })) {
+                    continue;
+                }
+                const token = data[targetTokenFieldKey];
+                if (typeof token === "string") {
+                    tokens.push(token);
+                } else if (Array.isArray(token)) {
+                    tokens.push(...token);
+                }
+            }
+            await sendNotification({
+                title: title,
+                body: body,
+                data: data,
+                channelId: channelId,
+                token: tokens,
+                badgeCount: badgeCount,
+                sound: sound,
+            });
         }
     } catch (err) {
         throw err;
@@ -193,5 +253,4 @@ export async function sendNotification({
         success: true,
         results: res,
     };
-    
 }

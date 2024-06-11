@@ -1,7 +1,7 @@
 import * as functions from "firebase-functions/v2";
 import * as admin from "firebase-admin";
-import { sendNotification } from "../lib/send_notification";
-import { SchedulerFunctionsOptions } from "../lib/functions_base";
+import { sendNotification } from "../lib/functions/send_notification";
+import { SchedulerFunctionsOptions } from "../lib/src/functions_base";
 
 /**
  * Define a process for notifications while scaling to monitor the DB and register future PUSH notifications and data.
@@ -50,6 +50,10 @@ module.exports = (
                         const topic = priParams["topic"] as string | undefined | null;
                         const badgeCount = priParams["badgeCount"] as number | undefined | null;
                         const sound = priParams["sound"] as string | undefined | null;
+                        const targetCollectionPath = priParams["targetCollectionPath"] as string | undefined | null;
+                        const targetTokenFieldKey = priParams["targetTokenFieldKey"] as string | undefined | null;
+                        const targetWhere = priParams["targetWhere"] as { [key: string]: string }[] | undefined;
+                        const targetConditions = priParams["targetConditions"] as { [key: string]: string }[] | undefined;
                         const response = await sendNotification({
                             title: title,
                             body: body,
@@ -59,6 +63,10 @@ module.exports = (
                             topic: topic,
                             badgeCount: badgeCount,
                             sound: sound,
+                            targetCollectionPath: targetCollectionPath,
+                            targetTokenFieldKey: targetTokenFieldKey,
+                            targetWhere: targetWhere,
+                            targetConditions: targetConditions,
                         });
                         res = response.results as { [key: string]: any } | null;
                         break;

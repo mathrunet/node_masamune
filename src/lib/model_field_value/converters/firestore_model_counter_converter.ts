@@ -1,23 +1,22 @@
-import { FirestoreModelFieldValueConverter } from "../lib/firestore_model_field_value_converter";
-import { isDynamicMap } from "../lib/utils";
-import { Timestamp } from "firebase-admin/firestore";
+import { FirestoreModelFieldValueConverter } from "../firestore_model_field_value_converter";
+import { isDynamicMap } from "../../utils";
 
 /**
- * FirestoreConverter for [ModelDate].
+ * FirestoreConverter for [ModelCounter].
  * 
- * [ModelDate]用のFirestoreConverter。
+ * [ModelCounter]用のFirestoreConverter。
  */
-export class FirestoreModelDateConverter extends FirestoreModelFieldValueConverter {
+export class FirestoreModelCounterConverter extends FirestoreModelFieldValueConverter {
   /**
-   * FirestoreConverter for [ModelDate].
+   * FirestoreConverter for [ModelCounter].
    * 
-   * [ModelDate]用のFirestoreConverter。
+   * [ModelCounter]用のFirestoreConverter。
    */
   constructor() {
     super();
   }
 
-  type: string = "ModelDate";
+  type: string = "ModelCounter";
 
   convertFrom(
     key: string,
@@ -32,15 +31,6 @@ export class FirestoreModelDateConverter extends FirestoreModelFieldValueConvert
           [key]: value,
         };
       }
-    } else if (value instanceof Timestamp) {
-      const targetKey = `#${key}`;
-      const targetMap = original[targetKey] as { [field: string]: any } | null | undefined ?? {};
-      const type = targetMap["@type"] as string | null | undefined ?? "";
-      if (type == this.type) {
-        return {
-          [key]: value.toMillis(),
-        };
-      }
     } else if (Array.isArray(value)) {
       const targetKey = `#${key}`;
       const targetList = original[targetKey] as { [field: string]: any }[] | null | undefined ?? [];
@@ -49,8 +39,6 @@ export class FirestoreModelDateConverter extends FirestoreModelFieldValueConvert
         for (const tmp of value) {
           if (typeof tmp === "number") {
             res.push(tmp);
-          } else if (tmp instanceof Timestamp) {
-            res.push(tmp.toMillis());
           }
         }
         if (res.length > 0) {
@@ -76,8 +64,6 @@ export class FirestoreModelDateConverter extends FirestoreModelFieldValueConvert
           }
           if (typeof val === "number") {
             res[key] = val;
-          } else if (val instanceof Timestamp) {
-            res[key] = val.toMillis();
           }
         }
         if (Object.keys(res).length > 0) {

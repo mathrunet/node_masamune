@@ -1,6 +1,6 @@
 import * as functions from "firebase-functions/v2";
-import * as gmail from "../lib/gmail";
-import { HttpFunctionsOptions } from "../lib/functions_base";
+import * as gmail from "../lib/functions/gmail";
+import { HttpFunctionsOptions } from "../lib/src/functions_base";
 
 /**
  * Send email via Gmail.

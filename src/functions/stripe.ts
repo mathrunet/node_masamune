@@ -1,10 +1,10 @@
 import * as functions from "firebase-functions/v2";
 import * as stripe from "stripe";
 import * as admin from "firebase-admin";
-import * as sendgrid from "../lib/send_grid";
-import * as gmail from "../lib/gmail";
-import "../exntension/string.extension"
-import { HttpFunctionsOptions } from "../lib/functions_base";
+import * as sendgrid from "../lib/functions/send_grid";
+import * as gmail from "../lib/functions/gmail";
+import "../lib/exntensions/string.extension"
+import { HttpFunctionsOptions } from "../lib/src/functions_base";
 
 
 /**

@@ -1,19 +1,19 @@
-import * as base from "./lib/functions_base";
+import * as base from "./lib/src/functions_base";
 import * as admin from "firebase-admin";
 import * as regions from "./lib/regions";
 import { Functions } from "./functions";
 export * from "./functions";
 export * from "./lib/api";
-export * from "./lib/sql_api_base";
-export * from "./lib/schedule_process_function_base";
-export * from "./lib/request_process_function_base";
-export * from "./lib/call_process_function_base";
-export * from "./lib/model_field_value";
+export * from "./lib/src/sql_api_base";
+export * from "./lib/src/schedule_process_function_base";
+export * from "./lib/src/request_process_function_base";
+export * from "./lib/src/call_process_function_base";
+export * from "./lib/model_field_value/model_field_value";
 export * from "./lib/utils";
-export * from "./exntension/string.extension";
-export * as gmail from "./lib/gmail";
-export * as sendGrid from "./lib/send_grid";
-export * as notification from "./lib/send_notification";
+export * from "./lib/exntensions/string.extension";
+export * as gmail from "./lib/functions/gmail";
+export * as sendGrid from "./lib/functions/send_grid";
+export * as notification from "./lib/functions/send_notification";
 
 /**
  * Methods for deploying to Firebase Functions.

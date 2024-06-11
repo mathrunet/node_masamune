@@ -1,5 +1,5 @@
-import { FirestoreModelFieldValueConverter } from "../lib/firestore_model_field_value_converter";
-import { isDynamicMap } from "../lib/utils";
+import { FirestoreModelFieldValueConverter } from "../firestore_model_field_value_converter";
+import { isDynamicMap } from "../../utils";
 import { DocumentReference } from "firebase-admin/firestore";
 
 /**

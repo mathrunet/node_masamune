@@ -1,8 +1,8 @@
 import * as functions from "firebase-functions/v2";
 import * as admin from "firebase-admin";
-import * as verifier from "../lib/verify_android";
+import * as verifier from "../lib/functions/verify_android";
 import * as utils from "../lib/utils";
-import { PubsubFunctionsOptions } from "../lib/functions_base";
+import { PubsubFunctionsOptions } from "../lib/src/functions_base";
 
 /**
  * This is a webhook endpoint for Android. you can create a `purchasing` topic in GCP's pub/sub and set the principal to "google-play-developer-notifications@system.gserviceaccount.com" to receive notifications.

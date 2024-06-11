@@ -1,7 +1,7 @@
 import * as functions from "firebase-functions/v2";
 import * as admin from "firebase-admin";
 import * as utils from "../lib/utils";
-import { HttpFunctionsOptions } from "../lib/functions_base";
+import { HttpFunctionsOptions } from "../lib/src/functions_base";
 
 /**
  * Webhook endpoint for IOS, which allows you to receive notifications by setting the endpoint in AppStoreConnect's [App]->[App Information]->[App Store Server Notification].

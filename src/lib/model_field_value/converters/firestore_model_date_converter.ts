@@ -1,43 +1,57 @@
-import { FirestoreModelFieldValueConverter } from "../lib/firestore_model_field_value_converter";
-import { isDynamicMap } from "../lib/utils";
+import { FirestoreModelFieldValueConverter } from "../firestore_model_field_value_converter";
+import { isDynamicMap } from "../../utils";
+import { Timestamp } from "firebase-admin/firestore";
 
 /**
- * FirestoreConverter for [ModelLocale].
+ * FirestoreConverter for [ModelDate].
  * 
- * [ModelLocale]用のFirestoreConverter。
+ * [ModelDate]用のFirestoreConverter。
  */
-export class FirestoreModelLocaleConverter extends FirestoreModelFieldValueConverter {
+export class FirestoreModelDateConverter extends FirestoreModelFieldValueConverter {
   /**
-   * FirestoreConverter for [ModelLocale].
+   * FirestoreConverter for [ModelDate].
    * 
-   * [ModelLocale]用のFirestoreConverter。
+   * [ModelDate]用のFirestoreConverter。
    */
   constructor() {
     super();
   }
 
-  type: string = "ModelLocale";
+  type: string = "ModelDate";
 
   convertFrom(
     key: string,
     value: any,
     original: { [field: string]: any }): { [field: string]: any } | null {
-    if (typeof value === "string") {
+    if (typeof value === "number") {
       const targetKey = `#${key}`;
       const targetMap = original[targetKey] as { [field: string]: any } | null | undefined ?? {};
       const type = targetMap["@type"] as string | null | undefined ?? "";
       if (type == this.type) {
         return {
-          [key]: String(value),
+          [key]: value,
+        };
+      }
+    } else if (value instanceof Timestamp) {
+      const targetKey = `#${key}`;
+      const targetMap = original[targetKey] as { [field: string]: any } | null | undefined ?? {};
+      const type = targetMap["@type"] as string | null | undefined ?? "";
+      if (type == this.type) {
+        return {
+          [key]: value.toMillis(),
         };
       }
     } else if (Array.isArray(value)) {
       const targetKey = `#${key}`;
       const targetList = original[targetKey] as { [field: string]: any }[] | null | undefined ?? [];
       if (targetList != null && targetList.length > 0 && targetList.every((e) => e["@type"] === this.type)) {
-        const res: string[] = [];
+        const res: number[] = [];
         for (const tmp of value) {
-          res.push(String(tmp));
+          if (typeof tmp === "number") {
+            res.push(tmp);
+          } else if (tmp instanceof Timestamp) {
+            res.push(tmp.toMillis());
+          }
         }
         if (res.length > 0) {
           return {
@@ -51,7 +65,7 @@ export class FirestoreModelLocaleConverter extends FirestoreModelFieldValueConve
       targetMap
       if (targetMap != null) {
         const res: {
-          [field: string]: string
+          [field: string]: number
         } = {};
         for (const key in value) {
           const val = value[key];
@@ -60,7 +74,11 @@ export class FirestoreModelLocaleConverter extends FirestoreModelFieldValueConve
           if (type != this.type) {
             continue;
           }
-          res[key] = String(val);
+          if (typeof val === "number") {
+            res[key] = val;
+          } else if (val instanceof Timestamp) {
+            res[key] = val.toMillis();
+          }
         }
         if (Object.keys(res).length > 0) {
           return {

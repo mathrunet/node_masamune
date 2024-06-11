@@ -1,35 +1,34 @@
-import { FirestoreModelFieldValueConverter } from "../lib/firestore_model_field_value_converter";
-import { isDynamicMap } from "../lib/utils";
-import { GeoPoint } from "firebase-admin/firestore";
+import { FirestoreModelFieldValueConverter } from "../firestore_model_field_value_converter";
+import { isDynamicMap } from "../../utils";
 
 /**
- * FirestoreConverter for [ModelGeoValue].
+ * FirestoreConverter for [ModelVideoUri].
  * 
- * [ModelGeoValue]用のFirestoreConverter。
+ * [ModelVideoUri]用のFirestoreConverter。
  */
-export class FirestoreModelGeoValueConverter extends FirestoreModelFieldValueConverter {
+export class FirestoreModelVideoUriConverter extends FirestoreModelFieldValueConverter {
   /**
-   * FirestoreConverter for [ModelGeoValue].
+   * FirestoreConverter for [ModelVideoUri].
    * 
-   * [ModelGeoValue]用のFirestoreConverter。
+   * [ModelVideoUri]用のFirestoreConverter。
    */
   constructor() {
     super();
   }
 
-  type: string = "ModelGeoValue";
+  type: string = "ModelVideoUri";
 
   convertFrom(
     key: string,
     value: any,
     original: { [field: string]: any }): { [field: string]: any } | null {
-    if (typeof value === "string" || value instanceof GeoPoint) {
+    if (typeof value === "string") {
       const targetKey = `#${key}`;
       const targetMap = original[targetKey] as { [field: string]: any } | null | undefined ?? {};
       const type = targetMap["@type"] as string | null | undefined ?? "";
       if (type == this.type) {
         return {
-          [key]: targetMap["@geoHash"] as string | null | undefined ?? "",
+          [key]: String(value),
         };
       }
     } else if (Array.isArray(value)) {
@@ -37,10 +36,8 @@ export class FirestoreModelGeoValueConverter extends FirestoreModelFieldValueCon
       const targetList = original[targetKey] as { [field: string]: any }[] | null | undefined ?? [];
       if (targetList != null && targetList.length > 0 && targetList.every((e) => e["@type"] === this.type)) {
         const res: string[] = [];
-        for (const tmp of targetList) {
-          res.push(
-            tmp["@geoHash"] as string | null | undefined ?? "",
-          );
+        for (const tmp of value) {
+          res.push(String(tmp));
         }
         if (res.length > 0) {
           return {
@@ -63,9 +60,7 @@ export class FirestoreModelGeoValueConverter extends FirestoreModelFieldValueCon
           if (type != this.type) {
             continue;
           }
-          if (typeof val === "string" || val instanceof GeoPoint) {
-            res[key] = mapVal["@geoHash"] as string | null | undefined ?? "";
-          }
+          res[key] = String(val);
         }
         if (Object.keys(res).length > 0) {
           return {

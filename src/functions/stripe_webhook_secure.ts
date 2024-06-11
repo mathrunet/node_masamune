@@ -1,8 +1,8 @@
 import * as functions from "firebase-functions/v2";
 import * as stripe from "stripe";
 import * as admin from "firebase-admin";
-import "../exntension/string.extension"
-import { HttpFunctionsOptions } from "../lib/functions_base";
+import "../lib/exntensions/string.extension"
+import { HttpFunctionsOptions } from "../lib/src/functions_base";
 
 /**
  * Webhook for proper redirection when 3D Secure authentication is required.

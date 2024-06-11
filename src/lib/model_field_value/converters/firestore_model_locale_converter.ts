@@ -1,22 +1,22 @@
-import { FirestoreModelFieldValueConverter } from "../lib/firestore_model_field_value_converter";
-import { isDynamicMap } from "../lib/utils";
+import { FirestoreModelFieldValueConverter } from "../firestore_model_field_value_converter";
+import { isDynamicMap } from "../../utils";
 
 /**
- * FirestoreConverter for [ModelVideoUri].
+ * FirestoreConverter for [ModelLocale].
  * 
- * [ModelVideoUri]用のFirestoreConverter。
+ * [ModelLocale]用のFirestoreConverter。
  */
-export class FirestoreModelVideoUriConverter extends FirestoreModelFieldValueConverter {
+export class FirestoreModelLocaleConverter extends FirestoreModelFieldValueConverter {
   /**
-   * FirestoreConverter for [ModelVideoUri].
+   * FirestoreConverter for [ModelLocale].
    * 
-   * [ModelVideoUri]用のFirestoreConverter。
+   * [ModelLocale]用のFirestoreConverter。
    */
   constructor() {
     super();
   }
 
-  type: string = "ModelVideoUri";
+  type: string = "ModelLocale";
 
   convertFrom(
     key: string,

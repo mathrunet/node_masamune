@@ -1,7 +1,7 @@
 import * as functions from "firebase-functions/v2";
-import * as verifier from "../lib/verify_android";
-import * as subscriber from "../lib/update_subscription";
-import { HttpFunctionsOptions } from "../lib/functions_base";
+import * as verifier from "../lib/functions/verify_android";
+import * as subscriber from "../lib/functions/update_subscription";
+import { HttpFunctionsOptions } from "../lib/src/functions_base";
 
 /**
  * Verify subscriptions and add data.
