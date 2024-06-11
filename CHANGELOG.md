@@ -1,3 +1,12 @@
+# [2.6.0](https://github.com/mathrunet/node_masamune/compare/v2.5.0...v2.6.0) (2024-06-11)
+
+
+### feat
+
+* Added document creation functionality. ([9d8374e](https://github.com/mathrunet/node_masamune/commit/9d8374eb5495a2b3ee705e41c8faf6c9731c1885))
+
+
+
 # [2.5.0](https://github.com/mathrunet/node_masamune/compare/v2.4.4...v2.5.0) (2024-06-11)
 
 
