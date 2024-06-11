@@ -33,7 +33,7 @@ export function where({
     for (let w of wheres) {
         const type = w["type"] as string | undefined | null;
         const key = w["key"] as string | undefined | null;
-        const value = w["key"] as any;
+        const value = w["value"] as any;
         if (type === undefined || key === undefined || type === null || key === null) {
             continue;
         }
@@ -118,7 +118,7 @@ export async function hasMatch({
     for (let c of conditions) {
         const type = c["type"] as string | undefined | null;
         const key = c["key"] as string | undefined | null;
-        const value = c["key"] as any;
+        const value = c["value"] as any;
         if (type === undefined || key === undefined || type === null || key === null) {
             continue;
         }
