@@ -1,3 +1,12 @@
+# [2.5.0](https://github.com/mathrunet/node_masamune/compare/v2.4.4...v2.5.0) (2024-06-11)
+
+
+### feat
+
+* Batch functionality in Notification. ([87aca9e](https://github.com/mathrunet/node_masamune/commit/87aca9e4c9c8b54e991f7abb70293f3371f6092d))
+
+
+
 ## [2.4.4](https://github.com/mathrunet/node_masamune/compare/v2.4.3...v2.4.4) (2024-06-03)
 
 
