@@ -57,7 +57,7 @@ import { HttpFunctionsOptions } from "../lib/src/functions_base";
  * 
  * 通知対象のトークンを取得する際のフィールドのキーを指定します。
  * 
- * @param targetWhere
+ * @param targetWheres
  * Specify the conditions for retrieving the collections to be notified.
  * 
  * 通知対象のコレクションを取得する際の条件を指定します。
@@ -92,7 +92,7 @@ module.exports = (
             const badgeCount = query.data.badgeCount as number | undefined | null;
             const targetCollectionPath = query.data.targetCollectionPath as string | undefined | null;
             const targetTokenFieldKey = query.data.targetTokenFieldKey as string | undefined | null;
-            const targetWhere = query.data.targetWhere as { [key: string]: string }[] | undefined;
+            const targetWheres = query.data.targetWheres as { [key: string]: string }[] | undefined;
             const targetConditions = query.data.targetConditions as { [key: string]: string }[] | undefined;
             if (!title || !body) {
                 throw new functions.https.HttpsError("invalid-argument", "Query parameter is invalid.");
@@ -108,7 +108,7 @@ module.exports = (
                 sound: sound,
                 targetCollectionPath: targetCollectionPath,
                 targetTokenFieldKey: targetTokenFieldKey,
-                targetWhere: targetWhere,
+                targetWheres: targetWheres,
                 targetConditions: targetConditions,
             });
             return res;

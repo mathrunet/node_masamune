@@ -1,5 +1,25 @@
 import * as admin from "firebase-admin";
 
+/**
+ * Create a filter for loading Firestore collections.
+ * 
+ * Firestoreのコレクションをロードする際のフィルターを作成します。
+ * 
+ * @param query
+ * Specifies a reference to a Firestore collection.
+ * 
+ * Firestoreのコレクションのリファレンスを指定します。
+ * 
+ * @param wheres
+ * Specifies the filter to be applied to the collection.
+ * 
+ * コレクションに適用するフィルターを指定します。
+ * 
+ * @returns
+ * Returns a Firestore query with the specified filter.
+ * 
+ * 指定されたフィルターを持つFirestoreのクエリを返します。
+ */
 export function where({
     query,
     wheres,
@@ -61,6 +81,30 @@ export function where({
     return query;
 }
 
+/**
+ * Judges whether all the conditions in [conditons] match the document data in [data].
+ * 
+ * If a reference is included in [data], the document is retrieved recursively and the condition is determined.
+ * 
+ * [data]のドキュメントデータに対して、[conditions]の条件が全て一致するかどうかを判定します。
+ * 
+ * [data]の中にリファレンスが含まれている場合、再帰的にドキュメントを取得し条件を判定します。
+ * 
+ * @param data
+ * Target document data.
+ * 
+ * 対象となるドキュメントデータ。
+ * 
+ * @param conditions
+ * Conditions to be matched.
+ * 
+ * 一致させる条件。
+ * 
+ * @returns 
+ * Returns true if all conditions match, false otherwise.
+ * 
+ * 全ての条件が一致する場合はtrue、それ以外はfalseを返します。
+ */
 export async function hasMatch({
     data,
     conditions,
@@ -186,6 +230,44 @@ export async function hasMatch({
     }
     return true;
 }
+
+/**
+ * Get [limit] documents from [cursor].
+ * 
+ * [cursor]から[limit]個のドキュメントを取得します。
+ * 
+ * @param query
+ * Specifies a reference to a Firestore collection.
+ * 
+ * Firestoreのコレクションのリファレンスを指定します。
+ * 
+ * @param limit
+ * Specifies the number of documents to be retrieved.
+ * 
+ * 取得するドキュメントの数を指定します。
+ * 
+ * @param cursor
+ * Specifies the document to start retrieving from.
+ * 
+ * 取得を開始するドキュメントを指定します。
+ * 
+ * @returns 
+ */
+export function cursor({
+    query,
+    limit,
+    cursor,
+}: {
+        query: admin.firestore.Query<admin.firestore.DocumentData, admin.firestore.DocumentData>,
+    limit: number,
+    cursor: FirebaseFirestore.QueryDocumentSnapshot | undefined | null,
+    }): admin.firestore.Query<admin.firestore.DocumentData, admin.firestore.DocumentData> {
+    if (!cursor) {
+        return query.limit(limit);
+    }
+    return query.startAfter(cursor).limit(limit);
+}
+
 
 function _isObject(obj: any): obj is { [key: string]: any } {
     return typeof obj === "object" && obj !== null;

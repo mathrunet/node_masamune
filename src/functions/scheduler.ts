@@ -2,6 +2,7 @@ import * as functions from "firebase-functions/v2";
 import * as admin from "firebase-admin";
 import { sendNotification } from "../lib/functions/send_notification";
 import { SchedulerFunctionsOptions } from "../lib/src/functions_base";
+import * as delete_documents from "../lib/functions/delete_documents";
 
 /**
  * Define a process for notifications while scaling to monitor the DB and register future PUSH notifications and data.
@@ -41,7 +42,7 @@ module.exports = (
                 const priParams = (doc.get("#command") as { [key: string]: any })["@private"] as { [key: string]: any };
                 console.log(`Command: ${command}`);
                 switch (command) {
-                    case "notification":
+                    case "notification": {
                         const title = priParams["title"] as string;
                         const body = priParams["text"] as string;
                         const channelId = priParams["channel"] as string | undefined | null;
@@ -52,7 +53,7 @@ module.exports = (
                         const sound = priParams["sound"] as string | undefined | null;
                         const targetCollectionPath = priParams["targetCollectionPath"] as string | undefined | null;
                         const targetTokenFieldKey = priParams["targetTokenFieldKey"] as string | undefined | null;
-                        const targetWhere = priParams["targetWhere"] as { [key: string]: string }[] | undefined;
+                        const targetWheres = priParams["targetWheres"] as { [key: string]: string }[] | undefined;
                         const targetConditions = priParams["targetConditions"] as { [key: string]: string }[] | undefined;
                         const response = await sendNotification({
                             title: title,
@@ -65,12 +66,13 @@ module.exports = (
                             sound: sound,
                             targetCollectionPath: targetCollectionPath,
                             targetTokenFieldKey: targetTokenFieldKey,
-                            targetWhere: targetWhere,
+                            targetWheres: targetWheres,
                             targetConditions: targetConditions,
                         });
                         res = response.results as { [key: string]: any } | null;
                         break;
-                    case "copy_document":
+                    }
+                    case "copy_document": {
                         const path = priParams["path"] as string;
                         const paths = path.split("/");
                         const id = paths[paths.length - 1];
@@ -89,6 +91,17 @@ module.exports = (
                             merge: true
                         }
                         );
+                        break;
+                    }
+                    case "delete_documents":
+                        const collectionPath = priParams["collectionPath"] as string;
+                        const wheres = priParams["wheres"] as { [key: string]: any }[] | undefined;
+                        const conditions = priParams["conditions"] as { [key: string]: any }[] | undefined;
+                        await delete_documents.deleteDocuments({
+                            collectionPath: collectionPath,
+                            wheres: wheres,
+                            conditions: conditions,
+                        });
                         break;
                 }
                 if (res !== null && Object.keys(res).length > 0) {

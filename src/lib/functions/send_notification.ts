@@ -58,7 +58,7 @@ import { splitArray } from "../utils";
  * 
  * 通知対象のトークンを取得する際のフィールドのキーを指定します。
  * 
- * @param targetWhere
+ * @param targetWheres
  * Specify the conditions for retrieving the collections to be notified.
  * 
  * 通知対象のコレクションを取得する際の条件を指定します。
@@ -79,7 +79,7 @@ export async function sendNotification({
     sound,
     targetCollectionPath,
     targetTokenFieldKey,
-    targetWhere,
+    targetWheres,
     targetConditions,
 }:  {
         title: string,
@@ -92,7 +92,7 @@ export async function sendNotification({
         sound?: string | undefined | null,
         targetCollectionPath?: string | undefined | null,
         targetTokenFieldKey?: string | undefined | null,
-        targetWhere?: { [key: string]: string }[] | undefined,
+        targetWheres?: { [key: string]: string }[] | undefined,
         targetConditions?: { [key: string]: string }[] | undefined,
     }) : Promise<{ [key: string]: any }> {
     const res: { [key: string]: any } = {};
@@ -220,31 +220,39 @@ export async function sendNotification({
             const firestoreInstance = admin.firestore();
             const collectionRef = firestore.where({
                 query: firestoreInstance.collection(targetCollectionPath),
-                wheres: targetWhere,
+                wheres: targetWheres,
             });
             const tokens: string[] = [];
-            const collection = await collectionRef.get();
-            for (let doc of collection.docs) {
-                const data = doc.data();
-                if (!await firestore.hasMatch({ data, conditions: targetConditions })) {
-                    continue;
+            let cursor: FirebaseFirestore.QueryDocumentSnapshot | null = null;
+            let collection: FirebaseFirestore.QuerySnapshot<FirebaseFirestore.DocumentData, FirebaseFirestore.DocumentData> | null = null;
+            do {
+                collection = await firestore.cursor({ query: collectionRef, limit: 500, cursor: cursor }).get();
+                for (let doc of collection.docs) {
+                    const data = doc.data();
+                    if (!await firestore.hasMatch({ data, conditions: targetConditions })) {
+                        continue;
+                    }
+                    const token = data[targetTokenFieldKey];
+                    if (typeof token === "string") {
+                        tokens.push(token);
+                    } else if (Array.isArray(token)) {
+                        tokens.push(...token);
+                    }
                 }
-                const token = data[targetTokenFieldKey];
-                if (typeof token === "string") {
-                    tokens.push(token);
-                } else if (Array.isArray(token)) {
-                    tokens.push(...token);
+                await sendNotification({
+                    title: title,
+                    body: body,
+                    data: data,
+                    channelId: channelId,
+                    token: tokens,
+                    badgeCount: badgeCount,
+                    sound: sound,
+                });
+                if (collection.docs.length < 500) {
+                    break;
                 }
-            }
-            await sendNotification({
-                title: title,
-                body: body,
-                data: data,
-                channelId: channelId,
-                token: tokens,
-                badgeCount: badgeCount,
-                sound: sound,
-            });
+                cursor = collection.docs[collection.docs.length - 1];
+            } while (collection.docs.length >= 500);
         }
     } catch (err) {
         throw err;

@@ -35,7 +35,7 @@ export abstract class FunctionsBase {
         data?: { [key: string]: string } | undefined | null,
         options?: FunctionsOptions | undefined | null,
     }) {
-        this.id = id ?? "";
+        this.id = options?.name ?? id ?? "";
         this.func = func;
         this.data = data ?? {};
         this.options = options ?? {
@@ -142,6 +142,34 @@ export interface PathFunctionsOptions extends FunctionsOptions {
  * 
  * 処理のオプションを指定します。
  */
+export interface RelationPathFunctionsOptions extends FunctionsOptions {
+    /**
+     * Specify the path to the target database.
+     * 
+     * 対象のデータベースのパスを指定します。
+     */
+    path?: string | undefined | null;
+
+    /**
+     * 
+     * @param path 
+     * @returns 
+     */
+    relation?: (path: string) => string | undefined | null;
+
+    /**
+     * Specifies an alternate region.
+     * 
+     * 代替のリージョンを指定します。
+     */
+    region?: string | null;
+}
+
+/**
+ * Specifies the options for the process.
+ * 
+ * 処理のオプションを指定します。
+ */
 export interface PubsubFunctionsOptions extends FunctionsOptions {
     /**
      * Specifies the topic.
@@ -228,4 +256,11 @@ export interface FunctionsOptions {
      * concurrencyを指定します。
      */
     concurrency?: number | undefined;
+
+    /**
+     * Change the method name to something you prefer.
+     * 
+     * メソッド名をお好みのものに変更します。
+     */
+    name?: string | undefined;
 }

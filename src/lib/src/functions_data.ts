@@ -1,5 +1,5 @@
 import { FunctionsBase } from "./functions_base";
-export { FunctionsOptions, SchedulerFunctionsOptions, PubsubFunctionsOptions, PathFunctionsOptions } from "./functions_base";
+export { FunctionsOptions, SchedulerFunctionsOptions, PubsubFunctionsOptions, PathFunctionsOptions, RelationPathFunctionsOptions } from "./functions_base";
 
 /**
  * Define Function data for FirebaseFunctions.

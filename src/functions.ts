@@ -6,10 +6,16 @@ import * as data from "./lib/src/functions_data";
  * FirebaseFunctions用の適用可能なFunctionの一覧を定義します。
  */
 export const Functions = {
+  /**
+   * When a document is deleted, the related collections should be deleted together.
+   * 
+   * ドキュメントが削除された場合関連するコレクションをまとめて削除するようにします。
+   */
+  deleteDocuments: (options: data.RelationPathFunctionsOptions = {}) => new data.FunctionsData({ id: "delete_documents", func: require("./functions/delete_documents"), options: options }),
   /** 
- * Synchronize data to Algolia.
- *
- * Algoliaにデータを同期します。
+   * Synchronize data to Algolia.
+   *
+   * Algoliaにデータを同期します。
    */
   algolia: (options: data.PathFunctionsOptions = {}) => new data.FunctionsData({ id: "algolia", func: require("./functions/algolia"), options: options }),
   /** 
