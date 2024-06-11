@@ -1,3 +1,12 @@
+## [2.6.1](https://github.com/mathrunet/node_masamune/compare/v2.6.0...v2.6.1) (2024-06-11)
+
+
+### test
+
+* Test code implementation. ([7f40834](https://github.com/mathrunet/node_masamune/commit/7f40834936b13a1b54b792b1c47f7c1ae2319502))
+
+
+
 # [2.6.0](https://github.com/mathrunet/node_masamune/compare/v2.5.0...v2.6.0) (2024-06-11)
 
 
