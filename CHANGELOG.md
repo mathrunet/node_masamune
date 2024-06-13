@@ -1,3 +1,12 @@
+## [2.6.3](https://github.com/mathrunet/node_masamune/compare/v2.6.2...v2.6.3) (2024-06-13)
+
+
+### fix
+
+* Notification test. ([f9ee6bc](https://github.com/mathrunet/node_masamune/commit/f9ee6bcc51e68c01f673868b888774eb5e2075c4))
+
+
+
 ## [2.6.2](https://github.com/mathrunet/node_masamune/compare/v2.6.1...v2.6.2) (2024-06-13)
 
 
