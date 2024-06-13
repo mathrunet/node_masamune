@@ -29,7 +29,7 @@ import { defaultConverters } from "../lib/model_field_value/default_firestore_mo
 module.exports = (
     regions: string[],
     options: PathFunctionsOptions,
-    data: { [key: string]: string }
+    data: { [key: string]: any }
 ) => functions.firestore.onDocumentWritten(
     {
         document: `${options.path}/{docId}`,

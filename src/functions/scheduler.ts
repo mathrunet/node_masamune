@@ -1,8 +1,9 @@
 import * as functions from "firebase-functions/v2";
 import * as admin from "firebase-admin";
-import { sendNotification } from "../lib/functions/send_notification";
 import { SchedulerFunctionsOptions } from "../lib/src/functions_base";
-import * as delete_documents from "../lib/functions/delete_documents";
+import { notification } from "../lib/schedulers/notification";
+import { copyDocument } from "../lib/schedulers/copy_document";
+import { deleteDocuments } from "../lib/schedulers/delete_documents";
 
 /**
  * Define a process for notifications while scaling to monitor the DB and register future PUSH notifications and data.
@@ -17,7 +18,7 @@ import * as delete_documents from "../lib/functions/delete_documents";
 module.exports = (
     regions: string[],
     options: SchedulerFunctionsOptions,
-    data: { [key: string]: string }
+    data: { [key: string]: any }
 ) => functions.scheduler.onSchedule(
     {
         schedule: options.schedule ?? "every 1 minutes",
@@ -30,77 +31,39 @@ module.exports = (
     },
     async (event) => {
         try {
-            const collectionPath = process.env.SCHEDULER_COLLECTION_PATH ?? "schedule";
+            const collectionPath = process.env.SCHEDULER_COLLECTION_PATH ?? data["path"] ?? "schedule";
             const firestoreInstance = admin.firestore();
             console.log(`Time: ${Date.now()}`);
             const collection = await firestoreInstance.collection(collectionPath).where("_done", "==", false).where("_time", "<=", Date.now()).orderBy("_time", "asc").get();
             console.log(`Length: ${collection.size}`);
             for (var doc of collection.docs) {
                 console.log(`Doc: ${doc.id} ${doc.data()}`);
-                let res: { [key: string]: any } | null = null;
+                let res: { [key: string]: any } = {};
                 const command = (doc.get("#command") as { [key: string]: any })["@command"];
                 const priParams = (doc.get("#command") as { [key: string]: any })["@private"] as { [key: string]: any };
                 console.log(`Command: ${command}`);
                 switch (command) {
                     case "notification": {
-                        const title = priParams["title"] as string;
-                        const body = priParams["text"] as string;
-                        const channelId = priParams["channel"] as string | undefined | null;
-                        const data = priParams["data"] as { [key: string]: any } | undefined;
-                        const badgeCount = priParams["badgeCount"] as number | undefined | null;
-                        const sound = priParams["sound"] as string | undefined | null;
-                        const targetToken = priParams["targetToken"] as string | string[] | undefined | null;
-                        const targetTopic = priParams["targetTopic"] as string | undefined | null;
-                        const targetCollectionPath = priParams["targetCollectionPath"] as string | undefined | null;
-                        const targetTokenField = priParams["targetTokenField"] as string | { [key: string]: string } | undefined | null;
-                        const targetWheres = priParams["targetWheres"] as { [key: string]: string }[] | undefined;
-                        const targetConditions = priParams["targetConditions"] as { [key: string]: string }[] | undefined;
-                        const response = await sendNotification({
-                            title: title,
-                            body: body,
-                            channelId: channelId,
-                            data: data,
-                            badgeCount: badgeCount,
-                            sound: sound,
-                            targetToken: targetToken,
-                            targetTopic: targetTopic,
-                            targetCollectionPath: targetCollectionPath,
-                            targetTokenField: targetTokenField,
-                            targetWheres: targetWheres,
-                            targetConditions: targetConditions,
+                        res = await notification({
+                            params: priParams,
+                            firestore: firestoreInstance,
+                            doc: doc,
                         });
-                        res = response.results as { [key: string]: any } | null;
                         break;
                     }
                     case "copy_document": {
-                        const path = priParams["path"] as string;
-                        const paths = path.split("/");
-                        const id = paths[paths.length - 1];
-                        const docData = doc.data();
-                        const docKeys = Object.keys(docData);
-                        const update: { [key: string]: any } = {};
-                        for (const key of docKeys) {
-                            if (key.startsWith("_") || key == "command" || key == "#command" || key == "@uid") {
-                                continue;
-                            }
-                            update[key] = docData[key];
-                        }
-                        update["@uid"] = id;
-                        await firestoreInstance.doc(path).set(
-                            update, {
-                            merge: true
-                        }
-                        );
+                        res = await copyDocument({
+                            params: priParams,
+                            firestore: firestoreInstance,
+                            doc: doc,
+                        });
                         break;
                     }
                     case "delete_documents":
-                        const collectionPath = priParams["collectionPath"] as string;
-                        const wheres = priParams["wheres"] as { [key: string]: any }[] | undefined;
-                        const conditions = priParams["conditions"] as { [key: string]: any }[] | undefined;
-                        await delete_documents.deleteDocuments({
-                            collectionPath: collectionPath,
-                            wheres: wheres,
-                            conditions: conditions,
+                        res = await deleteDocuments({
+                            params: priParams,
+                            firestore: firestoreInstance,
+                            doc: doc,
                         });
                         break;
                 }

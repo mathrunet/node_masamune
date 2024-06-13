@@ -14,7 +14,7 @@ import { StorageFunctionsOptions } from "../lib/src/functions_base";
 module.exports = (
     regions: string[],
     options: StorageFunctionsOptions,
-    data: { [key: string]: string }
+    data: { [key: string]: any }
 ) => functions.storage.onObjectFinalized(
     {
         region: options.region ?? regions[0],

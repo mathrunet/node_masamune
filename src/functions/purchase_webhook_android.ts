@@ -47,7 +47,7 @@ import { PubsubFunctionsOptions } from "../lib/src/functions_base";
 module.exports = (
     regions: string[],
     options: PubsubFunctionsOptions,
-    data: { [key: string]: string }
+    data: { [key: string]: any }
 ) => functions.pubsub.onMessagePublished(
     {
         topic: options.topic ?? "purchasing",
@@ -177,7 +177,7 @@ module.exports = (
                                 data[key] = utils.parse(res[key]);
                             }
                             data["expired"] = true;
-                            if (SubscriptionNotificationTypes.SUBSCRIPTION_PAUSED || SubscriptionNotificationTypes.SUBSCRIPTION_ON_HOLD) {
+                            if (notificationType === SubscriptionNotificationTypes.SUBSCRIPTION_PAUSED || notificationType === SubscriptionNotificationTypes.SUBSCRIPTION_ON_HOLD) {
                                 data["paused"] = true;
                                 await firestoreInstance.doc(path).set(data);
                                 console.log(`Paused subscription: ${data["productId"]}:${user}`);

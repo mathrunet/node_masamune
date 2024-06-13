@@ -35,7 +35,7 @@ export abstract class CallProcessFunctionBase extends FunctionsBase {
     abstract process(query: functions.https.CallableRequest<any>): Promise<{ [key: string]: any }>;
 
     abstract id: string;
-    data: { [key: string]: string } = {};
+    data: { [key: string]: any } = {};
     build(regions: string[]): Function {
         const options = this.options as HttpFunctionsOptions | undefined | null;
         return functions.https.onCall(        

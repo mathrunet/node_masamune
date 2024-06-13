@@ -10,7 +10,7 @@ import * as delete_documents from "../lib/functions/delete_documents";
 module.exports = (
     regions: string[],
     options: RelationPathFunctionsOptions,
-    data: { [key: string]: string }
+    data: { [key: string]: any }
 ) => functions.firestore.onDocumentDeleted(
     {
         document: `${options.path}/{docId}`,

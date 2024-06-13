@@ -29,8 +29,8 @@ export async function deleteDocuments({
     conditions,
 }:  {
         collectionPath: string,
-        wheres?: { [key: string]: string }[] | undefined,
-        conditions?: { [key: string]: string }[] | undefined,
+        wheres?: { [key: string]: any }[] | undefined,
+        conditions?: { [key: string]: any }[] | undefined,
     }) : Promise<{ [key: string]: any }> {
     const res: { [key: string]: any } = {};
     try {

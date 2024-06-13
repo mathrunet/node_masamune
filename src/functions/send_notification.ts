@@ -75,7 +75,7 @@ import { HttpFunctionsOptions } from "../lib/src/functions_base";
 module.exports = (
     regions: string[],
     options: HttpFunctionsOptions,
-    data: { [key: string]: string }
+    data: { [key: string]: any }
 ) => functions.https.onCall(
     {
         region: options.region ?? regions,
@@ -90,15 +90,15 @@ module.exports = (
             const title = query.data.title as string | undefined | null;
             const body = query.data.body as string | undefined | null;
             const channelId = query.data.channel_id as string | undefined | null;
-            const data = query.data.data as { [key: string]: string } | undefined;
+            const data = query.data.data as { [key: string]: any } | undefined;
             const sound = query.data.sound as string | undefined | null;
             const badgeCount = query.data.badgeCount as number | undefined | null;
             const targetToken = query.data.targetToken as string | string[] | undefined | null;
             const targetTopic = query.data.targetTopic as string | undefined | null;
             const targetCollectionPath = query.data.targetCollectionPath as string | undefined | null;
-            const targetTokenField = query.data.targetTokenField as string | { [key: string]: string } | undefined | null;
-            const targetWheres = query.data.targetWheres as { [key: string]: string }[] | undefined;
-            const targetConditions = query.data.targetConditions as { [key: string]: string }[] | undefined;
+            const targetTokenField = query.data.targetTokenField as string | { [key: string]: any } | undefined | null;
+            const targetWheres = query.data.targetWheres as { [key: string]: any }[] | undefined;
+            const targetConditions = query.data.targetConditions as { [key: string]: any }[] | undefined;
             const responseTokenList = query.data.responseTokenList as boolean | undefined;
             if (!title || !body) {
                 throw new functions.https.HttpsError("invalid-argument", "Query parameter is invalid.");

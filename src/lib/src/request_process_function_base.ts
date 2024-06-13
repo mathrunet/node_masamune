@@ -37,7 +37,7 @@ export abstract class RequestProcessFunctionBase extends FunctionsBase {
     abstract process(reqest: functions.https.Request, response: express.Response<any>): Promise<void>;
 
     abstract id: string;
-    data: { [key: string]: string } = {};
+    data: { [key: string]: any } = {};
     build(regions: string[]): Function {
         const options = this.options as HttpFunctionsOptions | undefined | null;
         return functions.https.onRequest(

@@ -21,7 +21,7 @@ import { HttpFunctionsOptions } from "../lib/src/functions_base";
 module.exports = (
     regions: string[],
     options: HttpFunctionsOptions,
-    data: { [key: string]: string }
+    data: { [key: string]: any }
 ) => functions.https.onRequest(
     {
         region: options.region ?? regions,

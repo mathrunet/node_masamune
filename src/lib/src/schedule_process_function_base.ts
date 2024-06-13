@@ -33,7 +33,7 @@ export abstract class ScheduleProcessFunctionBase extends FunctionsBase {
     abstract process(): Promise<void>;
 
     abstract id: string;
-    data: { [key: string]: string } = {};
+    data: { [key: string]: any } = {};
     build(regions: string[]): Function {
         const options = this.options as SchedulerFunctionsOptions | undefined | null;
         return functions.scheduler.onSchedule(

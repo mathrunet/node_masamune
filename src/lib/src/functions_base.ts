@@ -30,9 +30,9 @@ export abstract class FunctionsBase {
         func?: ((
             region: string[],
             options: FunctionsOptions,
-            data: { [key: string]: string },
+            data: { [key: string]: any },
         ) => Function) | undefined | null,
-        data?: { [key: string]: string } | undefined | null,
+        data?: { [key: string]: any } | undefined | null,
         options?: FunctionsOptions | undefined | null,
     }) {
         this.id = options?.name ?? id ?? "";
@@ -64,7 +64,7 @@ export abstract class FunctionsBase {
     readonly func: ((
         region: string[],
         options: FunctionsOptions,
-        data: { [key: string]: string }
+        data: { [key: string]: any }
     ) => Function) | undefined | null;
 
     /**
@@ -72,7 +72,7 @@ export abstract class FunctionsBase {
      * 
      * 処理に渡すデータを指定します。
      */
-    readonly data: { [key: string]: string };
+    readonly data: { [key: string]: any };
 
     /**
      * Specify processing options.
