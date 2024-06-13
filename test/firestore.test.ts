@@ -1,5 +1,6 @@
 import * as admin from "firebase-admin";
 import { splitArray, uuid } from "../src";
+import { user } from "firebase-functions/v1/auth";
 
 const config = require("firebase-functions-test")({
   storageBucket: "development-for-mathrunet.appspot.com",
@@ -52,6 +53,7 @@ describe("Firestore Test", () => {
                     uuid(),
                 ],
                 number: i,
+                enable: i % 2 === 0,                
             });
             sourceUserDatas.push({
                 uid: userUid,
@@ -67,8 +69,8 @@ describe("Firestore Test", () => {
             await firestoreInstance.doc(`${sourceCollectionPath}/${sourceData.uid}/user/${sourceUserData.uid}`).set(sourceUserData);
         }
         const func = require("../src/functions/send_notification");
-        const wrapped = config.wrap(func([], {}, {}));
-        const res = await wrapped({
+        let wrapped = config.wrap(func([], {}, {}));
+        let res = await wrapped({
             data: {
                 title: "title",
                 body: "body",
@@ -83,8 +85,8 @@ describe("Firestore Test", () => {
             },
             params: {},
         });
-        const expecedData: string[][][] = [];
-        const splittedUserDatas = splitArray(userDatas, 500);
+        let expecedData: string[][][] = [];
+        let splittedUserDatas = splitArray(userDatas, 500);
         for (let userDatas of splittedUserDatas) {
             const tokens: string[] = [];
             for (let userData of userDatas) {
@@ -93,7 +95,57 @@ describe("Firestore Test", () => {
                     tokens.push(t);
                 }
             }
-            expecedData.push(splitArray([...new Set(tokens)], 450));
+            expecedData.push(splitArray([...new Set(tokens)], 500));
+        }
+        expect(res.results).toStrictEqual(expecedData);
+
+        wrapped = config.wrap(func([], {}, {}));
+        res = await wrapped({
+            data: {
+                title: "title",
+                body: "body",
+                data: {},
+                channelId: "channelId",
+                targetCollectionPath: `${sourceCollectionPath}/${sourceData.uid}/user`,
+                targetTokenField: {
+                    key: "user",
+                    field: {key: "token"},
+                },
+                targetConditions: [
+                    {
+                        key: "user",
+                        value: [
+                            {
+                                type: "greaterThan",
+                                key: "number",
+                                value: 5,
+                            },
+                            {
+                                type: "equalTo",
+                                key: "enable",
+                                value: true,
+                            }
+                        ]                        
+                    }
+                ],
+                responseTokenList: true,
+            },
+            params: {},
+        });
+        expecedData = [];
+        splittedUserDatas = splitArray(userDatas, 500);
+        for (let userDatas of splittedUserDatas) {
+            const tokens: string[] = [];
+            for (let userData of userDatas) {
+                if (userData["number"] <= 5 || userData["enable"] === false) {
+                    continue;
+                }
+                const sourceTokens = userData["token"] as string[];
+                for (let t of sourceTokens) {
+                    tokens.push(t);
+                }
+            }
+            expecedData.push(splitArray([...new Set(tokens)], 500));
         }
         expect(res.results).toStrictEqual(expecedData);
     }, 50000);

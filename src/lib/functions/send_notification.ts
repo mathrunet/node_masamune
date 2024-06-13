@@ -111,7 +111,7 @@ export async function sendNotification({
             if (typeof targetToken === "string") {
                 targetToken = [targetToken];
             }
-            const tokenList = splitArray([...new Set(targetToken)], 450);
+            const tokenList = splitArray([...new Set(targetToken)], 500);
             if (responseTokenList) {
                 return {
                     success: true,
@@ -251,7 +251,7 @@ export async function sendNotification({
                     const data = doc.data();
                     if (!await firestore.hasMatch({ data, conditions: targetConditions })) {
                         continue;
-                    }
+                    }                  
                     const token = await firestore.get({ data: data, field: targetTokenField });
                     if (typeof token === "string") {
                         tokens.push(token);

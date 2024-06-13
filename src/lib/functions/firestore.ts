@@ -123,14 +123,22 @@ export async function hasMatch({
             continue;
         }
         const source = data[key];
-        if (source instanceof admin.firestore.DocumentReference && _isObject(value)) {
+        if (source instanceof admin.firestore.DocumentReference) {
             const doc = await source.get();
             const data = doc.data() as { [key: string]: any };
-            const res = await hasMatch({ data, conditions: [value as { [key: string]: any }] });
-            if (!res) {
-                return false;
+            if (Array.isArray(value)) {
+                const res = await hasMatch({ data, conditions: value });
+                if (!res) {
+                    return false;
+                }
+                continue;
+            } else if (_isObject(value)) {
+                const res = await hasMatch({ data, conditions: [value as { [key: string]: any }] });
+                if (!res) {
+                    return false;
+                }
+                continue;
             }
-            continue;
         }
         if (type === undefined || type === null) {
             continue;
