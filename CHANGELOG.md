@@ -1,3 +1,8 @@
+## [2.6.5](https://github.com/mathrunet/node_masamune/compare/v2.6.4...v2.6.5) (2024-06-13)
+
+
+
+
 ## [2.6.4](https://github.com/mathrunet/node_masamune/compare/v2.6.3...v2.6.4) (2024-06-13)
 
 
