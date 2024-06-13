@@ -1,3 +1,12 @@
+## [2.6.2](https://github.com/mathrunet/node_masamune/compare/v2.6.1...v2.6.2) (2024-06-13)
+
+
+### fix
+
+* Changed the specification of the notification destination. ([933258d](https://github.com/mathrunet/node_masamune/commit/933258dcd43bee5e3175b32863b2f905af6e8b6f))
+
+
+
 ## [2.6.1](https://github.com/mathrunet/node_masamune/compare/v2.6.0...v2.6.1) (2024-06-11)
 
 
