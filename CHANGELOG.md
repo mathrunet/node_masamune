@@ -1,3 +1,12 @@
+## [2.6.4](https://github.com/mathrunet/node_masamune/compare/v2.6.3...v2.6.4) (2024-06-13)
+
+
+### fix
+
+* refactoring ([8bb1a74](https://github.com/mathrunet/node_masamune/commit/8bb1a74be569e700b9a937ebd8dcb19f8da37731))
+
+
+
 ## [2.6.3](https://github.com/mathrunet/node_masamune/compare/v2.6.2...v2.6.3) (2024-06-13)
 
 
