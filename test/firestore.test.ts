@@ -79,7 +79,7 @@ describe("Firestore Test", () => {
                 targetCollectionPath: `${sourceCollectionPath}/${sourceData.uid}/user`,
                 targetTokenField: {
                     key: "user",
-                    field: {key: "token"},
+                    reference: {key: "token"},
                 },
                 responseTokenList: true,
             },
@@ -109,7 +109,7 @@ describe("Firestore Test", () => {
                 targetCollectionPath: `${sourceCollectionPath}/${sourceData.uid}/user`,
                 targetTokenField: {
                     key: "user",
-                    field: {key: "token"},
+                    reference: {key: "token"},
                 },
                 targetConditions: [
                     {

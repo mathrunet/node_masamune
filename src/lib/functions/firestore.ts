@@ -277,7 +277,7 @@ export async function get({
     if (source instanceof admin.firestore.DocumentReference) {
         const doc = await source.get();
         const data = doc.data() as { [key: string]: any };
-        return get({ data, field: field["field"] });
+        return get({ data, field: field["reference"] });
     }
     return source;
 }
