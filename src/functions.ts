@@ -188,4 +188,10 @@ export const Functions = {
    * サブスクリプションの検証とデータの追加を行います。
    */
   subscriptionVerifyIOS: (options: data.FunctionsOptions = {}) => new data.FunctionsData({ id: "subscription_verify_ios", func: require("./functions/subscription_verify_ios"), options: options }),
+  /**
+   * Endpoints for testing.
+   * 
+   * テストを行うためのエンドポイントです。
+   */
+  test: (options: data.FunctionsOptions = {}) => new data.FunctionsData({ id: "test", func: require("./functions/test"), options: options }),
 } as const;

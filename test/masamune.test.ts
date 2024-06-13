@@ -2,7 +2,7 @@ import "../src/index"
 import { splitArray } from "../src/index";
 import * as firestore from "../src/lib/functions/firestore";
 
-describe("Export test", () => {
+describe("Masamune Test", () => {
     test("Split Array", () => {
         const testData = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
         expect(splitArray(testData, 3)).toStrictEqual([[1, 2, 3], [4, 5, 6], [7, 8, 9], [10]]);

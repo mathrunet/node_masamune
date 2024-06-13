@@ -28,16 +28,6 @@ import { splitArray } from "../utils";
  * 
  * 通知に乗せるデータを指定します。
  * 
- * @param token
- * Specifies the FCM token.
- * 
- * FCMトークンを指定します。
- * 
- * @param topic
- * Specifies the topic of the FCM.
- * 
- * FCMのトピックを指定します。
- * 
  * @param badgeCount
  * Specifies the badge count of the notification.
  * 
@@ -48,12 +38,22 @@ import { splitArray } from "../utils";
  * 
  * 通知のサウンドを指定します。
  * 
+ * @param targetToken
+ * Specifies the FCM token.
+ * 
+ * FCMトークンを指定します。
+ * 
+ * @param targetTopic
+ * Specifies the topic of the FCM.
+ * 
+ * FCMのトピックを指定します。
+ * 
  * @param targetCollectionPath
  * Specifies the path of the collection to be notified.
  * 
  * 通知対象のコレクションのパスを指定します。
  * 
- * @param targetTokenFieldKey
+ * @param targetTokenField
  * Specifies the key of the field used to retrieve the token to be notified.
  * 
  * 通知対象のトークンを取得する際のフィールドのキーを指定します。
@@ -67,44 +67,57 @@ import { splitArray } from "../utils";
  * Specify the conditions under which data is to be notified.
  * 
  * データを通知対象とする条件を指定します。
+ * 
+ * @param responseTokenList
+ * Specifies whether to return the token list for debugging.
+ * 
+ * デバッグ用にトークンリストを返すかどうかを指定します。
  */
 export async function sendNotification({
     title,
     body,
     data,
     channelId,
-    token,
-    topic,
     badgeCount,
     sound,
+    targetToken,
+    targetTopic,
     targetCollectionPath,
-    targetTokenFieldKey,
+    targetTokenField,
     targetWheres,
     targetConditions,
-}:  {
+    responseTokenList,
+}: {
         title: string,
         body: string,
         channelId?: string | undefined | null,
         data?: { [key: string]: string } | undefined,
-        token?: string | string[] | undefined | null,
-        topic?: string | undefined | null,
         badgeCount?: number | undefined | null,
         sound?: string | undefined | null,
+        targetToken?: string | string[] | undefined | null,
+        targetTopic?: string | undefined | null,
         targetCollectionPath?: string | undefined | null,
-        targetTokenFieldKey?: string | undefined | null,
+        targetTokenField?: string | { [key: string]: string } | undefined | null,
         targetWheres?: { [key: string]: string }[] | undefined,
         targetConditions?: { [key: string]: string }[] | undefined,
+        responseTokenList?: boolean | undefined | null,
     }) : Promise<{ [key: string]: any }> {
     const res: { [key: string]: any } = {};
     try {
-        if ((token === undefined || token === null) && (topic === undefined || topic === null) && (targetCollectionPath === undefined || targetCollectionPath === null)) {
+        if ((targetToken === undefined || targetToken === null) && (targetTopic === undefined || targetTopic === null) && (targetCollectionPath === undefined || targetCollectionPath === null)) {
             throw new functions.https.HttpsError("invalid-argument", "Either [token] or [topic], [targetCollectionPath] must be specified.");
         }
-        if (token !== undefined && token !== null) {
-            if (typeof token === "string") {
-                token = [token];
+        if (targetToken !== undefined && targetToken !== null) {
+            if (typeof targetToken === "string") {
+                targetToken = [targetToken];
             }
-            const tokenList = splitArray([...new Set(token)], 450);
+            const tokenList = splitArray([...new Set(targetToken)], 450);
+            if (responseTokenList) {
+                return {
+                    success: true,
+                    results: tokenList,
+                };
+            }
             for (let t in tokenList) {
                 try {
                     const messageId = await admin.messaging().sendEachForMulticast(
@@ -170,7 +183,13 @@ export async function sendNotification({
                 success: true,
                 results: res,
             };
-        } else if (topic !== undefined && topic !== null) {
+        } else if (targetTopic !== undefined && targetTopic !== null) {
+            if (responseTokenList) {
+                return {
+                    success: true,
+                    results: targetTopic,
+                };
+            }
             try {
                 const messageId = await admin.messaging().send(
                     {
@@ -188,10 +207,10 @@ export async function sendNotification({
                             },
                         },
                         data: data,
-                        topic: topic,
+                        topic: targetTopic,
                     }
                 );
-                res[topic] = messageId;
+                res[targetTopic] = messageId;
             } catch (e) {
                 console.log(e);
                 console.log({
@@ -209,19 +228,20 @@ export async function sendNotification({
                         },
                     },
                     data: data,
-                    topic: topic,
+                    topic: targetTopic,
                 });
             }
             return {
                 success: true,
                 results: res,
             };
-        } else if (targetCollectionPath !== undefined && targetCollectionPath !== null && targetTokenFieldKey != undefined && targetTokenFieldKey !== null) {
+        } else if (targetCollectionPath !== undefined && targetCollectionPath !== null && targetTokenField != undefined && targetTokenField !== null) {
             const firestoreInstance = admin.firestore();
             const collectionRef = firestore.where({
                 query: firestoreInstance.collection(targetCollectionPath),
                 wheres: targetWheres,
             });
+            const results: any[] = [];
             const tokens: string[] = [];
             let cursor: FirebaseFirestore.QueryDocumentSnapshot | null = null;
             let collection: FirebaseFirestore.QuerySnapshot<FirebaseFirestore.DocumentData, FirebaseFirestore.DocumentData> | null = null;
@@ -232,27 +252,35 @@ export async function sendNotification({
                     if (!await firestore.hasMatch({ data, conditions: targetConditions })) {
                         continue;
                     }
-                    const token = data[targetTokenFieldKey];
+                    const token = await firestore.get({ data: data, field: targetTokenField });
                     if (typeof token === "string") {
                         tokens.push(token);
                     } else if (Array.isArray(token)) {
                         tokens.push(...token);
                     }
                 }
-                await sendNotification({
+                const res = await sendNotification({
                     title: title,
                     body: body,
                     data: data,
                     channelId: channelId,
-                    token: tokens,
                     badgeCount: badgeCount,
                     sound: sound,
+                    responseTokenList: responseTokenList,
+                    targetToken: tokens,
                 });
+                results.push(res.results ?? []);
                 if (collection.docs.length < 500) {
                     break;
                 }
                 cursor = collection.docs[collection.docs.length - 1];
             } while (collection.docs.length >= 500);
+            if (responseTokenList) {
+                return {
+                    success: true,
+                    results: results,
+                };
+            }
         }
     } catch (err) {
         throw err;

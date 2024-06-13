@@ -119,7 +119,7 @@ export async function hasMatch({
         const type = c["type"] as string | undefined | null;
         const key = c["key"] as string | undefined | null;
         const value = c["value"] as any;
-        if (type === undefined || key === undefined || type === null || key === null) {
+        if (key === undefined || key === null) {
             continue;
         }
         const source = data[key];
@@ -130,6 +130,9 @@ export async function hasMatch({
             if (!res) {
                 return false;
             }
+            continue;
+        }
+        if (type === undefined || type === null) {
             continue;
         }
         switch (type) {
@@ -229,6 +232,46 @@ export async function hasMatch({
 
     }
     return true;
+}
+
+/**
+ * Get the value of the specified field from the document data.
+ * 
+ * ドキュメントデータから指定されたフィールドの値を取得します。
+ * 
+ * @param data
+ * Target document data.
+ * 
+ * 対象となるドキュメントデータ。
+ * 
+ * @param field
+ * Specifies the field to be retrieved.
+ * 
+ * 取得するフィールドを指定します。
+ * 
+ * @returns
+ * Returns the value of the specified field.
+ * 
+ * 指定されたフィールドの値を返します。 
+ */
+export async function get({
+    data,
+    field,
+}: {
+    data: { [key: string]: any },
+    field: { [key: string]: any } | string,
+}): Promise<any> {
+    if (typeof field === "string") {
+        return data[field];
+    }
+    const key = field["key"];
+    const source = data[key];
+    if (source instanceof admin.firestore.DocumentReference) {
+        const doc = await source.get();
+        const data = doc.data() as { [key: string]: any };
+        return get({ data, field: field["field"] });
+    }
+    return source;
 }
 
 /**

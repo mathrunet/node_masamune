@@ -47,12 +47,12 @@ module.exports = (
                         const body = priParams["text"] as string;
                         const channelId = priParams["channel"] as string | undefined | null;
                         const data = priParams["data"] as { [key: string]: any } | undefined;
-                        const token = priParams["token"] as string | string[] | undefined | null;
-                        const topic = priParams["topic"] as string | undefined | null;
                         const badgeCount = priParams["badgeCount"] as number | undefined | null;
                         const sound = priParams["sound"] as string | undefined | null;
+                        const targetToken = priParams["targetToken"] as string | string[] | undefined | null;
+                        const targetTopic = priParams["targetTopic"] as string | undefined | null;
                         const targetCollectionPath = priParams["targetCollectionPath"] as string | undefined | null;
-                        const targetTokenFieldKey = priParams["targetTokenFieldKey"] as string | undefined | null;
+                        const targetTokenField = priParams["targetTokenField"] as string | { [key: string]: string } | undefined | null;
                         const targetWheres = priParams["targetWheres"] as { [key: string]: string }[] | undefined;
                         const targetConditions = priParams["targetConditions"] as { [key: string]: string }[] | undefined;
                         const response = await sendNotification({
@@ -60,12 +60,12 @@ module.exports = (
                             body: body,
                             channelId: channelId,
                             data: data,
-                            token: token,
-                            topic: topic,
                             badgeCount: badgeCount,
                             sound: sound,
+                            targetToken: targetToken,
+                            targetTopic: targetTopic,
                             targetCollectionPath: targetCollectionPath,
-                            targetTokenFieldKey: targetTokenFieldKey,
+                            targetTokenField: targetTokenField,
                             targetWheres: targetWheres,
                             targetConditions: targetConditions,
                         });

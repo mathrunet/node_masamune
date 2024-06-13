@@ -27,16 +27,6 @@ import { HttpFunctionsOptions } from "../lib/src/functions_base";
  * 
  * 通知に乗せるデータを指定します。
  * 
- * @param token
- * Specifies the FCM token.
- * 
- * FCMトークンを指定します。
- * 
- * @param topic
- * Specifies the topic of the FCM.
- * 
- * FCMのトピックを指定します。
- * 
  * @param badgeCount
  * Specifies the badge count of the notification.
  * 
@@ -47,12 +37,22 @@ import { HttpFunctionsOptions } from "../lib/src/functions_base";
  * 
  * 通知のサウンドを指定します。
  * 
+ * @param targetToken
+ * Specifies the FCM token.
+ * 
+ * FCMトークンを指定します。
+ * 
+ * @param targetTopic
+ * Specifies the topic of the FCM.
+ * 
+ * FCMのトピックを指定します。
+ * 
  * @param targetCollectionPath
  * Specifies the path of the collection to be notified.
  * 
  * 通知対象のコレクションのパスを指定します。
  * 
- * @param targetTokenFieldKey
+ * @param targetTokenField
  * Specifies the key of the field used to retrieve the token to be notified.
  * 
  * 通知対象のトークンを取得する際のフィールドのキーを指定します。
@@ -66,6 +66,11 @@ import { HttpFunctionsOptions } from "../lib/src/functions_base";
  * Specify the conditions under which data is to be notified.
  * 
  * データを通知対象とする条件を指定します。
+ * 
+ * @param responseTokenList
+ * Specifies whether to return the token list for debugging.
+ * 
+ * デバッグ用にトークンリストを返すかどうかを指定します。
  */
 module.exports = (
     regions: string[],
@@ -86,14 +91,15 @@ module.exports = (
             const body = query.data.body as string | undefined | null;
             const channelId = query.data.channel_id as string | undefined | null;
             const data = query.data.data as { [key: string]: string } | undefined;
-            const token = query.data.token as string | string[] | undefined | null;
-            const topic = query.data.topic as string | undefined | null;
             const sound = query.data.sound as string | undefined | null;
             const badgeCount = query.data.badgeCount as number | undefined | null;
+            const targetToken = query.data.targetToken as string | string[] | undefined | null;
+            const targetTopic = query.data.targetTopic as string | undefined | null;
             const targetCollectionPath = query.data.targetCollectionPath as string | undefined | null;
-            const targetTokenFieldKey = query.data.targetTokenFieldKey as string | undefined | null;
+            const targetTokenField = query.data.targetTokenField as string | { [key: string]: string } | undefined | null;
             const targetWheres = query.data.targetWheres as { [key: string]: string }[] | undefined;
             const targetConditions = query.data.targetConditions as { [key: string]: string }[] | undefined;
+            const responseTokenList = query.data.responseTokenList as boolean | undefined;
             if (!title || !body) {
                 throw new functions.https.HttpsError("invalid-argument", "Query parameter is invalid.");
             }
@@ -102,14 +108,15 @@ module.exports = (
                 body: body,
                 channelId: channelId,
                 data: data,
-                token: token,
-                topic: topic,
                 badgeCount: badgeCount,
                 sound: sound,
+                targetToken: targetToken,
+                targetTopic: targetTopic,
                 targetCollectionPath: targetCollectionPath,
-                targetTokenFieldKey: targetTokenFieldKey,
+                targetTokenField: targetTokenField,
                 targetWheres: targetWheres,
                 targetConditions: targetConditions,
+                responseTokenList: responseTokenList,
             });
             return res;
         } catch (err) {
