@@ -1,3 +1,16 @@
+## [2.6.6](https://github.com/mathrunet/node_masamune/compare/v2.6.5...v2.6.6) (2024-07-08)
+
+
+### chore
+
+* Output the error contents. ([1d394b3](https://github.com/mathrunet/node_masamune/commit/1d394b327490c8e4af9127b668257c5c74951746))
+
+### test
+
+* Conduct Firestore-related testing. ([0bd245c](https://github.com/mathrunet/node_masamune/commit/0bd245c2243cb1b59b6174f3432b4196378ae4ba))
+
+
+
 ## [2.6.5](https://github.com/mathrunet/node_masamune/compare/v2.6.4...v2.6.5) (2024-06-13)
 
 
