@@ -68,6 +68,7 @@ module.exports = (
                         break;
                 }
                 if (res !== null && Object.keys(res).length > 0) {
+                    console.log(res);
                     await doc.ref.set({
                         "_done": true,
                         ...res,
