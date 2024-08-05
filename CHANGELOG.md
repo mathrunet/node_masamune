@@ -1,3 +1,12 @@
+## [2.6.8](https://github.com/mathrunet/node_masamune/compare/v2.6.7...v2.6.8) (2024-08-05)
+
+
+### fix
+
+* Change the location of initializeApp. ([5c82d2a](https://github.com/mathrunet/node_masamune/commit/5c82d2a63ed4af60246969349236aa9f2841c8a8))
+
+
+
 ## [2.6.7](https://github.com/mathrunet/node_masamune/compare/v2.6.6...v2.6.7) (2024-08-05)
 
 
