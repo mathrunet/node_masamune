@@ -2,10 +2,6 @@ import * as functions from "firebase-functions/v2";
 import { FunctionsBase, HttpFunctionsOptions } from "./functions_base";
 import * as express from "express";
 import * as admin from "firebase-admin";
-if (admin.apps.length === 0) {
-    admin.initializeApp();
-}
-
 export { Request } from "firebase-functions/v2/https";
 export { Response } from "express";
 
@@ -44,6 +40,9 @@ export abstract class RequestProcessFunctionBase extends FunctionsBase {
     abstract id: string;
     data: { [key: string]: any } = {};
     build(regions: string[]): Function {
+        if (admin.apps.length === 0) {
+            admin.initializeApp();
+        }
         const options = this.options as HttpFunctionsOptions | undefined | null;
         return functions.https.onRequest(
             {

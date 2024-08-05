@@ -1,9 +1,6 @@
 import * as functions from "firebase-functions/v2";
 import { FunctionsBase, SchedulerFunctionsOptions } from "./functions_base";
 import * as admin from "firebase-admin";
-if (admin.apps.length === 0) {
-    admin.initializeApp();
-}
 
 /**
  * Base class for defining the data of Functions for periodic scheduled execution.
@@ -39,6 +36,9 @@ export abstract class ScheduleProcessFunctionBase extends FunctionsBase {
     abstract id: string;
     data: { [key: string]: any } = {};
     build(regions: string[]): Function {
+        if (admin.apps.length === 0) {
+            admin.initializeApp();
+        }
         const options = this.options as SchedulerFunctionsOptions | undefined | null;
         return functions.scheduler.onSchedule(
             {

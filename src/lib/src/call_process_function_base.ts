@@ -1,10 +1,6 @@
 import * as functions from "firebase-functions/v2";
 import { FunctionsBase, HttpFunctionsOptions, FunctionsOptions } from "./functions_base";
 import * as admin from "firebase-admin";
-if (admin.apps.length === 0) {
-    admin.initializeApp();
-}
-
 export { CallableRequest } from "firebase-functions/v2/https";
 
 /**
@@ -42,6 +38,9 @@ export abstract class CallProcessFunctionBase extends FunctionsBase {
     abstract id: string;
     data: { [key: string]: any } = {};
     build(regions: string[]): Function {
+        if (admin.apps.length === 0) {
+            admin.initializeApp();
+        }
         const options = this.options as HttpFunctionsOptions | undefined | null;
         return functions.https.onCall(        
             {
