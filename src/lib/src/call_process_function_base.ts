@@ -49,9 +49,6 @@ export abstract class CallProcessFunctionBase extends FunctionsBase {
                 maxInstances: options?.maxInstances,
             },
             async (query) => {
-                if (admin.apps.length === 0) {
-                    admin.initializeApp();
-                }
                 return this.process(query);
             }
         );

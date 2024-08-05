@@ -51,9 +51,6 @@ export abstract class RequestProcessFunctionBase extends FunctionsBase {
                 maxInstances: options?.maxInstances,
             },
             async (req, res) => {
-                if (admin.apps.length === 0) {
-                    admin.initializeApp();
-                }
                 return this.process(req, res);
             }
         );

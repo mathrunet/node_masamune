@@ -48,9 +48,6 @@ export abstract class ScheduleProcessFunctionBase extends FunctionsBase {
                 maxInstances: options?.maxInstances,
             },
             async (event) => {
-                if (admin.apps.length === 0) {
-                    admin.initializeApp();
-                }
                 return this.process();
             },
         );
