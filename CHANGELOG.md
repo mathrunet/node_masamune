@@ -1,3 +1,12 @@
+## [2.6.10](https://github.com/mathrunet/node_masamune/compare/v2.6.9...v2.6.10) (2024-08-05)
+
+
+### fix
+
+* The problem with InitializeApp ended up being somewhere else, so we put it back. ([7cefd39](https://github.com/mathrunet/node_masamune/commit/7cefd39071c4d5fa43b01bd7744a91a101db5a04))
+
+
+
 ## [2.6.9](https://github.com/mathrunet/node_masamune/compare/v2.6.8...v2.6.9) (2024-08-05)
 
 
