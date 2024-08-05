@@ -36,9 +36,6 @@ export abstract class ScheduleProcessFunctionBase extends FunctionsBase {
     abstract id: string;
     data: { [key: string]: any } = {};
     build(regions: string[]): Function {
-        if (admin.apps.length === 0) {
-            admin.initializeApp();
-        }
         const options = this.options as SchedulerFunctionsOptions | undefined | null;
         return functions.scheduler.onSchedule(
             {
@@ -51,6 +48,9 @@ export abstract class ScheduleProcessFunctionBase extends FunctionsBase {
                 maxInstances: options?.maxInstances,
             },
             async (event) => {
+                if (admin.apps.length === 0) {
+                    admin.initializeApp();
+                }
                 return this.process();
             },
         );

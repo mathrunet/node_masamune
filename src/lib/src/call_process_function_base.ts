@@ -38,9 +38,6 @@ export abstract class CallProcessFunctionBase extends FunctionsBase {
     abstract id: string;
     data: { [key: string]: any } = {};
     build(regions: string[]): Function {
-        if (admin.apps.length === 0) {
-            admin.initializeApp();
-        }
         const options = this.options as HttpFunctionsOptions | undefined | null;
         return functions.https.onCall(        
             {
@@ -52,6 +49,9 @@ export abstract class CallProcessFunctionBase extends FunctionsBase {
                 maxInstances: options?.maxInstances,
             },
             async (query) => {
+                if (admin.apps.length === 0) {
+                    admin.initializeApp();
+                }
                 return this.process(query);
             }
         );

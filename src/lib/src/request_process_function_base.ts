@@ -40,9 +40,6 @@ export abstract class RequestProcessFunctionBase extends FunctionsBase {
     abstract id: string;
     data: { [key: string]: any } = {};
     build(regions: string[]): Function {
-        if (admin.apps.length === 0) {
-            admin.initializeApp();
-        }
         const options = this.options as HttpFunctionsOptions | undefined | null;
         return functions.https.onRequest(
             {
@@ -54,6 +51,9 @@ export abstract class RequestProcessFunctionBase extends FunctionsBase {
                 maxInstances: options?.maxInstances,
             },
             async (req, res) => {
+                if (admin.apps.length === 0) {
+                    admin.initializeApp();
+                }
                 return this.process(req, res);
             }
         );
