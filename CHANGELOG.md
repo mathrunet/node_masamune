@@ -1,3 +1,12 @@
+## [2.6.7](https://github.com/mathrunet/node_masamune/compare/v2.6.6...v2.6.7) (2024-08-05)
+
+
+### fix
+
+* Firebase is now initialized. ([9cc8a3e](https://github.com/mathrunet/node_masamune/commit/9cc8a3eb26cf8448cad405c61145c2538d371bd8))
+
+
+
 ## [2.6.6](https://github.com/mathrunet/node_masamune/compare/v2.6.5...v2.6.6) (2024-07-08)
 
 
