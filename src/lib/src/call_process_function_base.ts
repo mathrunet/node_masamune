@@ -1,5 +1,10 @@
 import * as functions from "firebase-functions/v2";
 import { FunctionsBase, HttpFunctionsOptions, FunctionsOptions } from "./functions_base";
+import * as admin from "firebase-admin";
+if (admin.apps.length === 0) {
+    admin.initializeApp();
+}
+
 export { CallableRequest } from "firebase-functions/v2/https";
 
 /**

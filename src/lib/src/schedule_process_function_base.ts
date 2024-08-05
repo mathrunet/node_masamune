@@ -1,5 +1,9 @@
 import * as functions from "firebase-functions/v2";
 import { FunctionsBase, SchedulerFunctionsOptions } from "./functions_base";
+import * as admin from "firebase-admin";
+if (admin.apps.length === 0) {
+    admin.initializeApp();
+}
 
 /**
  * Base class for defining the data of Functions for periodic scheduled execution.

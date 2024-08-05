@@ -41,7 +41,9 @@ export * as notification from "./lib/functions/send_notification";
  * pub/subで用いるトピック名やスケジュールの長さなどを指定します。
  */
 export function deploy(exports: any, region: regions.Regions, deployFunctions: base.FunctionsBase[]) {
-    admin.initializeApp();
+    if (admin.apps.length === 0) {
+        admin.initializeApp();
+    }
     for (const func of deployFunctions) {
         if (!process.env.FUNCTION_NAME || process.env.FUNCTION_NAME === func.id) {
             exports[func.id] = func.build(region);
