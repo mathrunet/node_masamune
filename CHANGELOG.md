@@ -1,3 +1,12 @@
+## [2.6.9](https://github.com/mathrunet/node_masamune/compare/v2.6.8...v2.6.9) (2024-08-05)
+
+
+### fix
+
+* Corrected the position again. ([8cbd924](https://github.com/mathrunet/node_masamune/commit/8cbd924b9bb558843dde97cb32fbdd0cc77f62a9))
+
+
+
 ## [2.6.8](https://github.com/mathrunet/node_masamune/compare/v2.6.7...v2.6.8) (2024-08-05)
 
 
