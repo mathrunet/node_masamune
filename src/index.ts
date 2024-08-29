@@ -8,6 +8,7 @@ export * from "./lib/src/sql_api_base";
 export * from "./lib/src/schedule_process_function_base";
 export * from "./lib/src/request_process_function_base";
 export * from "./lib/src/call_process_function_base";
+export * from "./lib/src/firestore_triggered_process_function_base";
 export * from "./lib/model_field_value/model_field_value";
 export * from "./lib/utils";
 export * from "./lib/exntensions/string.extension";
