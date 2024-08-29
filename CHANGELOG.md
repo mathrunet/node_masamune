@@ -1,3 +1,12 @@
+# [2.7.0](https://github.com/mathrunet/node_masamune/compare/v2.6.10...v2.7.0) (2024-08-29)
+
+
+### fix
+
+* Added base class for Firestore trigger. ([b71e3e9](https://github.com/mathrunet/node_masamune/commit/b71e3e9cebf82736df2d88ee92e6631cd479661d))
+
+
+
 ## [2.6.10](https://github.com/mathrunet/node_masamune/compare/v2.6.9...v2.6.10) (2024-08-05)
 
 
