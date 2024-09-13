@@ -44,6 +44,7 @@ export async function notification({
     const targetToken = params["targetToken"] as string | string[] | undefined | null;
     const targetTopic = params["targetTopic"] as string | undefined | null;
     const targetCollectionPath = params["targetCollectionPath"] as string | undefined | null;
+    const targetDocumentPath = params["targetDocumentPath"] as string | undefined | null;
     const targetTokenField = params["targetTokenField"] as string | { [key: string]: any } | undefined | null;
     const targetWheres = params["targetWheres"] as { [key: string]: any }[] | undefined;
     const targetConditions = params["targetConditions"] as { [key: string]: any }[] | undefined;
@@ -58,6 +59,7 @@ export async function notification({
         targetToken: targetToken,
         targetTopic: targetTopic,
         targetCollectionPath: targetCollectionPath,
+        targetDocumentPath: targetDocumentPath,
         targetTokenField: targetTokenField,
         targetWheres: targetWheres,
         targetConditions: targetConditions,

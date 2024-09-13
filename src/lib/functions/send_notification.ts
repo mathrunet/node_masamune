@@ -53,6 +53,11 @@ import { splitArray } from "../utils";
  * 
  * 通知対象のコレクションのパスを指定します。
  * 
+ * @param targetDocumentPath
+ * Specifies the path of the document to be notified.
+ * 
+ * 通知対象のドキュメントのパスを指定します。
+ * 
  * @param targetTokenField
  * Specifies the key of the field used to retrieve the token to be notified.
  * 
@@ -83,6 +88,7 @@ export async function sendNotification({
     targetToken,
     targetTopic,
     targetCollectionPath,
+    targetDocumentPath,
     targetTokenField,
     targetWheres,
     targetConditions,
@@ -97,6 +103,7 @@ export async function sendNotification({
         targetToken?: string | string[] | undefined | null,
         targetTopic?: string | undefined | null,
         targetCollectionPath?: string | undefined | null,
+        targetDocumentPath?: string | undefined | null,
         targetTokenField?: string | { [key: string]: any } | undefined | null,
         targetWheres?: { [key: string]: any }[] | undefined,
         targetConditions?: { [key: string]: any }[] | undefined,
@@ -104,8 +111,8 @@ export async function sendNotification({
     }) : Promise<{ [key: string]: any }> {
     const res: { [key: string]: any } = {};
     try {
-        if ((targetToken === undefined || targetToken === null) && (targetTopic === undefined || targetTopic === null) && (targetCollectionPath === undefined || targetCollectionPath === null)) {
-            throw new functions.https.HttpsError("invalid-argument", "Either [token] or [topic], [targetCollectionPath] must be specified.");
+        if ((targetToken === undefined || targetToken === null) && (targetTopic === undefined || targetTopic === null) && (targetCollectionPath === undefined || targetCollectionPath === null) && (targetDocumentPath === undefined || targetDocumentPath === null)) {
+            throw new functions.https.HttpsError("invalid-argument", "Either [token] or [topic], [targetCollectionPath], [targetDocumentPath] must be specified.");
         }
         if (targetToken !== undefined && targetToken !== null) {
             if (typeof targetToken === "string") {
@@ -275,6 +282,40 @@ export async function sendNotification({
                 }
                 cursor = collection.docs[collection.docs.length - 1];
             } while (collection.docs.length >= 500);
+            if (responseTokenList) {
+                return {
+                    success: true,
+                    results: results,
+                };
+            }
+        } else if (targetDocumentPath !== undefined && targetDocumentPath !== null && targetTokenField != undefined && targetTokenField !== null) {
+            const firestoreInstance = admin.firestore();
+            const documentRef = firestoreInstance.doc(targetDocumentPath);
+            const results: any[] = [];
+            const doc = await documentRef.get();
+            const data = doc.data();
+            if (data) {
+                if (await firestore.hasMatch({ data, conditions: targetConditions })) {
+                    const token = await firestore.get({ data: data, field: targetTokenField });
+                    const tokens: string[] = [];
+                    if (typeof token === "string") {
+                        tokens.push(token);
+                    } else if (Array.isArray(token)) {
+                        tokens.push(...token);
+                    }
+                    const res = await sendNotification({
+                        title: title,
+                        body: body,
+                        data: data,
+                        channelId: channelId,
+                        badgeCount: badgeCount,
+                        sound: sound,
+                        responseTokenList: responseTokenList,
+                        targetToken: tokens,
+                    });
+                    results.push(res.results ?? []);
+                }
+            }
             if (responseTokenList) {
                 return {
                     success: true,
