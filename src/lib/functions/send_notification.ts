@@ -115,6 +115,7 @@ export async function sendNotification({
             throw new functions.https.HttpsError("invalid-argument", "Either [token] or [topic], [targetCollectionPath], [targetDocumentPath] must be specified.");
         }
         if (targetToken !== undefined && targetToken !== null) {
+            console.log(`token send ${targetToken}`);
             if (typeof targetToken === "string") {
                 targetToken = [targetToken];
             }
@@ -127,6 +128,7 @@ export async function sendNotification({
             }
             for (let t in tokenList) {
                 try {
+                    console.log(`send send`);
                     const messageId = await admin.messaging().sendEachForMulticast(
                         {
                             notification: {
@@ -294,13 +296,13 @@ export async function sendNotification({
             const documentRef = firestoreInstance.doc(targetDocumentPath);
             const results: any[] = [];
             const doc = await documentRef.get();
-            const data = doc.data();
-            console.log(data);
-            if (data) {
+            const docData = doc.data();
+            console.log(docData);
+            if (docData) {
                 console.log(`exist data ${targetConditions}`);
-                if (await firestore.hasMatch({ data, conditions: targetConditions })) {
+                if (await firestore.hasMatch({ data: docData, conditions: targetConditions })) {
                     console.log(`match condition ${targetTokenField}`);
-                    const token = await firestore.get({ data: data, field: targetTokenField });
+                    const token = await firestore.get({ data: docData, field: targetTokenField });
                     console.log(`get token ${token}`);
                     const tokens: string[] = [];
                     if (typeof token === "string") {
