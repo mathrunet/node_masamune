@@ -1,3 +1,12 @@
+## [2.8.3](https://github.com/mathrunet/node_masamune/compare/v2.8.2...v2.8.3) (2024-09-13)
+
+
+### chore
+
+* Comments back. ([c792490](https://github.com/mathrunet/node_masamune/commit/c79249018320f02f965037e99120157892a4aa07))
+
+
+
 ## [2.8.2](https://github.com/mathrunet/node_masamune/compare/v2.8.1...v2.8.2) (2024-09-13)
 
 
