@@ -1,3 +1,12 @@
+# [2.8.0](https://github.com/mathrunet/node_masamune/compare/v2.7.0...v2.8.0) (2024-09-13)
+
+
+### feat
+
+* Added notification schedule for documents. ([1663136](https://github.com/mathrunet/node_masamune/commit/1663136faa20be0c95037ea048a89d5ec1d9224f))
+
+
+
 # [2.7.0](https://github.com/mathrunet/node_masamune/compare/v2.6.10...v2.7.0) (2024-08-29)
 
 
