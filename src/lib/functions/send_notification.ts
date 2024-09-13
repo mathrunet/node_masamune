@@ -289,20 +289,26 @@ export async function sendNotification({
                 };
             }
         } else if (targetDocumentPath !== undefined && targetDocumentPath !== null && targetTokenField != undefined && targetTokenField !== null) {
+            console.log("document");
             const firestoreInstance = admin.firestore();
             const documentRef = firestoreInstance.doc(targetDocumentPath);
             const results: any[] = [];
             const doc = await documentRef.get();
             const data = doc.data();
+            console.log(data);
             if (data) {
+                console.log(`exist data ${targetConditions}`);
                 if (await firestore.hasMatch({ data, conditions: targetConditions })) {
+                    console.log(`match condition ${targetTokenField}`);
                     const token = await firestore.get({ data: data, field: targetTokenField });
+                    console.log(`get token ${token}`);
                     const tokens: string[] = [];
                     if (typeof token === "string") {
                         tokens.push(token);
                     } else if (Array.isArray(token)) {
                         tokens.push(...token);
                     }
+                    console.log(`send ${title} ${body} ${tokens}`);
                     const res = await sendNotification({
                         title: title,
                         body: body,
@@ -313,6 +319,7 @@ export async function sendNotification({
                         responseTokenList: responseTokenList,
                         targetToken: tokens,
                     });
+                    console.log(`sent ${title} ${body} ${tokens}`);
                     results.push(res.results ?? []);
                 }
             }
