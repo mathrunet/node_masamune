@@ -25,7 +25,7 @@ export abstract class RequestProcessFunctionBase extends FunctionsBase {
      * 
      * 実際の処理の中身を指定します。
      * 
-     * @param reqest
+     * @param request
      * Request passed to Functions.
      * 
      * Functionsに渡されたRequest。
@@ -35,7 +35,7 @@ export abstract class RequestProcessFunctionBase extends FunctionsBase {
      * 
      * Functionsに渡されたResponse。
      */
-    abstract process(reqest: functions.https.Request, response: express.Response<any>): Promise<void>;
+    abstract process(request: functions.https.Request, response: express.Response<any>): Promise<void>;
 
     abstract id: string;
     data: { [key: string]: any } = {};
