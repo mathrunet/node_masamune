@@ -142,6 +142,34 @@ export interface PathFunctionsOptions extends FunctionsOptions {
  * 
  * 処理のオプションを指定します。
  */
+export interface DatabasePathFunctionsOptions extends FunctionsOptions {
+    /**
+     * Specify the path to the target database.
+     * 
+     * 対象のデータベースのパスを指定します。
+     */
+    path?: string | undefined | null;
+
+    /**
+     * Specifies the database.
+     * 
+     * データベースを指定します。
+     */
+    database?: string | undefined | null;
+
+    /**
+     * Specifies an alternate region.
+     * 
+     * 代替のリージョンを指定します。
+     */
+    region?: string | null;
+}
+
+/**
+ * Specifies the options for the process.
+ * 
+ * 処理のオプションを指定します。
+ */
 export interface RelationPathFunctionsOptions extends FunctionsOptions {
     /**
      * Specify the path to the target database.

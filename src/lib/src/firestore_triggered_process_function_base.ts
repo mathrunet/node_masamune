@@ -1,5 +1,5 @@
 import * as functions from "firebase-functions/v2";
-import { FunctionsBase, PathFunctionsOptions } from "./functions_base";
+import { DatabasePathFunctionsOptions, FunctionsBase } from "./functions_base";
 import * as admin from "firebase-admin";
 
 /**
@@ -13,7 +13,7 @@ export abstract class FirestoreTriggeredProcessFunctionBase extends FunctionsBas
      * 
      * Firestoreのトリガー用のFunctionのデータを定義するためのベースクラス。
      */
-    constructor(options: PathFunctionsOptions = {}) {
+    constructor(options: DatabasePathFunctionsOptions = {}) {
         super({ options: options });
     }
 
@@ -27,6 +27,13 @@ export abstract class FirestoreTriggeredProcessFunctionBase extends FunctionsBas
     abstract path: string;
 
     /**
+     * Specifies the database.
+     * 
+     * データベースを指定します。
+     */
+    database: string | undefined | null = undefined;
+
+    /**
      * Specify the actual contents of the process.
      * 
      * 実際の処理の中身を指定します。
@@ -36,9 +43,12 @@ export abstract class FirestoreTriggeredProcessFunctionBase extends FunctionsBas
     abstract id: string;
     data: { [key: string]: any } = {};
     build(regions: string[]): Function {
-        const options = this.options as PathFunctionsOptions | undefined | null;
+        const options = this.options as DatabasePathFunctionsOptions | undefined | null;
         return functions.firestore.onDocumentWritten(
-            options?.path ?? this.path,
+            {
+                document: options?.path ?? this.path,
+                database: options?.database ?? this.database ?? undefined,
+            },
             async (event) => {
                 return this.process(event);
             },
