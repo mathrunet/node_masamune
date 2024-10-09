@@ -1,3 +1,13 @@
+## [2.8.4](https://github.com/mathrunet/node_masamune/compare/v2.8.3...v2.8.4) (2024-10-09)
+
+
+### fix
+
+* DatabaseId can be specified in FirestoreTriggeredProcessFunctionBase. ([44c56e4](https://github.com/mathrunet/node_masamune/commit/44c56e42de16b328b2639e41af68e256fa36e73f))
+* Fix typo. ([a7a55bb](https://github.com/mathrunet/node_masamune/commit/a7a55bb4b3d3df021d192a9fa811c7506aa4bd81))
+
+
+
 ## [2.8.3](https://github.com/mathrunet/node_masamune/compare/v2.8.2...v2.8.3) (2024-09-13)
 
 
