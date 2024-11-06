@@ -270,17 +270,14 @@ export async function get({
     data: { [key: string]: any },
     field: { [key: string]: any } | string,
     }): Promise<any> {
-    console.log(`Get Field ${field}`);
     if (typeof field === "string") {
         return data[field];
     }
     const key = field["key"];
     const source = data[key];
-    console.log(`Get Ref field ${key} ${source}`);
     if (source instanceof admin.firestore.DocumentReference) {
         const doc = await source.get();
         const data = doc.data() as { [key: string]: any };
-        console.log(`Get Ref data ${JSON.stringify(data)} @ ${field["value"]}` );
         return get({ data, field: field["value"] });
     }
     return source;
