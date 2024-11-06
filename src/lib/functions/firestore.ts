@@ -120,29 +120,22 @@ export async function hasMatch({
         const type = c["type"] as string | undefined | null;
         const key = c["key"] as string | undefined | null;
         const value = c["value"] as any;
-        console.log(`Match ${key} ${type} ${value}`);
         if (key === undefined || key === null) {
             continue;
         }
         const source = data[key];
-        console.log(`Source ${source}`);
         if (source instanceof admin.firestore.DocumentReference) {
-            console.log(`Reference ${source}`);
             const doc = await source.get();
             const data = doc.data() as { [key: string]: any };
             console.log(`Reference data ${JSON.stringify(data)}`);
             if (Array.isArray(value)) {
-                console.log(`Reference data value is array`);
                 const res = await hasMatch({ data, conditions: value });
-                console.log(`Reference data value is array res: ${res}`);
                 if (!res) {
                     return false;
                 }
                 continue;
             } else if (_isObject(value)) {
-                console.log(`Reference data value is object`);
                 const res = await hasMatch({ data, conditions: [value as { [key: string]: any }] });
-                console.log(`Reference data value is object res: ${res}`);
                 if (!res) {
                     return false;
                 }
@@ -154,7 +147,6 @@ export async function hasMatch({
         }
         switch (type) {
             case "equalTo":
-                console.log(`equalTo ${source} ${value}`);
                 if (value === undefined || value === null) {
                     continue;
                 }
@@ -163,7 +155,6 @@ export async function hasMatch({
                 }
                 break;
             case "notEqualTo":
-                console.log(`notequalTo ${source} ${value}`);
                 if (value === undefined || value === null) {
                     continue;
                 }
@@ -172,7 +163,6 @@ export async function hasMatch({
                 }
                 break;            
             case "lessThan":
-                console.log(`lessThan ${source} ${value}`);
                 if (value === undefined || value === null || typeof source !== "number" || typeof value !== "number") {
                     continue;
                 }
@@ -181,7 +171,6 @@ export async function hasMatch({
                 }
                 break;
             case "greaterThan":
-                console.log(`greaterThan ${source} ${value}`);
                 if (value === undefined || value === null || typeof source !== "number" || typeof value !== "number") {
                     continue;
                 }
@@ -190,7 +179,6 @@ export async function hasMatch({
                 }
                 break;
             case "lessThanOrEqualTo":
-                console.log(`lessThanOrEqualTo ${source} ${value}`);
                 if (value === undefined || value === null || typeof source !== "number" || typeof value !== "number") {
                     continue;
                 }
@@ -199,7 +187,6 @@ export async function hasMatch({
                 }
                 break;
             case "greaterThanOrEqualTo":
-                console.log(`greaterThanOrEqualTo ${source} ${value}`);
                 if (value === undefined || value === null || typeof source !== "number" || typeof value !== "number") {
                     continue;
                 }
@@ -208,7 +195,6 @@ export async function hasMatch({
                 }
                 break;
             case "arrayContains":
-                console.log(`arrayContains ${source} ${value}`);
                 if (value === undefined || value === null || !Array.isArray(source)) {
                     continue;
                 }
@@ -217,7 +203,6 @@ export async function hasMatch({
                 }
                 break;
             case "arrayContainsAny":
-                console.log(`arrayContainsAny ${source} ${value}`);
                 if (value === undefined || value === null || !Array.isArray(source) || !Array.isArray(value)) {
                     continue;
                 }
@@ -226,7 +211,6 @@ export async function hasMatch({
                 }
                 break;
             case "whereIn":
-                console.log(`whereIn ${source} ${value}`);
                 if (value === undefined || value === null || !Array.isArray(value)) {
                     continue;
                 }
@@ -235,7 +219,6 @@ export async function hasMatch({
                 }
                 break;
             case "whereNotIn":
-                console.log(`whereNotIn ${source} ${value}`);
                 if (value === undefined || value === null || !Array.isArray(value)) {
                     continue;
                 }
@@ -244,13 +227,11 @@ export async function hasMatch({
                 }
                 break;
             case "isNull":
-                console.log(`isNull ${source} ${value}`);
                 if (source !== undefined && source !== null) {
                     return false;
                 }
                 break;
             case "isNotNull":
-                console.log(`isNotNull ${source} ${value}`);
                 if (!(source !== undefined && source !== null)) {
                     return false;
                 }
@@ -258,9 +239,7 @@ export async function hasMatch({
             default:
                 break;
         }
-
     }
-    console.log(`Result true`);
     return true;
 }
 
@@ -290,16 +269,19 @@ export async function get({
 }: {
     data: { [key: string]: any },
     field: { [key: string]: any } | string,
-}): Promise<any> {
+    }): Promise<any> {
+    console.log(`Get Field ${field}`);
     if (typeof field === "string") {
         return data[field];
     }
     const key = field["key"];
     const source = data[key];
+    console.log(`Get Ref field ${key} ${source}`);
     if (source instanceof admin.firestore.DocumentReference) {
         const doc = await source.get();
         const data = doc.data() as { [key: string]: any };
-        return get({ data, field: field["reference"] });
+        console.log(`Get Ref data ${JSON.stringify(data)} @ ${field["value"]}` );
+        return get({ data, field: field["value"] });
     }
     return source;
 }

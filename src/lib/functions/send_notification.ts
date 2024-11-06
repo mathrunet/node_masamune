@@ -94,21 +94,21 @@ export async function sendNotification({
     targetConditions,
     responseTokenList,
 }: {
-        title: string,
-        body: string,
-        channelId?: string | undefined | null,
-        data?: { [key: string]: any } | undefined,
-        badgeCount?: number | undefined | null,
-        sound?: string | undefined | null,
-        targetToken?: string | string[] | undefined | null,
-        targetTopic?: string | undefined | null,
-        targetCollectionPath?: string | undefined | null,
-        targetDocumentPath?: string | undefined | null,
-        targetTokenField?: string | { [key: string]: any } | undefined | null,
-        targetWheres?: { [key: string]: any }[] | undefined,
-        targetConditions?: { [key: string]: any }[] | undefined,
-        responseTokenList?: boolean | undefined | null,
-    }) : Promise<{ [key: string]: any }> {
+    title: string,
+    body: string,
+    channelId?: string | undefined | null,
+    data?: { [key: string]: any } | undefined,
+    badgeCount?: number | undefined | null,
+    sound?: string | undefined | null,
+    targetToken?: string | string[] | undefined | null,
+    targetTopic?: string | undefined | null,
+    targetCollectionPath?: string | undefined | null,
+    targetDocumentPath?: string | undefined | null,
+    targetTokenField?: string | { [key: string]: any } | undefined | null,
+    targetWheres?: { [key: string]: any }[] | undefined,
+    targetConditions?: { [key: string]: any }[] | undefined,
+    responseTokenList?: boolean | undefined | null,
+}): Promise<{ [key: string]: any }> {
     const res: { [key: string]: any } = {};
     try {
         if ((targetToken === undefined || targetToken === null) && (targetTopic === undefined || targetTopic === null) && (targetCollectionPath === undefined || targetCollectionPath === null) && (targetDocumentPath === undefined || targetDocumentPath === null)) {
@@ -192,7 +192,7 @@ export async function sendNotification({
                 success: true,
                 results: res,
             };
-        // トピックによる通知
+            // トピックによる通知
         } else if (targetTopic !== undefined && targetTopic !== null) {
             console.log(`Notification target topic: ${targetTopic}`);
             if (responseTokenList) {
@@ -246,9 +246,9 @@ export async function sendNotification({
                 success: true,
                 results: res,
             };
-        // コレクションパスによる通知
+            // コレクションパスによる通知
         } else if (targetCollectionPath !== undefined && targetCollectionPath !== null && targetTokenField != undefined && targetTokenField !== null) {
-            console.log(`Notification target collection path: ${targetCollectionPath}`);
+            console.log(`Notification target collection path: ${targetCollectionPath} wheres: ${JSON.stringify(targetWheres)} conditions: ${JSON.stringify(targetConditions)}`);
             const firestoreInstance = admin.firestore();
             const collectionRef = firestore.where({
                 query: firestoreInstance.collection(targetCollectionPath),
@@ -260,17 +260,13 @@ export async function sendNotification({
             let collection: FirebaseFirestore.QuerySnapshot<FirebaseFirestore.DocumentData, FirebaseFirestore.DocumentData> | null = null;
             do {
                 collection = await firestore.cursor({ query: collectionRef, limit: 500, cursor: cursor }).get();
-                console.log(`Got ${collection.docs.length} documents.`);
                 for (let doc of collection.docs) {
                     const docData = doc.data();
-                    console.log(`Data of document: ${JSON.stringify(docData)}`);
-                    console.log(`Conditions: ${JSON.stringify(targetConditions)}`);
+                    console.log(`Document: ${JSON.stringify(docData)}`);
                     if (!await firestore.hasMatch({ data: docData, conditions: targetConditions })) {
                         continue;
                     }
-                    console.log(`Get token`);
                     const token = await firestore.get({ data: docData, field: targetTokenField });
-                    console.log(`Got token ${token}`);
                     if (typeof token === "string") {
                         tokens.push(token);
                     } else if (Array.isArray(token)) {
@@ -299,15 +295,16 @@ export async function sendNotification({
                     results: results,
                 };
             }
-        // ドキュメントパスによる通知
+            // ドキュメントパスによる通知
         } else if (targetDocumentPath !== undefined && targetDocumentPath !== null && targetTokenField != undefined && targetTokenField !== null) {
-            console.log(`Notification target document path: ${targetDocumentPath}`);
+            console.log(`Notification target document path: ${targetDocumentPath} conditions: ${JSON.stringify(targetConditions)}`);
             const firestoreInstance = admin.firestore();
             const documentRef = firestoreInstance.doc(targetDocumentPath);
             const results: any[] = [];
             const doc = await documentRef.get();
             const docData = doc.data();
             if (docData) {
+                console.log(`Document: ${JSON.stringify(docData)}`);
                 if (await firestore.hasMatch({ data: docData, conditions: targetConditions })) {
                     const token = await firestore.get({ data: docData, field: targetTokenField });
                     const tokens: string[] = [];
