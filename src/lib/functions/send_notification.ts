@@ -114,7 +114,9 @@ export async function sendNotification({
         if ((targetToken === undefined || targetToken === null) && (targetTopic === undefined || targetTopic === null) && (targetCollectionPath === undefined || targetCollectionPath === null) && (targetDocumentPath === undefined || targetDocumentPath === null)) {
             throw new functions.https.HttpsError("invalid-argument", "Either [token] or [topic], [targetCollectionPath], [targetDocumentPath] must be specified.");
         }
+        // トークンによる通知
         if (targetToken !== undefined && targetToken !== null) {
+            console.log(`Notification target token: ${targetToken}`);
             if (typeof targetToken === "string") {
                 targetToken = [targetToken];
             }
@@ -190,7 +192,9 @@ export async function sendNotification({
                 success: true,
                 results: res,
             };
+        // トピックによる通知
         } else if (targetTopic !== undefined && targetTopic !== null) {
+            console.log(`Notification target topic: ${targetTopic}`);
             if (responseTokenList) {
                 return {
                     success: true,
@@ -242,7 +246,9 @@ export async function sendNotification({
                 success: true,
                 results: res,
             };
+        // コレクションパスによる通知
         } else if (targetCollectionPath !== undefined && targetCollectionPath !== null && targetTokenField != undefined && targetTokenField !== null) {
+            console.log(`Notification target collection path: ${targetCollectionPath}`);
             const firestoreInstance = admin.firestore();
             const collectionRef = firestore.where({
                 query: firestoreInstance.collection(targetCollectionPath),
@@ -254,12 +260,17 @@ export async function sendNotification({
             let collection: FirebaseFirestore.QuerySnapshot<FirebaseFirestore.DocumentData, FirebaseFirestore.DocumentData> | null = null;
             do {
                 collection = await firestore.cursor({ query: collectionRef, limit: 500, cursor: cursor }).get();
+                console.log(`Got ${collection.docs.length} documents.`);
                 for (let doc of collection.docs) {
                     const docData = doc.data();
+                    console.log(`Data of document: ${JSON.stringify(docData)}`);
+                    console.log(`Conditions: ${JSON.stringify(targetConditions)}`);
                     if (!await firestore.hasMatch({ data: docData, conditions: targetConditions })) {
                         continue;
-                    }                  
+                    }
+                    console.log(`Get token`);
                     const token = await firestore.get({ data: docData, field: targetTokenField });
+                    console.log(`Got token ${token}`);
                     if (typeof token === "string") {
                         tokens.push(token);
                     } else if (Array.isArray(token)) {
@@ -288,7 +299,9 @@ export async function sendNotification({
                     results: results,
                 };
             }
+        // ドキュメントパスによる通知
         } else if (targetDocumentPath !== undefined && targetDocumentPath !== null && targetTokenField != undefined && targetTokenField !== null) {
+            console.log(`Notification target document path: ${targetDocumentPath}`);
             const firestoreInstance = admin.firestore();
             const documentRef = firestoreInstance.doc(targetDocumentPath);
             const results: any[] = [];

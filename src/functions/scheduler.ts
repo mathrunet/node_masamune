@@ -33,7 +33,7 @@ module.exports = (
         try {
             const collectionPath = process.env.SCHEDULER_COLLECTION_PATH ?? data["path"] ?? "schedule";
             const firestoreInstance = admin.firestore();
-            console.log(`Time: ${Date.now()}`);
+            console.log(`Time: ${Date.now()} @${collectionPath}`);
             const collection = await firestoreInstance.collection(collectionPath).where("_done", "==", false).where("_time", "<=", Date.now()).orderBy("_time", "asc").get();
             console.log(`Length: ${collection.size}`);
             for (var doc of collection.docs) {
