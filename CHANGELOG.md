@@ -1,3 +1,12 @@
+## [2.8.5](https://github.com/mathrunet/node_masamune/compare/v2.8.4...v2.8.5) (2024-11-06)
+
+
+### chore
+
+* Debug. ([5c274fc](https://github.com/mathrunet/node_masamune/commit/5c274fc1e3d0f1e0f25c09904cb4aee960a27f48))
+
+
+
 ## [2.8.4](https://github.com/mathrunet/node_masamune/compare/v2.8.3...v2.8.4) (2024-10-09)
 
 
