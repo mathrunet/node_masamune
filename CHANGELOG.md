@@ -1,3 +1,12 @@
+## [2.8.8](https://github.com/mathrunet/node_masamune/compare/v2.8.7...v2.8.8) (2024-11-07)
+
+
+### fix
+
+* Billing logs are now stored. ([0e84b8d](https://github.com/mathrunet/node_masamune/commit/0e84b8d1bbf1ef4d6ea953cc88a964402b6468a5))
+
+
+
 ## [2.8.7](https://github.com/mathrunet/node_masamune/compare/v2.8.6...v2.8.7) (2024-11-06)
 
 
