@@ -53,6 +53,7 @@ module.exports = (
                 throw new functions.https.HttpsError("unauthenticated", "Illegal receipt.");
             }
             /* ==== ここまでIOS検証 ==== */
+            const info = res["latest_receipt_info"];
             if (!query.data.path || !query.data.value) {
                 throw new functions.https.HttpsError(
                     "invalid-argument", `The required parameters are not set. path: ${query.data.path} value: ${query.data.value}`,
@@ -62,6 +63,8 @@ module.exports = (
             await updater.updateWallet({
                 targetDocumentFieldPath: query.data.path,
                 value: query.data.value,
+                transactionId: info[info.length - 1]["original_transaction_id"],
+                transactionData: info[info.length - 1],
             }
             );
             /* ==== ここまでFirestoreの更新 ==== */

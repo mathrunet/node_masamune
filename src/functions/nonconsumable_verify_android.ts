@@ -95,6 +95,8 @@ module.exports = (
             /* ==== Firestoreの更新ここから ==== */
             await updater.updateUnlock({
                 targetDocumentFieldPath: query.data.path,
+                transactionId: query.data.purchaseToken,
+                transactionData: res,
             });
             /* ==== ここまでFirestoreの更新 ==== */
             return res;

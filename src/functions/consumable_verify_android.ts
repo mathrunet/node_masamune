@@ -101,6 +101,8 @@ module.exports = (
             await updater.updateWallet({
                 targetDocumentFieldPath: query.data.path,
                 value: query.data.value,
+                transactionId: query.data.purchaseToken,
+                transactionData: res,
             });
             /* ==== ここまでFirestoreの更新 ==== */
             return res;

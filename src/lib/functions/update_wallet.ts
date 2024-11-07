@@ -15,13 +15,27 @@ import * as admin from "firebase-admin";
  * Value of the amount to be added.
  * 
  * 加算する金額の値。
+ * 
+ * @param {String} transactionId
+ * Specify the ID of the log.
+ * 
+ * ログのIDを指定します。
+ * 
+ * @param {[key: string]: any} transactionData
+ * Log data to be updated.
+ * 
+ * 更新するログデータ。
  */
 export async function updateWallet({
     targetDocumentFieldPath,
     value,
+    transactionId,
+    transactionData,
 }: {
     targetDocumentFieldPath: string,
     value: number,
+    transactionId: string,
+    transactionData: { [key: string]: any },
 }) {
     const update: { [key: string]: any } = {};
     const key = path.basename( targetDocumentFieldPath );
@@ -33,6 +47,9 @@ export async function updateWallet({
     update["@uid"] = uid;
     update["@time"] = new Date();
     await firestoreInstance.doc(parent).set(update, {
+        merge: true,
+    });
+    await firestoreInstance.doc(`${parent}/transaction/${transactionId}`).set(transactionData, {
         merge: true,
     });
 }
