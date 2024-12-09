@@ -1,3 +1,12 @@
+## [2.8.9](https://github.com/mathrunet/node_masamune/compare/v2.8.8...v2.8.9) (2024-12-09)
+
+
+### feat
+
+* Add removeOnlyEmoji method to String prototype and update usage in ModelFieldValue class ([dccecf8](https://github.com/mathrunet/node_masamune/commit/dccecf844ad7602e5acedfb4653620ac80c017cb))
+
+
+
 ## [2.8.8](https://github.com/mathrunet/node_masamune/compare/v2.8.7...v2.8.8) (2024-11-07)
 
 
