@@ -77,5 +77,6 @@ describe("Masamune Test", () => {
         expect("abcde".splitByBigram()).toEqual(["ab", "bc", "cd", "de"]);
         expect("abcde".splitByCharacterAndBigram()).toEqual(["a", "b", "c", "d", "e", "ab", "bc", "cd", "de"]);
         expect("abcde".splitByTrigram()).toEqual(["abc", "bcd", "cde"]);
+        expect("😊😆".removeOnlyEmoji()).toBe("");
     });
 });

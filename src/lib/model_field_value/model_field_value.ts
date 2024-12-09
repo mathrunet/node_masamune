@@ -24,7 +24,7 @@ export class ModelFieldValue {
     }) {
         const res: { [key: string]: any } = {};
         const search: { [key: string]: boolean } = {};
-        text.toLowerCase().replace(/\./g, "").toHankakuNumericAndAlphabet().toZenkakuKatakana().toKatakana().splitByCharacterAndBigram().forEach((e) => {
+        text.toLowerCase().replace(/\./g, "").toHankakuNumericAndAlphabet().toZenkakuKatakana().toKatakana().removeOnlyEmoji().splitByCharacterAndBigram().forEach((e) => {
             const trimed = e.trim();
             if (trimed.length <= 0) {
                 return;
