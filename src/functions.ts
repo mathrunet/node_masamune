@@ -7,6 +7,12 @@ import * as data from "./lib/src/functions_data";
  */
 export const Functions = {
   /**
+   * Delete the FirebaseAuthentication user.
+   * 
+   * FirebaseAuthenticationのユーザーを削除するようにします。
+   */
+  deleteUser: (options: data.FunctionsOptions = {}) => new data.FunctionsData({ id: "delete_user", func: require("./functions/delete_user"), options: options }),
+  /**
    * When a document is deleted, the related collections should be deleted together.
    * 
    * ドキュメントが削除された場合関連するコレクションをまとめて削除するようにします。
