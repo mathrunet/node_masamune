@@ -1,3 +1,12 @@
+# [2.9.0](https://github.com/mathrunet/node_masamune/compare/v2.8.9...v2.9.0) (2024-12-16)
+
+
+### feat
+
+* Added user deletion function. ([05ce7dd](https://github.com/mathrunet/node_masamune/commit/05ce7dd2876c1bc5493916162c0d1125221aab8f))
+
+
+
 ## [2.8.9](https://github.com/mathrunet/node_masamune/compare/v2.8.8...v2.8.9) (2024-12-09)
 
 
