@@ -1,3 +1,12 @@
+# [2.10.0](https://github.com/mathrunet/node_masamune/compare/v2.9.0...v2.10.0) (2025-01-31)
+
+
+### feat
+
+* Allow service accounts to be set in the options. ([72b57c1](https://github.com/mathrunet/node_masamune/commit/72b57c10486de8509653bf68dbf3860ade18fde5))
+
+
+
 # [2.9.0](https://github.com/mathrunet/node_masamune/compare/v2.8.9...v2.9.0) (2024-12-16)
 
 
