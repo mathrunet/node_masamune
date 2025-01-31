@@ -49,6 +49,7 @@ export abstract class RequestProcessFunctionBase extends FunctionsBase {
                 minInstances: options?.minInstances,
                 concurrency: options?.concurrency,
                 maxInstances: options?.maxInstances,
+                serviceAccount: options?.serviceAccount ?? undefined,
             },
             async (req, res) => {
                 return this.process(req, res);

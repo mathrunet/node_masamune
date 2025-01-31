@@ -47,6 +47,7 @@ export abstract class CallProcessFunctionBase extends FunctionsBase {
                 minInstances: options?.minInstances,
                 concurrency: options?.concurrency,
                 maxInstances: options?.maxInstances,
+                serviceAccount: options?.serviceAccount ?? undefined,
             },
             async (query) => {
                 return this.process(query);

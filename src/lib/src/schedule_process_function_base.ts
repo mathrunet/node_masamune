@@ -46,6 +46,7 @@ export abstract class ScheduleProcessFunctionBase extends FunctionsBase {
                 minInstances: options?.minInstances,
                 concurrency: options?.concurrency,
                 maxInstances: options?.maxInstances,
+                serviceAccount: options?.serviceAccount ?? undefined,
             },
             async (event) => {
                 return this.process();

@@ -291,4 +291,11 @@ export interface FunctionsOptions {
      * メソッド名をお好みのものに変更します。
      */
     name?: string | undefined;
+
+    /**
+     * Specifies the service account.
+     * 
+     * サービスアカウントを指定します。
+     */
+    serviceAccount?: string | undefined;
 }

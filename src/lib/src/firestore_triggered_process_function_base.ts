@@ -48,6 +48,7 @@ export abstract class FirestoreTriggeredProcessFunctionBase extends FunctionsBas
             {
                 document: options?.path ?? this.path,
                 database: options?.database ?? this.database ?? undefined,
+                serviceAccount: options?.serviceAccount ?? undefined,
             },
             async (event) => {
                 return this.process(event);
