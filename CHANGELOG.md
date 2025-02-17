@@ -1,3 +1,12 @@
+# [2.12.0](https://github.com/mathrunet/node_masamune/compare/v2.11.0...v2.12.0) (2025-02-17)
+
+
+### fix
+
+* Added the ability to output FieldValue of ModelLocale. ([d6302e5](https://github.com/mathrunet/node_masamune/commit/d6302e50ab75243679b9ae0bbaa7108dfb8f888a))
+
+
+
 # [2.11.0](https://github.com/mathrunet/node_masamune/compare/v2.10.0...v2.11.0) (2025-02-17)
 
 
