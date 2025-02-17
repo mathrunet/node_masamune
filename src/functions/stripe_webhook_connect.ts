@@ -57,7 +57,7 @@ module.exports = (
       const stripeWebhookConnectSecret = process.env.PURCHASE_STRIPE_WEBHOOKCONNECTSECRET ?? "";
       const firestoreInstance = admin.firestore();
       const stripeClient = new stripe.Stripe(apiKey, {
-        apiVersion: "2023-10-16",
+        apiVersion: "2025-01-27.acacia",
       });
       const signature = req.headers["stripe-signature"];
       if (!signature) {

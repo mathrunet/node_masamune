@@ -74,7 +74,7 @@ module.exports = (
       const stripePurchasePath = process.env.PURCHASE_STRIPE_PURCHASEPATH ?? "purchase";
       const firestoreInstance = admin.firestore();
       const stripeClient = new stripe.Stripe(apiKey, {
-        apiVersion: "2023-10-16",
+        apiVersion: "2025-01-27.acacia",
       });
       const token = req.query.token;
       if (!token || typeof token !== "string") {

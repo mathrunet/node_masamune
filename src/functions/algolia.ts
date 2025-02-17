@@ -46,7 +46,7 @@ module.exports = (
             const beforeExists = event.data?.before.exists ?? false;
             const indexName = options.path?.split("/").pop() ?? "";
             console.log(`Algolia: ${process.env.ALGOLIA_APPID}`);
-            const client = algolia.default(
+            const client = algolia.algoliasearch(
                 process.env.ALGOLIA_APPID ?? "",
                 process.env.ALGOLIA_APIKEY ?? "",
             );
@@ -65,8 +65,11 @@ module.exports = (
                     "@uid": key,
                     "objectID": key,
                 };
-                const index = client.initIndex(indexName);
-                await index.saveObject(update);
+                await client.addOrUpdateObject({
+                    indexName: indexName,
+                    objectID: key,
+                    body: update,
+                });
             // update
             } else if (beforeExists && afterExists) {
                 const data = event.data?.after.data();
@@ -81,8 +84,11 @@ module.exports = (
                     "@uid": key,
                     "objectID": key,
                 };
-                const index = client.initIndex(indexName);
-                await index.saveObject(update);
+                await client.addOrUpdateObject({
+                    indexName: indexName,
+                    objectID: key,
+                    body: update,
+                });
             // delete
             } else if (beforeExists && !afterExists) {
                 const key = event.data?.after.id;
@@ -90,8 +96,10 @@ module.exports = (
                 if (!key) {
                     return;
                 }
-                const index = client.initIndex(indexName);
-                await index.deleteObject(key);
+                await client.deleteObject({
+                    indexName: indexName,
+                    objectID: key,
+                });
             }
         } catch (err) {
             console.log(err);
