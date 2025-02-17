@@ -1,3 +1,12 @@
+# [2.11.0](https://github.com/mathrunet/node_masamune/compare/v2.10.0...v2.11.0) (2025-02-17)
+
+
+### feat
+
+* Package Update. ([f66513b](https://github.com/mathrunet/node_masamune/commit/f66513bf5b510e1f9acdab0942d1a243705c9056))
+
+
+
 # [2.10.0](https://github.com/mathrunet/node_masamune/compare/v2.9.0...v2.10.0) (2025-01-31)
 
 
