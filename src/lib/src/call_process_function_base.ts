@@ -48,6 +48,8 @@ export abstract class CallProcessFunctionBase extends FunctionsBase {
                 concurrency: options?.concurrency,
                 maxInstances: options?.maxInstances,
                 serviceAccount: options?.serviceAccount ?? undefined,
+                enforceAppCheck: options?.enforceAppCheck ?? undefined,
+                consumeAppCheckToken: options?.consumeAppCheckToken ?? undefined,
             },
             async (query) => {
                 return this.process(query);

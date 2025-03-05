@@ -66,6 +66,7 @@ module.exports = (
     minInstances: options.minInstances,
     concurrency: options.concurrency,
     maxInstances: options.maxInstances,
+    serviceAccount: options.serviceAccount ?? undefined,
   },
   async (req, res) => {
     try {

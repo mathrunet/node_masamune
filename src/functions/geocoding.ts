@@ -29,6 +29,9 @@ module.exports = (
         minInstances: options.minInstances,
         concurrency: options.concurrency,
         maxInstances: options.maxInstances,
+        serviceAccount: options?.serviceAccount ?? undefined,
+        enforceAppCheck: options.enforceAppCheck ?? undefined,
+        consumeAppCheckToken: options.consumeAppCheckToken ?? undefined,
     },
     async (query) => {
         try {
