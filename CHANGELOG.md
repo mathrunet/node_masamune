@@ -1,3 +1,12 @@
+## [2.13.1](https://github.com/mathrunet/node_masamune/compare/v2.13.0...v2.13.1) (2025-03-05)
+
+
+### fix
+
+* Functions options can be specified in detail. ([efbf625](https://github.com/mathrunet/node_masamune/commit/efbf6250228cb0fc3a19e462c1bf69491abbfbc2))
+
+
+
 # [2.13.0](https://github.com/mathrunet/node_masamune/compare/v2.12.0...v2.13.0) (2025-03-05)
 
 
