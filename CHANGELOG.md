@@ -1,3 +1,12 @@
+# [2.13.0](https://github.com/mathrunet/node_masamune/compare/v2.12.0...v2.13.0) (2025-03-05)
+
+
+### feat
+
+* Introducing the AppCheck option. ([45cfda7](https://github.com/mathrunet/node_masamune/commit/45cfda7ce850ae239707d001da4fb4c75679e6de))
+
+
+
 # [2.12.0](https://github.com/mathrunet/node_masamune/compare/v2.11.0...v2.12.0) (2025-02-17)
 
 
