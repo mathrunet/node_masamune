@@ -1,3 +1,12 @@
+## [2.14.1](https://github.com/mathrunet/node_masamune/compare/v2.14.0...v2.14.1) (2025-06-12)
+
+
+### fix
+
+* Add a link to the Notification. ([94d809c](https://github.com/mathrunet/node_masamune/commit/94d809cfd46be72632ef1454cbd8214cf1174a1c))
+
+
+
 # [2.14.0](https://github.com/mathrunet/node_masamune/compare/v2.13.1...v2.14.0) (2025-06-12)
 
 
