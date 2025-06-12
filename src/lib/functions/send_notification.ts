@@ -28,6 +28,11 @@ import { splitArray } from "../utils";
  * 
  * 通知に乗せるデータを指定します。
  * 
+ * @param link
+ * Specify the link to be opened when the notification is clicked.
+ * 
+ * 通知がクリックされたときに開くリンクを指定します。
+ * 
  * @param badgeCount
  * Specifies the badge count of the notification.
  * 
@@ -82,6 +87,7 @@ export async function sendNotification({
     title,
     body,
     data,
+    link,
     channelId,
     badgeCount,
     sound,
@@ -96,6 +102,7 @@ export async function sendNotification({
 }: {
     title: string,
     body: string,
+    link?: string | undefined | null,
     channelId?: string | undefined | null,
     data?: { [key: string]: any } | undefined,
     badgeCount?: number | undefined | null,
@@ -113,6 +120,13 @@ export async function sendNotification({
     try {
         if ((targetToken === undefined || targetToken === null) && (targetTopic === undefined || targetTopic === null) && (targetCollectionPath === undefined || targetCollectionPath === null) && (targetDocumentPath === undefined || targetDocumentPath === null)) {
             throw new functions.https.HttpsError("invalid-argument", "Either [token] or [topic], [targetCollectionPath], [targetDocumentPath] must be specified.");
+        }
+        // Linkがあればdataに追加
+        if (link) {
+            data = {
+                ...data ?? {},
+                "@link": link,
+            };
         }
         // トークンによる通知
         if (targetToken !== undefined && targetToken !== null) {
