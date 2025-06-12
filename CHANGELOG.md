@@ -1,3 +1,20 @@
+# [2.14.0](https://github.com/mathrunet/node_masamune/compare/v2.13.1...v2.14.0) (2025-06-12)
+
+
+### chore
+
+* Change the copyright year. ([0f7378d](https://github.com/mathrunet/node_masamune/commit/0f7378d663ddf2cc6666a0a1a43f245a476a22f3))
+
+### docs
+
+* Add Github badge. ([e6ac32a](https://github.com/mathrunet/node_masamune/commit/e6ac32af8f1e5059e89267622589b279ff9a05fd))
+
+### feat
+
+* Add to ModelFieldValue. ([954a8c6](https://github.com/mathrunet/node_masamune/commit/954a8c66804d8c3f65b810d773597d3acb5de442))
+
+
+
 ## [2.13.1](https://github.com/mathrunet/node_masamune/compare/v2.13.0...v2.13.1) (2025-03-05)
 
 
