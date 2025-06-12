@@ -282,4 +282,70 @@ export class ModelFieldValue {
         };
         return res;
     }
+    /**
+     * Class for generating data for `ModelSearch`.
+     * 
+     * `ModelSearch`用のデータを生成するためのクラス。
+     * 
+     * @param {string} key
+     * Data key.
+     * 
+     * データのキー。
+     * 
+     * @param {string[]} list
+     * List of search values.
+     * 
+     * 検索対象のリスト。
+     * 
+     * @returns { [key: string]: any }
+     * Data for `ModelSearch`.
+     * 
+     * `ModelSearch`用のデータ。
+     */
+    static modelSearch({
+        key, list,
+    }: {
+        key: string, list?: string[] | undefined,
+    }): { [key: string]: any } {
+        const res: { [key: string]: any } = {};
+        res[key] = list;
+        res[`#${key}`] = {
+            "@list": list,
+            "@type": "ModelSearch",
+        };
+        return res;
+    }
+    /**
+     * Class for generating data for `ModelToken`.
+     * 
+     * `ModelToken`用のデータを生成するためのクラス。
+     * 
+     * @param {string} key
+     * Data key.
+     * 
+     * データのキー。
+     * 
+     * @param {string[]} list
+     * List of token values.
+     * 
+     * トークンのリスト。
+     * 
+     * @returns { [key: string]: any }
+     * Data for `ModelToken`.
+     * 
+     * `ModelToken`用のデータ。
+     */
+    static modelToken({
+        key, list,
+    }: {
+        key: string, list?: string[] | undefined,
+    }): { [key: string]: any } {
+        const res: { [key: string]: any } = {};
+        res[key] = list;
+        res[`#${key}`] = {
+            "@list": list,
+            "@type": "ModelToken",
+        };
+        return res;
+    }
 }
