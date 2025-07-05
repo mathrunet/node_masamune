@@ -1,3 +1,12 @@
+# [2.15.0](https://github.com/mathrunet/node_masamune/compare/v2.14.1...v2.15.0) (2025-07-05)
+
+
+### fix
+
+* Add toSearchableMap. ([71ffb6e](https://github.com/mathrunet/node_masamune/commit/71ffb6ee537fc53a954a096b874a54d46b6fdf1a))
+
+
+
 ## [2.14.1](https://github.com/mathrunet/node_masamune/compare/v2.14.0...v2.14.1) (2025-06-12)
 
 
