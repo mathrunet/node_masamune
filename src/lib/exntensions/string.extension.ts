@@ -204,6 +204,17 @@ declare global {
          * 絵文字を削除した文字列。
          */
         removeOnlyEmoji(): string;
+
+        /**
+         * Converts [string] to a searchable map.
+         * 
+         * [string]を検索可能なマップに変換します。
+         * 
+         * @return {{ [key: string]: any }}
+         * Searchable map.
+         * 検索可能なマップ。
+         */
+        toSearchableMap(): { [key: string]: any }
     }
 }
 
@@ -393,3 +404,21 @@ String.prototype.splitByTrigram = function () {
 String.prototype.removeOnlyEmoji = function () {
     return (this as String).valueOf().replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '');
 };
+
+String.prototype.toSearchableMap = function () {
+    const text = (this as String).valueOf();
+    return text.replace(/　/g, " ")
+        .split(" ")
+        .flatMap(
+            (e: string) => e
+                .toLowerCase()
+                .replace(/\./g, "")
+                .toHankakuNumericAndAlphabet()
+                .toZenkakuKatakana()
+                .toKatakana()
+                .removeOnlyEmoji()
+                .splitByCharacterAndBigram(),
+        )
+        .filter((value: string, index: number, self: string[]) => self.indexOf(value) === index)
+        .reduce((acc: { [key: string]: boolean }, e: string) => ({ ...acc, [e]: true }), {});
+}
