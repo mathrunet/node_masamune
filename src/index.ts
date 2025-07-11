@@ -27,9 +27,9 @@ export * from "./lib/src/firebase_loader";
  * `exports`をそのまま渡します。
  * 
  * @param region
- * Specify a region such as `asia-northeast1`.
+ * Specify a region such as `us-central1`.
  * 
- * `asia-northeast1`などのリージョンを指定します。
+ * `us-central1`などのリージョンを指定します。
  * 
  * @param deployFunctions
  * The elements defined in [Functions] are passed as an array. The passed method is deployed.
