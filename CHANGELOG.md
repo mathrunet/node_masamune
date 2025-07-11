@@ -1,3 +1,12 @@
+## [3.0.1](https://github.com/mathrunet/node_masamune/compare/v3.0.0...v3.0.1) (2025-07-11)
+
+
+### fix
+
+* Export the Loader. ([5050efe](https://github.com/mathrunet/node_masamune/commit/5050efe82895649103a68f8108e82173017c23c8))
+
+
+
 # [3.0.0](https://github.com/mathrunet/node_masamune/compare/v2.15.0...v3.0.0) (2025-07-11)
 
 
