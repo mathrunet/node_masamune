@@ -1,3 +1,12 @@
+# [3.0.0](https://github.com/mathrunet/node_masamune/compare/v2.15.0...v3.0.0) (2025-07-11)
+
+
+### feat
+
+* Supports multiple databases. ([cff6b10](https://github.com/mathrunet/node_masamune/commit/cff6b10b4bce122252fd3936f1e11d0a23d50c9c))
+
+
+
 # [2.15.0](https://github.com/mathrunet/node_masamune/compare/v2.14.1...v2.15.0) (2025-07-05)
 
 
