@@ -2,6 +2,7 @@ import * as functions from "firebase-functions/v2";
 import * as admin from "firebase-admin";
 import * as utils from "../lib/utils";
 import { HttpFunctionsOptions } from "../lib/src/functions_base";
+import { firestoreLoader } from "../lib/src/firebase_loader";
 
 /**
  * Webhook endpoint for IOS, which allows you to receive notifications by setting the endpoint in AppStoreConnect's [App]->[App Information]->[App Store Server Notification].
@@ -51,78 +52,90 @@ module.exports = (
                     const signedTransactionInfoBody = signedTransactionInfo.replace(/-/g, "+").replace(/_/g, "/").split(".")[1];
                     const transactionInfo = JSON.parse(Buffer.from(signedTransactionInfoBody, "base64").toString());
 
-                    const firestoreInstance = admin.firestore();
-                    const targetPath = process.env.PURCHASE_SUBSCRIPTIONPATH;
-                    if (transactionInfo) {
-                        const transactionId = transactionInfo.originalTransactionId;
-                        const doc = await firestoreInstance.doc(`${targetPath}/${transactionId}`).get();
-                        const data = doc?.data();
-                        const path = doc?.ref.path;
-                        if (!data) {
-                            throw new Error("The purchased data is not found.");
+                    let error: any | null = null;
+                    const firestoreDatabaseIds = options.firestoreDatabaseIds ?? [""];
+                    for (const databaseId of firestoreDatabaseIds) {
+                        try {
+                            const firestoreInstance = firestoreLoader(databaseId);
+                            const targetPath = process.env.PURCHASE_SUBSCRIPTIONPATH;
+                            if (transactionInfo) {
+                                const transactionId = transactionInfo.originalTransactionId;
+                                const doc = await firestoreInstance.doc(`${targetPath}/${transactionId}`).get();
+                                const data = doc?.data();
+                                const path = doc?.ref.path;
+                                if (!data) {
+                                    throw new Error("The purchased data is not found.");
+                                }
+                                const user = data["userId"];
+                                console.log(`notificationType: ${notificationType}`);
+                                switch (notificationType) {
+                                    case "CONSUMPTION_REQUEST":
+                                    case "DID_CHANGE_RENEWAL_STATUS":
+                                    case "DID_FAIL_TO_RENEW":
+                                    case "PRICE_INCREASE":
+                                    case "REFUND_DECLINED": {
+                                        for (const key in transactionInfo) {
+                                            if (!data[key]) {
+                                                continue;
+                                            }
+                                            data[key] = utils.parse(transactionInfo[key]);
+                                        }
+                                        data["expiredTime"] = parseInt(transactionInfo["expiresDate"]);
+                                        data["productId"] = data["product_id"] = transactionInfo["productId"];
+                                        data["orderId"] = transactionInfo["transactionId"];
+                                        await firestoreInstance.doc(path).set(data);
+                                        console.log(`Updated subscription: ${data["productId"]}:${user}`);
+                                        break;
+                                    }
+                                    case "SUBSCRIBED":
+                                    case "DID_CHANGE_RENEWAL_PREF":
+                                    case "DID_RENEW":
+                                    case "OFFER_REDEEMED":
+                                    case "RENEWAL_EXTENDED": {
+                                        for (const key in transactionInfo) {
+                                            if (!data[key]) {
+                                                continue;
+                                            }
+                                            data[key] = utils.parse(transactionInfo[key]);
+                                        }
+                                        data["expired"] = false;
+                                        data["paused"] = false;
+                                        data["expiredTime"] = parseInt(transactionInfo["expiresDate"]);
+                                        data["productId"] = data["product_id"] = transactionInfo["productId"];
+                                        data["orderId"] = transactionInfo["transactionId"];
+                                        await firestoreInstance.doc(path).set(data);
+                                        console.log(`Updated subscription: ${data["productId"]}:${user}`);
+                                        break;
+                                    }
+                                    case "EXPIRED":
+                                    case "REVOKE":
+                                    case "GRACE_PERIOD_EXPIRED":
+                                    case "REFUND": {
+                                        for (const key in transactionInfo) {
+                                            if (!data[key]) {
+                                                continue;
+                                            }
+                                            data[key] = utils.parse(transactionInfo[key]);
+                                        }
+                                        data["expired"] = true;
+                                        data["paused"] = false;
+                                        data["productId"] = data["product_id"] = transactionInfo["productId"];
+                                        data["orderId"] = transactionInfo["transactionId"];
+                                        await firestoreInstance.doc(path).set(data);
+                                        console.log(`Expired subscription: ${data["productId"]}:${user}`);
+                                        break;
+                                    }
+                                    default:
+                                        break;
+                                }
+                            }
+                        } catch (err) {
+                            error = err;
                         }
-                        const user = data["userId"];
-                        console.log(`notificationType: ${notificationType}`);
-                        switch (notificationType) {
-                            case "CONSUMPTION_REQUEST":
-                            case "DID_CHANGE_RENEWAL_STATUS":
-                            case "DID_FAIL_TO_RENEW":
-                            case "PRICE_INCREASE":
-                            case "REFUND_DECLINED": {
-                                for (const key in transactionInfo) {
-                                    if (!data[key]) {
-                                        continue;
-                                    }
-                                    data[key] = utils.parse(transactionInfo[key]);
-                                }
-                                data["expiredTime"] = parseInt(transactionInfo["expiresDate"]);
-                                data["productId"] = data["product_id"] = transactionInfo["productId"];
-                                data["orderId"] = transactionInfo["transactionId"];
-                                await firestoreInstance.doc(path).set(data);
-                                console.log(`Updated subscription: ${data["productId"]}:${user}`);
-                                break;
-                            }
-                            case "SUBSCRIBED":
-                            case "DID_CHANGE_RENEWAL_PREF":
-                            case "DID_RENEW":
-                            case "OFFER_REDEEMED":
-                            case "RENEWAL_EXTENDED": {
-                                for (const key in transactionInfo) {
-                                    if (!data[key]) {
-                                        continue;
-                                    }
-                                    data[key] = utils.parse(transactionInfo[key]);
-                                }
-                                data["expired"] = false;
-                                data["paused"] = false;
-                                data["expiredTime"] = parseInt(transactionInfo["expiresDate"]);
-                                data["productId"] = data["product_id"] = transactionInfo["productId"];
-                                data["orderId"] = transactionInfo["transactionId"];
-                                await firestoreInstance.doc(path).set(data);
-                                console.log(`Updated subscription: ${data["productId"]}:${user}`);
-                                break;
-                            }
-                            case "EXPIRED":
-                            case "REVOKE":
-                            case "GRACE_PERIOD_EXPIRED":
-                            case "REFUND": {
-                                for (const key in transactionInfo) {
-                                    if (!data[key]) {
-                                        continue;
-                                    }
-                                    data[key] = utils.parse(transactionInfo[key]);
-                                }
-                                data["expired"] = true;
-                                data["paused"] = false;
-                                data["productId"] = data["product_id"] = transactionInfo["productId"];
-                                data["orderId"] = transactionInfo["transactionId"];
-                                await firestoreInstance.doc(path).set(data);
-                                console.log(`Expired subscription: ${data["productId"]}:${user}`);
-                                break;
-                            }
-                            default:
-                                break;
-                        }
+                    }
+                    if (error) {
+                        console.error(error);
+                        throw new functions.https.HttpsError("unknown", "Unknown error.");
                     }
                 }
             }

@@ -2,6 +2,7 @@ import * as functions from "firebase-functions/v2";
 import "../lib/exntensions/string.extension"
 import * as admin from "firebase-admin";
 import { HttpFunctionsOptions } from "../lib/src/functions_base";
+import { firestoreLoader } from "../lib/src/firebase_loader";
 
 /**
  * Endpoints for testing.
@@ -30,9 +31,12 @@ module.exports = (
       if (!path) {
         return {};
       }
-      const firestoreInstance = admin.firestore();
-      const doc = await firestoreInstance.doc(path).get();
-      return { ...doc.data() };
+      const firestoreDatabaseIds = options.firestoreDatabaseIds ?? [""];
+      for (const databaseId of firestoreDatabaseIds) {
+        const firestoreInstance = firestoreLoader(databaseId);
+        const doc = await firestoreInstance.doc(path).get();
+        return { ...doc.data() };
+      }
     } catch (err) {
       console.error(err);
       throw err;

@@ -80,6 +80,7 @@ export async function updateSubscription({
     packageName,
     token,
     expiryDate,
+    firestoreInstance,
 }: {
     targetCollectionPath: string,
     targetDocumentId: string,
@@ -93,9 +94,9 @@ export async function updateSubscription({
     packageName: string,
     token: string,
     expiryDate: number,
+    firestoreInstance: FirebaseFirestore.Firestore,
 }) {
     const update : {[key: string]: any} = {};
-    const firestoreInstance = admin.firestore();
     for (const key in data) {
         if (!data[key]) {
             continue;

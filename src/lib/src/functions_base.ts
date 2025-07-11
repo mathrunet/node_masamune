@@ -357,5 +357,17 @@ export interface FunctionsOptions {
      */
     serviceAccount?: string | undefined;
 
+    /**
+     * Specifies the Firestore database IDs.
+     * 
+     * FirestoreのデータベースIDを指定します。
+     */
+    firestoreDatabaseIds?: string[] | undefined;
 
+    /**
+     * Specifies the Storage bucket IDs.
+     * 
+     * StorageのバケットIDを指定します。
+     */
+    storageBucketIds?: string[] | undefined;
 }

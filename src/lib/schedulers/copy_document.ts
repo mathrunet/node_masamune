@@ -15,7 +15,7 @@ import * as admin from "firebase-admin";
  * 
  * ドキュメントデータ。
  * 
- * @param firestore
+ * @param firestoreInstance
  * Firestore instance.
  * 
  * Firestoreインスタンス。
@@ -27,11 +27,11 @@ import * as admin from "firebase-admin";
  */
 export async function copyDocument({
     doc,
-    firestore,
+    firestoreInstance,
     params,
 }: {
     doc: admin.firestore.QueryDocumentSnapshot<admin.firestore.DocumentData, admin.firestore.DocumentData>,
-    firestore: admin.firestore.Firestore,
+    firestoreInstance: admin.firestore.Firestore,
     params: { [key: string]: any },
 }): Promise<{ [key: string]: any }> {
     const path = params["path"] as string;
@@ -47,7 +47,7 @@ export async function copyDocument({
         update[key] = docData[key];
     }
     update["@uid"] = id;
-    await firestore.doc(path).set(
+    await firestoreInstance.doc(path).set(
         update, {
         merge: true
     }

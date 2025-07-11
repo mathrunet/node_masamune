@@ -3,6 +3,7 @@ import * as admin from "firebase-admin";
 import * as verifier from "../lib/functions/verify_android";
 import * as utils from "../lib/utils";
 import { PubsubFunctionsOptions } from "../lib/src/functions_base";
+import { firestoreLoader } from "../lib/src/firebase_loader";
 
 /**
  * This is a webhook endpoint for Android. you can create a `purchasing` topic in GCP's pub/sub and set the principal to "google-play-developer-notifications@system.gserviceaccount.com" to receive notifications.
@@ -65,152 +66,164 @@ module.exports = (
                 JSON.parse(Buffer.from(message.data.message.data, "base64").toString()) :
                 null;
             if (messageBody) {
-                const firestoreInstance = admin.firestore();
-                const targetPath = process.env.PURCHASE_SUBSCRIPTIONPATH;
-                const androidServiceAccountEmail = process.env.PURCHASE_ANDROID_SERVICEACCOUNT_EMAIL;
-                const androidServiceAccountPrivateKey = process.env.PURCHASE_ANDROID_SERVICEACCOUNT_PRIVATE_KEY;
-                if (!androidServiceAccountEmail || !androidServiceAccountPrivateKey || !targetPath) {
-                    throw new Error("The data is invalid.");
-                }
-                const {
-                    subscriptionNotification,
-                    packageName,
-                } = messageBody;
-                if (subscriptionNotification) {
-                    const {
-                        notificationType,
-                        purchaseToken,
-                        subscriptionId,
-                    } = subscriptionNotification;
-                    if (!purchaseToken || !packageName || !subscriptionId) {
-                        throw new Error("The data is invalid.");
-                    }
-                    const res = await verifier.verifyAndroid({
-                        type: "subscriptions",
-                        serviceAccountEmail: androidServiceAccountEmail,
-                        serviceAccountPrivateKey: androidServiceAccountPrivateKey,
-                        packageName: packageName,
-                        productId: subscriptionId,
-                        purchaseToken: purchaseToken,
-                    });
-                    const search = await firestoreInstance.collection(targetPath).where("token", "==", purchaseToken).get();
-                    if (search.empty) {
-                        console.error("The purchased data is not found.");
-                        return;
-                    }
-                    const doc = search.docs[0];
-                    const data = doc?.data();
-                    const path = doc?.ref.path;
-                    if (!data) {
-                        console.error("The purchased data is not found.");
-                        return;
-                    }
-                    const user = data["userId"];
-                    console.log(`notificationType: ${notificationType}`);
-                    switch (notificationType) {
-                        case SubscriptionNotificationTypes.SUBSCRIPTION_RECOVERED:
-                        case SubscriptionNotificationTypes.SUBSCRIPTION_RESTARTED:
-                        case SubscriptionNotificationTypes.SUBSCRIPTION_RENEWED:
-                        case SubscriptionNotificationTypes.SUBSCRIPTION_IN_GRACE_PERIOD: {
-                            for (const key in res) {
-                                if (!data[key]) {
-                                    continue;
-                                }
-                                data[key] = utils.parse(res[key]);
-                            }
-                            data["expired"] = false;
-                            data["paused"] = false;
-                            data["expiredTime"] = parseInt(res["expiryTimeMillis"]);
-                            data["orderId"] = res["orderId"];
-                            data["@time"] = new Date();
-                            await firestoreInstance.doc(path).set(data);
-                            console.log(`Updated subscription: ${data["productId"]}:${user}`);
-                            break;
+                let error: any | null = null;
+                const firestoreDatabaseIds = options.firestoreDatabaseIds ?? [""];
+                for (const databaseId of firestoreDatabaseIds) {
+                    try {
+                        const firestoreInstance = firestoreLoader(databaseId);
+                        const targetPath = process.env.PURCHASE_SUBSCRIPTIONPATH;
+                        const androidServiceAccountEmail = process.env.PURCHASE_ANDROID_SERVICEACCOUNT_EMAIL;
+                        const androidServiceAccountPrivateKey = process.env.PURCHASE_ANDROID_SERVICEACCOUNT_PRIVATE_KEY;
+                        if (!androidServiceAccountEmail || !androidServiceAccountPrivateKey || !targetPath) {
+                            throw new Error("The data is invalid.");
                         }
-                        case SubscriptionNotificationTypes.SUBSCRIPTION_DEFERRED:
-                        case SubscriptionNotificationTypes.SUBSCRIPTION_PRICE_CHANGE_CONFIRMED:
-                        case SubscriptionNotificationTypes.SUBSCRIPTION_PAUSE_SCHEDULE_CHANGED: {
-                            for (const key in res) {
-                                if (!data[key]) {
-                                    continue;
-                                }
-                                data[key] = utils.parse(res[key]);
+                        const {
+                            subscriptionNotification,
+                            packageName,
+                        } = messageBody;
+                        if (subscriptionNotification) {
+                            const {
+                                notificationType,
+                                purchaseToken,
+                                subscriptionId,
+                            } = subscriptionNotification;
+                            if (!purchaseToken || !packageName || !subscriptionId) {
+                                throw new Error("The data is invalid.");
                             }
-                            data["expiredTime"] = parseInt(res["expiryTimeMillis"]);
-                            data["orderId"] = res["orderId"];
-                            data["@time"] = new Date();
-                            await firestoreInstance.doc(path).set(data);
-                            console.log(`Updated subscription: ${data["productId"]}:${user}`);
-                            break;
-                        }
-                        case SubscriptionNotificationTypes.SUBSCRIPTION_CANCELED: {
-                            for (const key in res) {
-                                if (!data[key]) {
-                                    continue;
-                                }
-                                data[key] = utils.parse(res[key]);
+                            const res = await verifier.verifyAndroid({
+                                type: "subscriptions",
+                                serviceAccountEmail: androidServiceAccountEmail,
+                                serviceAccountPrivateKey: androidServiceAccountPrivateKey,
+                                packageName: packageName,
+                                productId: subscriptionId,
+                                purchaseToken: purchaseToken,
+                            });
+                            const search = await firestoreInstance.collection(targetPath).where("token", "==", purchaseToken).get();
+                            if (search.empty) {
+                                console.error("The purchased data is not found.");
+                                return;
                             }
-                            const time = new Date().getTime();
-                            const expiryTimeMillis = data["expiredTime"] = parseInt(res["expiryTimeMillis"]);
-                            data["orderId"] = res["orderId"];
-                            data["@time"] = new Date();
-                            if (expiryTimeMillis <= time) {
+                            const doc = search.docs[0];
+                            const data = doc?.data();
+                            const path = doc?.ref.path;
+                            if (!data) {
+                                console.error("The purchased data is not found.");
+                                return;
+                            }
+                            const user = data["userId"];
+                            console.log(`notificationType: ${notificationType}`);
+                            switch (notificationType) {
+                                case SubscriptionNotificationTypes.SUBSCRIPTION_RECOVERED:
+                                case SubscriptionNotificationTypes.SUBSCRIPTION_RESTARTED:
+                                case SubscriptionNotificationTypes.SUBSCRIPTION_RENEWED:
+                                case SubscriptionNotificationTypes.SUBSCRIPTION_IN_GRACE_PERIOD: {
+                                    for (const key in res) {
+                                        if (!data[key]) {
+                                            continue;
+                                        }
+                                        data[key] = utils.parse(res[key]);
+                                    }
+                                    data["expired"] = false;
+                                    data["paused"] = false;
+                                    data["expiredTime"] = parseInt(res["expiryTimeMillis"]);
+                                    data["orderId"] = res["orderId"];
+                                    data["@time"] = new Date();
+                                    await firestoreInstance.doc(path).set(data);
+                                    console.log(`Updated subscription: ${data["productId"]}:${user}`);
+                                    break;
+                                }
+                                case SubscriptionNotificationTypes.SUBSCRIPTION_DEFERRED:
+                                case SubscriptionNotificationTypes.SUBSCRIPTION_PRICE_CHANGE_CONFIRMED:
+                                case SubscriptionNotificationTypes.SUBSCRIPTION_PAUSE_SCHEDULE_CHANGED: {
+                                    for (const key in res) {
+                                        if (!data[key]) {
+                                            continue;
+                                        }
+                                        data[key] = utils.parse(res[key]);
+                                    }
+                                    data["expiredTime"] = parseInt(res["expiryTimeMillis"]);
+                                    data["orderId"] = res["orderId"];
+                                    data["@time"] = new Date();
+                                    await firestoreInstance.doc(path).set(data);
+                                    console.log(`Updated subscription: ${data["productId"]}:${user}`);
+                                    break;
+                                }
+                                case SubscriptionNotificationTypes.SUBSCRIPTION_CANCELED: {
+                                    for (const key in res) {
+                                        if (!data[key]) {
+                                            continue;
+                                        }
+                                        data[key] = utils.parse(res[key]);
+                                    }
+                                    const time = new Date().getTime();
+                                    const expiryTimeMillis = data["expiredTime"] = parseInt(res["expiryTimeMillis"]);
+                                    data["orderId"] = res["orderId"];
+                                    data["@time"] = new Date();
+                                    if (expiryTimeMillis <= time) {
+                                        data["expired"] = true;
+                                        data["paused"] = false;
+                                        await firestoreInstance.doc(path).set(data);
+                                        console.log(`Expired subscription: ${data["productId"]}:${user}`);
+                                    } else {
+                                        data["expired"] = false;
+                                        data["paused"] = false;
+                                        await firestoreInstance.doc(path).set(data);
+                                        console.log(`Updated subscription: ${data["productId"]}:${user}`);
+                                    }
+                                    break;
+                                }
+                                case SubscriptionNotificationTypes.SUBSCRIPTION_REVOKED:
+                                case SubscriptionNotificationTypes.SUBSCRIPTION_EXPIRED:
+                                case SubscriptionNotificationTypes.SUBSCRIPTION_PAUSED:
+                                case SubscriptionNotificationTypes.SUBSCRIPTION_ON_HOLD: {
+                                    for (const key in res) {
+                                        if (!data[key]) {
+                                            continue;
+                                        }
+                                        data[key] = utils.parse(res[key]);
+                                    }
+                                    data["expired"] = true;
+                                    if (notificationType === SubscriptionNotificationTypes.SUBSCRIPTION_PAUSED || notificationType === SubscriptionNotificationTypes.SUBSCRIPTION_ON_HOLD) {
+                                        data["paused"] = true;
+                                        await firestoreInstance.doc(path).set(data);
+                                        console.log(`Paused subscription: ${data["productId"]}:${user}`);
+                                    } else {
+                                        data["paused"] = false;
+                                        await firestoreInstance.doc(path).set(data);
+                                        console.log(`Expired subscription: ${data["productId"]}:${user}`);
+                                    }
+                                    break;
+                                }
+                                default:
+                                    break;
+                            }
+                            if (res["linkedPurchaseToken"]) {
+                                const linkedPurchaseToken = res["linkedPurchaseToken"];
+                                const search = await firestoreInstance.collection(targetPath).where("token", "==", linkedPurchaseToken).get();
+                                if (search.empty) {
+                                    return;
+                                }
+                                const doc = search.docs[0];
+                                const data = doc?.data();
+                                const path = doc?.ref.path;
+                                if (!data) {
+                                    throw new Error("The purchased data is not found.");
+                                }
+                                const user = data["userId"];
                                 data["expired"] = true;
                                 data["paused"] = false;
-                                await firestoreInstance.doc(path).set(data);
-                                console.log(`Expired subscription: ${data["productId"]}:${user}`);
-                            } else {
-                                data["expired"] = false;
-                                data["paused"] = false;
-                                await firestoreInstance.doc(path).set(data);
-                                console.log(`Updated subscription: ${data["productId"]}:${user}`);
-                            }
-                            break;
-                        }
-                        case SubscriptionNotificationTypes.SUBSCRIPTION_REVOKED:
-                        case SubscriptionNotificationTypes.SUBSCRIPTION_EXPIRED:
-                        case SubscriptionNotificationTypes.SUBSCRIPTION_PAUSED:
-                        case SubscriptionNotificationTypes.SUBSCRIPTION_ON_HOLD: {
-                            for (const key in res) {
-                                if (!data[key]) {
-                                    continue;
-                                }
-                                data[key] = utils.parse(res[key]);
-                            }
-                            data["expired"] = true;
-                            if (notificationType === SubscriptionNotificationTypes.SUBSCRIPTION_PAUSED || notificationType === SubscriptionNotificationTypes.SUBSCRIPTION_ON_HOLD) {
-                                data["paused"] = true;
-                                await firestoreInstance.doc(path).set(data);
-                                console.log(`Paused subscription: ${data["productId"]}:${user}`);
-                            } else {
-                                data["paused"] = false;
+                                data["@time"] = new Date();
                                 await firestoreInstance.doc(path).set(data);
                                 console.log(`Expired subscription: ${data["productId"]}:${user}`);
                             }
-                            break;                                
                         }
-                        default:
-                            break;
+                    } catch (err) {
+                        error = err;
                     }
-                    if (res["linkedPurchaseToken"]) {
-                        const linkedPurchaseToken = res["linkedPurchaseToken"];
-                        const search = await firestoreInstance.collection(targetPath).where("token", "==", linkedPurchaseToken).get();
-                        if (search.empty) {
-                            return;
-                        }
-                        const doc = search.docs[0];
-                        const data = doc?.data();
-                        const path = doc?.ref.path;
-                        if (!data) {
-                            throw new Error("The purchased data is not found.");
-                        }
-                        const user = data["userId"];
-                        data["expired"] = true;
-                        data["paused"] = false;
-                        data["@time"] = new Date();
-                        await firestoreInstance.doc(path).set(data);
-                        console.log(`Expired subscription: ${data["productId"]}:${user}`);
-                    }
+                }
+                if (error) {
+                    console.error(error);
+                    throw new functions.https.HttpsError("unknown", "Unknown error.");
                 }
             }
         } catch (err) {

@@ -3,6 +3,7 @@ import * as stripe from "stripe";
 import * as admin from "firebase-admin";
 import "../lib/exntensions/string.extension"
 import { HttpFunctionsOptions } from "../lib/src/functions_base";
+import { firestoreLoader } from "../lib/src/firebase_loader";
 
 /**
  * Webhook for proper redirection when 3D Secure authentication is required.
@@ -70,58 +71,70 @@ module.exports = (
   },
   async (req, res) => {
     try {
-      const apiKey = process.env.PURCHASE_STRIPE_SECRETKEY ?? "";
-      const stripeUserPath = process.env.PURCHASE_STRIPE_USERPATH ?? "plugins/stripe/user";
-      const stripePurchasePath = process.env.PURCHASE_STRIPE_PURCHASEPATH ?? "purchase";
-      const firestoreInstance = admin.firestore();
-      const stripeClient = new stripe.Stripe(apiKey, {
-        apiVersion: "2025-01-27.acacia",
-      });
-      const token = req.query.token;
-      if (!token || typeof token !== "string") {
-        res.status(403).send(JSON.stringify({
-          "error": "Invalid parameters",
-        }));
-        return;
-      }
-      const param = JSON.parse(token.decrypt({
-        key: apiKey.slice(0, 32),
-        ivKey: apiKey.slice(-16),
-      }));
-      if (!param["userId"] || !param["orderId"] || !param["successUrl"] || !param["failureUrl"]) {
-        res.status(403).send(JSON.stringify({
-          "error": "Invalid parameters",
-        }));
-        return;
-      }
+      let error: any | null = null;
+      const firestoreDatabaseIds = options.firestoreDatabaseIds ?? [""];
+      for (const databaseId of firestoreDatabaseIds) {
+        try {
+          const apiKey = process.env.PURCHASE_STRIPE_SECRETKEY ?? "";
+          const stripeUserPath = process.env.PURCHASE_STRIPE_USERPATH ?? "plugins/stripe/user";
+          const stripePurchasePath = process.env.PURCHASE_STRIPE_PURCHASEPATH ?? "purchase";
+          const firestoreInstance = firestoreLoader(databaseId);
+          const stripeClient = new stripe.Stripe(apiKey, {
+            apiVersion: "2025-01-27.acacia",
+          });
+          const token = req.query.token;
+          if (!token || typeof token !== "string") {
+            res.status(403).send(JSON.stringify({
+              "error": "Invalid parameters",
+            }));
+            return;
+          }
+          const param = JSON.parse(token.decrypt({
+            key: apiKey.slice(0, 32),
+            ivKey: apiKey.slice(-16),
+          }));
+          if (!param["userId"] || !param["orderId"] || !param["successUrl"] || !param["failureUrl"]) {
+            res.status(403).send(JSON.stringify({
+              "error": "Invalid parameters",
+            }));
+            return;
+          }
 
-      const userId = param["userId"];
-      const orderId = param["orderId"];
-      const successUrl = param["successUrl"];
-      const failureUrl = param["failureUrl"];
+          const userId = param["userId"];
+          const orderId = param["orderId"];
+          const successUrl = param["successUrl"];
+          const failureUrl = param["failureUrl"];
 
-      const doc = await firestoreInstance.doc(`${stripeUserPath}/${userId}/${stripePurchasePath}/${orderId}`).get();
-      const data = doc.data();
-      if (!data || !data["paymentId"]) {
-        res.status(404).send(JSON.stringify({
-          "error": "The purchase data is not found.",
-        }));
-        return;
+          const doc = await firestoreInstance.doc(`${stripeUserPath}/${userId}/${stripePurchasePath}/${orderId}`).get();
+          const data = doc.data();
+          if (!data || !data["paymentId"]) {
+            res.status(404).send(JSON.stringify({
+              "error": "The purchase data is not found.",
+            }));
+            return;
+          }
+          const purchase = await stripeClient.paymentIntents.retrieve(
+            data["paymentId"],
+          );
+          if (!purchase) {
+            res.status(404).send(JSON.stringify({
+              "error": "The purchase data is not found.",
+            }));
+            return;
+          }
+          const status = purchase.status;
+          if (status === "requires_capture" || status === "succeeded" || status === "processing") {
+            res.redirect(successUrl);
+          } else {
+            res.redirect(failureUrl);
+          }
+        } catch (err) {
+          error = err;
+        }
       }
-      const purchase = await stripeClient.paymentIntents.retrieve(
-        data["paymentId"],
-      );
-      if (!purchase) {
-        res.status(404).send(JSON.stringify({
-          "error": "The purchase data is not found.",
-        }));
-        return;
-      }
-      const status = purchase.status;
-      if (status === "requires_capture" || status === "succeeded" || status === "processing") {
-        res.redirect(successUrl);
-      } else {
-        res.redirect(failureUrl);
+      if (error) {
+        console.error(error);
+        throw new functions.https.HttpsError("unknown", "Unknown error.");
       }
     } catch (err) {
       console.error(err);

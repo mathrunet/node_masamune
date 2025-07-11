@@ -2,6 +2,7 @@ import * as functions from "firebase-functions/v2";
 import * as verifier from "../lib/functions/verify_android";
 import * as updater from "../lib/functions/update_wallet";
 import { HttpFunctionsOptions } from "../lib/src/functions_base";
+import { firestoreLoader } from "../lib/src/firebase_loader";
 
 /**
  * Performs a consumption-type in-app purchase. The value of the field in the document specified in [path] is added to [value].
@@ -101,12 +102,26 @@ module.exports = (
                 return res;
             }
             /* ==== Firestoreの更新ここから ==== */
-            await updater.updateWallet({
-                targetDocumentFieldPath: query.data.path,
-                value: query.data.value,
-                transactionId: query.data.purchaseToken,
-                transactionData: res,
-            });
+            let error: any | null = null;
+            const firestoreDatabaseIds = options.firestoreDatabaseIds ?? [""];
+            for (const databaseId of firestoreDatabaseIds) {
+                try {
+                    const firestoreInstance = firestoreLoader(databaseId);
+                    await updater.updateWallet({
+                        targetDocumentFieldPath: query.data.path,
+                        value: query.data.value,
+                        transactionId: query.data.purchaseToken,
+                        transactionData: res,
+                        firestoreInstance: firestoreInstance,
+                    });
+                } catch (err) {
+                    error = err;
+                }
+            }
+            if (error) {
+                console.error(error);
+                throw new functions.https.HttpsError("unknown", "Unknown error.");
+            }
             /* ==== ここまでFirestoreの更新 ==== */
             return res;
         } catch (err) {

@@ -31,17 +31,18 @@ export async function updateWallet({
     value,
     transactionId,
     transactionData,
+    firestoreInstance,
 }: {
     targetDocumentFieldPath: string,
     value: number,
     transactionId: string,
     transactionData: { [key: string]: any },
+    firestoreInstance: FirebaseFirestore.Firestore,
 }) {
     const update: { [key: string]: any } = {};
     const key = path.basename( targetDocumentFieldPath );
     const parent = targetDocumentFieldPath.replace( `/${key}`, "" );
     const uid = path.basename(parent);
-    const firestoreInstance = admin.firestore();
     const FieldValue = admin.firestore.FieldValue;
     update[key] = FieldValue.increment(value);
     update["@uid"] = uid;

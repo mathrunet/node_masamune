@@ -25,16 +25,17 @@ export async function updateUnlock({
     targetDocumentFieldPath,
     transactionId,
     transactionData,
+    firestoreInstance,
 }: {
     targetDocumentFieldPath: string,
     transactionId: string,
     transactionData: { [key: string]: any },
+    firestoreInstance: FirebaseFirestore.Firestore,
 }) {
     const update: { [key: string]: any } = {};
     const key = path.basename(targetDocumentFieldPath);
     const parent = targetDocumentFieldPath.replace(`/${key}`, "");
     const uid = path.basename(parent);
-    const firestoreInstance = admin.firestore();
     update[key] = true;
     update["@uid"] = uid;
     update["@time"] = new Date();

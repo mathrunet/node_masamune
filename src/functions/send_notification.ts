@@ -1,6 +1,7 @@
 import * as functions from "firebase-functions/v2";
 import { sendNotification } from "../lib/functions/send_notification";
 import { HttpFunctionsOptions } from "../lib/src/functions_base";
+import { firestoreLoader } from "../lib/src/firebase_loader";
 
 /**
  * Define the process for PUSH notification.
@@ -90,6 +91,7 @@ module.exports = (
     },
     async (query) => {
         try {
+            const results: any[] = [];
             const title = query.data.title as string | undefined | null;
             const body = query.data.body as string | undefined | null;
             const channelId = query.data.channel_id as string | undefined | null;
@@ -106,22 +108,44 @@ module.exports = (
             if (!title || !body) {
                 throw new functions.https.HttpsError("invalid-argument", "Query parameter is invalid.");
             }
-            const res = await sendNotification({
-                title: title,
-                body: body,
-                channelId: channelId,
-                data: data,
-                badgeCount: badgeCount,
-                sound: sound,
-                targetToken: targetToken,
-                targetTopic: targetTopic,
-                targetCollectionPath: targetCollectionPath,
-                targetTokenField: targetTokenField,
-                targetWheres: targetWheres,
-                targetConditions: targetConditions,
-                responseTokenList: responseTokenList,
-            });
-            return res;
+            let error: any | null = null;
+            const firestoreDatabaseIds = options.firestoreDatabaseIds ?? [""];
+            for (const databaseId of firestoreDatabaseIds) {
+                try {
+                    const firestoreInstance = firestoreLoader(databaseId);
+                    const resItem = await sendNotification({
+                        title: title,
+                        body: body,
+                        channelId: channelId,
+                        data: data,
+                        badgeCount: badgeCount,
+                        sound: sound,
+                        targetToken: targetToken,
+                        targetTopic: targetTopic,
+                        targetCollectionPath: targetCollectionPath,
+                        targetTokenField: targetTokenField,
+                        targetWheres: targetWheres,
+                        targetConditions: targetConditions,
+                        responseTokenList: responseTokenList,
+                        firestoreInstance: firestoreInstance,
+                    });
+                    if (resItem.results) {
+                        for (const result of resItem.results) {
+                            results.push(result);
+                        }
+                    }
+                } catch (err) {
+                    error = err;
+                }
+            }
+            if (error) {
+                console.error(error);
+                throw new functions.https.HttpsError("unknown", "Unknown error.");
+            }
+            return {
+                success: true,
+                results: results,
+            };
         } catch (err) {
             console.log(err);
             throw err;

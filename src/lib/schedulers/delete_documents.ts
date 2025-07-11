@@ -16,7 +16,7 @@ import * as delete_documents from "../functions/delete_documents";
  * 
  * ドキュメントデータ。
  * 
- * @param firestore
+ * @param firestoreInstance
  * Firestore instance.
  * 
  * Firestoreインスタンス。
@@ -28,11 +28,11 @@ import * as delete_documents from "../functions/delete_documents";
  */
 export async function deleteDocuments({
     doc,
-    firestore,
+    firestoreInstance,
     params,
 }: {
     doc: admin.firestore.QueryDocumentSnapshot<admin.firestore.DocumentData, admin.firestore.DocumentData>,
-    firestore: admin.firestore.Firestore,
+    firestoreInstance: admin.firestore.Firestore,
     params: { [key: string]: any },
 }): Promise<{ [key: string]: any }> {
     const collectionPath = params["collectionPath"] as string;
@@ -42,6 +42,7 @@ export async function deleteDocuments({
         collectionPath: collectionPath,
         wheres: wheres,
         conditions: conditions,
+        firestoreInstance: firestoreInstance,
     });
     return {};
 }

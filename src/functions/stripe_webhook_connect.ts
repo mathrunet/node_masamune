@@ -2,6 +2,7 @@ import * as functions from "firebase-functions/v2";
 import * as stripe from "stripe";
 import * as admin from "firebase-admin";
 import { HttpFunctionsOptions } from "../lib/src/functions_base";
+import { firestoreLoader } from "../lib/src/firebase_loader";
 
 /**
  * Receive and process webhooks for Stripe Connect.
@@ -53,67 +54,79 @@ module.exports = (
   },
   async (req, res) => {
     try {
-      const apiKey = process.env.PURCHASE_STRIPE_SECRETKEY ?? "";
-      const stripeUserPath = process.env.PURCHASE_STRIPE_USERPATH ?? "plugins/stripe/user";
-      const stripeWebhookConnectSecret = process.env.PURCHASE_STRIPE_WEBHOOKCONNECTSECRET ?? "";
-      const firestoreInstance = admin.firestore();
-      const stripeClient = new stripe.Stripe(apiKey, {
-        apiVersion: "2025-01-27.acacia",
-      });
-      const signature = req.headers["stripe-signature"];
-      if (!signature) {
-        res.status(403).send(JSON.stringify({
-          "error": "Access denied.",
-        }));
-        return;
-      }
-      const event = stripeClient.webhooks.constructEvent(req.rawBody, signature, stripeWebhookConnectSecret);
-
-      switch (event.type) {
-        case "account.updated": {
-          const account = event.data.object as {
-            [key: string]: any
-          };
-          const id = account["id"];
-          if (!id) {
-            res.status(404).send(JSON.stringify({
-              "error": "The account id is not found.",
-            }));
-            return;
-          }
-          const col = await firestoreInstance.collection(`${stripeUserPath}`).where("account", "==", id).get();
-          if (col.empty) {
-            res.status(404).send(JSON.stringify({
-              "error": "The account data is not found.",
-            }));
-            return;
-          }
-          const update: { [key: string]: any } = {};
-          if (account["capabilities"]) {
-            const capability: { [key: string]: any } = {};
-            if (account["capabilities"]["card_payments"]) {
-              capability["card_payments"] = true;
-            }
-            if (account["capabilities"]["transfers"]) {
-              capability["transfers"] = true;
-            }
-            update["capability"] = capability;
-          }
-          await col.docs[0].ref.set(update, {
-            merge: true,
+      let error: any | null = null;
+      const firestoreDatabaseIds = options.firestoreDatabaseIds ?? [""];
+      for (const databaseId of firestoreDatabaseIds) {
+        try {
+          const apiKey = process.env.PURCHASE_STRIPE_SECRETKEY ?? "";
+          const stripeUserPath = process.env.PURCHASE_STRIPE_USERPATH ?? "plugins/stripe/user";
+          const stripeWebhookConnectSecret = process.env.PURCHASE_STRIPE_WEBHOOKCONNECTSECRET ?? "";
+          const firestoreInstance = firestoreLoader(databaseId);
+          const stripeClient = new stripe.Stripe(apiKey, {
+            apiVersion: "2025-01-27.acacia",
           });
+          const signature = req.headers["stripe-signature"];
+          if (!signature) {
+            res.status(403).send(JSON.stringify({
+              "error": "Access denied.",
+            }));
+            return;
+          }
+          const event = stripeClient.webhooks.constructEvent(req.rawBody, signature, stripeWebhookConnectSecret);
 
-          res.status(200).send(JSON.stringify({
-            "success": true,
-          }));
-          return;
+          switch (event.type) {
+            case "account.updated": {
+              const account = event.data.object as {
+                [key: string]: any
+              };
+              const id = account["id"];
+              if (!id) {
+                res.status(404).send(JSON.stringify({
+                  "error": "The account id is not found.",
+                }));
+                return;
+              }
+              const col = await firestoreInstance.collection(`${stripeUserPath}`).where("account", "==", id).get();
+              if (col.empty) {
+                res.status(404).send(JSON.stringify({
+                  "error": "The account data is not found.",
+                }));
+                return;
+              }
+              const update: { [key: string]: any } = {};
+              if (account["capabilities"]) {
+                const capability: { [key: string]: any } = {};
+                if (account["capabilities"]["card_payments"]) {
+                  capability["card_payments"] = true;
+                }
+                if (account["capabilities"]["transfers"]) {
+                  capability["transfers"] = true;
+                }
+                update["capability"] = capability;
+              }
+              await col.docs[0].ref.set(update, {
+                merge: true,
+              });
+
+              res.status(200).send(JSON.stringify({
+                "success": true,
+              }));
+              return;
+            }
+            default: {
+              res.status(404).send(JSON.stringify({
+                "error": `Event ${event.type} is not found.`,
+              }));
+              return;
+            }
+          }
+        } catch (err) {
+          error = err;
         }
-        default: {
-          res.status(404).send(JSON.stringify({
-            "error": `Event ${event.type} is not found.`,
-          }));
-          return;
-        }
+      }
+      if (error) {
+        console.error(error);
+        throw new functions.https.HttpsError("unknown", "Unknown error.");
       }
     } catch (err) {
       console.error(err);

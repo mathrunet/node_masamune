@@ -2,6 +2,7 @@ import * as functions from "firebase-functions/v2";
 import * as verifier from "../lib/functions/verify_android";
 import * as subscriber from "../lib/functions/update_subscription";
 import { HttpFunctionsOptions } from "../lib/src/functions_base";
+import { firestoreLoader } from "../lib/src/firebase_loader";
 
 /**
  * Verify subscriptions and add data.
@@ -114,20 +115,34 @@ module.exports = (
             }
             /* ==== ここまでAndroid検証 ==== */
             /* ==== Firestoreの更新ここから ==== */
-            await subscriber.updateSubscription({
-                targetCollectionPath: query.data.path ?? process.env.PURCHASE_SUBSCRIPTIONPATH,
-                targetDocumentId: query.data.purchaseToken,
-                data: res,
-                additionalData: query.data,
-                userId: query.data.userId,
-                platform: "Android",
-                orderId: res["orderId"],
-                productId: query.data.productId,
-                purchaseId: query.data.purchaseId,
-                packageName: query.data.packageName,
-                token: query.data.purchaseToken,
-                expiryDate: expiryTimeMillis,
-            });
+            let error: any | null = null;
+            const firestoreDatabaseIds = options.firestoreDatabaseIds ?? [""];
+            for (const databaseId of firestoreDatabaseIds) {
+                try {
+                const firestoreInstance = firestoreLoader(databaseId);
+                await subscriber.updateSubscription({
+                    targetCollectionPath: query.data.path ?? process.env.PURCHASE_SUBSCRIPTIONPATH,
+                    targetDocumentId: query.data.purchaseToken,
+                    data: res,
+                    additionalData: query.data,
+                    userId: query.data.userId,
+                    platform: "Android",
+                    orderId: res["orderId"],
+                    productId: query.data.productId,
+                    purchaseId: query.data.purchaseId,
+                    packageName: query.data.packageName,
+                    token: query.data.purchaseToken,
+                    expiryDate: expiryTimeMillis,
+                        firestoreInstance: firestoreInstance,
+                    });
+                } catch (err) {
+                    error = err;
+                }
+            }
+            if (error) {
+                console.error(error);
+                throw new functions.https.HttpsError("unknown", "Unknown error.");
+            }
             /* ==== ここまでFirestoreの更新 ==== */
             return res;
         } catch (err) {

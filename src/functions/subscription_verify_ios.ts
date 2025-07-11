@@ -2,6 +2,7 @@ import * as functions from "firebase-functions/v2";
 import * as verifier from "../lib/functions/verify_ios";
 import * as subscriber from "../lib/functions/update_subscription";
 import { HttpFunctionsOptions } from "../lib/src/functions_base";
+import { firestoreLoader } from "../lib/src/firebase_loader";
 
 /**
  * Verify subscriptions and add data.
@@ -87,20 +88,34 @@ module.exports = (
             }
             /* ==== ここまでIOS検証 ==== */
             /* ==== Firestoreの更新ここから ==== */
-            await subscriber.updateSubscription({
-                targetCollectionPath: query.data.path ?? process.env.PURCHASE_SUBSCRIPTIONPATH,
-                targetDocumentId: info[info.length - 1]["original_transaction_id"],
-                data: info[info.length - 1],
-                additionalData: query.data,
-                userId: query.data.userId,
-                platform: "IOS",
-                orderId: info[info.length - 1]["original_transaction_id"],
-                productId: currentProductId,
-                purchaseId: query.data.purchaseId,
-                packageName: res["receipt"]["bundle_id"],
-                token: query.data.receiptData,
-                expiryDate: expiryTimeMillis,
-            });
+            let error: any | null = null;
+            const firestoreDatabaseIds = options.firestoreDatabaseIds ?? [""];
+            for (const databaseId of firestoreDatabaseIds) {
+                try {
+                    const firestoreInstance = firestoreLoader(databaseId);
+                    await subscriber.updateSubscription({
+                        targetCollectionPath: query.data.path ?? process.env.PURCHASE_SUBSCRIPTIONPATH,
+                        targetDocumentId: info[info.length - 1]["original_transaction_id"],
+                        data: info[info.length - 1],
+                        additionalData: query.data,
+                        userId: query.data.userId,
+                        platform: "IOS",
+                        orderId: info[info.length - 1]["original_transaction_id"],
+                        productId: currentProductId,
+                        purchaseId: query.data.purchaseId,
+                        packageName: res["receipt"]["bundle_id"],
+                        token: query.data.receiptData,
+                        expiryDate: expiryTimeMillis,
+                        firestoreInstance: firestoreInstance,
+                    });
+                } catch (err) {
+                    error = err;
+                }
+            }
+            if (error) {
+                console.error(error);
+                throw new functions.https.HttpsError("unknown", "Unknown error.");
+            }
             /* ==== ここまでFirestoreの更新 ==== */
             return res;
         } catch (err) {

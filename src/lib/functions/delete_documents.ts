@@ -27,14 +27,15 @@ export async function deleteDocuments({
     collectionPath,
     wheres,
     conditions,
+    firestoreInstance,
 }:  {
         collectionPath: string,
         wheres?: { [key: string]: any }[] | undefined,
         conditions?: { [key: string]: any }[] | undefined,
+        firestoreInstance: FirebaseFirestore.Firestore,
     }) : Promise<{ [key: string]: any }> {
     const res: { [key: string]: any } = {};
     try {
-        const firestoreInstance = admin.firestore();
         const collectionRef = firestore.where({
             query: firestoreInstance.collection(collectionPath),
             wheres: wheres

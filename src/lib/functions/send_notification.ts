@@ -99,6 +99,7 @@ export async function sendNotification({
     targetWheres,
     targetConditions,
     responseTokenList,
+    firestoreInstance,
 }: {
     title: string,
     body: string,
@@ -115,6 +116,7 @@ export async function sendNotification({
     targetWheres?: { [key: string]: any }[] | undefined,
     targetConditions?: { [key: string]: any }[] | undefined,
     responseTokenList?: boolean | undefined | null,
+    firestoreInstance: FirebaseFirestore.Firestore,
 }): Promise<{ [key: string]: any }> {
     const res: { [key: string]: any } = {};
     try {
@@ -263,7 +265,6 @@ export async function sendNotification({
             // コレクションパスによる通知
         } else if (targetCollectionPath !== undefined && targetCollectionPath !== null && targetTokenField != undefined && targetTokenField !== null) {
             console.log(`Notification target collection path: ${targetCollectionPath} wheres: ${JSON.stringify(targetWheres)} conditions: ${JSON.stringify(targetConditions)}`);
-            const firestoreInstance = admin.firestore();
             const collectionRef = firestore.where({
                 query: firestoreInstance.collection(targetCollectionPath),
                 wheres: targetWheres,
@@ -296,6 +297,7 @@ export async function sendNotification({
                     sound: sound,
                     responseTokenList: responseTokenList,
                     targetToken: tokens,
+                    firestoreInstance: firestoreInstance,
                 });
                 results.push(res.results ?? []);
                 if (collection.docs.length < 500) {
@@ -312,7 +314,6 @@ export async function sendNotification({
             // ドキュメントパスによる通知
         } else if (targetDocumentPath !== undefined && targetDocumentPath !== null && targetTokenField != undefined && targetTokenField !== null) {
             console.log(`Notification target document path: ${targetDocumentPath} conditions: ${JSON.stringify(targetConditions)}`);
-            const firestoreInstance = admin.firestore();
             const documentRef = firestoreInstance.doc(targetDocumentPath);
             const results: any[] = [];
             const doc = await documentRef.get();
@@ -336,6 +337,7 @@ export async function sendNotification({
                         sound: sound,
                         responseTokenList: responseTokenList,
                         targetToken: tokens,
+                    firestoreInstance: firestoreInstance,
                     });
                     results.push(res.results ?? []);
                 }
