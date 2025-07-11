@@ -1,7 +1,6 @@
 import * as base from "./lib/src/functions_base";
 import * as admin from "firebase-admin";
 import * as regions from "./lib/regions";
-import { Functions } from "./functions";
 export * from "./functions";
 export * from "./lib/api";
 export * from "./lib/src/sql_api_base";
@@ -15,6 +14,7 @@ export * from "./lib/exntensions/string.extension";
 export * as gmail from "./lib/functions/gmail";
 export * as sendGrid from "./lib/functions/send_grid";
 export * as notification from "./lib/functions/send_notification";
+export * from "./lib/src/firebase_loader";
 
 /**
  * Methods for deploying to Firebase Functions.
