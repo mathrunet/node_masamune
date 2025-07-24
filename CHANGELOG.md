@@ -1,3 +1,16 @@
+# [3.1.0](https://github.com/mathrunet/node_masamune/compare/v3.0.1...v3.1.0) (2025-07-24)
+
+
+### feat
+
+* Add HLS function. ([bfa96e5](https://github.com/mathrunet/node_masamune/commit/bfa96e5b176180e84dafea9b75612bcd68fb3424))
+
+### fix
+
+* Make UsCentral default. ([97196cf](https://github.com/mathrunet/node_masamune/commit/97196cf042dedde97d7f98c6d7836b30ec9ee7fe))
+
+
+
 ## [3.0.1](https://github.com/mathrunet/node_masamune/compare/v3.0.0...v3.0.1) (2025-07-11)
 
 
