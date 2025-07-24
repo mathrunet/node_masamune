@@ -195,6 +195,12 @@ export const Functions = {
    */
   subscriptionVerifyIOS: (options: data.HttpFunctionsOptions = {}) => new data.FunctionsData({ id: "subscription_verify_ios", func: require("./functions/subscription_verify_ios"), options: options }),
   /**
+   * Convert videos uploaded to storage to HLS format.
+   * 
+   * ストレージにアップロードされた動画をHLS形式に変換します。
+   */
+  hls: (options: data.StorageFunctionsOptions = {}) => new data.FunctionsData({ id: "hls", func: require("./functions/hls"), options: options }),
+  /**
    * Endpoints for testing.
    * 
    * テストを行うためのエンドポイントです。
