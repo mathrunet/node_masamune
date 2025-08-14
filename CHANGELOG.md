@@ -1,3 +1,12 @@
+## [3.1.1](https://github.com/mathrunet/node_masamune/compare/v3.1.0...v3.1.1) (2025-08-14)
+
+
+### fix
+
+* Add a flag to `sendNotification` to control whether to display logs. ([87d31cb](https://github.com/mathrunet/node_masamune/commit/87d31cba2a06fbda27f235d8f59a5b7e2f35ad42))
+
+
+
 # [3.1.0](https://github.com/mathrunet/node_masamune/compare/v3.0.1...v3.1.0) (2025-07-24)
 
 
