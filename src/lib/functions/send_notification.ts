@@ -100,6 +100,7 @@ export async function sendNotification({
     targetConditions,
     responseTokenList,
     firestoreInstance,
+    showLog,
 }: {
     title: string,
     body: string,
@@ -117,6 +118,7 @@ export async function sendNotification({
     targetConditions?: { [key: string]: any }[] | undefined,
     responseTokenList?: boolean | undefined | null,
     firestoreInstance: FirebaseFirestore.Firestore,
+    showLog?: boolean | undefined | null,
 }): Promise<{ [key: string]: any }> {
     const res: { [key: string]: any } = {};
     try {
@@ -132,7 +134,9 @@ export async function sendNotification({
         }
         // トークンによる通知
         if (targetToken !== undefined && targetToken !== null) {
-            console.log(`Notification target token: ${targetToken}`);
+            if (showLog) {
+                console.log(`Notification target token: ${targetToken}`);
+            }
             if (typeof targetToken === "string") {
                 targetToken = [targetToken];
             }
@@ -210,7 +214,9 @@ export async function sendNotification({
             };
             // トピックによる通知
         } else if (targetTopic !== undefined && targetTopic !== null) {
-            console.log(`Notification target topic: ${targetTopic}`);
+            if (showLog) {
+                console.log(`Notification target topic: ${targetTopic}`);
+            }
             if (responseTokenList) {
                 return {
                     success: true,
@@ -264,7 +270,9 @@ export async function sendNotification({
             };
             // コレクションパスによる通知
         } else if (targetCollectionPath !== undefined && targetCollectionPath !== null && targetTokenField != undefined && targetTokenField !== null) {
-            console.log(`Notification target collection path: ${targetCollectionPath} wheres: ${JSON.stringify(targetWheres)} conditions: ${JSON.stringify(targetConditions)}`);
+            if (showLog) {
+                console.log(`Notification target collection path: ${targetCollectionPath} wheres: ${JSON.stringify(targetWheres)} conditions: ${JSON.stringify(targetConditions)}`);
+            }
             const collectionRef = firestore.where({
                 query: firestoreInstance.collection(targetCollectionPath),
                 wheres: targetWheres,
@@ -277,7 +285,9 @@ export async function sendNotification({
                 collection = await firestore.cursor({ query: collectionRef, limit: 500, cursor: cursor }).get();
                 for (let doc of collection.docs) {
                     const docData = doc.data();
-                    console.log(`Document: ${JSON.stringify(docData)}`);
+                    if (showLog) {
+                        console.log(`Document: ${JSON.stringify(docData)}`);
+                    }
                     if (!await firestore.hasMatch({ data: docData, conditions: targetConditions })) {
                         continue;
                     }
@@ -313,13 +323,17 @@ export async function sendNotification({
             }
             // ドキュメントパスによる通知
         } else if (targetDocumentPath !== undefined && targetDocumentPath !== null && targetTokenField != undefined && targetTokenField !== null) {
-            console.log(`Notification target document path: ${targetDocumentPath} conditions: ${JSON.stringify(targetConditions)}`);
+            if (showLog) {
+                console.log(`Notification target document path: ${targetDocumentPath} conditions: ${JSON.stringify(targetConditions)}`);
+            }
             const documentRef = firestoreInstance.doc(targetDocumentPath);
             const results: any[] = [];
             const doc = await documentRef.get();
             const docData = doc.data();
             if (docData) {
-                console.log(`Document: ${JSON.stringify(docData)}`);
+                if (showLog) {
+                    console.log(`Document: ${JSON.stringify(docData)}`);
+                }
                 if (await firestore.hasMatch({ data: docData, conditions: targetConditions })) {
                     const token = await firestore.get({ data: docData, field: targetTokenField });
                     const tokens: string[] = [];
