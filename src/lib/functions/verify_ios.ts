@@ -72,7 +72,6 @@ export async function verifyIOS({
         throw new functions.https.HttpsError("not-found", "The validation data is empty.");
     }
     let json = (await res.json()) as { [key: string]: any };
-    console.log(json);
     let status = json["status"];
     if (status === 21007 || status === 21008) {
         res = await Api.post("https://sandbox.itunes.apple.com/verifyReceipt", {
@@ -91,7 +90,6 @@ export async function verifyIOS({
             throw new functions.https.HttpsError("not-found", "The validation data is empty.");
         }
         json = (await res.json()) as { [key: string]: any };
-        console.log(json);
         status = json["status"];
         if (status !== 0) {
             throw new functions.https.HttpsError("not-found", "Illegal receipt.");
@@ -196,7 +194,7 @@ async function verifyIOSStoreKit2({
     } catch (error) {
         console.error("StoreKit2 verification error:", error);
         if (error instanceof jwt.JsonWebTokenError) {
-            throw new functions.https.HttpsError("invalid-argument", "Invalid JWT token: " + error.message);
+            throw new functions.https.HttpsError("invalid-argument", `Invalid JWT token: ${error.message}`);
         }
         throw new functions.https.HttpsError("internal", "Failed to verify StoreKit2 transaction.");
     }
