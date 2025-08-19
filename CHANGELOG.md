@@ -1,3 +1,12 @@
+## [3.2.1](https://github.com/mathrunet/node_masamune/compare/v3.2.0...v3.2.1) (2025-08-19)
+
+
+### fix
+
+* Fixed: Parameters were not passed. ([2e3a7ba](https://github.com/mathrunet/node_masamune/commit/2e3a7ba20e7808a29b6558501c913594da5f8d4e))
+
+
+
 # [3.2.0](https://github.com/mathrunet/node_masamune/compare/v3.1.1...v3.2.0) (2025-08-19)
 
 
