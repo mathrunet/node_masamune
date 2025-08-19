@@ -1,3 +1,12 @@
+## [3.2.4](https://github.com/mathrunet/node_masamune/compare/v3.2.3...v3.2.4) (2025-08-19)
+
+
+### fix
+
+* Remove unnecessary logs. ([e43db79](https://github.com/mathrunet/node_masamune/commit/e43db79051e753488e0875d867e9a78a1b942e6d))
+
+
+
 ## [3.2.3](https://github.com/mathrunet/node_masamune/compare/v3.2.2...v3.2.3) (2025-08-19)
 
 
