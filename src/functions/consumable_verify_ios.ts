@@ -51,6 +51,8 @@ module.exports = (
             const res = await verifier.verifyIOS({
                 receiptData: query.data.receiptData,
                 password: process.env.PURCHASE_IOS_SHAREDSECRET ?? "",
+                transactionId: query.data.transactionId,
+                storeKitVersion: query.data.storeKitVersion ?? 1,
             });
             const status = res["status"];
             if (status !== 0) {
