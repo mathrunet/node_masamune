@@ -1,3 +1,12 @@
+## [3.2.3](https://github.com/mathrunet/node_masamune/compare/v3.2.2...v3.2.3) (2025-08-19)
+
+
+### fix
+
+* Log check ([fe8d62a](https://github.com/mathrunet/node_masamune/commit/fe8d62ae69555b2a80235d3549df70b7122304cb))
+
+
+
 ## [3.2.2](https://github.com/mathrunet/node_masamune/compare/v3.2.1...v3.2.2) (2025-08-19)
 
 
