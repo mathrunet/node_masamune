@@ -66,6 +66,10 @@ module.exports = (
             if (!query.data.userId) {
                 throw new functions.https.HttpsError("invalid-argument", "User is empty.");
             }
+            console.log(query.data.receiptData);
+            console.log(process.env.PURCHASE_IOS_SHAREDSECRET);
+            console.log(query.data.transactionId);
+            console.log(query.data.storeKitVersion);
             const res = await verifier.verifyIOS({
                 receiptData: query.data.receiptData,
                 password: process.env.PURCHASE_IOS_SHAREDSECRET ?? "",
