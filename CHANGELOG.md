@@ -1,3 +1,12 @@
+## [3.2.2](https://github.com/mathrunet/node_masamune/compare/v3.2.1...v3.2.2) (2025-08-19)
+
+
+### fix
+
+* Implemented logging. ([945f56b](https://github.com/mathrunet/node_masamune/commit/945f56bb3b9a1c7650bb6232b2196fb4cac85bee))
+
+
+
 ## [3.2.1](https://github.com/mathrunet/node_masamune/compare/v3.2.0...v3.2.1) (2025-08-19)
 
 
