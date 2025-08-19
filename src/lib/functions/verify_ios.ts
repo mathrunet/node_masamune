@@ -46,11 +46,13 @@ export async function verifyIOS({
     transactionId?: string | null | undefined
 }) {
     if (storeKitVersion === 2) {
+        console.log(`StoreKitVersion2: ${receiptData} ${transactionId}`);
         if (!transactionId) { 
             throw new functions.https.HttpsError("invalid-argument", "Transaction ID is required for StoreKit2 verification.");
         }
         return await verifyIOSStoreKit2({ jwtToken: receiptData, transactionId });
     }
+    console.log(`StoreKitVersion1: ${receiptData}`);
     if (!password) {
         throw new functions.https.HttpsError("invalid-argument", "Password is required for StoreKit1 verification.");
     }
