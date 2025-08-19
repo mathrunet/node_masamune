@@ -1,3 +1,12 @@
+# [3.2.0](https://github.com/mathrunet/node_masamune/compare/v3.1.1...v3.2.0) (2025-08-19)
+
+
+### feat
+
+* Supports iOS StoreKit 2 validation. ([62450c5](https://github.com/mathrunet/node_masamune/commit/62450c566e33f97b0112bb55b1e3f34ea0d3a25e))
+
+
+
 ## [3.1.1](https://github.com/mathrunet/node_masamune/compare/v3.1.0...v3.1.1) (2025-08-14)
 
 
