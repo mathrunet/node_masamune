@@ -67,7 +67,6 @@ module.exports = (
         try {
             const appId = process.env.AGORA_APP_ID ?? "";
             const appCertificate = process.env.AGORA_APP_CERTIFICATE ?? "";
-            const expirationTimeInSeconds = 3600;
             let role = RtcRole.PUBLISHER;
             if (query.data.role === "audience") {
                 role = RtcRole.SUBSCRIBER;
@@ -75,6 +74,7 @@ module.exports = (
             const channelName = query.data.name;
             const uid = query.data.uid as number | undefined | null;
             const account = query.data.account as string | undefined | null;
+            const expirationTimeInSeconds = (query.data.expirationSeconds as number | undefined | null) ?? 3600;
             if (!channelName) {
                 throw new functions.https.HttpsError("invalid-argument", "Channel is invalid.");
             }
