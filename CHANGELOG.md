@@ -1,3 +1,12 @@
+## [3.2.5](https://github.com/mathrunet/node_masamune/compare/v3.2.4...v3.2.5) (2025-08-29)
+
+
+### fix
+
+* Enabled setting an expiration date. ([3e109fd](https://github.com/mathrunet/node_masamune/commit/3e109fde06deb84d782daa41a8df9858b0760bd8))
+
+
+
 ## [3.2.4](https://github.com/mathrunet/node_masamune/compare/v3.2.3...v3.2.4) (2025-08-19)
 
 
