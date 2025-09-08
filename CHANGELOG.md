@@ -1,3 +1,12 @@
+## [3.2.6](https://github.com/mathrunet/node_masamune/compare/v3.2.5...v3.2.6) (2025-09-08)
+
+
+### fix
+
+* Fixed a bug that caused an error when `resItem` was not an array. ([1e70363](https://github.com/mathrunet/node_masamune/commit/1e703635636fc7cd739ecbe27a579bf0f004660f))
+
+
+
 ## [3.2.5](https://github.com/mathrunet/node_masamune/compare/v3.2.4...v3.2.5) (2025-08-29)
 
 
