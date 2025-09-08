@@ -130,8 +130,17 @@ module.exports = (
                         firestoreInstance: firestoreInstance,
                     });
                     if (resItem.results) {
-                        for (const result of resItem.results) {
-                            results.push(result);
+                        // 配列かどうかを確認してから反復処理
+                        if (Array.isArray(resItem.results)) {
+                            for (const result of resItem.results) {
+                                results.push(result);
+                            }
+                        } else if (typeof resItem.results === "object") {
+                            // オブジェクトの場合は、値を配列に追加
+                            results.push(resItem.results);
+                        } else {
+                            // その他の型（文字列など）の場合
+                            results.push(resItem.results);
                         }
                     }
                 } catch (err) {
