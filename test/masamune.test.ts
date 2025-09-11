@@ -78,5 +78,14 @@ describe("Masamune Test", () => {
         expect("abcde".splitByCharacterAndBigram()).toEqual(["a", "b", "c", "d", "e", "ab", "bc", "cd", "de"]);
         expect("abcde".splitByTrigram()).toEqual(["abc", "bcd", "cde"]);
         expect("😊😆".removeOnlyEmoji()).toBe("");
+        // FirestoreのMapキーテスト
+        expect("test.key".toFirestoreMapKey()).toBe("testkey");
+        expect("test/key".toFirestoreMapKey()).toBe("testkey");
+        expect("test~key".toFirestoreMapKey()).toBe("testkey");
+        expect("test*key".toFirestoreMapKey()).toBe("testkey");
+        expect("test[key]".toFirestoreMapKey()).toBe("testkey");
+        expect("test./*~[]key".toFirestoreMapKey()).toBe("testkey");
+        expect("  test key  ".toFirestoreMapKey()).toBe("test key");
+        expect("normal_key-123".toFirestoreMapKey()).toBe("normal_key-123");
     });
 });

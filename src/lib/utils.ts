@@ -1,8 +1,4 @@
-import {randomUUID} from "crypto";
 import { v7 as uuidv7 } from "uuid";
-
-// Same value as Dart's _kIntMaxValue for consistency
-const INT_MAX_VALUE = 9007199254740991;
 
 /**
  * Checks if [value] is {[key: string]: any}.
@@ -86,14 +82,11 @@ export function uuid(options?: { baseTime?: Date; reverse?: boolean }): string {
   const baseTime = options?.baseTime ?? new Date();
   const reverse = options?.reverse ?? false;
   
+  const generated = uuidv7({ msecs: baseTime.getTime() }).replace(/-/g, "");
   if (reverse) {
-    // Create a reversed timestamp for reverse sorting
-    // Same logic as Dart version: INT_MAX_VALUE - timestamp
-    const reversedTime = INT_MAX_VALUE - baseTime.getTime();
-    return uuidv7({ msecs: reversedTime }).replace(/-/g, "");
-  } else {
-    return uuidv7({ msecs: baseTime.getTime() }).replace(/-/g, "");
+    return _createComplementaryString(generated);
   }
+  return generated; 
 }
 
 /**
@@ -127,4 +120,18 @@ export function splitArray<T>(array: T[], chunkSize: number): T[][] {
     }
 
     return tempArray;
+}
+
+function _createComplementaryString(originalString: string): string {
+  let buffer = "";
+  const charList = "0123456789abcdef";
+  for (let i = 0; i < originalString.length; i++) {
+    const charIndex = charList.indexOf(originalString[i]);
+    if (charIndex == -1) {
+      continue;
+    }
+    const complementIndex = charList.length - charIndex - 1;
+    buffer += charList[complementIndex];
+  }
+  return buffer;
 }
