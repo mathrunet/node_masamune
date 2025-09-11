@@ -1,3 +1,12 @@
+## [3.3.2](https://github.com/mathrunet/node_masamune/compare/v3.3.1...v3.3.2) (2025-09-11)
+
+
+### fix
+
+* Removed unremovable emojis. ([c33a18f](https://github.com/mathrunet/node_masamune/commit/c33a18f9baaa981f8b28cae1820aaa64fbce2767))
+
+
+
 ## [3.3.1](https://github.com/mathrunet/node_masamune/compare/v3.3.0...v3.3.1) (2025-09-11)
 
 
