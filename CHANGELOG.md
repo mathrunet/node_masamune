@@ -1,3 +1,12 @@
+# [3.3.0](https://github.com/mathrunet/node_masamune/compare/v3.2.6...v3.3.0) (2025-09-11)
+
+
+### feat
+
+* Added v7 support for Uuid. ([fa12b77](https://github.com/mathrunet/node_masamune/commit/fa12b7766d879d14f1d021ecfa1d6b17012df5f7))
+
+
+
 ## [3.2.6](https://github.com/mathrunet/node_masamune/compare/v3.2.5...v3.2.6) (2025-09-08)
 
 
