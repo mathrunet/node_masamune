@@ -1,3 +1,12 @@
+## [3.3.1](https://github.com/mathrunet/node_masamune/compare/v3.3.0...v3.3.1) (2025-09-11)
+
+
+### fix
+
+* Adjust UUID specifications ([4ead298](https://github.com/mathrunet/node_masamune/commit/4ead298714fbb6968f640aa9537f2c6901f2fe3b))
+
+
+
 # [3.3.0](https://github.com/mathrunet/node_masamune/compare/v3.2.6...v3.3.0) (2025-09-11)
 
 
