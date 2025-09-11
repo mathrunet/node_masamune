@@ -1,4 +1,8 @@
 import {randomUUID} from "crypto";
+import { v7 as uuidv7 } from "uuid";
+
+// Same value as Dart's _kIntMaxValue for consistency
+const INT_MAX_VALUE = 9007199254740991;
 
 /**
  * Checks if [value] is {[key: string]: any}.
@@ -55,15 +59,41 @@ export function parse(value: string | number) {
 }
 
 /**
- * Generates a UUIDv4.
+ * Generate and retrieve the UUID for Version 7.
  * 
- * UUIDv4を生成します。
+ * The strings can be sorted in chronological order of generation.
  * 
- * @return {string}
- * UUIDv4.
+ * Returned as a string with 32 hyphenated characters removed.
+ * 
+ * If [baseTime] is specified, the date and time to be generated can be adjusted. 
+ * If [reverse] is specified, the elapsed time from [baseTime] is reversed.
+ * 
+ * Version7のUUIDを生成し取得します。
+ * 
+ * 文字列を生成した時系列順にソート可能です。
+ * 
+ * 32文字のハイフンが取り除かれた文字列として返されます。
+ * 
+ * [baseTime]を指定した場合、生成する日時を調節できます。
+ * [reverse]を指定した場合は、[baseTime]からの経過時間を反転させた値を使用します。
+ * 
+ * @param {Object} options - Options for UUID generation
+ * @param {Date} [options.baseTime] - Base time for UUID generation (defaults to current time)
+ * @param {boolean} [options.reverse=false] - Whether to reverse the timestamp
+ * @return {string} UUID v7 without hyphens
  */
-export function uuid() {
-  return randomUUID().replace(/-/g, "");
+export function uuid(options?: { baseTime?: Date; reverse?: boolean }): string {
+  const baseTime = options?.baseTime ?? new Date();
+  const reverse = options?.reverse ?? false;
+  
+  if (reverse) {
+    // Create a reversed timestamp for reverse sorting
+    // Same logic as Dart version: INT_MAX_VALUE - timestamp
+    const reversedTime = INT_MAX_VALUE - baseTime.getTime();
+    return uuidv7({ msecs: reversedTime }).replace(/-/g, "");
+  } else {
+    return uuidv7({ msecs: baseTime.getTime() }).replace(/-/g, "");
+  }
 }
 
 /**
