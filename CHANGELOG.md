@@ -1,3 +1,12 @@
+## [3.4.1](https://github.com/mathrunet/node_masamune/compare/v3.4.0...v3.4.1) (2025-09-12)
+
+
+### fix
+
+* Add Database ID. ([396e302](https://github.com/mathrunet/node_masamune/commit/396e302b986e20812890a703e796e22d2e318c03))
+
+
+
 # [3.4.0](https://github.com/mathrunet/node_masamune/compare/v3.3.2...v3.4.0) (2025-09-12)
 
 
