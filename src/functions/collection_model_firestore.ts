@@ -26,6 +26,11 @@ import { Firestore, FieldValue } from "@google-cloud/firestore";
  * Data to be saved.
  * 
  * 保存をするためのデータ。
+ * 
+ * @param {string} databaseId
+ * The database ID.
+ * 
+ * データベースID。
  */
 module.exports = (
     regions: string[],
@@ -45,6 +50,9 @@ module.exports = (
     },
     async (query) => {
         try {
+            // クエリパラメータから必要な情報を取得
+            const databaseId = query.data.databaseId as string | undefined | null;
+
             // 環境変数からサービスアカウントJSONを取得
             let serviceAccount;
             try {
@@ -66,6 +74,7 @@ module.exports = (
             // Firestoreインスタンスを作成
             const firestoreInstance = new Firestore({
                 projectId: serviceAccount.project_id,
+                databaseId: databaseId ?? undefined,
                 credentials: {
                     client_email: serviceAccount.client_email,
                     private_key: serviceAccount.private_key,
