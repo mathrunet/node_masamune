@@ -200,6 +200,25 @@ export const Functions = {
    * ストレージにアップロードされた動画をHLS形式に変換します。
    */
   hls: (options: data.StorageFunctionsOptions = {}) => new data.FunctionsData({ id: "hls", func: require("./functions/hls"), options: options }),
+
+  /**
+   * A function to enable the use of external Firestore Collection Models.
+   * 
+   * 外部のFirestoreのCollectionModelを利用できるようにするためのFunction。
+   */
+  collectionModelFirestore: (options: data.HttpFunctionsOptions = {}) => new data.FunctionsData({ id: "collection_model_firestore", func: require("./functions/collection_model_firestore"), options: options }),
+  /**
+   * A function to enable the use of external Firestore Document Models.
+   * 
+   * 外部のFirestoreのDocumentModelを利用できるようにするためのFunction。
+   */
+  documentModelFirestore: (options: data.HttpFunctionsOptions = {}) => new data.FunctionsData({ id: "document_model_firestore", func: require("./functions/document_model_firestore"), options: options }),
+  /**
+   * A function to enable the use of external Firebase Storage.
+   * 
+   * 外部のFirebase Storageを利用できるようにするためのFunction。
+   */
+  storageFirebase: (options: data.HttpFunctionsOptions = {}) => new data.FunctionsData({ id: "storage_firebase", func: require("./functions/storage_firebase"), options: options }),
   /**
    * Endpoints for testing.
    * 
