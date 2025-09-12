@@ -1,3 +1,12 @@
+# [3.4.0](https://github.com/mathrunet/node_masamune/compare/v3.3.2...v3.4.0) (2025-09-12)
+
+
+### feat
+
+* Added functions to utilize external models and external storage. ([e2eff76](https://github.com/mathrunet/node_masamune/commit/e2eff76225e5e7e0c0d20075e12059c91bba07a1))
+
+
+
 ## [3.3.2](https://github.com/mathrunet/node_masamune/compare/v3.3.1...v3.3.2) (2025-09-11)
 
 
