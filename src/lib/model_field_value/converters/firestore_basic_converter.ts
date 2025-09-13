@@ -23,4 +23,11 @@ export class FirestoreBasicConverter extends FirestoreModelFieldValueConverter {
     original: { [field: string]: any }): { [field: string]: any } | null {
     return null;
   }
+
+  convertTo(
+    key: string,
+    value: any,
+    original: { [field: string]: any }): { [field: string]: any } | null {
+    return null;
+  }
 }

@@ -27,17 +27,30 @@ export abstract class FirestoreModelFieldValueConverter {
      * 
      * Return [Null] if there are no changes.
      * 
-     * [FirestoreModelAdapterBase] is passed to [adapter].
-     * 
      * Firestoreで管理可能な型から[ModelFieldValue]に変換します。
      * 
      * [key]と[value]から[DynamicMap]の値を生成して返してください。[original]は変換前の[DynamicMap]を渡します。
      * 
      * 変更がない場合は[Null]を返してください。
-     * 
-     * [adapter]に[FirestoreModelAdapterBase]が渡されます。
      */
     abstract convertFrom(
+        key: string,
+        value: any,
+        original: { [field: string]: any }): { [field: string]: any } | null;
+    /**
+     * Convert from [ModelFieldValue] to Firestore manageable type.
+     * 
+     * Generate and return a [DynamicMap] value from [key] and [value]. [original] is passed the [DynamicMap] before conversion.
+     * 
+     * Return [Null] if there are no changes.
+     * 
+     * [ModelFieldValue]からFirestoreで管理可能な型に変換します。
+     * 
+     * [key]と[value]から[DynamicMap]の値を生成して返してください。[original]は変換前の[DynamicMap]を渡します。
+     * 
+     * 変更がない場合は[Null]を返してください。
+     */
+    abstract convertTo(
         key: string,
         value: any,
         original: { [field: string]: any }): { [field: string]: any } | null;
@@ -81,6 +94,45 @@ export abstract class FirestoreModelFieldValueConverter {
             const val = data[key];
             for (const converter of defaultConverters) {
                 replaced = converter.convertFrom(key, val, data);
+                console.log(`Convert(${converter.type}): ${key} : ${val} to ${replaced}`);
+                if (replaced !== null) {
+                    break;
+                }
+            }
+            if (replaced !== null) {
+                for (const k in replaced) {
+                    const v = replaced[k];
+                    update[k] = v;
+                }
+            } else {
+                update[key] = val;
+            }
+        }
+        return update;
+    }
+
+    /**
+     * Convert data to Firestore manageable type.
+     * 
+     * データをFirestoreで管理可能な型に変換します。
+     * 
+     * @param data
+     * Data to convert.
+     * 
+     * 変換するデータ。
+     * 
+     * @returns { [field: string]: any }
+     * Data converted to Firestore manageable type.
+     * 
+     * Firestoreで管理可能な型に変換されたデータ。
+     */
+    static convertTo(data: { [field: string]: any }): { [field: string]: any } {
+        const update: { [field: string]: any } = {};
+        var replaced: { [field: string]: any } | null = null;
+        for (const key in data) {
+            const val = data[key];
+            for (const converter of defaultConverters) {
+                replaced = converter.convertTo(key, val, data);
                 console.log(`Convert(${converter.type}): ${key} : ${val} to ${replaced}`);
                 if (replaced !== null) {
                     break;
