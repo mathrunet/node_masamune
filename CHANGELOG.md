@@ -1,3 +1,12 @@
+## [3.4.3](https://github.com/mathrunet/node_masamune/compare/v3.4.2...v3.4.3) (2025-09-13)
+
+
+### chore
+
+* Add error messages. ([d7f2b00](https://github.com/mathrunet/node_masamune/commit/d7f2b00590761aac98b25f03c1a36f2ee20be5c7))
+
+
+
 ## [3.4.2](https://github.com/mathrunet/node_masamune/compare/v3.4.1...v3.4.2) (2025-09-13)
 
 
