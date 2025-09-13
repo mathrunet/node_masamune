@@ -1,3 +1,12 @@
+## [3.4.2](https://github.com/mathrunet/node_masamune/compare/v3.4.1...v3.4.2) (2025-09-13)
+
+
+### fix
+
+* Fix the ServiceAccount key as it's unusable. ([e5fd4ce](https://github.com/mathrunet/node_masamune/commit/e5fd4ce8dc98eefd487e59f4611d8d57d9957f4c))
+
+
+
 ## [3.4.1](https://github.com/mathrunet/node_masamune/compare/v3.4.0...v3.4.1) (2025-09-12)
 
 
