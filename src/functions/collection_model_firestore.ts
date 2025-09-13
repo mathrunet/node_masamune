@@ -64,7 +64,32 @@ module.exports = (
                     );
                 }
                 serviceAccount = JSON.parse(serviceAccountJson);
+                
+                // サービスアカウントの必須フィールドを検証
+                if (!serviceAccount.project_id) {
+                    throw new functions.https.HttpsError(
+                        "invalid-argument",
+                        "Service account JSON is missing 'project_id' field"
+                    );
+                }
+                if (!serviceAccount.client_email) {
+                    throw new functions.https.HttpsError(
+                        "invalid-argument",
+                        "Service account JSON is missing 'client_email' field"
+                    );
+                }
+                if (!serviceAccount.private_key) {
+                    throw new functions.https.HttpsError(
+                        "invalid-argument",
+                        "Service account JSON is missing 'private_key' field"
+                    );
+                }
+                
+                console.log(`Using service account for project: ${serviceAccount.project_id}`);
             } catch (error) {
+                if (error instanceof functions.https.HttpsError) {
+                    throw error;
+                }
                 throw new functions.https.HttpsError(
                     "invalid-argument",
                     `Invalid service account JSON in environment variable: FIRESTORE_SERVICE_ACCOUNT`
@@ -72,9 +97,14 @@ module.exports = (
             }
 
             // Firestoreインスタンスを作成
+            // データベースIDが指定されていない場合は "(default)" を使用
+            const finalDatabaseId = databaseId || "(default)";
+            
+            console.log(`Creating Firestore instance with projectId: ${serviceAccount.project_id}, databaseId: ${finalDatabaseId}`);
+            
             const firestoreInstance = new Firestore({
                 projectId: serviceAccount.project_id,
-                databaseId: databaseId ?? undefined,
+                databaseId: finalDatabaseId,
                 credentials: {
                     client_email: serviceAccount.client_email,
                     private_key: serviceAccount.private_key,
@@ -96,47 +126,77 @@ module.exports = (
             // メソッドに応じて処理を実行
             switch (method) {
                 case "get": {
-                    const col = await firestoreInstance.collection(path).get();
-                    const data: { [key: string]: { [key: string]: any } } = {};
-                    for (const doc of col.docs) {
-                        if (doc.exists) {
-                            data[doc.id] = doc.data();
+                    console.log(`Attempting to get collection at path: ${path}`);
+                    try {
+                        const col = await firestoreInstance.collection(path).get();
+                        const data: { [key: string]: { [key: string]: any } } = {};
+                        for (const doc of col.docs) {
+                            if (doc.exists) {
+                                data[doc.id] = doc.data();
+                            }
                         }
+                        console.log(`Successfully retrieved ${col.size} documents from ${path}`);
+                        return {
+                            status: 200,
+                            data: data,
+                        };
+                    } catch (error: any) {
+                        console.error(`Error getting collection at ${path}:`, error);
+                        throw new functions.https.HttpsError(
+                            "not-found",
+                            `Failed to get collection at ${path}: ${error.message}`
+                        );
                     }
-                    return {
-                        status: 200,
-                        data: data,
-                    };
                 }
                 case "put":
                 case "post": {
                     if (!collectionData) {
                         throw new functions.https.HttpsError("invalid-argument", "No data specified for set operation.");
                     }
-                    // NullはFieldValue.delete()に変換される
-                    for (const docId in collectionData) {
-                        for(const key in collectionData[docId]) {
-                            if (collectionData[docId][key] === null) {
-                                collectionData[docId][key] = FieldValue.delete();
+                    console.log(`Attempting to set documents in collection at path: ${path}`);
+                    try {
+                        // NullはFieldValue.delete()に変換される
+                        for (const docId in collectionData) {
+                            for(const key in collectionData[docId]) {
+                                if (collectionData[docId][key] === null) {
+                                    collectionData[docId][key] = FieldValue.delete();
+                                }
                             }
+                            await firestoreInstance.doc(path + "/" + docId).set(
+                                collectionData[docId],
+                                { merge: true }
+                            );
                         }
-                        await firestoreInstance.doc(path + "/" + docId).set(
-                            collectionData[docId],
-                            { merge: true }
+                        console.log(`Successfully set ${Object.keys(collectionData).length} documents in ${path}`);
+                        return {
+                            status: 200,
+                        };
+                    } catch (error: any) {
+                        console.error(`Error setting documents in ${path}:`, error);
+                        throw new functions.https.HttpsError(
+                            "internal",
+                            `Failed to set documents in ${path}: ${error.message}`
                         );
                     }
-                    return {
-                        status: 200,
-                    };
                 }
                 case "delete": {
-                    const col = await firestoreInstance.collection(path).get();
-                    for (const doc of col.docs) {
-                        await doc.ref.delete();
+                    console.log(`Attempting to delete collection at path: ${path}`);
+                    try {
+                        const col = await firestoreInstance.collection(path).get();
+                        for (const doc of col.docs) {
+                            await doc.ref.delete();
+                        }
+                        console.log(`Successfully deleted ${col.size} documents from ${path}`);
+                        return {
+                            status: 200,
+                        };
+                    } catch (error: any) {
+                        console.error(`Error deleting collection at ${path}:`, error);
+                        throw new functions.https.HttpsError(
+                            "internal",
+                            `Failed to delete collection at ${path}: ${error.message}`
+                        );
                     }
-                    return {
-                        status: 200,
-                    };
                 }
                 default:
                     throw new functions.https.HttpsError("invalid-argument", `Unknown method: ${method}`);

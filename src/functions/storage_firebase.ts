@@ -61,7 +61,32 @@ module.exports = (
                     );
                 }
                 serviceAccount = JSON.parse(serviceAccountJson);
+                
+                // サービスアカウントの必須フィールドを検証
+                if (!serviceAccount.project_id) {
+                    throw new functions.https.HttpsError(
+                        "invalid-argument",
+                        "Service account JSON is missing 'project_id' field"
+                    );
+                }
+                if (!serviceAccount.client_email) {
+                    throw new functions.https.HttpsError(
+                        "invalid-argument",
+                        "Service account JSON is missing 'client_email' field"
+                    );
+                }
+                if (!serviceAccount.private_key) {
+                    throw new functions.https.HttpsError(
+                        "invalid-argument",
+                        "Service account JSON is missing 'private_key' field"
+                    );
+                }
+                
+                console.log(`Using service account for project: ${serviceAccount.project_id}`);
             } catch (error) {
+                if (error instanceof functions.https.HttpsError) {
+                    throw error;
+                }
                 throw new functions.https.HttpsError(
                     "invalid-argument",
                     `Invalid service account JSON in environment variable: STORAGE_SERVICE_ACCOUNT`
@@ -69,6 +94,8 @@ module.exports = (
             }
 
             // Storageインスタンスを作成
+            console.log(`Creating Storage instance with projectId: ${serviceAccount.project_id}`);
+            
             const storageInstance = new Storage({
                 projectId: serviceAccount.project_id,
                 credentials: {
@@ -98,6 +125,8 @@ module.exports = (
             const bucketName = pathParts[0];
             const filePath = pathParts.slice(1).join("/");
             
+            console.log(`Processing ${method} operation for bucket: ${bucketName}, filePath: ${filePath}`);
+            
             // バケットの参照を取得
             const bucket = storageInstance.bucket(bucketName);
             const file = bucket.file(filePath);
@@ -105,16 +134,20 @@ module.exports = (
             // メソッドに応じて処理を実行
             switch (method) {
                 case "get": {
+                    console.log(`Attempting to get file: ${bucketName}/${filePath}`);
                     try {
                         // ファイルの存在確認
                         const [exists] = await file.exists();
                         if (!exists) {
+                            console.log(`File not found: ${bucketName}/${filePath}`);
                             return {
                                 status: 404,
                                 data: null,
                                 error: "File not found"
                             };
                         }
+                        
+                        console.log(`File exists, downloading: ${bucketName}/${filePath}`);
                         
                         // ファイルをダウンロードしてBase64エンコード
                         const [fileBuffer] = await file.download();
@@ -133,6 +166,8 @@ module.exports = (
                         const encodedFilePath = encodeURIComponent(filePath);
                         const publicUrl = `https://firebasestorage.googleapis.com/v0/b/${bucketName}/o/${encodedFilePath}?alt=media`;
                         
+                        console.log(`Successfully downloaded file: ${bucketName}/${filePath}, size: ${metadata.size} bytes`);
+                        
                         return {
                             status: 200,
                             data: base64Data,
@@ -146,9 +181,12 @@ module.exports = (
                                 publicUri: publicUrl
                             }
                         };
-                    } catch (error) {
-                        console.error("Error downloading file:", error);
-                        throw new functions.https.HttpsError("internal", "Failed to download file.");
+                    } catch (error: any) {
+                        console.error(`Error downloading file ${bucketName}/${filePath}:`, error);
+                        throw new functions.https.HttpsError(
+                            "internal", 
+                            `Failed to download file ${bucketName}/${filePath}: ${error.message}`
+                        );
                     }
                 }
                 case "put":
@@ -157,9 +195,12 @@ module.exports = (
                         throw new functions.https.HttpsError("invalid-argument", "No binary data specified for upload operation.");
                     }
                     
+                    console.log(`Attempting to upload file: ${bucketName}/${filePath}`);
+                    
                     try {
                         // Base64データをBufferに変換
                         const buffer = Buffer.from(binary, "base64");
+                        console.log(`Converting base64 data to buffer, size: ${buffer.length} bytes`);
                         
                         // メタデータの設定
                         const options: any = {};
@@ -167,6 +208,7 @@ module.exports = (
                             // contentTypeの設定
                             if (meta.contentType) {
                                 options.contentType = meta.contentType;
+                                console.log(`Setting content type: ${meta.contentType}`);
                             }
                             
                             // contentType以外のメタデータを設定
@@ -178,11 +220,13 @@ module.exports = (
                                 options.metadata = {
                                     metadata: customMetadata
                                 };
+                                console.log(`Setting custom metadata:`, customMetadata);
                             }
                         }
                         
                         // ファイルをアップロード
                         await file.save(buffer, options);
+                        console.log(`File saved successfully: ${bucketName}/${filePath}`);
                         
                         // アップロード後のメタデータを取得
                         const [uploadedMetadata] = await file.getMetadata();
@@ -197,6 +241,8 @@ module.exports = (
                         const encodedFilePath = encodeURIComponent(filePath);
                         const publicUrl = `https://firebasestorage.googleapis.com/v0/b/${bucketName}/o/${encodedFilePath}?alt=media`;
                         
+                        console.log(`Successfully uploaded file: ${bucketName}/${filePath}, final size: ${uploadedMetadata.size} bytes`);
+                        
                         return {
                             status: 200,
                             message: "File uploaded successfully",
@@ -206,16 +252,22 @@ module.exports = (
                                 publicUri: publicUrl
                             }
                         };
-                    } catch (error) {
-                        console.error("Error uploading file:", error);
-                        throw new functions.https.HttpsError("internal", "Failed to upload file.");
+                    } catch (error: any) {
+                        console.error(`Error uploading file ${bucketName}/${filePath}:`, error);
+                        throw new functions.https.HttpsError(
+                            "internal", 
+                            `Failed to upload file ${bucketName}/${filePath}: ${error.message}`
+                        );
                     }
                 }
                 case "delete": {
+                    console.log(`Attempting to delete file: ${bucketName}/${filePath}`);
+                    
                     try {
                         // ファイルの存在確認
                         const [exists] = await file.exists();
                         if (!exists) {
+                            console.log(`File not found for deletion: ${bucketName}/${filePath}`);
                             return {
                                 status: 404,
                                 error: "File not found"
@@ -224,14 +276,18 @@ module.exports = (
                         
                         // ファイルを削除
                         await file.delete();
+                        console.log(`Successfully deleted file: ${bucketName}/${filePath}`);
                         
                         return {
                             status: 200,
                             message: "File deleted successfully"
                         };
-                    } catch (error) {
-                        console.error("Error deleting file:", error);
-                        throw new functions.https.HttpsError("internal", "Failed to delete file.");
+                    } catch (error: any) {
+                        console.error(`Error deleting file ${bucketName}/${filePath}:`, error);
+                        throw new functions.https.HttpsError(
+                            "internal", 
+                            `Failed to delete file ${bucketName}/${filePath}: ${error.message}`
+                        );
                     }
                 }
                 default:
