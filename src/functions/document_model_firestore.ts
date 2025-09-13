@@ -56,7 +56,7 @@ module.exports = (
             // 環境変数からサービスアカウントJSONを取得
             let serviceAccount;
             try {
-                const serviceAccountJson = process.env.FIRESTORE_SERVICE_ACCOUNT ?? process.env.FIREBASE_SERVICE_ACCOUNT;
+                const serviceAccountJson = process.env.FIRESTORE_SERVICE_ACCOUNT ?? process.env.SERVICE_ACCOUNT;
                 if (!serviceAccountJson) {
                     throw new functions.https.HttpsError(
                         "failed-precondition",

@@ -7,7 +7,7 @@ import { Storage } from "@google-cloud/storage";
  * 
  * 外部のFirebase Storageを利用できるようにするためのFunction。
  * 
- * @param {string} process.env.FIREBASE_STORAGE_SERVICE_ACCOUNT
+ * @param {string} process.env.STORAGE_SERVICE_ACCOUNT
  * Service account JSON.
  * 
  * サービスアカウントJSON。
@@ -53,18 +53,18 @@ module.exports = (
             // 環境変数からサービスアカウントJSONを取得
             let serviceAccount;
             try {
-                const serviceAccountJson = process.env.FIREBASE_STORAGE_SERVICE_ACCOUNT ?? process.env.FIREBASE_SERVICE_ACCOUNT;
+                const serviceAccountJson = process.env.STORAGE_SERVICE_ACCOUNT ?? process.env.SERVICE_ACCOUNT;
                 if (!serviceAccountJson) {
                     throw new functions.https.HttpsError(
                         "failed-precondition",
-                        "Service account JSON not found in environment variable: FIREBASE_STORAGE_SERVICE_ACCOUNT"
+                        "Service account JSON not found in environment variable: STORAGE_SERVICE_ACCOUNT"
                     );
                 }
                 serviceAccount = JSON.parse(serviceAccountJson);
             } catch (error) {
                 throw new functions.https.HttpsError(
                     "invalid-argument",
-                    `Invalid service account JSON in environment variable: FIREBASE_STORAGE_SERVICE_ACCOUNT`
+                    `Invalid service account JSON in environment variable: STORAGE_SERVICE_ACCOUNT`
                 );
             }
 
