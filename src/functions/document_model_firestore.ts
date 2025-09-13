@@ -164,7 +164,11 @@ module.exports = (
                             }
                         }
                         await firestoreInstance.doc(path).set(
-                            documentData,
+                            {
+                                ...documentData,
+                                "@uid": path.split("/").pop(),
+                                "@time": new Date(),
+                            },
                             { merge: true }
                         );
                         console.log(`Successfully set document at ${path}`);

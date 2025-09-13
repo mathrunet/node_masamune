@@ -163,7 +163,11 @@ module.exports = (
                                 }
                             }
                             await firestoreInstance.doc(path + "/" + docId).set(
-                                collectionData[docId],
+                                {
+                                    ...collectionData[docId],
+                                    "@uid": docId,
+                                    "@time": new Date(),
+                                },
                                 { merge: true }
                             );
                         }

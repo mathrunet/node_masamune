@@ -1,7 +1,7 @@
 import * as functions from "firebase-functions/v2";
 import * as algolia from "algoliasearch";
 import { PathFunctionsOptions } from "../lib/src/functions_base";
-import { defaultConverters } from "../lib/model_field_value/default_firestore_model_field_value_converter";
+import { FirestoreModelFieldValueConverter } from "../lib/model_field_value/firestore_model_field_value_converter";
 
 /**
  * Synchronize data to Algolia.
@@ -60,7 +60,7 @@ module.exports = (
                 if (!key || !data) {
                     return;
                 }
-                const converted = _convert(data);
+                const converted = FirestoreModelFieldValueConverter.convertFrom(data);
                 const update: { [field: string]: any } = {
                     ...converted,
                     "@uid": key,
@@ -71,7 +71,7 @@ module.exports = (
                     objectID: key,
                     body: update,
                 });
-            // update
+                // update
             } else if (beforeExists && afterExists) {
                 const data = event.data?.after.data();
                 const key = event.data?.after.id;
@@ -79,7 +79,7 @@ module.exports = (
                 if (!key || !data) {
                     return;
                 }
-                const converted = _convert(data);
+                const converted = FirestoreModelFieldValueConverter.convertFrom(data);
                 const update: { [field: string]: any } = {
                     ...converted,
                     "@uid": key,
@@ -90,7 +90,7 @@ module.exports = (
                     objectID: key,
                     body: update,
                 });
-            // delete
+                // delete
             } else if (beforeExists && !afterExists) {
                 const key = event.data?.after.id;
                 console.log(`Delete: ${key}`);
@@ -107,28 +107,4 @@ module.exports = (
             throw err;
         }
     }
-    );
-
-function _convert(data: { [field: string]: any }): { [field: string]: any } {
-    const update: { [field: string]: any } = {};
-    var replaced: { [field: string]: any } | null = null;    
-    for (const key in data) {
-        const val = data[key];
-        for (const converter of defaultConverters) {
-            replaced = converter.convertFrom(key, val, data);
-            console.log(`Convert(${converter.type}): ${key} : ${val} to ${replaced}`);
-            if (replaced !== null) {
-                break;
-            }
-        }
-        if (replaced !== null) {
-            for (const k in replaced) {
-                const v = replaced[k];
-                update[k] = v;            
-            }
-        } else {
-            update[key] = val;
-        }
-    }
-    return update;
-}
+);
