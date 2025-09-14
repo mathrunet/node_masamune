@@ -1,3 +1,20 @@
+## [3.4.4](https://github.com/mathrunet/node_masamune/compare/v3.4.3...v3.4.4) (2025-09-14)
+
+
+### chore
+
+* Adding the convertTo method ([8d842ac](https://github.com/mathrunet/node_masamune/commit/8d842ac99fe31f63204391817eb206737c855249))
+
+### feat
+
+* Add convertTo methods to remaining TypeScript converters ([36c5630](https://github.com/mathrunet/node_masamune/commit/36c56306e2f1418ec447af29883147854ae49fba))
+
+### fix
+
+* Define default fields. ([a2d8393](https://github.com/mathrunet/node_masamune/commit/a2d83932c4f1b8bf5288f8ee21b04c131d98e9c8))
+
+
+
 ## [3.4.3](https://github.com/mathrunet/node_masamune/compare/v3.4.2...v3.4.3) (2025-09-13)
 
 
