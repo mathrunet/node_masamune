@@ -89,4 +89,85 @@ export class FirestoreModelDateConverter extends FirestoreModelFieldValueConvert
     }
     return null;
   }
+
+  private static _createTimestampFromMicroseconds(microseconds: number): Timestamp {
+    if (microseconds >= 0) {
+      return Timestamp.fromMillis(microseconds / 1000);
+    }
+    const seconds = Math.floor(microseconds / 1000000);
+    const remainingMicros = microseconds - (seconds * 1000000);
+    const nanoseconds = remainingMicros * 1000;
+    if (nanoseconds < 0) {
+      return new Timestamp(seconds - 1, nanoseconds + 1000000000);
+    }
+    return new Timestamp(seconds, nanoseconds);
+  }
+
+  convertTo(
+    key: string,
+    value: any,
+    _original: { [field: string]: any }): { [field: string]: any } | null {
+    if (value != null && typeof value === "object" && "@type" in value) {
+      const type = value["@type"] as string | null | undefined ?? "";
+      if (type === this.type) {
+        const val = value["@time"] as number | null | undefined ?? 0;
+        const targetKey = `#${key}`;
+        return {
+          [targetKey]: {
+            "@type": this.type,
+            "@time": val,
+            "@target": key,
+          },
+          [key]: FirestoreModelDateConverter._createTimestampFromMicroseconds(val),
+        };
+      }
+    } else if (Array.isArray(value)) {
+      const list = value.filter((e) => e != null && typeof e === "object" && "@type" in e);
+      if (list.length > 0 && list.every((e) => e["@type"] === this.type)) {
+        const target: any[] = [];
+        const res: any[] = [];
+        const targetKey = `#${key}`;
+        for (const entry of list) {
+          const time = entry["@time"] as number | null | undefined ?? 0;
+          target.push({
+            "@type": this.type,
+            "@time": time,
+            "@target": key,
+          });
+          res.push(FirestoreModelDateConverter._createTimestampFromMicroseconds(time));
+        }
+        return {
+          [targetKey]: target,
+          [key]: res,
+        };
+      }
+    } else if (isDynamicMap(value)) {
+      const map: { [key: string]: any } = {};
+      for (const k in value) {
+        const v = value[k];
+        if (v != null && typeof v === "object" && "@type" in v) {
+          map[k] = v;
+        }
+      }
+      if (Object.keys(map).length > 0 && Object.values(map).every((e) => e["@type"] === this.type)) {
+        const target: { [key: string]: any } = {};
+        const res: { [key: string]: any } = {};
+        const targetKey = `#${key}`;
+        for (const [k, entry] of Object.entries(map)) {
+          const time = entry["@time"] as number | null | undefined ?? 0;
+          target[k] = {
+            "@type": this.type,
+            "@time": time,
+            "@target": key,
+          };
+          res[k] = FirestoreModelDateConverter._createTimestampFromMicroseconds(time);
+        }
+        return {
+          [targetKey]: target,
+          [key]: res,
+        };
+      }
+    }
+    return null;
+  }
 }

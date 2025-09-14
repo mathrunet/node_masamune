@@ -1,5 +1,6 @@
 import { FirestoreModelFieldValueConverter } from "../firestore_model_field_value_converter";
 import { isDynamicMap } from "../../utils";
+import { FieldValue } from "@google-cloud/firestore";
 
 /**
  * FirestoreConverter for [ModelCounter].
@@ -71,6 +72,83 @@ export class FirestoreModelCounterConverter extends FirestoreModelFieldValueConv
             [key]: res,
           };
         }
+      }
+    }
+    return null;
+  }
+
+  convertTo(
+    key: string,
+    value: any,
+    _original: { [field: string]: any }): { [field: string]: any } | null {
+    if (value != null && typeof value === "object" && "@type" in value) {
+      const type = value["@type"] as string | null | undefined ?? "";
+      if (type === this.type) {
+        const fromUser = value["@source"] === "user";
+        const count = value["@value"] as number | null | undefined ?? 0;
+        const increment = value["@increment"] as number | null | undefined ?? 0;
+        const targetKey = `#${key}`;
+        return {
+          [targetKey]: {
+            "@type": this.type,
+            "@value": count,
+            "@increment": increment,
+            "@target": key,
+          },
+          [key]: fromUser ? count : FieldValue.increment(increment),
+        };
+      }
+    } else if (Array.isArray(value)) {
+      const list = value.filter((e) => e != null && typeof e === "object" && "@type" in e);
+      if (list.length > 0 && list.every((e) => e["@type"] === this.type)) {
+        const target: any[] = [];
+        const res: any[] = [];
+        const targetKey = `#${key}`;
+        for (const entry of list) {
+          const fromUser = entry["@source"] === "user";
+          const count = entry["@value"] as number | null | undefined ?? 0;
+          const increment = entry["@increment"] as number | null | undefined ?? 0;
+          target.push({
+            "@type": this.type,
+            "@value": count,
+            "@increment": increment,
+            "@target": key,
+          });
+          res.push(fromUser ? count : FieldValue.increment(increment));
+        }
+        return {
+          [targetKey]: target,
+          [key]: res,
+        };
+      }
+    } else if (isDynamicMap(value)) {
+      const map: { [key: string]: any } = {};
+      for (const k in value) {
+        const v = value[k];
+        if (v != null && typeof v === "object" && "@type" in v) {
+          map[k] = v;
+        }
+      }
+      if (Object.keys(map).length > 0 && Object.values(map).every((e) => e["@type"] === this.type)) {
+        const target: { [key: string]: any } = {};
+        const res: { [key: string]: any } = {};
+        const targetKey = `#${key}`;
+        for (const [k, entry] of Object.entries(map)) {
+          const fromUser = entry["@source"] === "user";
+          const count = entry["@value"] as number | null | undefined ?? 0;
+          const increment = entry["@increment"] as number | null | undefined ?? 0;
+          target[k] = {
+            "@type": this.type,
+            "@value": count,
+            "@increment": increment,
+            "@target": key,
+          };
+          res[k] = fromUser ? count : FieldValue.increment(increment);
+        }
+        return {
+          [targetKey]: target,
+          [key]: res,
+        };
       }
     }
     return null;

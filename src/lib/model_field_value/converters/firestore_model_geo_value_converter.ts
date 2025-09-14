@@ -76,4 +76,91 @@ export class FirestoreModelGeoValueConverter extends FirestoreModelFieldValueCon
     }
     return null;
   }
+
+  convertTo(
+    key: string,
+    value: any,
+    _original: { [field: string]: any }): { [field: string]: any } | null {
+    if (value != null && typeof value === "object" && "@type" in value) {
+      const type = value["@type"] as string | null | undefined ?? "";
+      if (type === this.type) {
+        const fromUser = value["@source"] === "user";
+        const geoHash = value["@geoHash"] as string | null | undefined ?? "";
+        const latitude = value["@latitude"] as number | null | undefined ?? 0;
+        const longitude = value["@longitude"] as number | null | undefined ?? 0;
+        const targetKey = `#${key}`;
+        const result: { [field: string]: any } = {
+          [targetKey]: {
+            "@type": type,
+            "@latitude": latitude,
+            "@longitude": longitude,
+            "@target": key,
+          },
+        };
+        if (fromUser) {
+          result[key] = geoHash;
+        }
+        return result;
+      }
+    } else if (Array.isArray(value)) {
+      const list = value.filter((e) => e != null && typeof e === "object" && "@type" in e);
+      if (list.length > 0 && list.every((e) => e["@type"] === this.type)) {
+        const target: any[] = [];
+        const res: string[] = [];
+        const targetKey = `#${key}`;
+        for (const entry of list) {
+          const fromUser = entry["@source"] === "user";
+          const geoHash = entry["@geoHash"] as string | null | undefined ?? "";
+          const latitude = entry["@latitude"] as number | null | undefined ?? 0;
+          const longitude = entry["@longitude"] as number | null | undefined ?? 0;
+          target.push({
+            "@type": this.type,
+            "@latitude": latitude,
+            "@longitude": longitude,
+            "@target": key,
+          });
+          if (fromUser) {
+            res.push(geoHash);
+          }
+        }
+        return {
+          [targetKey]: target,
+          [key]: res,
+        };
+      }
+    } else if (isDynamicMap(value)) {
+      const map: { [key: string]: any } = {};
+      for (const k in value) {
+        const v = value[k];
+        if (v != null && typeof v === "object" && "@type" in v) {
+          map[k] = v;
+        }
+      }
+      if (Object.keys(map).length > 0 && Object.values(map).every((e) => e["@type"] === this.type)) {
+        const target: { [key: string]: any } = {};
+        const res: { [key: string]: string } = {};
+        const targetKey = `#${key}`;
+        for (const [k, entry] of Object.entries(map)) {
+          const fromUser = entry["@source"] === "user";
+          const geoHash = entry["@geoHash"] as string | null | undefined ?? "";
+          const latitude = entry["@latitude"] as number | null | undefined ?? 0;
+          const longitude = entry["@longitude"] as number | null | undefined ?? 0;
+          target[k] = {
+            "@type": this.type,
+            "@latitude": latitude,
+            "@longitude": longitude,
+            "@target": key,
+          };
+          if (fromUser) {
+            res[k] = geoHash;
+          }
+        }
+        return {
+          [targetKey]: target,
+          [key]: res,
+        };
+      }
+    }
+    return null;
+  }
 }

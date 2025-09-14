@@ -1,6 +1,7 @@
 import { FirestoreModelFieldValueConverter } from "../firestore_model_field_value_converter";
 import { isDynamicMap } from "../../utils";
 import { DocumentReference } from "firebase-admin/firestore";
+import { firestoreLoader } from "../../src/firebase_loader";
 
 /**
  * FirestoreConverter for [ModelRef].
@@ -60,6 +61,54 @@ export class FirestoreModelRefConverter extends FirestoreModelFieldValueConverte
         }
       }
       if (Object.keys(res).length > 0) {
+        return {
+          [key]: res,
+        };
+      }
+    }
+    return null;
+  }
+
+  convertTo(
+    key: string,
+    value: any,
+    _original: { [field: string]: any }): { [field: string]: any } | null {
+    const firestore = firestoreLoader(null);
+    
+    if (value != null && typeof value === "object" && "@type" in value) {
+      const type = value["@type"] as string | null | undefined ?? "";
+      if (type.startsWith(this.type)) {
+        const refPath = value["@ref"] as string | null | undefined ?? "";
+        return {
+          [key]: firestore.doc(refPath),
+        };
+      }
+    } else if (Array.isArray(value)) {
+      const list = value.filter((e) => e != null && typeof e === "object" && "@type" in e);
+      if (list.length > 0 && list.every((e) => e["@type"]?.startsWith(this.type))) {
+        const res: DocumentReference[] = [];
+        for (const entry of list) {
+          const refPath = entry["@ref"] as string | null | undefined ?? "";
+          res.push(firestore.doc(refPath));
+        }
+        return {
+          [key]: res,
+        };
+      }
+    } else if (isDynamicMap(value)) {
+      const map: { [key: string]: any } = {};
+      for (const k in value) {
+        const v = value[k];
+        if (v != null && typeof v === "object" && "@type" in v) {
+          map[k] = v;
+        }
+      }
+      if (Object.keys(map).length > 0 && Object.values(map).every((e) => e["@type"]?.startsWith(this.type))) {
+        const res: { [key: string]: DocumentReference } = {};
+        for (const [k, entry] of Object.entries(map)) {
+          const refPath = entry["@ref"] as string | null | undefined ?? "";
+          res[k] = firestore.doc(refPath);
+        }
         return {
           [key]: res,
         };

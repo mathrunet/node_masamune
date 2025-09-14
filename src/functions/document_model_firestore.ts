@@ -1,6 +1,7 @@
 import * as functions from "firebase-functions/v2";
 import { HttpFunctionsOptions } from "../lib/src/functions_base";
 import { Firestore, FieldValue } from "@google-cloud/firestore";
+import { FirestoreModelFieldValueConverter } from "../lib/model_field_value/firestore_model_field_value_converter";
 
 /**
  * A function to enable the use of external Firestore Document Models.
@@ -137,10 +138,11 @@ module.exports = (
                     console.log(`Attempting to get document at path: ${path}`);
                     try {
                         const doc = await firestoreInstance.doc(path).get();
+                        const converted = FirestoreModelFieldValueConverter.convertFrom(doc.data() ?? {});
                         console.log(`Document exists: ${doc.exists}`);
                         return {
                             status: 200,
-                            data: doc.exists ? doc.data() : {},
+                            data: converted,
                         };
                     } catch (error: any) {
                         console.error(`Error getting document at ${path}:`, error);
@@ -157,15 +159,10 @@ module.exports = (
                     }
                     console.log(`Attempting to set document at path: ${path}`);
                     try {
-                        // NullはFieldValue.delete()に変換される
-                        for (const key in documentData) {
-                            if (documentData[key] === null) {
-                                documentData[key] = FieldValue.delete();
-                            }
-                        }
+                        const converted = FirestoreModelFieldValueConverter.convertFrom(documentData);
                         await firestoreInstance.doc(path).set(
                             {
-                                ...documentData,
+                                ...converted,
                                 "@uid": path.split("/").pop(),
                                 "@time": new Date(),
                             },

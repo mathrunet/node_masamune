@@ -1,43 +1,84 @@
 import { FirestoreModelFieldValueConverter } from "../firestore_model_field_value_converter";
 import { isDynamicMap } from "../../utils";
+import { Timestamp } from "firebase-admin/firestore";
 
 /**
- * FirestoreConverter for [ModelLocale].
+ * FirestoreConverter for [ModelTime].
  * 
- * [ModelLocale]用のFirestoreConverter。
+ * [ModelTime]用のFirestoreConverter。
  */
-export class FirestoreModelLocaleConverter extends FirestoreModelFieldValueConverter {
+export class FirestoreModelTimeConverter extends FirestoreModelFieldValueConverter {
   /**
-   * FirestoreConverter for [ModelLocale].
+   * FirestoreConverter for [ModelTime].
    * 
-   * [ModelLocale]用のFirestoreConverter。
+   * [ModelTime]用のFirestoreConverter。
    */
   constructor() {
     super();
   }
 
-  type: string = "ModelLocale";
+  type: string = "ModelTime";
+
+  private static _createTimestampFromMicroseconds(microseconds: number): Timestamp {
+    if (microseconds >= 0) {
+      return Timestamp.fromMillis(microseconds / 1000);
+    }
+    const seconds = Math.floor(microseconds / 1000000);
+    const remainingMicros = microseconds - (seconds * 1000000);
+    const nanoseconds = remainingMicros * 1000;
+
+    if (nanoseconds < 0) {
+      return new Timestamp(seconds - 1, nanoseconds + 1000000000);
+    }
+
+    return new Timestamp(seconds, nanoseconds);
+  }
 
   convertFrom(
     key: string,
     value: any,
     original: { [field: string]: any }): { [field: string]: any } | null {
-    if (typeof value === "string") {
+    if (typeof value === "number") {
       const targetKey = `#${key}`;
       const targetMap = original[targetKey] as { [field: string]: any } | null | undefined ?? {};
       const type = targetMap["@type"] as string | null | undefined ?? "";
       if (type == this.type) {
         return {
-          [key]: String(value),
+          [key]: {
+            "@type": this.type,
+            "@time": value,
+          },
+        };
+      }
+    } else if (value instanceof Timestamp) {
+      const targetKey = `#${key}`;
+      const targetMap = original[targetKey] as { [field: string]: any } | null | undefined ?? {};
+      const type = targetMap["@type"] as string | null | undefined ?? "";
+      if (type == this.type) {
+        return {
+          [key]: {
+            "@type": this.type,
+            "@time": value.toDate().getTime() * 1000,
+          },
         };
       }
     } else if (Array.isArray(value)) {
       const targetKey = `#${key}`;
       const targetList = original[targetKey] as { [field: string]: any }[] | null | undefined ?? [];
       if (targetList != null && targetList.length > 0 && targetList.every((e) => e["@type"] === this.type)) {
-        const res: string[] = [];
+        const res: any[] = [];
         for (const tmp of value) {
-          res.push(String(tmp));
+          if (typeof tmp === "number") {
+            res.push({
+              "@type": this.type,
+              "@time": tmp,
+            });
+          } else if (tmp instanceof Timestamp) {
+            res.push({
+              "@type": this.type,
+              "@time": tmp.toDate().getTime() * 1000,
+            });
+          }
         }
         if (res.length > 0) {
           return {
@@ -48,19 +89,26 @@ export class FirestoreModelLocaleConverter extends FirestoreModelFieldValueConve
     } else if (isDynamicMap(value)) {
       const targetKey = `#${key}`;
       const targetMap = original[targetKey] as { [field: string]: { [field: string]: any } } | null | undefined ?? {};
-      targetMap
       if (targetMap != null) {
-        const res: {
-          [field: string]: string
-        } = {};
-        for (const key in value) {
-          const val = value[key];
-          const mapVal = targetMap[key] as { [field: string]: any } | null | undefined ?? {};
+        const res: { [field: string]: any } = {};
+        for (const k in value) {
+          const val = value[k];
+          const mapVal = targetMap[k] as { [field: string]: any } | null | undefined ?? {};
           const type = mapVal["@type"] as string | null | undefined ?? "";
           if (type != this.type) {
             continue;
           }
-          res[key] = String(val);
+          if (typeof val === "number") {
+            res[k] = {
+              "@type": this.type,
+              "@time": val,
+            };
+          } else if (val instanceof Timestamp) {
+            res[k] = {
+              "@type": this.type,
+              "@time": val.toDate().getTime() * 1000,
+            };
+          }
         }
         if (Object.keys(res).length > 0) {
           return {
@@ -79,44 +127,31 @@ export class FirestoreModelLocaleConverter extends FirestoreModelFieldValueConve
     if (value != null && typeof value === "object" && "@type" in value) {
       const type = value["@type"] as string | null | undefined ?? "";
       if (type === this.type) {
-        const language = value["@language"] as string | null | undefined ?? "";
-        const country = value["@country"] as string | null | undefined ?? "";
+        const val = value["@time"] as number | null | undefined ?? 0;
         const targetKey = `#${key}`;
-        const result: { [field: string]: any } = {
+        return {
           [targetKey]: {
             "@type": this.type,
-            "@language": language,
-            "@country": country,
+            "@time": val,
             "@target": key,
           },
+          [key]: FirestoreModelTimeConverter._createTimestampFromMicroseconds(val),
         };
-        if (country) {
-          result[key] = `${language}_${country}`;
-        } else {
-          result[key] = language;
-        }
-        return result;
       }
     } else if (Array.isArray(value)) {
       const list = value.filter((e) => e != null && typeof e === "object" && "@type" in e);
       if (list.length > 0 && list.every((e) => e["@type"] === this.type)) {
         const target: any[] = [];
-        const res: string[] = [];
+        const res: any[] = [];
         const targetKey = `#${key}`;
         for (const entry of list) {
-          const language = entry["@language"] as string | null | undefined ?? "";
-          const country = entry["@country"] as string | null | undefined ?? "";
+          const time = entry["@time"] as number | null | undefined ?? 0;
           target.push({
             "@type": this.type,
-            "@language": language,
-            "@country": country,
+            "@time": time,
             "@target": key,
           });
-          if (country) {
-            res.push(`${language}_${country}`);
-          } else {
-            res.push(language);
-          }
+          res.push(FirestoreModelTimeConverter._createTimestampFromMicroseconds(time));
         }
         return {
           [targetKey]: target,
@@ -133,22 +168,16 @@ export class FirestoreModelLocaleConverter extends FirestoreModelFieldValueConve
       }
       if (Object.keys(map).length > 0 && Object.values(map).every((e) => e["@type"] === this.type)) {
         const target: { [key: string]: any } = {};
-        const res: { [key: string]: string } = {};
+        const res: { [key: string]: any } = {};
         const targetKey = `#${key}`;
         for (const [k, entry] of Object.entries(map)) {
-          const language = entry["@language"] as string | null | undefined ?? "";
-          const country = entry["@country"] as string | null | undefined ?? "";
+          const time = entry["@time"] as number | null | undefined ?? 0;
           target[k] = {
             "@type": this.type,
-            "@language": language,
-            "@country": country,
+            "@time": time,
             "@target": key,
           };
-          if (country) {
-            res[k] = `${language}_${country}`;
-          } else {
-            res[k] = language;
-          }
+          res[k] = FirestoreModelTimeConverter._createTimestampFromMicroseconds(time);
         }
         return {
           [targetKey]: target,

@@ -71,4 +71,66 @@ export class FirestoreModelVideoUriConverter extends FirestoreModelFieldValueCon
     }
     return null;
   }
+
+  convertTo(
+    key: string,
+    value: any,
+    original: { [field: string]: any }): { [field: string]: any } | null {
+    if (isDynamicMap(value) && value["@type"] !== undefined) {
+      const type = value["@type"] as string || "";
+      if (type === this.type) {
+        const val = value["@uri"] as string || "";
+        const targetKey = `#${key}`;
+        return {
+          [targetKey]: {
+            "@type": this.type,
+            "@uri": val,
+            "@target": key,
+          },
+          [key]: val,
+        };
+      }
+    } else if (Array.isArray(value)) {
+      const list = value.filter(e => isDynamicMap(e));
+      if (list.length > 0 && list.every((e: any) => e["@type"] === this.type)) {
+        const target: { [field: string]: any }[] = [];
+        const res: string[] = [];
+        const targetKey = `#${key}`;
+        for (const entry of list) {
+          const uri = entry["@uri"] as string || "";
+          target.push({
+            "@type": this.type,
+            "@uri": uri,
+            "@target": key,
+          });
+          res.push(uri);
+        }
+        return {
+          [targetKey]: target,
+          [key]: res,
+        };
+      }
+    } else if (isDynamicMap(value)) {
+      const map = Object.entries(value).filter(([_, v]) => isDynamicMap(v));
+      if (map.length > 0 && map.every(([_, v]) => (v as any)["@type"] === this.type)) {
+        const target: { [field: string]: { [field: string]: any } } = {};
+        const res: { [field: string]: string } = {};
+        const targetKey = `#${key}`;
+        for (const [k, v] of map) {
+          const uri = (v as any)["@uri"] as string || "";
+          target[k] = {
+            "@type": this.type,
+            "@uri": uri,
+            "@target": key,
+          };
+          res[k] = uri;
+        }
+        return {
+          [targetKey]: target,
+          [key]: res,
+        };
+      }
+    }
+    return null;
+  }
 }
