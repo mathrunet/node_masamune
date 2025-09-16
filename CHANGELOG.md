@@ -1,3 +1,12 @@
+## [3.5.2](https://github.com/mathrunet/node_masamune/compare/v3.5.1...v3.5.2) (2025-09-16)
+
+
+### fix
+
+* Field is not needed for Count. ([2d5197d](https://github.com/mathrunet/node_masamune/commit/2d5197dd83cdcfa85fae77267989b4e062781227))
+
+
+
 ## [3.5.1](https://github.com/mathrunet/node_masamune/compare/v3.5.0...v3.5.1) (2025-09-16)
 
 
