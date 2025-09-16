@@ -214,6 +214,12 @@ export const Functions = {
    */
   documentModelFirestore: (options: data.HttpFunctionsOptions = {}) => new data.FunctionsData({ id: "document_model_firestore", func: require("./functions/document_model_firestore"), options: options }),
   /**
+   * Functions for enabling external Firestore Aggregate methods.
+   * 
+   * 外部のFirestoreのAggregateメソッドを利用できるようにするFunctions。
+   */
+  aggregationModelFirestore: (options: data.HttpFunctionsOptions = {}) => new data.FunctionsData({ id: "aggregation_model_firestore", func: require("./functions/aggregation_model_firestore"), options: options }),
+  /**
    * A function to enable the use of external Firebase Storage.
    * 
    * 外部のFirebase Storageを利用できるようにするためのFunction。
