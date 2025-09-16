@@ -1,5 +1,4 @@
 import { DocumentReference, Timestamp } from "firebase-admin/firestore";
-import { defaultConverters } from "./default_firestore_model_field_value_converter";
 
 /**
  * Base class for converting [ModelFieldValue] for use in Firestore.
@@ -72,83 +71,6 @@ export abstract class FirestoreModelFieldValueConverter {
         };
     };
 
-    /**
-     * Convert data to [ModelFieldValue].
-     * 
-     * データを[ModelFieldValue]に変換します。
-     * 
-     * @param data
-     * Data to convert.
-     * 
-     * 変換するデータ。
-     * 
-     * @returns { [field: string]: any }
-     * Data converted to [ModelFieldValue].
-     * 
-     * [ModelFieldValue]に変換されたデータ。
-     */
-    static convertFrom(data: { [field: string]: any }): { [field: string]: any } {
-        const update: { [field: string]: any } = {};
-        var replaced: { [field: string]: any } | null = null;
-        for (const key in data) {
-            const val = data[key];
-            for (const converter of defaultConverters) {
-                replaced = converter.convertFrom(key, val, data);
-                console.log(`Convert(${converter.type}): ${key} : ${val} to ${replaced}`);
-                if (replaced !== null) {
-                    break;
-                }
-            }
-            if (replaced !== null) {
-                for (const k in replaced) {
-                    const v = replaced[k];
-                    update[k] = v;
-                }
-            } else {
-                update[key] = val;
-            }
-        }
-        return update;
-    }
-
-    /**
-     * Convert data to Firestore manageable type.
-     * 
-     * データをFirestoreで管理可能な型に変換します。
-     * 
-     * @param data
-     * Data to convert.
-     * 
-     * 変換するデータ。
-     * 
-     * @returns { [field: string]: any }
-     * Data converted to Firestore manageable type.
-     * 
-     * Firestoreで管理可能な型に変換されたデータ。
-     */
-    static convertTo(data: { [field: string]: any }): { [field: string]: any } {
-        const update: { [field: string]: any } = {};
-        var replaced: { [field: string]: any } | null = null;
-        for (const key in data) {
-            const val = data[key];
-            for (const converter of defaultConverters) {
-                replaced = converter.convertTo(key, val, data);
-                console.log(`Convert(${converter.type}): ${key} : ${val} to ${replaced}`);
-                if (replaced !== null) {
-                    break;
-                }
-            }
-            if (replaced !== null) {
-                for (const k in replaced) {
-                    const v = replaced[k];
-                    update[k] = v;
-                }
-            } else {
-                update[key] = val;
-            }
-        }
-        return update;
-    }
 }
 
 /**

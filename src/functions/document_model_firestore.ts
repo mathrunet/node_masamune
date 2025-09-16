@@ -1,7 +1,7 @@
 import * as functions from "firebase-functions/v2";
 import { HttpFunctionsOptions } from "../lib/src/functions_base";
 import { Firestore, FieldValue } from "@google-cloud/firestore";
-import { FirestoreModelFieldValueConverter } from "../lib/model_field_value/firestore_model_field_value_converter";
+import { FirestoreModelFieldValueConverterUtils } from "../lib/model_field_value/default_firestore_model_field_value_converter";
 
 /**
  * A function to enable the use of external Firestore Document Models.
@@ -138,7 +138,7 @@ module.exports = (
                     console.log(`Attempting to get document at path: ${path}`);
                     try {
                         const doc = await firestoreInstance.doc(path).get();
-                        const converted = FirestoreModelFieldValueConverter.convertFrom(doc.data() ?? {});
+                        const converted = FirestoreModelFieldValueConverterUtils.convertFrom(doc.data() ?? {});
                         console.log(`Document exists: ${doc.exists}`);
                         return {
                             status: 200,
@@ -159,7 +159,7 @@ module.exports = (
                     }
                     console.log(`Attempting to set document at path: ${path}`);
                     try {
-                        const converted = FirestoreModelFieldValueConverter.convertFrom(documentData);
+                        const converted = FirestoreModelFieldValueConverterUtils.convertFrom(documentData);
                         await firestoreInstance.doc(path).set(
                             {
                                 ...converted,

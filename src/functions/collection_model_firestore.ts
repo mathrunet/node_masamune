@@ -1,7 +1,7 @@
 import * as functions from "firebase-functions/v2";
 import { HttpFunctionsOptions } from "../lib/src/functions_base";
 import { Firestore, FieldValue } from "@google-cloud/firestore";
-import { FirestoreModelFieldValueConverter } from "../lib/model_field_value/firestore_model_field_value_converter";
+import { FirestoreModelFieldValueConverterUtils } from "../lib/model_field_value/default_firestore_model_field_value_converter";
 
 /**
  * A function to enable the use of external Firestore Collection Models.
@@ -133,7 +133,7 @@ module.exports = (
                         const data: { [key: string]: { [key: string]: any } } = {};
                         for (const doc of col.docs) {
                             if (doc.exists) {
-                                data[doc.id] = FirestoreModelFieldValueConverter.convertFrom(doc.data());
+                                data[doc.id] = FirestoreModelFieldValueConverterUtils.convertFrom(doc.data());
                             }
                         }
                         console.log(`Successfully retrieved ${col.size} documents from ${path}`);
@@ -158,7 +158,7 @@ module.exports = (
                     try {
                         // NullはFieldValue.delete()に変換される
                         for (const docId in collectionData) {
-                            collectionData[docId] = FirestoreModelFieldValueConverter.convertFrom(collectionData[docId]);
+                            collectionData[docId] = FirestoreModelFieldValueConverterUtils.convertFrom(collectionData[docId]);
                             await firestoreInstance.doc(path + "/" + docId).set(
                                 {
                                     ...collectionData[docId],

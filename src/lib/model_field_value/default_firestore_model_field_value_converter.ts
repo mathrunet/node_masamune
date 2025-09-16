@@ -15,6 +15,10 @@ import { FirestoreModelSearchConverter } from "./converters/firestore_model_sear
 import { FirestoreModelTokenConverter } from "./converters/firestore_model_token_converter";
 import { FirestoreModelVideoUriConverter } from "./converters/firestore_model_video_uri_converter";
 import { FirestoreNullConverter } from "./converters/firestore_null_converter";
+import { FirestoreModelTimeConverter } from "./converters/firestore_model_time_converter";
+import { FirestoreModelTimeRangeConverter } from "./converters/firestore_model_time_range_converter";
+import { FirestoreModelTimestampRangeConverter } from "./converters/firestore_model_timestamp_range_converter";
+import { FirestoreModelDateRangeConverter } from "./converters/firestore_model_date_range_converter";
 
 /**
  * List of converters for converting Firestore values.
@@ -25,7 +29,11 @@ const defaultConverters: FirestoreModelFieldValueConverter[] = [
     new FirestoreModelCommandBaseConverter(),
     new FirestoreModelCounterConverter(),
     new FirestoreModelTimestampConverter(),
+    new FirestoreModelTimestampRangeConverter(),
     new FirestoreModelDateConverter(),
+    new FirestoreModelDateRangeConverter(),
+    new FirestoreModelTimeConverter(),
+    new FirestoreModelTimeRangeConverter(),
     new FirestoreModelLocaleConverter(),
     new FirestoreModelLocalizedValueConverter(),
     new FirestoreModelUriConverter(),
@@ -39,4 +47,90 @@ const defaultConverters: FirestoreModelFieldValueConverter[] = [
     new FirestoreNullConverter(),
     new FirestoreBasicConverter(),
 ];
+
+/**
+ * Utility class for converting data using default converters.
+ * 
+ * デフォルトのコンバーターを使用してデータを変換するユーティリティクラス。
+ */
+export class FirestoreModelFieldValueConverterUtils {
+    /**
+     * Convert data to [ModelFieldValue].
+     * 
+     * データを[ModelFieldValue]に変換します。
+     * 
+     * @param data
+     * Data to convert.
+     * 
+     * 変換するデータ。
+     * 
+     * @returns { [field: string]: any }
+     * Data converted to [ModelFieldValue].
+     * 
+     * [ModelFieldValue]に変換されたデータ。
+     */
+    static convertFrom(data: { [field: string]: any }): { [field: string]: any } {
+        const update: { [field: string]: any } = {};
+        var replaced: { [field: string]: any } | null = null;
+        for (const key in data) {
+            const val = data[key];
+            for (const converter of defaultConverters) {
+                replaced = converter.convertFrom(key, val, data);
+                console.log(`Convert(${converter.type}): ${key} : ${val} to ${replaced}`);
+                if (replaced !== null) {
+                    break;
+                }
+            }
+            if (replaced !== null) {
+                for (const k in replaced) {
+                    const v = replaced[k];
+                    update[k] = v;
+                }
+            } else {
+                update[key] = val;
+            }
+        }
+        return update;
+    }
+
+    /**
+     * Convert data to Firestore manageable type.
+     * 
+     * データをFirestoreで管理可能な型に変換します。
+     * 
+     * @param data
+     * Data to convert.
+     * 
+     * 変換するデータ。
+     * 
+     * @returns { [field: string]: any }
+     * Data converted to Firestore manageable type.
+     * 
+     * Firestoreで管理可能な型に変換されたデータ。
+     */
+    static convertTo(data: { [field: string]: any }): { [field: string]: any } {
+        const update: { [field: string]: any } = {};
+        var replaced: { [field: string]: any } | null = null;
+        for (const key in data) {
+            const val = data[key];
+            for (const converter of defaultConverters) {
+                replaced = converter.convertTo(key, val, data);
+                console.log(`Convert(${converter.type}): ${key} : ${val} to ${replaced}`);
+                if (replaced !== null) {
+                    break;
+                }
+            }
+            if (replaced !== null) {
+                for (const k in replaced) {
+                    const v = replaced[k];
+                    update[k] = v;
+                }
+            } else {
+                update[key] = val;
+            }
+        }
+        return update;
+    }
+}
+
 export { defaultConverters }

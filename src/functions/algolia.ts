@@ -1,7 +1,7 @@
 import * as functions from "firebase-functions/v2";
 import * as algolia from "algoliasearch";
 import { PathFunctionsOptions } from "../lib/src/functions_base";
-import { FirestoreModelFieldValueConverter } from "../lib/model_field_value/firestore_model_field_value_converter";
+import { FirestoreModelFieldValueConverterUtils } from "../lib/model_field_value/default_firestore_model_field_value_converter";
 
 /**
  * Synchronize data to Algolia.
@@ -60,7 +60,7 @@ module.exports = (
                 if (!key || !data) {
                     return;
                 }
-                const converted = FirestoreModelFieldValueConverter.convertFrom(data);
+                const converted = FirestoreModelFieldValueConverterUtils.convertFrom(data);
                 const update: { [field: string]: any } = {
                     ...converted,
                     "@uid": key,
@@ -79,7 +79,7 @@ module.exports = (
                 if (!key || !data) {
                     return;
                 }
-                const converted = FirestoreModelFieldValueConverter.convertFrom(data);
+                const converted = FirestoreModelFieldValueConverterUtils.convertFrom(data);
                 const update: { [field: string]: any } = {
                     ...converted,
                     "@uid": key,
