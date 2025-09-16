@@ -1,3 +1,12 @@
+# [3.5.0](https://github.com/mathrunet/node_masamune/compare/v3.4.5...v3.5.0) (2025-09-16)
+
+
+### feat
+
+* Add aggregation method. ([e50fc35](https://github.com/mathrunet/node_masamune/commit/e50fc35bc00657bf2b82cdfd2d643f1fd70d9091))
+
+
+
 ## [3.4.5](https://github.com/mathrunet/node_masamune/compare/v3.4.4...v3.4.5) (2025-09-16)
 
 
