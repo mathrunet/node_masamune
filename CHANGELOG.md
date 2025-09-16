@@ -1,3 +1,12 @@
+## [3.4.5](https://github.com/mathrunet/node_masamune/compare/v3.4.4...v3.4.5) (2025-09-16)
+
+
+### fix
+
+* Fixed build failures. ([6010815](https://github.com/mathrunet/node_masamune/commit/60108159c6901eaa4d9571153aa5e0584dcb5d92))
+
+
+
 ## [3.4.4](https://github.com/mathrunet/node_masamune/compare/v3.4.3...v3.4.4) (2025-09-14)
 
 
