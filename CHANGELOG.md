@@ -1,3 +1,12 @@
+## [3.5.1](https://github.com/mathrunet/node_masamune/compare/v3.5.0...v3.5.1) (2025-09-16)
+
+
+### fix
+
+* Rename. ([546a33b](https://github.com/mathrunet/node_masamune/commit/546a33b473f71a442d97bbe08b98997747a267cc))
+
+
+
 # [3.5.0](https://github.com/mathrunet/node_masamune/compare/v3.4.5...v3.5.0) (2025-09-16)
 
 
