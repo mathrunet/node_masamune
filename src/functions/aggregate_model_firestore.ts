@@ -115,35 +115,30 @@ module.exports = (
             // クエリパラメータから必要な情報を取得
             let path = query.data.path as string | undefined | null;
             const method = query.data.method as string | undefined | null;
-            const field = path?.split("/").pop();
-            path = path?.split("/").slice(0, -1).join("/");
             
             if (!method) {
                 throw new functions.https.HttpsError("invalid-argument", "No method specified.");
             }
             if (!path) {
                 throw new functions.https.HttpsError("invalid-argument", "No path specified.");
-            }            
-            if (!field) {
-                throw new functions.https.HttpsError("invalid-argument", "No field specified.");
-            }
+            }          
             
             // メソッドに応じて処理を実行
             switch (method) {
                 case "count": {
-                    console.log(`Attempting to get count aggregation at path: ${path}/${field}`);
+                    console.log(`Attempting to get count aggregation at path: ${path}`);
                     try {
                         const aggregation = await firestoreInstance.collection(path).count().get();
                         const data: { [key: string]: any } = {
                             value: aggregation.data().count,
                         };
-                        console.log(`Successfully retrieved count aggregation at path: ${path}/${field}`);
+                        console.log(`Successfully retrieved count aggregation at path: ${path}`);
                         return {
                             status: 200,
                             data: data,
                         };
                     } catch (error: any) {
-                        console.error(`Error getting count aggregation at ${path}/${field}:`, error);
+                        console.error(`Error getting count aggregation at ${path}:`, error);
                         throw new functions.https.HttpsError(
                             "not-found",
                             `Failed to get collection at ${path}: ${error.message}`
@@ -151,6 +146,11 @@ module.exports = (
                     }
                 }
                 case "sum": {
+                    const field = path?.split("/").pop();
+                    path = path?.split("/").slice(0, -1).join("/");  
+                    if (!field) {
+                        throw new functions.https.HttpsError("invalid-argument", "No field specified.");
+                    }
                     console.log(`Attempting to get sum aggregation at path: ${path}/${field}`);
                     try {
                         const aggregation = await firestoreInstance.collection(path).aggregate({
@@ -173,6 +173,11 @@ module.exports = (
                     }
                 }
                 case "average": {
+                    const field = path?.split("/").pop();
+                    path = path?.split("/").slice(0, -1).join("/");  
+                    if (!field) {
+                        throw new functions.https.HttpsError("invalid-argument", "No field specified.");
+                    }
                     console.log(`Attempting to get average aggregation at path: ${path}/${field}`);
                     try {
                         const aggregation = await firestoreInstance.collection(path).aggregate({
