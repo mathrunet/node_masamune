@@ -142,7 +142,7 @@ module.exports = (
                             console.log(`File not found: ${bucketName}/${filePath}`);
                             return {
                                 status: 404,
-                                data: null,
+                                binary: null,
                                 error: "File not found"
                             };
                         }
@@ -170,7 +170,7 @@ module.exports = (
                         
                         return {
                             status: 200,
-                            data: base64Data,
+                            binary: base64Data,
                             meta: {
                                 contentType: metadata.contentType,
                                 size: metadata.size,
