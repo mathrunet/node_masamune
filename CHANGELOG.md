@@ -1,3 +1,16 @@
+## [3.5.7](https://github.com/mathrunet/node_masamune/compare/v3.5.6...v3.5.7) (2025-09-17)
+
+
+### chore
+
+* コメントを削除 ([900f3b9](https://github.com/mathrunet/node_masamune/commit/900f3b98417ebe17c9d9f481223d493db4892d13))
+
+### fix
+
+* Fixed incorrect `convertFrom`. ([5cd046f](https://github.com/mathrunet/node_masamune/commit/5cd046f34ec1f332f2f845d5e73ab4f460b08d78))
+
+
+
 ## [3.5.6](https://github.com/mathrunet/node_masamune/compare/v3.5.5...v3.5.6) (2025-09-17)
 
 
