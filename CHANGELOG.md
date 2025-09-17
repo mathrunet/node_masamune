@@ -1,3 +1,12 @@
+## [3.5.4](https://github.com/mathrunet/node_masamune/compare/v3.5.3...v3.5.4) (2025-09-17)
+
+
+### fix
+
+* Corrected to use the specified firestoreInstance. ([9b7d832](https://github.com/mathrunet/node_masamune/commit/9b7d832ac644b1f8f45eb5132eee45bd7d33711b))
+
+
+
 ## [3.5.3](https://github.com/mathrunet/node_masamune/compare/v3.5.2...v3.5.3) (2025-09-17)
 
 
