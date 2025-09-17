@@ -76,10 +76,7 @@ export class FirestoreModelRefConverter extends FirestoreModelFieldValueConverte
     value: any,
     _original: { [field: string]: any },
     firestoreInstance: FirebaseFirestore.Firestore
-  ): { [field: string]: any } | null {
-    
-    console.log(`${key} is ${typeof value}`);
-    console.log(`value: ${JSON.stringify(value)} ${value["@type"] as string | null | undefined ?? ""}`);
+  ): { [field: string]: any } | null {    
     if (value != null && typeof value === "object" && "@type" in value) {
       const type = value["@type"] as string | null | undefined ?? "";
       if (type.startsWith(this.type)) {
