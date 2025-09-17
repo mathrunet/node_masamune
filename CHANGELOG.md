@@ -1,3 +1,12 @@
+## [3.5.3](https://github.com/mathrunet/node_masamune/compare/v3.5.2...v3.5.3) (2025-09-17)
+
+
+### fix
+
+* Cannot convert to JSON, so please fix. ([bec09af](https://github.com/mathrunet/node_masamune/commit/bec09afe18e4a6c4944ba95e765e744fa45ce47a))
+
+
+
 ## [3.5.2](https://github.com/mathrunet/node_masamune/compare/v3.5.1...v3.5.2) (2025-09-16)
 
 
