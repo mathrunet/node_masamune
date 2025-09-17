@@ -1,3 +1,12 @@
+## [3.5.9](https://github.com/mathrunet/node_masamune/compare/v3.5.8...v3.5.9) (2025-09-17)
+
+
+### fix
+
+* Rename response data. ([23d40ed](https://github.com/mathrunet/node_masamune/commit/23d40ed1b0ebdee5b2b7473ff28fc12e11f27ec8))
+
+
+
 ## [3.5.8](https://github.com/mathrunet/node_masamune/compare/v3.5.7...v3.5.8) (2025-09-17)
 
 
