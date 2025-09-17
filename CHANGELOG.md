@@ -1,3 +1,12 @@
+## [3.5.8](https://github.com/mathrunet/node_masamune/compare/v3.5.7...v3.5.8) (2025-09-17)
+
+
+### fix
+
+* Corrected the `timestamp` key as it was incorrect. ([302d56f](https://github.com/mathrunet/node_masamune/commit/302d56f0ee152d625df4cf850ab7c6a0ff943c68))
+
+
+
 ## [3.5.7](https://github.com/mathrunet/node_masamune/compare/v3.5.6...v3.5.7) (2025-09-17)
 
 
