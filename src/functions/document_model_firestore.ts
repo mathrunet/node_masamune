@@ -163,7 +163,7 @@ module.exports = (
                     }
                     console.log(`Attempting to set document at path: ${path} with data: ${JSON.stringify(documentData)}`);
                     try {
-                        const converted = FirestoreModelFieldValueConverterUtils.convertFrom({ data: documentData, firestoreInstance });
+                        const converted = FirestoreModelFieldValueConverterUtils.convertTo({ data: documentData, firestoreInstance });
                         if (!converted) {
                             throw new functions.https.HttpsError("invalid-argument", "Invalid data specified for set operation.");
                         }

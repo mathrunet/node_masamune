@@ -76,7 +76,7 @@ export class FirestoreModelFieldValueConverterUtils {
             const val = data[key];
             for (const converter of defaultConverters) {
                 replaced = converter.convertFrom(key, val, data, firestoreInstance);
-                console.log(`Convert(${converter.type}): ${key} : ${val} to ${replaced}`);
+                console.log(`ConvertFrom(${converter.type}): ${key} : ${val} to ${replaced}`);
                 if (replaced !== null) {
                     break;
                 }
@@ -115,7 +115,7 @@ export class FirestoreModelFieldValueConverterUtils {
             const val = data[key];
             for (const converter of defaultConverters) {
                 replaced = converter.convertTo(key, val, data, firestoreInstance);
-                console.log(`Convert(${converter.type}): ${key} : ${val} to ${replaced}`);
+                console.log(`ConvertTo(${converter.type}): ${key} : ${val} to ${replaced}`);
                 if (replaced !== null) {
                     break;
                 }

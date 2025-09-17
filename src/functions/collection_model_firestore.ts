@@ -162,7 +162,7 @@ module.exports = (
                     try {
                         // NullはFieldValue.delete()に変換される
                         for (const docId in collectionData) {
-                            collectionData[docId] = FirestoreModelFieldValueConverterUtils.convertFrom({ data: collectionData[docId], firestoreInstance });
+                            collectionData[docId] = FirestoreModelFieldValueConverterUtils.convertTo({ data: collectionData[docId], firestoreInstance });
                             await firestoreInstance.doc(path + "/" + docId).set(
                                 {
                                     ...collectionData[docId],
