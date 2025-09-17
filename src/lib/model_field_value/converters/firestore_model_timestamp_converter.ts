@@ -113,7 +113,7 @@ export class FirestoreModelTimestampConverter extends FirestoreModelFieldValueCo
     firestoreInstance: FirebaseFirestore.Firestore
   ): { [field: string]: any } | null {
     console.log(`${key} is ${typeof value}`);
-    console.log(`value: ${"@type" in value} ${JSON.stringify(value)} ${value["@type"] as string | null | undefined ?? ""}`);
+    console.log(`value: ${JSON.stringify(value)} ${value["@type"] as string | null | undefined ?? ""}`);
     if (value != null && typeof value === "object" && "@type" in value) {
       const type = value["@type"] as string | null | undefined ?? "";
       if (type === this.type) {
