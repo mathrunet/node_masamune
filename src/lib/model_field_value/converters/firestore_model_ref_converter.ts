@@ -26,12 +26,11 @@ export class FirestoreModelRefConverter extends FirestoreModelFieldValueConverte
     original: { [field: string]: any },
     firestoreInstance: FirebaseFirestore.Firestore
   ): { [field: string]: any } | null {
-    console.log(`${key} is ${typeof value}`);
     if (value instanceof DocumentReference) {
       return {
         [key]: {
-          "@ref": value.path,
-          ...this.header(),
+          "@type": "ModelRefBase",
+          "@ref": value.path.replace(/\/+$/, ''), // Remove trailing slashes
         },
       };
     } else if (Array.isArray(value)) {
@@ -39,8 +38,8 @@ export class FirestoreModelRefConverter extends FirestoreModelFieldValueConverte
       for (const tmp of value) {
         if (tmp instanceof DocumentReference) {
           res.push({
-            "@ref": tmp.path,
-            ...this.header(),
+            "@type": "ModelRefBase",
+            "@ref": tmp.path.replace(/\/+$/, ''), // Remove trailing slashes
           });
         }
       }
@@ -57,8 +56,8 @@ export class FirestoreModelRefConverter extends FirestoreModelFieldValueConverte
         const val = value[k];
         if (val instanceof DocumentReference) {
           res[k] = {
-            "@ref": val.path,
-            ...this.header(),
+            "@type": "ModelRefBase",
+            "@ref": val.path.replace(/\/+$/, ''), // Remove trailing slashes
           };
         }
       }

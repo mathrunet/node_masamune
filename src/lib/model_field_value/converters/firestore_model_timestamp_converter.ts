@@ -45,7 +45,13 @@ export class FirestoreModelTimestampConverter extends FirestoreModelFieldValueCo
       const type = targetMap["@type"] as string | null | undefined ?? "";
       if (type == this.type) {
         return {
-          [key]: value,
+          [key]: {
+            "@type": "ModelTimestamp",
+            "@timestamp": value * 1000, // Convert milliseconds to microseconds
+            "@now": false,
+            "@source": "server"
+          },
+          [targetKey]: null,
         };
       }
     } else if (value instanceof Timestamp) {
@@ -54,24 +60,41 @@ export class FirestoreModelTimestampConverter extends FirestoreModelFieldValueCo
       const type = targetMap["@type"] as string | null | undefined ?? "";
       if (type == this.type) {
         return {
-          [key]: value.toMillis(),
+          [key]: {
+            "@type": "ModelTimestamp",
+            "@timestamp": value.toMillis() * 1000, // Convert milliseconds to microseconds
+            "@now": false,
+            "@source": "server"
+          },
+          [targetKey]: null,
         };
       }
     } else if (Array.isArray(value)) {
       const targetKey = `#${key}`;
       const targetList = original[targetKey] as { [field: string]: any }[] | null | undefined ?? [];
       if (targetList != null && targetList.length > 0 && targetList.every((e) => e["@type"] === this.type)) {
-        const res: number[] = [];
+        const res: any[] = [];
         for (const tmp of value) {
           if (typeof tmp === "number") {
-            res.push(tmp);
+            res.push({
+              "@type": "ModelTimestamp",
+              "@timestamp": tmp * 1000, // Convert milliseconds to microseconds
+              "@now": false,
+              "@source": "server"
+            });
           } else if (tmp instanceof Timestamp) {
-            res.push(tmp.toMillis());
+            res.push({
+              "@type": "ModelTimestamp",
+              "@timestamp": tmp.toMillis() * 1000, // Convert milliseconds to microseconds
+              "@now": false,
+              "@source": "server"
+            });
           }
         }
         if (res.length > 0) {
           return {
             [key]: res,
+            [targetKey]: null,
           };
         }
       }
@@ -81,7 +104,7 @@ export class FirestoreModelTimestampConverter extends FirestoreModelFieldValueCo
       targetMap
       if (targetMap != null) {
         const res: {
-          [field: string]: number
+          [field: string]: any
         } = {};
         for (const key in value) {
           const val = value[key];
@@ -91,14 +114,25 @@ export class FirestoreModelTimestampConverter extends FirestoreModelFieldValueCo
             continue;
           }
           if (typeof val === "number") {
-            res[key] = val;
+            res[key] = {
+              "@type": "ModelTimestamp",
+              "@timestamp": val * 1000, // Convert milliseconds to microseconds
+              "@now": false,
+              "@source": "server"
+            };
           } else if (val instanceof Timestamp) {
-            res[key] = val.toMillis();
+            res[key] = {
+              "@type": "ModelTimestamp",
+              "@timestamp": val.toMillis() * 1000, // Convert milliseconds to microseconds
+              "@now": false,
+              "@source": "server"
+            };
           }
         }
         if (Object.keys(res).length > 0) {
           return {
             [key]: res,
+            [targetKey]: null,
           };
         }
       }

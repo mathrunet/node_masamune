@@ -30,23 +30,38 @@ export class FirestoreModelCounterConverter extends FirestoreModelFieldValueConv
       const targetMap = original[targetKey] as { [field: string]: any } | null | undefined ?? {};
       const type = targetMap["@type"] as string | null | undefined ?? "";
       if (type == this.type) {
+        const increment = targetMap["@increment"] as number | null | undefined ?? 0;
         return {
-          [key]: value,
+          [key]: {
+            "@type": "ModelCounter",
+            "@value": value,
+            "@increment": increment,
+            "@source": "server"
+          },
+          [targetKey]: null,
         };
       }
     } else if (Array.isArray(value)) {
       const targetKey = `#${key}`;
       const targetList = original[targetKey] as { [field: string]: any }[] | null | undefined ?? [];
       if (targetList != null && targetList.length > 0 && targetList.every((e) => e["@type"] === this.type)) {
-        const res: number[] = [];
-        for (const tmp of value) {
-          if (typeof tmp === "number") {
-            res.push(tmp);
+        const res: any[] = [];
+        for (let i = 0; i < value.length; i++) {
+          const tmp = value[i];
+          if (typeof tmp === "number" && i < targetList.length) {
+            const increment = targetList[i]["@increment"] as number | null | undefined ?? 0;
+            res.push({
+              "@type": "ModelCounter",
+              "@value": tmp,
+              "@increment": increment,
+              "@source": "server"
+            });
           }
         }
         if (res.length > 0) {
           return {
             [key]: res,
+            [targetKey]: null,
           };
         }
       }
@@ -56,7 +71,7 @@ export class FirestoreModelCounterConverter extends FirestoreModelFieldValueConv
       targetMap
       if (targetMap != null) {
         const res: {
-          [field: string]: number
+          [field: string]: any
         } = {};
         for (const key in value) {
           const val = value[key];
@@ -66,12 +81,19 @@ export class FirestoreModelCounterConverter extends FirestoreModelFieldValueConv
             continue;
           }
           if (typeof val === "number") {
-            res[key] = val;
+            const increment = mapVal["@increment"] as number | null | undefined ?? 0;
+            res[key] = {
+              "@type": "ModelCounter",
+              "@value": val,
+              "@increment": increment,
+              "@source": "server"
+            };
           }
         }
         if (Object.keys(res).length > 0) {
           return {
             [key]: res,
+            [targetKey]: null,
           };
         }
       }
