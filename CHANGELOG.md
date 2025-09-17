@@ -1,3 +1,12 @@
+## [3.5.6](https://github.com/mathrunet/node_masamune/compare/v3.5.5...v3.5.6) (2025-09-17)
+
+
+### fix
+
+* Corrected an error that appeared in the log. ([538688c](https://github.com/mathrunet/node_masamune/commit/538688c9815e20470a309e11f62ed83464c269f0))
+
+
+
 ## [3.5.5](https://github.com/mathrunet/node_masamune/compare/v3.5.4...v3.5.5) (2025-09-17)
 
 
