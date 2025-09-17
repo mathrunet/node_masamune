@@ -115,7 +115,7 @@ module.exports = (
             // クエリパラメータから必要な情報を取得
             const path = query.data.path as string | undefined | null;
             const method = query.data.method as string | undefined | null;
-            const documentData = query.data.data as { [key: string]: any } | undefined | null;
+            const documentJson = query.data.data as string | undefined | null;
             
             if (!method) {
                 throw new functions.https.HttpsError("invalid-argument", "No method specified.");
@@ -142,7 +142,7 @@ module.exports = (
                         console.log(`Document exists: ${doc.exists}`);
                         return {
                             status: 200,
-                            data: converted,
+                            data: JSON.stringify(converted),
                         };
                     } catch (error: any) {
                         console.error(`Error getting document at ${path}:`, error);
@@ -154,12 +154,19 @@ module.exports = (
                 }
                 case "put":
                 case "post": {
-                    if (!documentData) {
+                    if (!documentJson) {
                         throw new functions.https.HttpsError("invalid-argument", "No data specified for set operation.");
                     }
-                    console.log(`Attempting to set document at path: ${path}`);
+                    const documentData = JSON.parse(documentJson) as { [key: string]: any };
+                    if (!documentData) {
+                        throw new functions.https.HttpsError("invalid-argument", "Invalid data specified for set operation.");
+                    }
+                    console.log(`Attempting to set document at path: ${path} with data: ${JSON.stringify(documentData)}`);
                     try {
                         const converted = FirestoreModelFieldValueConverterUtils.convertFrom(documentData);
+                        if (!converted) {
+                            throw new functions.https.HttpsError("invalid-argument", "Invalid data specified for set operation.");
+                        }
                         await firestoreInstance.doc(path).set(
                             {
                                 ...converted,

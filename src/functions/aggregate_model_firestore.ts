@@ -135,7 +135,7 @@ module.exports = (
                         console.log(`Successfully retrieved count aggregation at path: ${path}`);
                         return {
                             status: 200,
-                            data: data,
+                            data: JSON.stringify(data),
                         };
                     } catch (error: any) {
                         console.error(`Error getting count aggregation at ${path}:`, error);
@@ -162,7 +162,7 @@ module.exports = (
                         console.log(`Successfully retrieved sum aggregation at path: ${path}/${field}`);
                         return {
                             status: 200,
-                            data: data,
+                            data:  JSON.stringify(data),
                         };
                     } catch (error: any) {
                         console.error(`Error getting sum aggregation at ${path}/${field}:`, error);
@@ -189,7 +189,7 @@ module.exports = (
                         console.log(`Successfully retrieved average aggregation at path: ${path}/${field}`);
                         return {
                             status: 200,
-                            data: data,
+                            data: JSON.stringify(data),
                         };
                     } catch (error: any) {
                         console.error(`Error getting average aggregation at ${path}/${field}:`, error);

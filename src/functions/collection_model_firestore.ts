@@ -115,7 +115,7 @@ module.exports = (
             // クエリパラメータから必要な情報を取得
             const path = query.data.path as string | undefined | null;
             const method = query.data.method as string | undefined | null;
-            const collectionData = query.data.data as { [key: string]: { [key: string]: any } } | undefined | null;
+            const collectionJson = query.data.data as string | undefined | null;
             
             if (!method) {
                 throw new functions.https.HttpsError("invalid-argument", "No method specified.");
@@ -139,7 +139,7 @@ module.exports = (
                         console.log(`Successfully retrieved ${col.size} documents from ${path}`);
                         return {
                             status: 200,
-                            data: data,
+                            data: JSON.stringify(data),
                         };
                     } catch (error: any) {
                         console.error(`Error getting collection at ${path}:`, error);
@@ -151,10 +151,14 @@ module.exports = (
                 }
                 case "put":
                 case "post": {
+                    if (!collectionJson) {
+                        throw new functions.https.HttpsError("invalid-argument", "No data specified for set operation.");
+                    }
+                    const collectionData = JSON.parse(collectionJson) as { [key: string]: { [key: string]: any } };
                     if (!collectionData) {
                         throw new functions.https.HttpsError("invalid-argument", "No data specified for set operation.");
                     }
-                    console.log(`Attempting to set documents in collection at path: ${path}`);
+                    console.log(`Attempting to set documents in collection at path: ${path} with data: ${JSON.stringify(collectionData)}`);
                     try {
                         // NullはFieldValue.delete()に変換される
                         for (const docId in collectionData) {
