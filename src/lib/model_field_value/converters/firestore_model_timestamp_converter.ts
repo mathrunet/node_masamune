@@ -47,7 +47,7 @@ export class FirestoreModelTimestampConverter extends FirestoreModelFieldValueCo
         return {
           [key]: {
             "@type": "ModelTimestamp",
-            "@timestamp": value * 1000, // Convert milliseconds to microseconds
+            "@time": value * 1000, // Convert milliseconds to microseconds
             "@now": false,
             "@source": "server"
           },
@@ -62,7 +62,7 @@ export class FirestoreModelTimestampConverter extends FirestoreModelFieldValueCo
         return {
           [key]: {
             "@type": "ModelTimestamp",
-            "@timestamp": value.toMillis() * 1000, // Convert milliseconds to microseconds
+            "@time": value.toMillis() * 1000, // Convert milliseconds to microseconds
             "@now": false,
             "@source": "server"
           },
@@ -78,14 +78,14 @@ export class FirestoreModelTimestampConverter extends FirestoreModelFieldValueCo
           if (typeof tmp === "number") {
             res.push({
               "@type": "ModelTimestamp",
-              "@timestamp": tmp * 1000, // Convert milliseconds to microseconds
+              "@time": tmp * 1000, // Convert milliseconds to microseconds
               "@now": false,
               "@source": "server"
             });
           } else if (tmp instanceof Timestamp) {
             res.push({
               "@type": "ModelTimestamp",
-              "@timestamp": tmp.toMillis() * 1000, // Convert milliseconds to microseconds
+              "@time": tmp.toMillis() * 1000, // Convert milliseconds to microseconds
               "@now": false,
               "@source": "server"
             });
@@ -116,14 +116,14 @@ export class FirestoreModelTimestampConverter extends FirestoreModelFieldValueCo
           if (typeof val === "number") {
             res[key] = {
               "@type": "ModelTimestamp",
-              "@timestamp": val * 1000, // Convert milliseconds to microseconds
+              "@time": val * 1000, // Convert milliseconds to microseconds
               "@now": false,
               "@source": "server"
             };
           } else if (val instanceof Timestamp) {
             res[key] = {
               "@type": "ModelTimestamp",
-              "@timestamp": val.toMillis() * 1000, // Convert milliseconds to microseconds
+              "@time": val.toMillis() * 1000, // Convert milliseconds to microseconds
               "@now": false,
               "@source": "server"
             };
@@ -150,14 +150,14 @@ export class FirestoreModelTimestampConverter extends FirestoreModelFieldValueCo
       const type = value["@type"] as string | null | undefined ?? "";
       if (type === this.type) {
         const fromUser = (value["@source"] as string | null | undefined ?? "") === "user";
-        const val = value["@timestamp"] as number | null | undefined ?? 0;
+        const val = value["@time"] as number | null | undefined ?? 0;
         const useNow = value["@now"] as boolean | null | undefined ?? false;
         const targetKey = `#${key}`;
         
         const result: { [field: string]: any } = {
           [targetKey]: {
             "@type": this.type,
-            "@timestamp": val,
+            "@time": val,
             "@target": key,
           },
         };
@@ -183,12 +183,12 @@ export class FirestoreModelTimestampConverter extends FirestoreModelFieldValueCo
         
         for (const entry of list) {
           const fromUser = (entry["@source"] as string | null | undefined ?? "") === "user";
-          const time = entry["@timestamp"] as number | null | undefined ?? 0;
+          const time = entry["@time"] as number | null | undefined ?? 0;
           const useNow = entry["@now"] as boolean | null | undefined ?? false;
           
           target.push({
             "@type": this.type,
-            "@timestamp": time,
+            "@time": time,
             "@target": key,
           });
           
@@ -223,12 +223,12 @@ export class FirestoreModelTimestampConverter extends FirestoreModelFieldValueCo
         
         for (const [k, entry] of Object.entries(map)) {
           const fromUser = (entry["@source"] as string | null | undefined ?? "") === "user";
-          const time = entry["@timestamp"] as number | null | undefined ?? 0;
+          const time = entry["@time"] as number | null | undefined ?? 0;
           const useNow = entry["@now"] as boolean | null | undefined ?? false;
           
           target[k] = {
             "@type": this.type,
-            "@timestamp": time,
+            "@time": time,
             "@target": key,
           };
           

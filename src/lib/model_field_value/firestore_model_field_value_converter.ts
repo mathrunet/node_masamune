@@ -143,7 +143,7 @@ export class FirestoreModelFieldValue {
     }) {
         const res: { [key: string]: any } = {};
         res[key] = {
-            "@timestamp": timestamp.toMillis(),
+            "@time": timestamp.toMillis(),
             "@type": "ModelTimestamp",
         };
         return res;
@@ -177,7 +177,7 @@ export class FirestoreModelFieldValue {
     }) {
         const res: { [key: string]: any } = {};
         res[key] = {
-            "@timestamp": timestamp.toMillis(),
+            "@time": timestamp.toMillis(),
             "@type": "ModelTimestamp",
         };
         return res;
