@@ -21,7 +21,9 @@ export class FirestoreModelUriConverter extends FirestoreModelFieldValueConverte
   convertFrom(
     key: string,
     value: any,
-    original: { [field: string]: any }): { [field: string]: any } | null {
+    original: { [field: string]: any },
+    firestoreInstance: FirebaseFirestore.Firestore
+  ): { [field: string]: any } | null {
     if (typeof value === "string") {
       const targetKey = `#${key}`;
       const targetMap = original[targetKey] as { [field: string]: any } | null | undefined ?? {};
@@ -75,7 +77,9 @@ export class FirestoreModelUriConverter extends FirestoreModelFieldValueConverte
   convertTo(
     key: string,
     value: any,
-    original: { [field: string]: any }): { [field: string]: any } | null {
+    original: { [field: string]: any },
+    firestoreInstance: FirebaseFirestore.Firestore
+  ): { [field: string]: any } | null {
     if (isDynamicMap(value) && value["@type"] !== undefined) {
       const type = value["@type"] as string || "";
       if (type === this.type) {

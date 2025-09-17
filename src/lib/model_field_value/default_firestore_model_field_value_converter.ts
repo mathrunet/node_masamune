@@ -69,13 +69,13 @@ export class FirestoreModelFieldValueConverterUtils {
      * 
      * [ModelFieldValue]に変換されたデータ。
      */
-    static convertFrom(data: { [field: string]: any }): { [field: string]: any } {
+    static convertFrom({ data, firestoreInstance }: { data: { [field: string]: any }, firestoreInstance: FirebaseFirestore.Firestore }): { [field: string]: any } {
         const update: { [field: string]: any } = {};
         var replaced: { [field: string]: any } | null = null;
         for (const key in data) {
             const val = data[key];
             for (const converter of defaultConverters) {
-                replaced = converter.convertFrom(key, val, data);
+                replaced = converter.convertFrom(key, val, data, firestoreInstance);
                 console.log(`Convert(${converter.type}): ${key} : ${val} to ${replaced}`);
                 if (replaced !== null) {
                     break;
@@ -108,13 +108,13 @@ export class FirestoreModelFieldValueConverterUtils {
      * 
      * Firestoreで管理可能な型に変換されたデータ。
      */
-    static convertTo(data: { [field: string]: any }): { [field: string]: any } {
+    static convertTo({ data, firestoreInstance }: { data: { [field: string]: any }, firestoreInstance: FirebaseFirestore.Firestore }): { [field: string]: any } {
         const update: { [field: string]: any } = {};
         var replaced: { [field: string]: any } | null = null;
         for (const key in data) {
             const val = data[key];
             for (const converter of defaultConverters) {
-                replaced = converter.convertTo(key, val, data);
+                replaced = converter.convertTo(key, val, data, firestoreInstance);
                 console.log(`Convert(${converter.type}): ${key} : ${val} to ${replaced}`);
                 if (replaced !== null) {
                     break;

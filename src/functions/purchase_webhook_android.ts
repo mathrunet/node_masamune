@@ -1,5 +1,4 @@
 import * as functions from "firebase-functions/v2";
-import * as admin from "firebase-admin";
 import * as verifier from "../lib/functions/verify_android";
 import * as utils from "../lib/utils";
 import { PubsubFunctionsOptions } from "../lib/src/functions_base";

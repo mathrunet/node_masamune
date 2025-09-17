@@ -2,6 +2,7 @@ import * as functions from "firebase-functions/v2";
 import * as algolia from "algoliasearch";
 import { PathFunctionsOptions } from "../lib/src/functions_base";
 import { FirestoreModelFieldValueConverterUtils } from "../lib/model_field_value/default_firestore_model_field_value_converter";
+import { firestoreLoader } from "../lib/src/firebase_loader";
 
 /**
  * Synchronize data to Algolia.
@@ -34,6 +35,7 @@ module.exports = (
     {
         document: `${options.path}/{docId}`,
         region: options.region ?? regions[0],
+        database: options.firestoreDatabaseIds?.[0] ?? undefined,
         timeoutSeconds: options.timeoutSeconds,
         memory: options.memory,
         minInstances: options.minInstances,
@@ -43,6 +45,7 @@ module.exports = (
     },
     async (event) => {
         try {
+            const firestoreInstance = firestoreLoader(options.firestoreDatabaseIds?.[0] ?? null);
             const afterExists = event.data?.after.exists ?? false;
             const beforeExists = event.data?.before.exists ?? false;
             const indexName = options.path?.split("/").pop() ?? "";
@@ -60,7 +63,7 @@ module.exports = (
                 if (!key || !data) {
                     return;
                 }
-                const converted = FirestoreModelFieldValueConverterUtils.convertFrom(data);
+                const converted = FirestoreModelFieldValueConverterUtils.convertFrom({ data: data, firestoreInstance });
                 const update: { [field: string]: any } = {
                     ...converted,
                     "@uid": key,
@@ -79,7 +82,7 @@ module.exports = (
                 if (!key || !data) {
                     return;
                 }
-                const converted = FirestoreModelFieldValueConverterUtils.convertFrom(data);
+                const converted = FirestoreModelFieldValueConverterUtils.convertFrom({ data, firestoreInstance });
                 const update: { [field: string]: any } = {
                     ...converted,
                     "@uid": key,

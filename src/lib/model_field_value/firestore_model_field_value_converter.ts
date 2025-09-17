@@ -35,7 +35,9 @@ export abstract class FirestoreModelFieldValueConverter {
     abstract convertFrom(
         key: string,
         value: any,
-        original: { [field: string]: any }): { [field: string]: any } | null;
+        original: { [field: string]: any },
+        firestoreInstance: FirebaseFirestore.Firestore
+    ): { [field: string]: any } | null;
     /**
      * Convert from [ModelFieldValue] to Firestore manageable type.
      * 
@@ -52,7 +54,9 @@ export abstract class FirestoreModelFieldValueConverter {
     abstract convertTo(
         key: string,
         value: any,
-        original: { [field: string]: any }): { [field: string]: any } | null;
+        original: { [field: string]: any },
+        firestoreInstance: FirebaseFirestore.Firestore
+    ): { [field: string]: any } | null;
     
     /**
      * Generate a header for ModelFieldValue.

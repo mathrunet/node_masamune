@@ -23,7 +23,9 @@ export class FirestoreModelRefConverter extends FirestoreModelFieldValueConverte
   convertFrom(
     key: string,
     value: any,
-    original: { [field: string]: any }): { [field: string]: any } | null {
+    original: { [field: string]: any },
+    firestoreInstance: FirebaseFirestore.Firestore
+  ): { [field: string]: any } | null {
     console.log(`${key} is ${typeof value}`);
     if (value instanceof DocumentReference) {
       return {
@@ -72,15 +74,18 @@ export class FirestoreModelRefConverter extends FirestoreModelFieldValueConverte
   convertTo(
     key: string,
     value: any,
-    _original: { [field: string]: any }): { [field: string]: any } | null {
-    const firestore = firestoreLoader(null);
+    _original: { [field: string]: any },
+    firestoreInstance: FirebaseFirestore.Firestore
+  ): { [field: string]: any } | null {
     
+    console.log(`${key} is ${typeof value}`);
+    console.log(`value: ${"@type" in value} ${JSON.stringify(value)} ${value["@type"] as string | null | undefined ?? ""}`);
     if (value != null && typeof value === "object" && "@type" in value) {
       const type = value["@type"] as string | null | undefined ?? "";
       if (type.startsWith(this.type)) {
         const refPath = value["@ref"] as string | null | undefined ?? "";
         return {
-          [key]: firestore.doc(refPath),
+          [key]: firestoreInstance.doc(refPath),
         };
       }
     } else if (Array.isArray(value)) {
@@ -89,7 +94,7 @@ export class FirestoreModelRefConverter extends FirestoreModelFieldValueConverte
         const res: DocumentReference[] = [];
         for (const entry of list) {
           const refPath = entry["@ref"] as string | null | undefined ?? "";
-          res.push(firestore.doc(refPath));
+          res.push(firestoreInstance.doc(refPath));
         }
         return {
           [key]: res,
@@ -107,7 +112,7 @@ export class FirestoreModelRefConverter extends FirestoreModelFieldValueConverte
         const res: { [key: string]: DocumentReference } = {};
         for (const [k, entry] of Object.entries(map)) {
           const refPath = entry["@ref"] as string | null | undefined ?? "";
-          res[k] = firestore.doc(refPath);
+          res[k] = firestoreInstance.doc(refPath);
         }
         return {
           [key]: res,

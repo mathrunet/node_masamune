@@ -36,7 +36,9 @@ export class FirestoreModelTimestampConverter extends FirestoreModelFieldValueCo
   convertFrom(
     key: string,
     value: any,
-    original: { [field: string]: any }): { [field: string]: any } | null {
+    original: { [field: string]: any },
+    firestoreInstance: FirebaseFirestore.Firestore
+  ): { [field: string]: any } | null {
     if (typeof value === "number") {
       const targetKey = `#${key}`;
       const targetMap = original[targetKey] as { [field: string]: any } | null | undefined ?? {};
@@ -107,7 +109,11 @@ export class FirestoreModelTimestampConverter extends FirestoreModelFieldValueCo
   convertTo(
     key: string,
     value: any,
-    _original: { [field: string]: any }): { [field: string]: any } | null {
+    _original: { [field: string]: any },
+    firestoreInstance: FirebaseFirestore.Firestore
+  ): { [field: string]: any } | null {
+    console.log(`${key} is ${typeof value}`);
+    console.log(`value: ${"@type" in value} ${JSON.stringify(value)} ${value["@type"] as string | null | undefined ?? ""}`);
     if (value != null && typeof value === "object" && "@type" in value) {
       const type = value["@type"] as string | null | undefined ?? "";
       if (type === this.type) {

@@ -1,6 +1,6 @@
 import * as functions from "firebase-functions/v2";
 import { HttpFunctionsOptions } from "../lib/src/functions_base";
-import { Firestore, FieldValue } from "@google-cloud/firestore";
+import { Firestore } from "@google-cloud/firestore";
 import { FirestoreModelFieldValueConverterUtils } from "../lib/model_field_value/default_firestore_model_field_value_converter";
 
 /**
@@ -138,7 +138,7 @@ module.exports = (
                     console.log(`Attempting to get document at path: ${path}`);
                     try {
                         const doc = await firestoreInstance.doc(path).get();
-                        const converted = FirestoreModelFieldValueConverterUtils.convertFrom(doc.data() ?? {});
+                        const converted = FirestoreModelFieldValueConverterUtils.convertFrom({ data: doc.data() ?? {}, firestoreInstance });
                         console.log(`Document exists: ${doc.exists}`);
                         return {
                             status: 200,
@@ -163,7 +163,7 @@ module.exports = (
                     }
                     console.log(`Attempting to set document at path: ${path} with data: ${JSON.stringify(documentData)}`);
                     try {
-                        const converted = FirestoreModelFieldValueConverterUtils.convertFrom(documentData);
+                        const converted = FirestoreModelFieldValueConverterUtils.convertFrom({ data: documentData, firestoreInstance });
                         if (!converted) {
                             throw new functions.https.HttpsError("invalid-argument", "Invalid data specified for set operation.");
                         }

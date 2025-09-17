@@ -1,5 +1,4 @@
 import * as functions from "firebase-functions/v2";
-import * as admin from "firebase-admin";
 import { SchedulerFunctionsOptions } from "../lib/src/functions_base";
 import { notification } from "../lib/schedulers/notification";
 import { copyDocument } from "../lib/schedulers/copy_document";

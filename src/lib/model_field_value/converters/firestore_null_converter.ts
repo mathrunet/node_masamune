@@ -22,14 +22,18 @@ export class FirestoreNullConverter extends FirestoreModelFieldValueConverter {
   convertFrom(
     key: string,
     value: any,
-    original: { [field: string]: any }): { [field: string]: any } | null {
+    original: { [field: string]: any },
+    firestoreInstance: FirebaseFirestore.Firestore
+  ): { [field: string]: any } | null {
     return null;
   }
 
   convertTo(
     key: string,
     value: any,
-    original: { [field: string]: any }): { [field: string]: any } | null {
+    original: { [field: string]: any },
+    firestoreInstance: FirebaseFirestore.Firestore
+  ): { [field: string]: any } | null {
     if (isDynamicMap(value) && original[key] !== undefined) {
       const originalMap = original[key];
       if (isDynamicMap(originalMap)) {

@@ -1,6 +1,6 @@
 import * as functions from "firebase-functions/v2";
 import { HttpFunctionsOptions } from "../lib/src/functions_base";
-import { Firestore, FieldValue } from "@google-cloud/firestore";
+import { Firestore } from "@google-cloud/firestore";
 import { FirestoreModelFieldValueConverterUtils } from "../lib/model_field_value/default_firestore_model_field_value_converter";
 
 /**
@@ -133,7 +133,7 @@ module.exports = (
                         const data: { [key: string]: { [key: string]: any } } = {};
                         for (const doc of col.docs) {
                             if (doc.exists) {
-                                data[doc.id] = FirestoreModelFieldValueConverterUtils.convertFrom(doc.data());
+                                data[doc.id] = FirestoreModelFieldValueConverterUtils.convertFrom({ data: doc.data(), firestoreInstance });
                             }
                         }
                         console.log(`Successfully retrieved ${col.size} documents from ${path}`);
@@ -162,7 +162,7 @@ module.exports = (
                     try {
                         // NullはFieldValue.delete()に変換される
                         for (const docId in collectionData) {
-                            collectionData[docId] = FirestoreModelFieldValueConverterUtils.convertFrom(collectionData[docId]);
+                            collectionData[docId] = FirestoreModelFieldValueConverterUtils.convertFrom({ data: collectionData[docId], firestoreInstance });
                             await firestoreInstance.doc(path + "/" + docId).set(
                                 {
                                     ...collectionData[docId],
