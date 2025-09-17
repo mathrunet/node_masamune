@@ -1,3 +1,12 @@
+## [3.5.5](https://github.com/mathrunet/node_masamune/compare/v3.5.4...v3.5.5) (2025-09-17)
+
+
+### fix
+
+* Fixed ConvertFrom and ConvertTo as they were incorrect. ([0c87aec](https://github.com/mathrunet/node_masamune/commit/0c87aeca0f2f1242afdf4c665b3a854400eecb9b))
+
+
+
 ## [3.5.4](https://github.com/mathrunet/node_masamune/compare/v3.5.3...v3.5.4) (2025-09-17)
 
 
