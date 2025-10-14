@@ -10,6 +10,7 @@ import { FirestoreModelImageUriConverter } from "./converters/firestore_model_im
 import { FirestoreBasicConverter } from "./converters/firestore_basic_converter";
 import { FirestoreEnumConverter } from "./converters/firestore_enum_converter";
 import { FirestoreModelGeoValueConverter } from "./converters/firestore_model_geo_value_converter";
+import { FirestoreModelVectorValueConverter } from "./converters/firestore_model_vector_value_converter";
 import { FirestoreModelRefConverter } from "./converters/firestore_model_ref_converter";
 import { FirestoreModelSearchConverter } from "./converters/firestore_model_search_converter";
 import { FirestoreModelTokenConverter } from "./converters/firestore_model_token_converter";
@@ -42,6 +43,7 @@ const defaultConverters: FirestoreModelFieldValueConverter[] = [
     new FirestoreModelSearchConverter(),
     new FirestoreModelTokenConverter(),
     new FirestoreModelGeoValueConverter(),
+    new FirestoreModelVectorValueConverter(),
     new FirestoreModelRefConverter(),
     new FirestoreEnumConverter(),
     new FirestoreNullConverter(),
