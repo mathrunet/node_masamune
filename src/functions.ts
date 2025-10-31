@@ -226,6 +226,12 @@ export const Functions = {
    */
   storageFirebase: (options: data.HttpFunctionsOptions = {}) => new data.FunctionsData({ id: "storage_firebase", func: require("./functions/storage_firebase"), options: options }),
   /**
+   * A function to get a Google Cloud Platform authentication token.
+   * 
+   * Google Cloud Platformの認証トークンを取得するためのFunction。
+   */
+  googleToken: (options: data.HttpFunctionsOptions = {}) => new data.FunctionsData({ id: "google_token", func: require("./functions/google_token"), options: options }),
+  /**
    * Endpoints for testing.
    * 
    * テストを行うためのエンドポイントです。
