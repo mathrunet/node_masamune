@@ -1,3 +1,13 @@
+# [3.6.0](https://github.com/mathrunet/node_masamune/compare/v3.5.9...v3.6.0) (2025-11-01)
+
+
+### feat
+
+* Add GoogleToken. ([953ae3b](https://github.com/mathrunet/node_masamune/commit/953ae3bef001cfbec2eb2795bab727ee7d1c87cf))
+* Enabled building of ModelVectorValue. ([fda90fe](https://github.com/mathrunet/node_masamune/commit/fda90fe53681498614acc47c59ce48072507d067))
+
+
+
 ## [3.5.9](https://github.com/mathrunet/node_masamune/compare/v3.5.8...v3.5.9) (2025-09-17)
 
 
