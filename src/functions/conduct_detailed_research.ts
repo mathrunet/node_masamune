@@ -3,6 +3,19 @@ import * as admin from "firebase-admin";
 import { VertexAI, SchemaType } from "@google-cloud/vertexai";
 import { HttpFunctionsOptions } from "../lib/src/functions_base";
 
+/**
+ * Determines the next function to call based on asset type
+ */
+function getNextFunctionName(assetType: string): string {
+    const functionMap: { [key: string]: string } = {
+        short_video: "generateShortVideoMetadata",
+        long_video: "generateVideoMetadata",
+        manga: "generateMangaMetadata",
+        image: "generateImageMetadata"
+    };
+    return functionMap[assetType] || "unknown";
+}
+
 module.exports = (
     regions: string[],
     options: HttpFunctionsOptions,
@@ -78,9 +91,14 @@ module.exports = (
                             type: SchemaType.OBJECT,
                             properties: {
                                 title: { type: SchemaType.STRING },
-                                report: { type: SchemaType.STRING }
+                                report: { type: SchemaType.STRING },
+                                assetType: {
+                                    type: SchemaType.STRING,
+                                    enum: ["short_video", "long_video", "manga", "image"]
+                                },
+                                assetTypeReason: { type: SchemaType.STRING }
                             },
-                            required: ["title", "report"]
+                            required: ["title", "report", "assetType", "assetTypeReason"]
                         }
                     },
                     tools: [{
@@ -90,16 +108,34 @@ module.exports = (
                 });
 
                 const prompt = `
-            You are a professional researcher.
+            You are a professional researcher conducting deep research for content creation.
             Based on the following theme, please conduct detailed research using Google Search and generate a comprehensive research report.
-            The report should be detailed, factual, and suitable for creating deep content later.
+
+            The report must contain enough information to create a 10-15 minute video or detailed visual content.
+            Include:
+            - Historical background and context
+            - Key facts, statistics, and data points
+            - Interesting anecdotes and stories
+            - Visual descriptions (for image/video creation)
+            - Timeline of events (if applicable)
+            - Character/person descriptions (if applicable)
+            - Multiple perspectives and viewpoints
+            - Current relevance and impact
 
             Theme: ${theme}
+
+            Additionally, determine the most suitable asset type for this content:
+            - short_video: For 60-second impactful content (trending topics, quick facts)
+            - long_video: For 10-15 minute comprehensive explanations (deep dives, documentaries)
+            - manga: For story-based or character-driven narratives
+            - image: For single concept visualization (infographics, art)
 
             Please output in the following JSON format:
             {
                 "title": "Report Title",
-                "report": "Detailed Research Report..."
+                "report": "Detailed Research Report with multiple sections...",
+                "assetType": "short_video|long_video|manga|image",
+                "assetTypeReason": "Explanation for why this asset type was chosen"
             }
             `;
 
@@ -124,16 +160,37 @@ module.exports = (
                 const jsonText = cleanedText.substring(firstBrace, lastBrace + 1);
                 const json = JSON.parse(jsonText);
 
+                // Validate asset type
+                const validAssetTypes = ["short_video", "long_video", "manga", "image"];
+                if (!validAssetTypes.includes(json.assetType)) {
+                    throw new Error(`Invalid asset type: ${json.assetType}`);
+                }
+
                 await assetDocRef.update({
                     title: json.title,
                     report: json.report,
+                    assetType: json.assetType,
+                    assetTypeReason: json.assetTypeReason,
                     status: "detailed_research_completed",
                     updatedAt: admin.firestore.FieldValue.serverTimestamp(),
                 });
 
                 await requestDocRef.update({ status: "detailed_research_completed" });
 
-                return { success: true, assetId: assetId };
+                // Trigger next process based on asset type
+                // Note: These functions will be implemented in future phases
+                const nextFunctionName = getNextFunctionName(json.assetType);
+                console.log(`Next function to call: ${nextFunctionName}`);
+
+                // TODO: Actually call the next function when they are implemented
+                // Example: await admin.functions().httpsCallable(nextFunctionName)({ requestId });
+
+                return {
+                    success: true,
+                    assetId: assetId,
+                    assetType: json.assetType,
+                    nextFunction: nextFunctionName
+                };
 
             } catch (error: any) {
                 console.error("Error in conductDetailedResearch:", error);

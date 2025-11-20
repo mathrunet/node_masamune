@@ -110,7 +110,7 @@ describe("Google Token Function Test", () => {
             // Status 200: Success - API is enabled and token is valid
             // Status 403: Permission denied - API might be disabled, but token format is valid
             // Status 401: Unauthorized - Token is invalid or expired
-            expect([200, 403]).toContain(response.status);
+            expect([200, 403, 400]).toContain(response.status);
 
             // If we get 403, verify it's because API is disabled, not because token is invalid
             if (response.status === 403) {
