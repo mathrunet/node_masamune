@@ -4,3 +4,6 @@
 /test
 jest.config.json
 tsconfig.json
+development.md
+requirements.md
+setup_guide.md

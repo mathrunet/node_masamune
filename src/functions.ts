@@ -237,4 +237,18 @@ export const Functions = {
    * テストを行うためのエンドポイントです。
    */
   test: (options: data.HttpFunctionsOptions = {}) => new data.FunctionsData({ id: "test", func: require("./functions/test"), options: options }),
+  /**
+   * Start the asset creation process.
+   * 
+   * アセット作成プロセスを開始します。
+   */
+  startAssetCreation: (options: data.HttpFunctionsOptions = {}) => new data.FunctionsData({ id: "start_asset_creation", func: require("./functions/start_asset_creation"), options: options }),
+  /**
+   * Periodically check and start asset creation.
+   * 
+   * 定期的にアセット作成をチェックし開始します。
+   */
+  scheduleAssetCreation: (options: data.SchedulerFunctionsOptions = {}) => new data.FunctionsData({ id: "schedule_asset_creation", func: require("./functions/schedule_asset_creation"), options: options }),
+  conductBroadResearch: (options: data.HttpFunctionsOptions = {}) => new data.FunctionsData({ id: "conductBroadResearch", func: require("./functions/conduct_broad_research"), options: options }),
+  conductDetailedResearch: (options: data.HttpFunctionsOptions = {}) => new data.FunctionsData({ id: "conductDetailedResearch", func: require("./functions/conduct_detailed_research"), options: options }),
 } as const;

@@ -7,7 +7,7 @@ import { GoogleAuth } from "google-auth-library";
  * 
  * Google Cloud Platformの認証トークンを取得するためのFunction。
  * 
- * @param {string} process.env.FIRESTORE_SERVICE_ACCOUNT
+ * @param {string} process.env.GOOGLE_SERVICE_ACCOUNT
  * Service account JSON.
  * 
  * サービスアカウントJSON。
@@ -34,7 +34,8 @@ module.exports = (
             if (!query.auth) {
                 throw new Error("Unauthenticated");
             }
-            const serviceAccount = query.data.serviceAccount as string | null | undefined;
+            const duration = query.data.duration as number | null | undefined ?? 3600;
+            const serviceAccount = process.env.GOOGLE_SERVICE_ACCOUNT as string | null | undefined;
             if (!serviceAccount) {
                 throw new Error("Service account is required");
             }
@@ -42,14 +43,18 @@ module.exports = (
             const auth = new GoogleAuth({
                 credentials: JSON.parse(serviceAccount),
                 scopes: ["https://www.googleapis.com/auth/cloud-platform"],
+                clientOptions: {
+                    lifetime: duration
+                }
             });
-  
+
             const client = await auth.getClient();
             const token = await client.getAccessToken();
-  
+            const expiresIn = token.res?.data?.expires_in;
+
             return {
                 accessToken: token.token,
-                expiresAt: Date.now() + (token.res?.data.expires_in * 1000),
+                expiresAt: expiresIn ? Date.now() + (Number(expiresIn) * 1000) : Date.now() + 3600 * 1000,
             };
         } catch (err) {
             console.error(err);
