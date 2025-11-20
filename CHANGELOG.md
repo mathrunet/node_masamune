@@ -1,3 +1,12 @@
+# [3.7.0](https://github.com/mathrunet/node_masamune/compare/v3.6.0...v3.7.0) (2025-11-20)
+
+
+### feat
+
+* implement broad/detailed research and asset creation functions, alongside new documentation and tests ([0c1c05d](https://github.com/mathrunet/node_masamune/commit/0c1c05da72d25219080ac98809322b13667b047c))
+
+
+
 # [3.6.0](https://github.com/mathrunet/node_masamune/compare/v3.5.9...v3.6.0) (2025-11-01)
 
 
