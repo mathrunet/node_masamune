@@ -1,5 +1,4 @@
 {
-    "globals": {},
     "moduleNameMapper": {},
     "moduleDirectories": [
         "src",
