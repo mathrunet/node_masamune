@@ -1,5 +1,4 @@
 import * as functions from "firebase-functions/v2";
-import "../lib/exntensions/string.extension"
 import { HttpFunctionsOptions, firestoreLoader } from "@mathrunet/katana";
 
 /**
