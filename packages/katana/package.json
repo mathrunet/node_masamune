@@ -15,6 +15,9 @@
     "major_update": "npm version major",
     "patch_update": "npm version patch"
   },
+  "engines": {
+    "node": "20"
+  },
   "publishConfig": {
     "access": "public"
   },
