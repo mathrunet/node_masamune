@@ -1,6 +1,6 @@
 {
   "name": "@mathrunet/masamune_algolia",
-  "version": "3.7.0",
+  "version": "3.8.0",
   "description": "Masamune framework plugin package for Algolia support.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

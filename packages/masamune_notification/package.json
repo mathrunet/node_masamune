@@ -1,6 +1,6 @@
 {
   "name": "@mathrunet/masamune_notification",
-  "version": "3.7.0",
+  "version": "3.8.0",
   "description": "Masamune framework package plugin for sending Push Notifications.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

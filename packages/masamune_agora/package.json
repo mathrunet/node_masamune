@@ -1,6 +1,6 @@
 {
   "name": "@mathrunet/masamune_agora",
-  "version": "3.7.0",
+  "version": "3.8.0",
   "description": "Masamune framework plugin that can issue Agora.io tokens, among other things.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

@@ -1,6 +1,6 @@
 {
   "name": "@mathrunet/masamune_storage",
-  "version": "3.7.0",
+  "version": "3.8.0",
   "description": "Cloud Storage for Firebase Masamune framework package plugin.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

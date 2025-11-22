@@ -1,6 +1,6 @@
 {
   "name": "@mathrunet/masamune_purchase_stripe",
-  "version": "3.7.0",
+  "version": "3.8.0",
   "description": "This is a Masamune framework plugin package that executes Stripe's backend validation and other related processes.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

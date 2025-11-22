@@ -1,6 +1,6 @@
 {
   "name": "@mathrunet/masamune_token_google",
-  "version": "3.7.0",
+  "version": "3.8.0",
   "description": "A Masamune framework plugin package for outputting tokens on Google.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
