@@ -1,5 +1,12 @@
-## [3.8.1](https://github.com/mathrunet/node_masamune/compare/v3.7.0...v3.8.1) (2025-11-22)
+## [3.8.2](https://github.com/mathrunet/node_masamune/compare/v3.7.0...v3.8.2) (2025-11-22)
 
+
+### chore
+
+* Add Node.js 20 engine requirement to all package.json files ([1e60d25](https://github.com/mathrunet/node_masamune/commit/1e60d25b2c44e1efd398a6a1229d2ba3f46da1f5))
+* Update @mathrunet/katana to version 3.9.1 ([d8e32a1](https://github.com/mathrunet/node_masamune/commit/d8e32a1f238ed3b29003bd83799fde57a054c063))
+* Update Node.js engine to v22 and bump development dependencies across packages. ([d840a0f](https://github.com/mathrunet/node_masamune/commit/d840a0f503230f80edbdf01f9516841cff36798d))
+* update TypeScript compilation target to es2022 in tsconfig files across packages ([99253dd](https://github.com/mathrunet/node_masamune/commit/99253dd84a09e1c6026b9a6b88b6fef1ca2f4d14))
 
 ### feat
 
@@ -10,6 +17,11 @@
 * implement Firebase function to generate short video metadata using Vertex AI, including tests and development documentation. ([2251993](https://github.com/mathrunet/node_masamune/commit/22519933c8b1f84fc7ae26a5754c6c02d96b5969))
 * Package separation. And monorepo management. ([2647952](https://github.com/mathrunet/node_masamune/commit/2647952ad48823ac0c3d578a366f4af0bf60bcc1))
 * Update Masamune package versions to 3.8.0. ([318f89a](https://github.com/mathrunet/node_masamune/commit/318f89a7427dfa71149026207eae19c4ff845edc))
+
+### fix
+
+* Move `@types/node-fetch` from devDependencies to dependencies. ([d5bc8be](https://github.com/mathrunet/node_masamune/commit/d5bc8be021d25469d9fb58d6b73f8471883969c8))
+* Update dependency versions for `@mathrunet/katana` ([d4a9aea](https://github.com/mathrunet/node_masamune/commit/d4a9aeadb6541d808618098c5a4b2eaf72bf7d50))
 
 
 
