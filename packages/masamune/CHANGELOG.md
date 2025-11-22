@@ -1,13 +1,15 @@
-# [3.8.0](https://github.com/mathrunet/node_masamune/compare/v3.7.0...v3.8.0) (2025-11-22)
+## [3.8.1](https://github.com/mathrunet/node_masamune/compare/v3.7.0...v3.8.1) (2025-11-22)
 
 
 ### feat
 
 * Add Lyria background music generation, Google Cloud Text-to-Speech integration, updated test configuration, and new development documentation. ([d234b83](https://github.com/mathrunet/node_masamune/commit/d234b83b0ab706bfa3c93f2f887755aa022baa48))
+* add scheduler notification tests and update general test utilities and Firestore tests. ([710e462](https://github.com/mathrunet/node_masamune/commit/710e46287e7eb7fea6dd461e0d5354ce2f1bbfd2))
 * Add short video generation function using Gemini 2.5 Flash and FFmpeg, including tests, documentation, and updated ignore rules for temporary files. ([7e6cde2](https://github.com/mathrunet/node_masamune/commit/7e6cde28f7760c54058cb1e2073c6e97f552d39e))
 * Enhance detailed research to guide content creation, determine asset type, and add new documentation files. ([bf6125a](https://github.com/mathrunet/node_masamune/commit/bf6125a2e35f7b52f9a84468770901a98ef226be))
 * implement Firebase function to generate short video metadata using Vertex AI, including tests and development documentation. ([2251993](https://github.com/mathrunet/node_masamune/commit/22519933c8b1f84fc7ae26a5754c6c02d96b5969))
 * Package separation. And monorepo management. ([2647952](https://github.com/mathrunet/node_masamune/commit/2647952ad48823ac0c3d578a366f4af0bf60bcc1))
+* Update Masamune package versions to 3.8.0. ([318f89a](https://github.com/mathrunet/node_masamune/commit/318f89a7427dfa71149026207eae19c4ff845edc))
 
 
 
