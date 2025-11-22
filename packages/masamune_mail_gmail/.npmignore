@@ -1,0 +1,8 @@
+/.github
+/node_modules
+/src
+/test
+/documents
+/tmp
+jest.config.json
+tsconfig.json
