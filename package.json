@@ -49,5 +49,6 @@
   "bugs": {
     "url": "https://github.com/mathrunet/node_masamune/issues"
   },
-  "homepage": "https://github.com/mathrunet/node_masamune#readme"
+  "homepage": "https://github.com/mathrunet/node_masamune#readme",
+  "version": "0.1.0"
 }
