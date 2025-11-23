@@ -1,6 +1,7 @@
 import * as firestore from "firebase-admin/firestore";
 import * as storage from "firebase-admin/storage";
 import { Bucket } from '@google-cloud/storage';
+import * as admin from "firebase-admin";
 
 /**
  * Loads the Firestore instance.
@@ -18,6 +19,11 @@ import { Bucket } from '@google-cloud/storage';
  * Firestoreインスタンス。
  */
 export function firestoreLoader(databaseId: string | null | undefined): firestore.Firestore {
+    console.log("admin.apps.length", admin.apps.length);
+    if (admin.apps.length === 0) {
+        admin.initializeApp();
+        console.log("initialized");
+    }
     if (!databaseId || databaseId == "" || databaseId == "(default)") {
         return firestore.getFirestore();
     } else {
@@ -37,5 +43,10 @@ export function firestoreLoader(databaseId: string | null | undefined): firestor
  * Storageインスタンス。
  */
 export function storageLoader(bucketId: string): Bucket {
+    console.log("admin.apps.length", admin.apps.length);
+    if (admin.apps.length === 0) {
+        admin.initializeApp();
+        console.log("initialized");
+    }
     return storage.getStorage().bucket(bucketId);
 }
