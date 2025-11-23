@@ -19,10 +19,8 @@ import * as admin from "firebase-admin";
  * Firestoreインスタンス。
  */
 export function firestoreLoader(databaseId: string | null | undefined): firestore.Firestore {
-    console.log("admin.apps.length", admin.apps.length);
     if (admin.apps.length === 0) {
         admin.initializeApp();
-        console.log("initialized");
     }
     if (!databaseId || databaseId == "" || databaseId == "(default)") {
         const app = admin.apps[0];
@@ -51,10 +49,8 @@ export function firestoreLoader(databaseId: string | null | undefined): firestor
  * Storageインスタンス。
  */
 export function storageLoader(bucketId: string): Bucket {
-    console.log("admin.apps.length", admin.apps.length);
     if (admin.apps.length === 0) {
         admin.initializeApp();
-        console.log("initialized");
     }
     const app = admin.apps[0];
     if(!app){
