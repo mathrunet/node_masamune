@@ -1,10 +1,13 @@
-## [3.9.1](https://github.com/mathrunet/node_masamune/compare/v3.7.0...v3.9.1) (2025-11-22)
+## [3.9.2](https://github.com/mathrunet/node_masamune/compare/v3.7.0...v3.9.2) (2025-11-23)
 
 
 ### chore
 
 * Add Node.js 20 engine requirement to all package.json files ([1e60d25](https://github.com/mathrunet/node_masamune/commit/1e60d25b2c44e1efd398a6a1229d2ba3f46da1f5))
+* Update @mathrunet/katana to version 3.9.1 ([d8e32a1](https://github.com/mathrunet/node_masamune/commit/d8e32a1f238ed3b29003bd83799fde57a054c063))
+* Update masamune package version ([f4998d6](https://github.com/mathrunet/node_masamune/commit/f4998d654dee28f2f12c5d2d8b9c861563825dbd))
 * Update Node.js engine to v22 and bump development dependencies across packages. ([d840a0f](https://github.com/mathrunet/node_masamune/commit/d840a0f503230f80edbdf01f9516841cff36798d))
+* update TypeScript compilation target to es2022 in tsconfig files across packages ([99253dd](https://github.com/mathrunet/node_masamune/commit/99253dd84a09e1c6026b9a6b88b6fef1ca2f4d14))
 
 ### feat
 
@@ -18,7 +21,9 @@
 
 ### fix
 
+* Initialize Firebase Admin SDK if not already initialized when loading Firestore or Storage. ([678c1bd](https://github.com/mathrunet/node_masamune/commit/678c1bd1896ddd3fe0e541e9eeea29797b63e300))
 * Move `@types/node-fetch` from devDependencies to dependencies. ([d5bc8be](https://github.com/mathrunet/node_masamune/commit/d5bc8be021d25469d9fb58d6b73f8471883969c8))
+* Update dependency versions for `@mathrunet/katana` ([d4a9aea](https://github.com/mathrunet/node_masamune/commit/d4a9aeadb6541d808618098c5a4b2eaf72bf7d50))
 
 
 
