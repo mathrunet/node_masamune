@@ -25,9 +25,17 @@ export function firestoreLoader(databaseId: string | null | undefined): firestor
         console.log("initialized");
     }
     if (!databaseId || databaseId == "" || databaseId == "(default)") {
-        return firestore.getFirestore();
+        const app = admin.apps[0];
+        if(!app){
+            throw new Error("No app found");
+        }
+        return firestore.getFirestore(app);
     } else {
-        return firestore.getFirestore(databaseId);
+        const app = admin.apps[0];
+        if(!app){
+            throw new Error("No app found");
+        }
+        return firestore.getFirestore(app, databaseId);
     }
 }
 
@@ -48,5 +56,9 @@ export function storageLoader(bucketId: string): Bucket {
         admin.initializeApp();
         console.log("initialized");
     }
-    return storage.getStorage().bucket(bucketId);
+    const app = admin.apps[0];
+    if(!app){
+        throw new Error("No app found");
+    }
+    return storage.getStorage(app).bucket(bucketId);
 }
