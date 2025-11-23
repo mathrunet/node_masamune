@@ -1,4 +1,4 @@
-## [3.9.2](https://github.com/mathrunet/node_masamune/compare/v3.7.0...v3.9.2) (2025-11-23)
+## [3.9.3](https://github.com/mathrunet/node_masamune/compare/v3.7.0...v3.9.3) (2025-11-23)
 
 
 ### chore
@@ -21,6 +21,7 @@
 
 ### fix
 
+* Explicitly pass the Firebase Admin app during Firestore and Storage initialization, and update the version. ([9169415](https://github.com/mathrunet/node_masamune/commit/9169415adb873a0ce1534a5762158d84ca477212))
 * Initialize Firebase Admin SDK if not already initialized when loading Firestore or Storage. ([678c1bd](https://github.com/mathrunet/node_masamune/commit/678c1bd1896ddd3fe0e541e9eeea29797b63e300))
 * Move `@types/node-fetch` from devDependencies to dependencies. ([d5bc8be](https://github.com/mathrunet/node_masamune/commit/d5bc8be021d25469d9fb58d6b73f8471883969c8))
 * Update dependency versions for `@mathrunet/katana` ([d4a9aea](https://github.com/mathrunet/node_masamune/commit/d4a9aeadb6541d808618098c5a4b2eaf72bf7d50))
