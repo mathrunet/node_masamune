@@ -1,0 +1,52 @@
+{
+  "name": "@mathrunet/masamune_marketing_pipeline",
+  "version": "3.7.0",
+  "description": "Masamune framework package plugin for market research and AI development.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "prepare": "npm run build",
+    "test": "NODE_OPTIONS='--experimental-vm-modules' jest",
+    "postversion": "npm run changelog",
+    "changelog": "conventional-changelog -p eslint -i CHANGELOG.md -s -r 0 && git add CHANGELOG.md && git commit -m 'chore(release): publish package'",
+    "publish": "npm publish",
+    "minor_update": "npm version minor",
+    "major_update": "npm version major",
+    "patch_update": "npm version patch"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mathrunet/node_masamune.git"
+  },
+  "keywords": [
+    "masamune",
+    "katana",
+    "flutter",
+    "firebase",
+    "functions"
+  ],
+  "author": "mathru",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/mathrunet/node_masamune/issues"
+  },
+  "homepage": "https://github.com/mathrunet/node_masamune#readme",
+  "dependencies": {
+    "@mathrunet/masamune": "^3.7.0",
+    "firebase-admin": "^13.1.0",
+    "firebase-functions": "^6.3.2",
+    "typescript": "^5.9.2",
+    "@google-cloud/vertexai": "^1.10.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.12",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.2",
+    "firebase-functions-test": "^3.4.0",
+    "conventional-changelog-cli": "^5.0.0"
+  }
+}
