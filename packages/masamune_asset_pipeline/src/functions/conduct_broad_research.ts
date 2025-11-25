@@ -1,7 +1,7 @@
 import * as functions from "firebase-functions/v2";
 import * as admin from "firebase-admin";
 import { VertexAI, SchemaType } from "@google-cloud/vertexai";
-import { HttpFunctionsOptions } from "../lib/src/functions_base";
+import { HttpFunctionsOptions } from "@mathrunet/masamune";
 
 module.exports = (
     regions: string[],

@@ -6,7 +6,7 @@ import * as os from "os";
 import * as fs from "fs";
 import Ffmpeg from "fluent-ffmpeg";
 import ffmpegStatic from "ffmpeg-static";
-import { HttpFunctionsOptions } from "../lib/src/functions_base";
+import { HttpFunctionsOptions } from "@mathrunet/masamune";
 import { TextToSpeechClient } from "@google-cloud/text-to-speech";
 import { GoogleAuth } from "google-auth-library";
 

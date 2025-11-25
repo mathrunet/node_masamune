@@ -1,39 +1,12 @@
-import * as admin from "firebase-admin";
-import * as katana from "@mathrunet/katana";
-export * from "@mathrunet/katana";
-
 /**
- * Methods for deploying to Firebase Functions.
+ * Copyright (c) 2025 mathru. All rights reserved.
  * 
- * Firebase Functionsにデプロイするためのメソッドです。
+ * Masamune framework package plugin that provides a pipeline for generating content such as images and videos.
  * 
- * @param exports
- * Pass the `exports` as is.
- * 
- * `exports`をそのまま渡します。
- * 
- * @param region
- * Specify a region such as `us-central1`.
- * 
- * `us-central1`などのリージョンを指定します。
- * 
- * @param deployFunctions
- * The elements defined in [Functions] are passed as an array. The passed method is deployed.
- * 
- * [Functions]で定義された要素を配列として渡します。渡されたメソッドがデプロイされます。
- * 
- * @param data
- * Specify the topic name to be used for pub/sub and the length of the schedule.
- * 
- * pub/subで用いるトピック名やスケジュールの長さなどを指定します。
+ * To use, import * as m from "@mathrunet/masamune_asset_pipeline";
+ *
+ * [mathru.net]: https://mathru.net
+ * [YouTube]: https://www.youtube.com/c/mathrunetchannel
  */
-export function deploy(exports: any, region: katana.Regions, deployFunctions: katana.FunctionsBase[]) {
-    if (admin.apps.length === 0) {
-        admin.initializeApp();
-    }
-    for (const func of deployFunctions) {
-        if (!process.env.FUNCTION_NAME || process.env.FUNCTION_NAME === func.id) {
-            exports[func.id] = func.build(region);
-        }
-    }
-}
+export * from "@mathrunet/masamune";
+export * from "./functions";

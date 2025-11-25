@@ -1,7 +1,6 @@
 import * as functions from "firebase-functions/v2";
-import { HttpFunctionsOptions } from "../lib/src/functions_base";
+import { HttpFunctionsOptions, firestoreLoader } from "@mathrunet/masamune";
 import * as admin from "firebase-admin";
-import { firestoreLoader } from "../lib/src/firebase_loader";
 
 /**
  * Start the asset creation process.
