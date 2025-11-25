@@ -21,11 +21,11 @@
 
 ### Phase 1: 基盤構築
 
-- [ ] パッケージ構造とsrcディレクトリの作成
-- [ ] 基本インターフェースとデータモデルの定義
-- [ ] Firestoreスキーマの設計
-- [ ] パイプラインスケジューラー関数の実装
-- [ ] トークンリフレッシュユーティリティの実装
+- [x] パッケージ構造とsrcディレクトリの作成
+- [x] 基本インターフェースとデータモデルの定義
+- [x] Firestoreスキーマの設計
+- [x] パイプラインスケジューラー関数の実装
+- [x] トークンリフレッシュユーティリティの実装
 
 ### Phase 2: API統合（優先順位順）
 
@@ -56,7 +56,7 @@
 ### Phase 4: レポート生成
 
 - [ ] レポートデータ集約
-- [ ] グラフ生成（chart.js + chartjs-node-canvas）
+- [ ] グラフ生成（QuickChart API）
 - [ ] PDF生成（pdfkit）
 - [ ] Cloud Storageアップロード
 
@@ -113,16 +113,17 @@ src/
 
 ```json
 {
+  "@google-cloud/vertexai": "^1.10.0",
   "googleapis": "^144.0.0",
   "@google-analytics/data": "^4.9.0",
   "jsonwebtoken": "^9.0.2",
   "@octokit/rest": "^21.0.2",
   "pdfkit": "^0.15.1",
-  "chart.js": "^4.4.6",
-  "chartjs-node-canvas": "^4.1.6",
   "date-fns": "^4.1.0"
 }
 ```
+
+※グラフ生成は QuickChart API を使用（HTTPベースのため、ネイティブモジュール不要）
 
 ---
 
