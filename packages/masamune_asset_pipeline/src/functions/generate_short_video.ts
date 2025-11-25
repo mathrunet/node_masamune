@@ -107,6 +107,63 @@ async function generateImage(projectId: string, region: string, prompt: string, 
 }
 
 /**
+ * Improves a music prompt using AI to avoid Lyria recitation checks
+ * @param projectId - GCP project ID
+ * @param region - GCP region
+ * @param originalPrompt - The original prompt that failed
+ * @param errorMessage - The error message from Lyria API
+ * @returns Improved prompt that is more likely to pass recitation checks
+ */
+async function improveMusicPromptWithAI(
+    projectId: string,
+    region: string,
+    originalPrompt: string,
+    errorMessage: string
+): Promise<string> {
+    const vertexAI = new VertexAI({ project: projectId, location: region });
+
+    const model = vertexAI.getGenerativeModel({
+        model: "gemini-2.0-flash"
+    });
+
+    const systemPrompt = `You are a music prompt engineer specializing in AI music generation.
+Your task is to rewrite music prompts to avoid "recitation checks" that block generation of music too similar to existing copyrighted works.
+
+Guidelines for rewriting prompts:
+1. Avoid generic genre terms like "epic orchestral", "cinematic trailer", "Hans Zimmer style"
+2. Instead, describe specific musical elements: instruments, tempo, mood, textures
+3. Use abstract and creative descriptions rather than referencing known styles
+4. Focus on unique combinations of elements
+5. Add specific production techniques (e.g., "layered synthesizers", "ambient pads", "staccato strings")
+6. Specify emotional qualities rather than genre labels
+
+Return ONLY the improved prompt text, nothing else.`;
+
+    const userPrompt = `The following music generation prompt was blocked by recitation checks:
+Original prompt: "${originalPrompt}"
+Error: "${errorMessage}"
+
+Please rewrite this prompt to be more original and avoid triggering recitation checks while maintaining the intended mood and style.`;
+
+    console.log(`Improving music prompt with AI...`);
+
+    const result = await model.generateContent({
+        contents: [{ role: "user", parts: [{ text: userPrompt }] }],
+        systemInstruction: { role: "system", parts: [{ text: systemPrompt }] }
+    });
+
+    const response = result.response;
+    const improvedPrompt = response.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+
+    if (!improvedPrompt) {
+        throw new Error("Failed to generate improved prompt from AI");
+    }
+
+    console.log(`AI improved prompt: ${improvedPrompt.substring(0, 100)}...`);
+    return improvedPrompt;
+}
+
+/**
  * Generates background music using Lyria (Google's music generation AI)
  */
 async function generateBGMWithLyria(projectId: string, region: string, prompt: string, outputPath: string): Promise<void> {
@@ -268,6 +325,7 @@ async function generateNarration(text: string, outputPath: string, language: str
 
 /**
  * Generates or retrieves BGM audio file using Lyria or from storage
+ * If recitation check fails, uses AI to improve the prompt and retries
  */
 async function prepareBGM(
     projectId: string,
@@ -279,40 +337,70 @@ async function prepareBGM(
 ): Promise<void> {
     console.log(`Preparing BGM: ${bgmFileId} with atmosphere: ${musicAtmosphere} for ${duration} seconds`);
 
-    try {
-        // Generate music prompt based on bgmFileId and atmosphere
-        // Lyria generates 30-second clips, which works well for our scenes
-        const musicPrompt = `${musicAtmosphere}, instrumental background music, cinematic, high quality`;
+    const maxRetries = 3;
+    let currentPrompt = `Create original ${musicAtmosphere} style instrumental music. Use synthesizers, ambient textures, and modern production techniques. No vocals.`;
+    let lastError: Error | null = null;
 
-        await generateBGMWithLyria(projectId, region, musicPrompt, outputPath);
-        console.log(`BGM generated successfully with Lyria: ${outputPath}`);
-    } catch (error: any) {
-        console.warn(`Failed to generate BGM with Lyria: ${error.message}`);
-        console.warn(`Full error:`, JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
-        if (error.response) {
-            console.warn(`Lyria API Response:`, error.response.data || error.response.statusText);
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+            console.log(`BGM generation attempt ${attempt}/${maxRetries}`);
+            await generateBGMWithLyria(projectId, region, currentPrompt, outputPath);
+            console.log(`BGM generated successfully with Lyria: ${outputPath}`);
+            return; // Success, exit the function
+        } catch (error: any) {
+            lastError = error;
+            const errorMessage = error.message || "";
+
+            console.warn(`Attempt ${attempt} failed: ${errorMessage}`);
+
+            // Check if this is a recitation check error
+            const isRecitationError = errorMessage.toLowerCase().includes("recitation") ||
+                errorMessage.includes("blocked");
+
+            if (isRecitationError && attempt < maxRetries) {
+                console.log(`Recitation check detected. Using AI to improve prompt...`);
+                try {
+                    currentPrompt = await improveMusicPromptWithAI(
+                        projectId,
+                        region,
+                        currentPrompt,
+                        errorMessage
+                    );
+                    console.log(`Retrying with improved prompt: ${currentPrompt.substring(0, 100)}...`);
+                } catch (aiError: any) {
+                    console.warn(`Failed to improve prompt with AI: ${aiError.message}`);
+                    // Continue with modified prompt manually
+                    currentPrompt = `Ambient electronic soundscape with layered synthesizers, evolving pads, and subtle rhythmic elements. Abstract and atmospheric. No vocals. Unique composition.`;
+                }
+            } else if (!isRecitationError) {
+                // Non-recitation error, don't retry
+                console.warn(`Non-recitation error, skipping retries`);
+                break;
+            }
         }
-        console.log("Falling back to silent audio");
-
-        // Fallback: create silent audio
-        await new Promise<void>((resolve, reject) => {
-            Ffmpeg()
-                .input("anullsrc=r=44100:cl=stereo")
-                .inputFormat("lavfi")
-                .outputOptions([
-                    "-t", duration.toString(),
-                    "-acodec", "libmp3lame",
-                    "-ab", "128k"
-                ])
-                .output(outputPath)
-                .on("end", () => {
-                    console.log(`Silent BGM created as fallback: ${outputPath}`);
-                    resolve();
-                })
-                .on("error", (err: Error) => reject(err))
-                .run();
-        });
     }
+
+    // All retries failed, fall back to silent audio
+    console.warn(`All ${maxRetries} attempts failed. Last error: ${lastError?.message}`);
+    console.log("Falling back to silent audio");
+
+    await new Promise<void>((resolve, reject) => {
+        Ffmpeg()
+            .input("anullsrc=r=44100:cl=stereo")
+            .inputFormat("lavfi")
+            .outputOptions([
+                "-t", duration.toString(),
+                "-acodec", "libmp3lame",
+                "-ab", "128k"
+            ])
+            .output(outputPath)
+            .on("end", () => {
+                console.log(`Silent BGM created as fallback: ${outputPath}`);
+                resolve();
+            })
+            .on("error", (err: Error) => reject(err))
+            .run();
+    });
 }
 
 /**
@@ -345,6 +433,31 @@ function generateSubtitles(scenes: any[]): string {
     }
 
     return srtContent;
+}
+
+/**
+ * Gets the duration of an audio file using FFmpeg
+ */
+async function getAudioDuration(filePath: string): Promise<number> {
+    return new Promise((resolve) => {
+        Ffmpeg(filePath)
+            .output(os.platform() === "win32" ? "NUL" : "/dev/null")
+            .outputFormat("null")
+            .on("codecData", (data) => {
+                if (data && data.duration) {
+                    const parts = data.duration.split(":");
+                    const seconds = parseInt(parts[0], 10) * 3600 + parseInt(parts[1], 10) * 60 + parseFloat(parts[2]);
+                    resolve(seconds);
+                } else {
+                    resolve(0);
+                }
+            })
+            .on("error", () => {
+                // Ignore errors here as we just want metadata
+                resolve(0);
+            })
+            .run();
+    });
 }
 
 module.exports = (
@@ -476,9 +589,11 @@ module.exports = (
 
                         // Generate narration audio
                         const narrationPath = path.join(audioDir, `narration_${i}.mp3`);
+                        let narrationDuration = 0;
                         try {
                             await generateNarration(scene.audio.narration_text, narrationPath, language);
                             audioFiles.push(narrationPath);
+                            narrationDuration = await getAudioDuration(narrationPath);
                         } catch (error: any) {
                             console.error(`Failed to generate narration for scene ${i}:`, error);
                             // Create silent audio as fallback
@@ -492,6 +607,14 @@ module.exports = (
                                     .on("error", (err: Error) => reject(err))
                                     .run();
                             });
+                            narrationDuration = scene.duration;
+                        }
+
+                        // Calculate delays for narration
+                        let preDelay = 0;
+                        if (narrationDuration < scene.duration) {
+                            const diff = scene.duration - narrationDuration;
+                            preDelay = diff * 0.2; // 20% wait before
                         }
 
                         // Prepare BGM
@@ -524,10 +647,18 @@ module.exports = (
                                 .input(narrationPath) // Add narration
                                 .input(bgmPath); // Add BGM
 
+                            // Calculate fade out start time for BGM
+                            const fadeOutStart = Math.max(0, scene.duration - 1);
+                            const preDelayMs = Math.round(preDelay * 1000);
+
                             ffmpegCommand
                                 .complexFilter([
+                                    // Delay narration
+                                    `[1:a]adelay=${preDelayMs}|${preDelayMs}[delayed_narration]`,
+                                    // Fade BGM
+                                    `[2:a]afade=t=in:st=0:d=1,afade=t=out:st=${fadeOutStart}:d=1[faded_bgm]`,
                                     // Mix narration and BGM
-                                    "[1:a][2:a]amix=inputs=2:duration=first:dropout_transition=2,volume=2[aout]"
+                                    `[delayed_narration][faded_bgm]amix=inputs=2:duration=longest:dropout_transition=2,volume=2[aout]`
                                 ])
                                 .outputOptions([
                                     "-map", "0:v",  // Use video from first input
