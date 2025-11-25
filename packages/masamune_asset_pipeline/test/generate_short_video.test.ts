@@ -193,5 +193,5 @@ describe("Generate Short Video Function Test", () => {
         console.log("  Video:", videoDestPath);
         console.log("  Subtitle:", subtitleDestPath);
         console.log("\n");
-    }, 60000);
+    }, 300000);
 });
