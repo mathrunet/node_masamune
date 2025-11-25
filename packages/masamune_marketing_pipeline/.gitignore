@@ -146,8 +146,11 @@ dist
 
 # End of https://www.toptal.com/developers/gitignore/api/node
 
-# ServiceAccountKey
+# ServiceAccountKey & Auth Keys
 test/*.json
+test/*.p8
+test/.env
+!test/.env.example
 
 # Temporary video files for testing
 tmp/
