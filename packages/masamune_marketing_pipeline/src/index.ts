@@ -15,3 +15,4 @@ export * from "./functions";
 export * from "./models";
 export * from "./utils";
 export * from "./clients";
+export * from "./services";
