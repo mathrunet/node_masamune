@@ -146,21 +146,35 @@ module.exports = (
                                                         type: SchemaType.OBJECT,
                                                         properties: {
                                                             narration_text: { type: SchemaType.STRING },
-                                                            bgm_file_id: { type: SchemaType.STRING },
                                                             se_file_ids: {
                                                                 type: SchemaType.ARRAY,
                                                                 items: { type: SchemaType.STRING }
                                                             }
                                                         },
-                                                        required: ["narration_text", "bgm_file_id", "se_file_ids"]
+                                                        required: ["narration_text", "se_file_ids"]
                                                     },
                                                     duration: { type: SchemaType.NUMBER }
                                                 },
                                                 required: ["visual", "audio", "duration"]
                                             }
+                                        },
+                                        bgmTracks: {
+                                            type: SchemaType.ARRAY,
+                                            items: {
+                                                type: SchemaType.OBJECT,
+                                                properties: {
+                                                    prompt: { type: SchemaType.STRING },
+                                                    startScene: { type: SchemaType.INTEGER },
+                                                    endScene: { type: SchemaType.INTEGER },
+                                                    fadeInDuration: { type: SchemaType.NUMBER },
+                                                    fadeOutDuration: { type: SchemaType.NUMBER },
+                                                    volume: { type: SchemaType.NUMBER }
+                                                },
+                                                required: ["prompt", "startScene", "endScene", "fadeInDuration", "fadeOutDuration", "volume"]
+                                            }
                                         }
                                     },
-                                    required: ["scenes"]
+                                    required: ["scenes", "bgmTracks"]
                                 }
                             },
                             required: ["videoMetadata", "shortVideoOverview", "shortVideoDetails"]
@@ -192,7 +206,9 @@ Please create:
    - visualAtmosphere: Description of visual style (e.g., "dramatic, high-contrast, cinematic")
    - musicAtmosphere: Description of music style (e.g., "epic orchestral with traditional Japanese instruments")
 
-3. **Short Video Details** - Create 3-5 scenes totaling ~60 seconds:
+3. **Short Video Details**:
+
+   **3.1 Scenes** - Create 3-5 scenes totaling ~60 seconds:
    For each scene, provide:
    - visual.image_query: Detailed description for image generation (be specific: composition, lighting, colors, style)
    - visual.effect.type: One of: "zoom_in", "zoom_out", "pan_left", "pan_right", "static", "slide_up", "slide_down"
@@ -200,9 +216,21 @@ Please create:
    - visual.transition.type: One of: "crossfade", "fade_black", "wipe", "none"
    - visual.transition.duration: Transition duration in seconds (0.5-2.0)
    - audio.narration_text: Compelling narration (conversational, engaging, fast-paced)
-   - audio.bgm_file_id: Suggested BGM type (e.g., "epic_orchestral_01", "traditional_japanese_01")
    - audio.se_file_ids: Array of sound effects (e.g., ["sword_clash_01", "fire_whoosh_01"])
    - duration: Scene duration in seconds (10-20 seconds per scene)
+
+   **3.2 BGM Tracks** - Define background music independently from scenes:
+   IMPORTANT: BGM tracks are SEPARATE from scene cuts. A single BGM track typically spans multiple scenes.
+   For short videos (~60 seconds), usually 1-2 BGM tracks are sufficient.
+
+   For each BGM track, provide:
+   - prompt: Descriptive prompt for AI music generation (describe mood, instruments, tempo, texture - avoid generic terms like "epic orchestral")
+     Example: "Mysterious ambient soundscape with soft piano notes, ethereal pads, and subtle string textures. Slow tempo, contemplative mood."
+   - startScene: Scene index where this BGM starts (0-based)
+   - endScene: Scene index where this BGM ends (inclusive, 0-based)
+   - fadeInDuration: Fade in duration in seconds (0.5-2.0)
+   - fadeOutDuration: Fade out duration in seconds (0.5-2.0)
+   - volume: Volume level (0.3-0.8, where 0.5 is normal - lower for narration-heavy sections)
 
 IMPORTANT GUIDELINES:
 - Make it highly engaging and dopamine-inducing
@@ -212,6 +240,9 @@ IMPORTANT GUIDELINES:
 - Total duration should be 50-70 seconds
 - Each scene should have a clear visual hook
 - Use dramatic transitions between scenes
+- BGM should flow continuously across scene transitions (this is key for professional short videos!)
+- For most short videos, a single BGM track spanning all scenes works best
+- Only use multiple BGM tracks if there's a clear mood shift in the video
 
 Output in the specified JSON format.
 `;

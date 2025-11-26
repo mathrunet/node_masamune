@@ -7,7 +7,7 @@ const config = require("firebase-functions-test")({
     projectId: "mathru-net",
 }, "test/mathru-net-39425d37638c.json");
 
-describe("Generate Short Video Function Test", () => {
+describe("Generate Short Video with Audio Function Test", () => {
     let wrapped: any;
 
     beforeAll(() => {
@@ -33,28 +33,28 @@ describe("Generate Short Video Function Test", () => {
         config.cleanup();
     });
 
-    test("Generate Short Video - Real AI Generation Test", async () => {
+    test("Generate Short Video with Narration and BGM - Real TTS Test", async () => {
         const myFunctionsFactory = require("../src/functions/generate_short_video");
         const cloudFunction = myFunctionsFactory(["us-central1"], {}, {});
         wrapped = config.wrap(cloudFunction);
 
-        // Increase timeout for AI image generation and video processing
+        // Increase timeout for audio generation and video processing
         jest.setTimeout(300000); // 5 minutes
 
-        const requestId = "short_video_gen_test_request_id";
-        const assetId = "short_video_gen_test_asset_id";
+        const requestId = "short_video_audio_test_request_id";
+        const assetId = "short_video_audio_test_asset_id";
 
-        // Mock short video metadata
+        // Mock short video metadata with audio requirements
         const videoMetadata = {
-            title: "Test Video Title",
-            description: "Test video description",
+            title: "Test Video with Audio",
+            description: "Test video with narration and BGM",
             promotionText: "Test promotion text",
-            keywords: ["test", "video"],
+            keywords: ["test", "video", "audio"],
             language: "en"
         };
 
         const shortVideoOverview = {
-            details: "Test video details",
+            details: "Test video with audio details",
             visualAtmosphere: "dramatic, cinematic",
             musicAtmosphere: "epic orchestral"
         };
@@ -74,11 +74,10 @@ describe("Generate Short Video Function Test", () => {
                         }
                     },
                     audio: {
-                        narration_text: "This is the first scene narration.",
-                        bgm_file_id: "epic_orchestral_01",
+                        narration_text: "Welcome to this amazing journey through the mountains.",
                         se_file_ids: ["whoosh_01"]
                     },
-                    duration: 15.0
+                    duration: 10.0
                 },
                 {
                     visual: {
@@ -93,11 +92,21 @@ describe("Generate Short Video Function Test", () => {
                         }
                     },
                     audio: {
-                        narration_text: "This is the second scene narration.",
-                        bgm_file_id: "epic_orchestral_01",
+                        narration_text: "Every great adventure begins with a single step forward.",
                         se_file_ids: []
                     },
-                    duration: 20.0
+                    duration: 10.0
+                }
+            ],
+            // BGM tracks are independent from scenes - this single track spans all scenes
+            bgmTracks: [
+                {
+                    prompt: "Uplifting ambient soundscape with soft piano, ethereal synth pads, and gentle strings. Contemplative and inspiring mood. No vocals.",
+                    startScene: 0,
+                    endScene: 1,
+                    fadeInDuration: 1.0,
+                    fadeOutDuration: 1.5,
+                    volume: 0.4
                 }
             ]
         };
@@ -126,7 +135,7 @@ describe("Generate Short Video Function Test", () => {
 
         // Call the function
         console.log("\n========================================");
-        console.log("Testing Short Video Generation (Mock)");
+        console.log("Testing Short Video with Audio Generation");
         console.log("========================================\n");
 
         try {
@@ -163,7 +172,7 @@ describe("Generate Short Video Function Test", () => {
         expect(assetData?.videoDuration).toBeGreaterThan(0);
 
         console.log("\n========================================");
-        console.log("✅ SHORT VIDEO GENERATION RESULTS");
+        console.log("✅ SHORT VIDEO WITH AUDIO RESULTS");
         console.log("========================================");
         console.log("Video URL:", assetData?.videoUrl);
         console.log("Subtitle URL:", assetData?.subtitleUrl);
@@ -188,6 +197,20 @@ describe("Generate Short Video Function Test", () => {
 
         await videoFile.download({ destination: videoDestPath });
         await subtitleFile.download({ destination: subtitleDestPath });
+
+        // Also copy individual audio files if they exist
+        try {
+            const audioFiles = await bucket.getFiles({ prefix: `assets/${assetId}/audio/` });
+            console.log("\n📁 Audio files found:", audioFiles[0].length);
+            for (const file of audioFiles[0]) {
+                const fileName = path.basename(file.name);
+                const audioDestPath = path.join(testTmpDir, `${assetId}_${fileName}`);
+                await file.download({ destination: audioDestPath });
+                console.log("  Audio:", audioDestPath);
+            }
+        } catch (error) {
+            console.log("No audio files to copy (or error accessing them)");
+        }
 
         console.log("\n📁 Test files saved to:");
         console.log("  Video:", videoDestPath);

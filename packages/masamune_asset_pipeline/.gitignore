@@ -148,6 +148,9 @@ dist
 
 # ServiceAccountKey
 test/*.json
+test/*.p8
+test/.env
+!test/.env.example
 
 # Temporary video files for testing
 tmp/

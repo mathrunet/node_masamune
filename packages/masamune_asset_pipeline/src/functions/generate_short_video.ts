@@ -326,6 +326,7 @@ async function generateNarration(text: string, outputPath: string, language: str
 /**
  * Generates or retrieves BGM audio file using Lyria or from storage
  * If recitation check fails, uses AI to improve the prompt and retries
+ * Loops the generated audio to match the required duration (Lyria generates ~30s max)
  */
 async function prepareBGM(
     projectId: string,
@@ -338,14 +339,27 @@ async function prepareBGM(
     console.log(`Preparing BGM: ${bgmFileId} with atmosphere: ${musicAtmosphere} for ${duration} seconds`);
 
     const maxRetries = 3;
-    let currentPrompt = `Create original ${musicAtmosphere} style instrumental music. Use synthesizers, ambient textures, and modern production techniques. No vocals.`;
+    // Add "seamless loop" instruction to encourage loopable music
+    let currentPrompt = `Create original ${musicAtmosphere} style instrumental music. Design for seamless looping with consistent rhythm and no abrupt changes. Use synthesizers, ambient textures, and modern production techniques. No vocals.`;
     let lastError: Error | null = null;
+
+    // Generate to a temporary file first, then loop to final output
+    const tempBgmPath = outputPath.replace(".mp3", "_temp.mp3");
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
             console.log(`BGM generation attempt ${attempt}/${maxRetries}`);
-            await generateBGMWithLyria(projectId, region, currentPrompt, outputPath);
-            console.log(`BGM generated successfully with Lyria: ${outputPath}`);
+            await generateBGMWithLyria(projectId, region, currentPrompt, tempBgmPath);
+            console.log(`BGM generated successfully with Lyria: ${tempBgmPath}`);
+
+            // Loop the generated BGM to match the required duration
+            await loopAudioToLength(tempBgmPath, outputPath, duration);
+
+            // Clean up temp file
+            if (fs.existsSync(tempBgmPath)) {
+                fs.unlinkSync(tempBgmPath);
+            }
+
             return; // Success, exit the function
         } catch (error: any) {
             lastError = error;
@@ -366,11 +380,13 @@ async function prepareBGM(
                         currentPrompt,
                         errorMessage
                     );
+                    // Add looping instruction to the improved prompt
+                    currentPrompt += " Design for seamless looping.";
                     console.log(`Retrying with improved prompt: ${currentPrompt.substring(0, 100)}...`);
                 } catch (aiError: any) {
                     console.warn(`Failed to improve prompt with AI: ${aiError.message}`);
                     // Continue with modified prompt manually
-                    currentPrompt = `Ambient electronic soundscape with layered synthesizers, evolving pads, and subtle rhythmic elements. Abstract and atmospheric. No vocals. Unique composition.`;
+                    currentPrompt = `Ambient electronic soundscape with layered synthesizers, evolving pads, and subtle rhythmic elements. Abstract and atmospheric. No vocals. Unique composition. Design for seamless looping.`;
                 }
             } else if (!isRecitationError) {
                 // Non-recitation error, don't retry
@@ -378,6 +394,11 @@ async function prepareBGM(
                 break;
             }
         }
+    }
+
+    // Clean up temp file if exists
+    if (fs.existsSync(tempBgmPath)) {
+        fs.unlinkSync(tempBgmPath);
     }
 
     // All retries failed, fall back to silent audio
@@ -455,6 +476,84 @@ async function getAudioDuration(filePath: string): Promise<number> {
             .on("error", () => {
                 // Ignore errors here as we just want metadata
                 resolve(0);
+            })
+            .run();
+    });
+}
+
+/**
+ * Loops an audio file to match the required duration
+ * Lyria API generates ~30 seconds of audio, so we need to loop for longer durations
+ * Uses concat demuxer for more reliable looping
+ */
+async function loopAudioToLength(inputPath: string, outputPath: string, targetDuration: number): Promise<void> {
+    const actualDuration = await getAudioDuration(inputPath);
+
+    if (actualDuration <= 0) {
+        console.warn(`Could not determine duration of ${inputPath}, using file as-is`);
+        fs.copyFileSync(inputPath, outputPath);
+        return;
+    }
+
+    console.log(`Audio duration: ${actualDuration}s, target: ${targetDuration}s`);
+
+    if (actualDuration >= targetDuration) {
+        // Audio is long enough, just trim it with crossfade at the end
+        await new Promise<void>((resolve, reject) => {
+            Ffmpeg(inputPath)
+                .outputOptions([
+                    "-t", targetDuration.toString(),
+                    "-acodec", "libmp3lame",
+                    "-ab", "128k"
+                ])
+                .output(outputPath)
+                .on("end", () => {
+                    console.log(`Audio trimmed to ${targetDuration}s: ${outputPath}`);
+                    resolve();
+                })
+                .on("error", (err: Error) => reject(err))
+                .run();
+        });
+        return;
+    }
+
+    // Calculate how many times we need to loop
+    const loopCount = Math.ceil(targetDuration / actualDuration);
+    console.log(`Looping audio ${loopCount} times to reach ${targetDuration}s`);
+
+    // Create a concat list file for looping
+    const tmpDir = path.dirname(outputPath);
+    const concatListPath = path.join(tmpDir, `loop_concat_${Date.now()}.txt`);
+
+    // Write concat list with the input file repeated
+    const concatList = Array(loopCount).fill(`file '${inputPath}'`).join("\n");
+    fs.writeFileSync(concatListPath, concatList);
+
+    // Use concat demuxer to loop, then trim to exact duration
+    await new Promise<void>((resolve, reject) => {
+        Ffmpeg()
+            .input(concatListPath)
+            .inputOptions(["-f", "concat", "-safe", "0"])
+            .outputOptions([
+                "-t", targetDuration.toString(),
+                "-acodec", "libmp3lame",
+                "-ab", "128k"
+            ])
+            .output(outputPath)
+            .on("end", () => {
+                // Clean up concat list
+                if (fs.existsSync(concatListPath)) {
+                    fs.unlinkSync(concatListPath);
+                }
+                console.log(`Audio looped to ${targetDuration}s: ${outputPath}`);
+                resolve();
+            })
+            .on("error", (err: Error) => {
+                // Clean up concat list on error
+                if (fs.existsSync(concatListPath)) {
+                    fs.unlinkSync(concatListPath);
+                }
+                reject(err);
             })
             .run();
     });
@@ -556,9 +655,58 @@ module.exports = (
                     // Get language from video metadata
                     const language = assetData?.videoMetadata?.language === "ja" ? "ja-JP" : "en-US";
 
-                    // Generate video for each scene
-                    const sceneVideoPaths: string[] = [];
+                    // Calculate scene start times for BGM positioning
+                    const sceneStartTimes: number[] = [];
+                    let currentStartTime = 0;
+                    for (const scene of shortVideoDetails.scenes) {
+                        sceneStartTimes.push(currentStartTime);
+                        currentStartTime += scene.duration;
+                    }
+
+                    // Generate BGM tracks first (independent from scenes)
+                    const bgmTracks = shortVideoDetails.bgmTracks || [];
+                    const bgmFiles: { path: string; startTime: number; endTime: number; fadeIn: number; fadeOut: number; volume: number }[] = [];
                     const audioFiles: string[] = []; // Track audio files for Cloud Storage upload
+
+                    console.log(`\nGenerating ${bgmTracks.length} BGM tracks...`);
+                    for (let i = 0; i < bgmTracks.length; i++) {
+                        const bgmTrack = bgmTracks[i];
+                        const bgmPath = path.join(audioDir, `bgm_${i}.mp3`);
+
+                        // Calculate BGM duration based on scene range
+                        const startSceneIdx = Math.max(0, Math.min(bgmTrack.startScene, shortVideoDetails.scenes.length - 1));
+                        const endSceneIdx = Math.max(0, Math.min(bgmTrack.endScene, shortVideoDetails.scenes.length - 1));
+                        const bgmStartTime = sceneStartTimes[startSceneIdx];
+                        const bgmEndTime = sceneStartTimes[endSceneIdx] + shortVideoDetails.scenes[endSceneIdx].duration;
+                        const bgmDuration = bgmEndTime - bgmStartTime;
+
+                        console.log(`BGM track ${i + 1}: scenes ${startSceneIdx}-${endSceneIdx}, time ${bgmStartTime}s-${bgmEndTime}s (${bgmDuration}s)`);
+
+                        try {
+                            await prepareBGM(
+                                projectId,
+                                region,
+                                `bgm_track_${i}`,
+                                bgmTrack.prompt,
+                                bgmPath,
+                                bgmDuration
+                            );
+                            audioFiles.push(bgmPath);
+                            bgmFiles.push({
+                                path: bgmPath,
+                                startTime: bgmStartTime,
+                                endTime: bgmEndTime,
+                                fadeIn: bgmTrack.fadeInDuration || 1.0,
+                                fadeOut: bgmTrack.fadeOutDuration || 1.0,
+                                volume: bgmTrack.volume || 0.5
+                            });
+                        } catch (error: any) {
+                            console.error(`Failed to generate BGM track ${i}:`, error);
+                        }
+                    }
+
+                    // Generate video for each scene (with narration only, no BGM)
+                    const sceneVideoPaths: string[] = [];
 
                     for (let i = 0; i < shortVideoDetails.scenes.length; i++) {
                         const scene = shortVideoDetails.scenes[i];
@@ -610,73 +758,73 @@ module.exports = (
                             narrationDuration = scene.duration;
                         }
 
-                        // Calculate delays for narration
+                        // Calculate delays for narration - position it within the scene
                         let preDelay = 0;
                         if (narrationDuration < scene.duration) {
                             const diff = scene.duration - narrationDuration;
-                            preDelay = diff * 0.2; // 20% wait before
+                            preDelay = diff * 0.2; // 20% wait before narration starts
                         }
 
-                        // Prepare BGM
-                        const bgmPath = path.join(audioDir, `bgm_${i}.mp3`);
-                        const musicAtmosphere = assetData?.shortVideoOverview?.musicAtmosphere || "cinematic orchestral";
-                        try {
-                            await prepareBGM(
-                                projectId,
-                                region,
-                                scene.audio.bgm_file_id,
-                                musicAtmosphere,
-                                bgmPath,
-                                scene.duration
-                            );
-                            audioFiles.push(bgmPath);
-                        } catch (error: any) {
-                            console.error(`Failed to prepare BGM for scene ${i}:`, error);
-                        }
+                        // Create a properly timed audio track for this scene
+                        // First, pad the narration to exactly match scene duration
+                        const paddedNarrationPath = path.join(audioDir, `narration_${i}_padded.mp3`);
+                        const preDelayMs = Math.round(preDelay * 1000);
 
-                        // Create video from image with effects and audio
+                        await new Promise<void>((resolve, reject) => {
+                            Ffmpeg()
+                                .input(narrationPath)
+                                .complexFilter([
+                                    // Add delay at the start, then pad with silence to reach scene duration
+                                    `[0:a]adelay=${preDelayMs}|${preDelayMs},apad=whole_dur=${scene.duration}[padded]`
+                                ])
+                                .outputOptions([
+                                    "-map", "[padded]",
+                                    "-t", scene.duration.toString(),
+                                    "-acodec", "libmp3lame",
+                                    "-ab", "192k"
+                                ])
+                                .output(paddedNarrationPath)
+                                .on("end", () => {
+                                    console.log(`Padded narration created for scene ${i + 1}`);
+                                    resolve();
+                                })
+                                .on("error", (err: Error) => {
+                                    console.error(`Failed to pad narration for scene ${i}:`, err);
+                                    reject(err);
+                                })
+                                .run();
+                        });
+
+                        // Create video from image with effects and the padded narration
                         const sceneVideoPath = path.join(tmpDir, `scene_${i}.mp4`);
                         const effect = getFFmpegEffect(scene.visual.effect, scene.duration);
 
                         await new Promise<void>((resolve, reject) => {
-                            const ffmpegCommand = Ffmpeg()
+                            Ffmpeg()
                                 .input(imagePath)
                                 .loop(scene.duration)
                                 .fps(25)
                                 .videoFilters(effect)
-                                .input(narrationPath) // Add narration
-                                .input(bgmPath); // Add BGM
-
-                            // Calculate fade out start time for BGM
-                            const fadeOutStart = Math.max(0, scene.duration - 1);
-                            const preDelayMs = Math.round(preDelay * 1000);
-
-                            ffmpegCommand
-                                .complexFilter([
-                                    // Delay narration
-                                    `[1:a]adelay=${preDelayMs}|${preDelayMs}[delayed_narration]`,
-                                    // Fade BGM
-                                    `[2:a]afade=t=in:st=0:d=1,afade=t=out:st=${fadeOutStart}:d=1[faded_bgm]`,
-                                    // Mix narration and BGM
-                                    `[delayed_narration][faded_bgm]amix=inputs=2:duration=longest:dropout_transition=2,volume=2[aout]`
-                                ])
+                                .input(paddedNarrationPath)
                                 .outputOptions([
-                                    "-map", "0:v",  // Use video from first input
-                                    "-map", "[aout]", // Use mixed audio
+                                    "-map", "0:v",
+                                    "-map", "1:a",
                                     "-pix_fmt", "yuv420p",
                                     "-c:v", "libx264",
                                     "-c:a", "aac",
+                                    "-ar", "44100",
+                                    "-ac", "2",
                                     "-b:a", "192k",
                                     "-preset", "medium",
                                     "-crf", "23",
-                                    `-t ${scene.duration}`
+                                    "-t", scene.duration.toString()
                                 ])
                                 .output(sceneVideoPath)
                                 .on("start", (cmd) => {
                                     console.log(`FFmpeg command: ${cmd.substring(0, 200)}...`);
                                 })
                                 .on("end", () => {
-                                    console.log(`Scene ${i + 1} video with audio created: ${sceneVideoPath}`);
+                                    console.log(`Scene ${i + 1} video created: ${sceneVideoPath}`);
                                     resolve();
                                 })
                                 .on("error", (err: Error) => {
@@ -689,22 +837,29 @@ module.exports = (
                         sceneVideoPaths.push(sceneVideoPath);
                     }
 
-                    // Concatenate all scene videos
+                    // Concatenate all scene videos (without BGM)
                     console.log(`\nConcatenating ${sceneVideoPaths.length} scene videos...`);
                     const concatListPath = path.join(tmpDir, "concat_list.txt");
                     const concatList = sceneVideoPaths.map(p => `file '${p}'`).join("\n");
                     fs.writeFileSync(concatListPath, concatList);
 
+                    // First, concatenate scenes without BGM
+                    // Re-encode audio to ensure proper merging (concat demuxer can have issues with audio streams)
+                    const concatVideoPath = path.join(tmpDir, "concat_video.mp4");
                     await new Promise<void>((resolve, reject) => {
                         Ffmpeg()
                             .input(concatListPath)
                             .inputOptions(["-f", "concat", "-safe", "0"])
                             .outputOptions([
-                                "-c", "copy"
+                                "-c:v", "copy",
+                                "-c:a", "aac",
+                                "-ar", "44100",
+                                "-ac", "2",
+                                "-b:a", "192k"
                             ])
-                            .output(outputVideoPath)
+                            .output(concatVideoPath)
                             .on("end", () => {
-                                console.log("Final video created successfully");
+                                console.log("Concatenated video created (without BGM)");
                                 resolve();
                             })
                             .on("error", (err: Error) => {
@@ -713,6 +868,73 @@ module.exports = (
                             })
                             .run();
                     });
+
+                    // Add BGM tracks to the final video
+                    if (bgmFiles.length > 0) {
+                        console.log(`\nMixing ${bgmFiles.length} BGM tracks into final video...`);
+
+                        // Build FFmpeg complex filter for BGM mixing
+                        const ffmpegCommand = Ffmpeg().input(concatVideoPath);
+
+                        // Add each BGM file as input
+                        for (const bgm of bgmFiles) {
+                            ffmpegCommand.input(bgm.path);
+                        }
+
+                        // Build complex filter
+                        const filterParts: string[] = [];
+                        const bgmOutputs: string[] = [];
+
+                        for (let i = 0; i < bgmFiles.length; i++) {
+                            const bgm = bgmFiles[i];
+                            const inputIdx = i + 1; // 0 is video, 1+ are BGMs
+                            const fadeOutStart = Math.max(0, (bgm.endTime - bgm.startTime) - bgm.fadeOut);
+                            const delayMs = Math.round(bgm.startTime * 1000);
+
+                            // Apply fade in/out, delay, and volume adjustment
+                            filterParts.push(
+                                `[${inputIdx}:a]afade=t=in:st=0:d=${bgm.fadeIn},afade=t=out:st=${fadeOutStart}:d=${bgm.fadeOut},volume=${bgm.volume},adelay=${delayMs}|${delayMs}[bgm${i}]`
+                            );
+                            bgmOutputs.push(`[bgm${i}]`);
+                        }
+
+                        // Mix all BGM tracks with the original audio
+                        const mixInputs = `[0:a]${bgmOutputs.join("")}`;
+                        filterParts.push(
+                            `${mixInputs}amix=inputs=${bgmFiles.length + 1}:duration=first:dropout_transition=2,volume=${1 + bgmFiles.length * 0.5}[aout]`
+                        );
+
+                        await new Promise<void>((resolve, reject) => {
+                            ffmpegCommand
+                                .complexFilter(filterParts)
+                                .outputOptions([
+                                    "-map", "0:v",
+                                    "-map", "[aout]",
+                                    "-c:v", "copy",
+                                    "-c:a", "aac",
+                                    "-ar", "44100",
+                                    "-ac", "2",
+                                    "-b:a", "192k"
+                                ])
+                                .output(outputVideoPath)
+                                .on("start", (cmd) => {
+                                    console.log(`BGM mixing command: ${cmd.substring(0, 300)}...`);
+                                })
+                                .on("end", () => {
+                                    console.log("Final video with BGM created successfully");
+                                    resolve();
+                                })
+                                .on("error", (err: Error) => {
+                                    console.error("FFmpeg BGM mixing error:", err);
+                                    reject(err);
+                                })
+                                .run();
+                        });
+                    } else {
+                        // No BGM tracks, just rename the concatenated video
+                        console.log("No BGM tracks, using concatenated video as final");
+                        fs.renameSync(concatVideoPath, outputVideoPath);
+                    }
 
                     console.log("Video generation completed successfully");
 
