@@ -195,6 +195,34 @@ export interface FirebaseAnalyticsData {
 }
 
 /**
+ * Issue detail for code analysis.
+ * コード分析用のIssue詳細。
+ */
+export interface GitHubIssueDetail {
+    number: number;
+    title: string;
+    body: string | null;
+    state: "open" | "closed";
+    labels: string[];
+    createdAt: string;
+}
+
+/**
+ * Code analysis data from repository.
+ * リポジトリからのコード分析データ。
+ */
+export interface GitHubCodeAnalysis {
+    /** README content (truncated if too long) */
+    readme?: string;
+    /** Project configuration (pubspec.yaml, package.json, etc.) */
+    projectConfig?: string;
+    /** Project type detected */
+    projectType?: "flutter" | "nodejs" | "python" | "unknown";
+    /** Recent issue details for understanding user needs */
+    recentIssues?: GitHubIssueDetail[];
+}
+
+/**
  * GitHub repository data.
  * GitHubリポジトリのデータ。
  */
@@ -232,6 +260,9 @@ export interface GitHubData {
 
     // Languages
     languages?: { [language: string]: number };
+
+    // Code analysis data
+    codeAnalysis?: GitHubCodeAnalysis;
 
     collectedAt: Date;
 }

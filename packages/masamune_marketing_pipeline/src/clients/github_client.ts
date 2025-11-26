@@ -78,6 +78,32 @@ export interface ReleaseInfo {
 }
 
 /**
+ * Code analysis data from repository.
+ */
+export interface CodeAnalysisData {
+    /** README content (truncated if too long) */
+    readme?: string;
+    /** Project configuration (pubspec.yaml, package.json, etc.) */
+    projectConfig?: string;
+    /** Project type detected */
+    projectType?: "flutter" | "nodejs" | "python" | "unknown";
+    /** Recent issue details for understanding user needs */
+    recentIssues?: IssueDetail[];
+}
+
+/**
+ * Issue detail with title and body.
+ */
+export interface IssueDetail {
+    number: number;
+    title: string;
+    body: string | null;
+    state: "open" | "closed";
+    labels: string[];
+    createdAt: string;
+}
+
+/**
  * GitHub API Client.
  */
 export class GitHubClient {
@@ -289,6 +315,113 @@ export class GitHubClient {
 
             return data;
         });
+    }
+
+    /**
+     * Get README content from repository.
+     * Truncates to maxLength characters if too long.
+     */
+    async getReadme(maxLength: number = 5000): Promise<string | undefined> {
+        return withRetry(async () => {
+            try {
+                const { data } = await this.octokit.repos.getReadme({
+                    owner: this.owner,
+                    repo: this.repo,
+                    mediaType: { format: "raw" },
+                });
+
+                // data is the raw content when using format: "raw"
+                const content = typeof data === "string" ? data : "";
+                return content.length > maxLength ? content.substring(0, maxLength) + "..." : content;
+            } catch (error: any) {
+                if (error.status === 404) {
+                    return undefined;
+                }
+                throw error;
+            }
+        });
+    }
+
+    /**
+     * Get project configuration file (pubspec.yaml, package.json, etc.)
+     */
+    async getProjectConfig(): Promise<{ content: string; projectType: CodeAnalysisData["projectType"] } | undefined> {
+        const configFiles = [
+            { path: "pubspec.yaml", type: "flutter" as const },
+            { path: "package.json", type: "nodejs" as const },
+            { path: "pyproject.toml", type: "python" as const },
+            { path: "requirements.txt", type: "python" as const },
+        ];
+
+        for (const { path, type } of configFiles) {
+            try {
+                const { data } = await this.octokit.repos.getContent({
+                    owner: this.owner,
+                    repo: this.repo,
+                    path,
+                    mediaType: { format: "raw" },
+                });
+
+                const content = typeof data === "string" ? data : "";
+                // Truncate if too long
+                const truncated = content.length > 3000 ? content.substring(0, 3000) + "..." : content;
+                return { content: truncated, projectType: type };
+            } catch {
+                // File not found, try next
+                continue;
+            }
+        }
+
+        return undefined;
+    }
+
+    /**
+     * Get recent issue details with titles and bodies.
+     * Useful for understanding user feature requests and bug reports.
+     */
+    async getRecentIssueDetails(limit: number = 10): Promise<IssueDetail[]> {
+        return withRetry(async () => {
+            const { data } = await this.octokit.issues.listForRepo({
+                owner: this.owner,
+                repo: this.repo,
+                state: "all",
+                sort: "updated",
+                direction: "desc",
+                per_page: limit,
+            });
+
+            // Filter out pull requests
+            const issuesOnly = data.filter((i) => !i.pull_request);
+
+            return issuesOnly.map((issue) => ({
+                number: issue.number,
+                title: issue.title,
+                body: issue.body ? (issue.body.length > 500 ? issue.body.substring(0, 500) + "..." : issue.body) : null,
+                state: issue.state as "open" | "closed",
+                labels: issue.labels
+                    .map((l) => (typeof l === "string" ? l : l.name))
+                    .filter((n): n is string => n !== undefined),
+                createdAt: issue.created_at,
+            }));
+        });
+    }
+
+    /**
+     * Get code analysis data including README, config, and issues.
+     */
+    async getCodeAnalysisData(): Promise<CodeAnalysisData> {
+        const [readme, projectConfig, recentIssues] = await Promise.all([
+            this.getReadme().catch(() => undefined),
+            this.getProjectConfig().catch(() => undefined),
+            this.getRecentIssueDetails().catch(() => []),
+        ]);
+
+        return {
+            readme,
+            projectConfig: projectConfig?.content,
+            projectType: projectConfig?.projectType || "unknown",
+            recentIssues,
+        };
     }
 
     /**

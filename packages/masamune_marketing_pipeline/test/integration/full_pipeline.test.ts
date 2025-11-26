@@ -189,9 +189,10 @@ describe("Full Pipeline Integration", () => {
                     repo: githubRepo,
                 });
 
-                const [repoInfo, issueStats] = await Promise.all([
+                const [repoInfo, issueStats, codeAnalysis] = await Promise.all([
                     githubClient.getRepositoryInfo(),
                     githubClient.getIssueStats(dateRange),
+                    githubClient.getCodeAnalysisData(),
                 ]);
 
                 combinedData.github = {
@@ -204,9 +205,23 @@ describe("Full Pipeline Integration", () => {
                     openIssues: issueStats.openIssues,
                     closedIssuesInPeriod: issueStats.closedIssuesInPeriod,
                     newIssuesInPeriod: issueStats.newIssuesInPeriod,
+                    codeAnalysis: {
+                        readme: codeAnalysis.readme,
+                        projectConfig: codeAnalysis.projectConfig,
+                        projectType: codeAnalysis.projectType,
+                        recentIssues: codeAnalysis.recentIssues?.map((i) => ({
+                            number: i.number,
+                            title: i.title,
+                            body: i.body,
+                            state: i.state,
+                            labels: i.labels,
+                            createdAt: i.createdAt,
+                        })),
+                    },
                     collectedAt: new Date(),
                 };
                 console.log(`    ✓ GitHub: ${repoInfo.stars} stars, ${repoInfo.openIssuesCount} open issues`);
+                console.log(`    ✓ GitHub Code Analysis: ${codeAnalysis.projectType} project, ${codeAnalysis.recentIssues?.length || 0} issues`);
             } catch (error) {
                 console.log(`    ✗ GitHub: ${(error as Error).message}`);
             }

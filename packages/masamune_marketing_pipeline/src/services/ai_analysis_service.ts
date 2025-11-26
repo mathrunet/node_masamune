@@ -379,9 +379,49 @@ Create a visually appealing cover that conveys growth, analytics, and business s
     }
 
     /**
+     * Build code analysis section for prompts.
+     */
+    private buildCodeAnalysisSection(data: CombinedMarketingData): string {
+        if (!data.github?.codeAnalysis) {
+            return "";
+        }
+
+        const ca = data.github.codeAnalysis;
+        let section = `\n### GitHub Code Analysis\nProject Type: ${ca.projectType || "Unknown"}\n`;
+
+        if (ca.readme) {
+            section += `\n#### README (Project Overview)\n${ca.readme}\n`;
+        }
+
+        if (ca.projectConfig) {
+            section += `\n#### Project Configuration\n\`\`\`\n${ca.projectConfig}\n\`\`\`\n`;
+        }
+
+        if (ca.recentIssues && ca.recentIssues.length > 0) {
+            section += `\n#### Recent Issues (User Feedback & Bug Reports)\n`;
+            section += ca.recentIssues
+                .map(
+                    (i) =>
+                        `- #${i.number} [${i.state}] ${i.title}${i.labels.length > 0 ? ` (${i.labels.join(", ")})` : ""}${i.body ? `\n  ${i.body}` : ""}`
+                )
+                .join("\n");
+            section += "\n";
+        }
+
+        return section;
+    }
+
+    /**
      * Build prompt for overall analysis.
      */
     private buildOverallAnalysisPrompt(data: CombinedMarketingData): string {
+        const codeAnalysisSection = this.buildCodeAnalysisSection(data);
+
+        // Create a copy of github data without codeAnalysis for cleaner JSON output
+        const githubStats = data.github
+            ? { ...data.github, codeAnalysis: undefined }
+            : null;
+
         return `You are an expert app marketing analyst. Analyze the following marketing data and provide a comprehensive overview.
 
 ## Marketing Data
@@ -398,14 +438,17 @@ ${data.appStore ? JSON.stringify(data.appStore, null, 2) : "Not available"}
 ### Firebase Analytics Data
 ${data.firebaseAnalytics ? JSON.stringify(data.firebaseAnalytics, null, 2) : "Not available"}
 
-### GitHub Data
-${data.github ? JSON.stringify(data.github, null, 2) : "Not available"}
+### GitHub Repository Stats
+${githubStats ? JSON.stringify(githubStats, null, 2) : "Not available"}
+${codeAnalysisSection}
 
 ## Instructions
 1. Write a concise summary (2-3 paragraphs) analyzing the overall app performance
-2. List 3-5 key highlights (positive points)
-3. List 2-4 concerns or areas needing attention
-4. Identify 4-6 key metrics with their values and trends (up/down/stable)
+2. Consider the project's README and configuration to understand the app's purpose and features
+3. Review GitHub issues to identify user-reported problems and feature requests
+4. List 3-5 key highlights (positive points)
+5. List 2-4 concerns or areas needing attention (including issues raised by users on GitHub)
+6. Identify 4-6 key metrics with their values and trends (up/down/stable)
 
 Respond in Japanese.`;
     }
@@ -414,6 +457,13 @@ Respond in Japanese.`;
      * Build prompt for improvement suggestions.
      */
     private buildImprovementSuggestionsPrompt(data: CombinedMarketingData): string {
+        const codeAnalysisSection = this.buildCodeAnalysisSection(data);
+
+        // Create a copy of github data without codeAnalysis for cleaner JSON output
+        const githubStats = data.github
+            ? { ...data.github, codeAnalysis: undefined }
+            : null;
+
         return `You are an expert app marketing strategist. Based on the following marketing data, provide actionable improvement suggestions.
 
 ## Marketing Data
@@ -430,8 +480,9 @@ ${data.appStore ? JSON.stringify(data.appStore, null, 2) : "Not available"}
 ### Firebase Analytics Data
 ${data.firebaseAnalytics ? JSON.stringify(data.firebaseAnalytics, null, 2) : "Not available"}
 
-### GitHub Data
-${data.github ? JSON.stringify(data.github, null, 2) : "Not available"}
+### GitHub Repository Stats
+${githubStats ? JSON.stringify(githubStats, null, 2) : "Not available"}
+${codeAnalysisSection}
 
 ## Instructions
 Provide 5-8 specific, actionable improvement suggestions. For each suggestion:
@@ -441,6 +492,12 @@ Provide 5-8 specific, actionable improvement suggestions. For each suggestion:
 4. category: One of "user_acquisition", "retention", "engagement", "monetization", "quality", "development"
 5. expectedImpact: Expected outcome if implemented
 
+IMPORTANT: Base your suggestions on:
+- User feedback from GitHub issues (bug reports, feature requests)
+- Project configuration and dependencies
+- App store reviews and ratings
+- Analytics metrics (DAU, MAU, engagement)
+
 Focus on data-driven recommendations. Respond in Japanese.`;
     }
 
@@ -448,6 +505,13 @@ Focus on data-driven recommendations. Respond in Japanese.`;
      * Build prompt for trend analysis.
      */
     private buildTrendAnalysisPrompt(data: CombinedMarketingData): string {
+        const codeAnalysisSection = this.buildCodeAnalysisSection(data);
+
+        // Create a copy of github data without codeAnalysis for cleaner JSON output
+        const githubStats = data.github
+            ? { ...data.github, codeAnalysis: undefined }
+            : null;
+
         return `You are an expert data analyst specializing in mobile app trends. Analyze the following marketing data and provide trend insights.
 
 ## Marketing Data
@@ -461,8 +525,9 @@ ${data.googlePlay ? JSON.stringify(data.googlePlay, null, 2) : "Not available"}
 ### Firebase Analytics Data
 ${data.firebaseAnalytics ? JSON.stringify(data.firebaseAnalytics, null, 2) : "Not available"}
 
-### GitHub Data
-${data.github ? JSON.stringify(data.github, null, 2) : "Not available"}
+### GitHub Repository Stats
+${githubStats ? JSON.stringify(githubStats, null, 2) : "Not available"}
+${codeAnalysisSection}
 
 ## Instructions
 Analyze trends and provide:
@@ -470,6 +535,8 @@ Analyze trends and provide:
 2. engagementTrend: Analysis of user engagement metrics (2-3 sentences)
 3. ratingTrend: Analysis of app ratings and user satisfaction (2-3 sentences)
 4. predictions: 3-5 predictions for the next period based on current trends
+
+Consider GitHub activity (issues, commits, releases) as indicators of development velocity and user engagement.
 
 Respond in Japanese.`;
     }
