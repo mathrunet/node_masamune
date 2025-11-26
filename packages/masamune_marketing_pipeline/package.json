@@ -44,7 +44,7 @@
     "googleapis": "^144.0.0",
     "@google-analytics/data": "^4.9.0",
     "jsonwebtoken": "^9.0.2",
-    "@octokit/rest": "^21.0.2",
+    "@octokit/rest": "^20.1.1",
     "pdfkit": "^0.15.1",
     "date-fns": "^4.1.0",
     "dotenv": "^16.4.5"

@@ -14,3 +14,4 @@ export * from "@mathrunet/masamune";
 export * from "./functions";
 export * from "./models";
 export * from "./utils";
+export * from "./clients";
