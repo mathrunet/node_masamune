@@ -17,27 +17,211 @@ if (ffmpegStatic && typeof Ffmpeg.setFfmpegPath === "function") {
 
 /**
  * Maps visual effect types to FFmpeg filter configurations
+ *
+ * Key improvements:
+ * 1. Animation spans the full duration by calculating increment based on duration
+ * 2. Image is scaled to fill frame without black bars using scale+crop
+ * 3. Pan movements stay within image bounds
+ *
+ * zoompan filter notes:
+ * - z: zoom factor (1.0 = original size, >1 = zoom in)
+ * - d: total frames
+ * - x,y: position of output window's top-left corner on the zoomed input
+ * - s: output size
+ * - The zoomed input size is (iw*zoom, ih*zoom)
+ * - Center position: x = (iw*zoom - ow)/2, y = (ih*zoom - oh)/2
+ */
+// Global log array to collect effect calculation details
+let effectCalculationLogs: string[] = [];
+
+function clearEffectLogs() {
+    effectCalculationLogs = [];
+}
+
+function getEffectLogs(): string[] {
+    return effectCalculationLogs;
+}
+
+function logEffectCalculation(message: string) {
+    effectCalculationLogs.push(message);
+    console.log(message);
+}
+
+/**
+ * Generates FFmpeg filter for visual effects using scale+crop approach.
+ * This avoids issues with zoompan's 'on' variable resetting with looped input.
+ *
+ * For pan/slide effects: scale image larger, then crop with time-based position.
+ * For zoom effects: use zoompan (works reliably for zoom).
  */
 function getFFmpegEffect(effect: { type: string; intensity: string }, duration: number, width: number = 1920, height: number = 1080) {
-    const intensityMultipliers = { low: 1.0, medium: 1.5, high: 2.0 };
-    const multiplier = intensityMultipliers[effect.intensity as keyof typeof intensityMultipliers] || 1.0;
+    const intensityMultipliers = { low: 0.15, medium: 0.25, high: 0.35 };
+    const multiplier = intensityMultipliers[effect.intensity as keyof typeof intensityMultipliers] || 0.25;
+
+    const fps = 25;
+    const totalFrames = duration * fps;
+
+    // Base zoom to ensure image fills the frame (accounts for different aspect ratios)
+    const baseZoom = 1.2;
+
+    logEffectCalculation(`\n========== Effect Calculation ==========`);
+    logEffectCalculation(`Effect Type: ${effect.type}`);
+    logEffectCalculation(`Intensity: ${effect.intensity}`);
+    logEffectCalculation(`Duration: ${duration}s`);
+    logEffectCalculation(`FPS: ${fps}`);
+    logEffectCalculation(`Total Frames: ${totalFrames}`);
+    logEffectCalculation(`Output Size: ${width}x${height}`);
+    logEffectCalculation(`Base Zoom: ${baseZoom}`);
 
     switch (effect.type) {
-        case "zoom_in":
-            return `zoompan=z='min(zoom+0.0015*${multiplier},1.5)':d=${duration * 25}:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=${width}x${height}`;
-        case "zoom_out":
-            return `zoompan=z='max(zoom-0.0015*${multiplier},1.0)':d=${duration * 25}:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=${width}x${height}`;
-        case "pan_left":
-            return `zoompan=z=1.2:d=${duration * 25}:x='if(gte(on,1),x-${2 * multiplier},0)':s=${width}x${height}`;
-        case "pan_right":
-            return `zoompan=z=1.2:d=${duration * 25}:x='if(gte(on,1),x+${2 * multiplier},0)':s=${width}x${height}`;
-        case "slide_up":
-            return `zoompan=z=1.2:d=${duration * 25}:y='if(gte(on,1),y-${2 * multiplier},0)':s=${width}x${height}`;
-        case "slide_down":
-            return `zoompan=z=1.2:d=${duration * 25}:y='if(gte(on,1),y+${2 * multiplier},0)':s=${width}x${height}`;
+        case "zoom_in": {
+            // For zoom effects, zoompan works reliably with static zoom position
+            const startZoom = baseZoom;
+            const endZoom = baseZoom + multiplier;
+            const zoomIncrement = (endZoom - startZoom) / totalFrames;
+            logEffectCalculation(`--- Zoom In ---`);
+            logEffectCalculation(`Start Zoom: ${startZoom}`);
+            logEffectCalculation(`End Zoom: ${endZoom}`);
+            logEffectCalculation(`Zoom Increment per frame: ${zoomIncrement}`);
+            // Use zoompan with d=1 so each input frame produces 1 output frame
+            // The -loop 1 -framerate 25 will provide 25 frames per second
+            const filter = `zoompan=z='${startZoom}+on*${zoomIncrement}':d=1:x='(iw*zoom-${width})/2':y='(ih*zoom-${height})/2':s=${width}x${height}:fps=${fps}`;
+            logEffectCalculation(`Filter: ${filter}`);
+            return filter;
+        }
+        case "zoom_out": {
+            const startZoom = baseZoom + multiplier;
+            const endZoom = baseZoom;
+            const zoomDecrement = (startZoom - endZoom) / totalFrames;
+            logEffectCalculation(`--- Zoom Out ---`);
+            logEffectCalculation(`Start Zoom: ${startZoom}`);
+            logEffectCalculation(`End Zoom: ${endZoom}`);
+            logEffectCalculation(`Zoom Decrement per frame: ${zoomDecrement}`);
+            const filter = `zoompan=z='${startZoom}-on*${zoomDecrement}':d=1:x='(iw*zoom-${width})/2':y='(ih*zoom-${height})/2':s=${width}x${height}:fps=${fps}`;
+            logEffectCalculation(`Filter: ${filter}`);
+            return filter;
+        }
+        case "pan_left": {
+            // Use scale+crop with time-based expression instead of zoompan
+            // This avoids 'on' variable reset issues
+            const panZoom = baseZoom + 0.5;
+            const scaledWidth = Math.round(width * panZoom);
+            const scaledHeight = Math.round(height * panZoom);
+            const centerX = Math.round((scaledWidth - width) / 2);
+            const centerY = Math.round((scaledHeight - height) / 2);
+            const maxPanRange = Math.floor(centerX * 0.9);
+            const panRangePercent = { low: 0.15, medium: 0.22, high: 0.30 };
+            const desiredPanRange = Math.round(width * (panRangePercent[effect.intensity as keyof typeof panRangePercent] || 0.22));
+            const panRange = Math.min(desiredPanRange, maxPanRange);
+            const startX = centerX + panRange;
+            // Pixels per second for time-based expression
+            const pixelsPerSecond = (panRange * 2) / duration;
+
+            logEffectCalculation(`--- Pan Left (scale+crop) ---`);
+            logEffectCalculation(`Pan Zoom: ${panZoom}`);
+            logEffectCalculation(`Scaled Size: ${scaledWidth}x${scaledHeight}`);
+            logEffectCalculation(`Center X: ${centerX}, Center Y: ${centerY}`);
+            logEffectCalculation(`Max Pan Range: ${maxPanRange}`);
+            logEffectCalculation(`Actual Pan Range: ${panRange}`);
+            logEffectCalculation(`Start X: ${startX}`);
+            logEffectCalculation(`Pixels per Second: ${pixelsPerSecond}`);
+
+            // scale to larger size, then crop with x position decreasing over time
+            const filter = `scale=${scaledWidth}:${scaledHeight},crop=${width}:${height}:'${startX}-t*${pixelsPerSecond}':'${centerY}'`;
+            logEffectCalculation(`Filter: ${filter}`);
+            return filter;
+        }
+        case "pan_right": {
+            const panZoom = baseZoom + 0.5;
+            const scaledWidth = Math.round(width * panZoom);
+            const scaledHeight = Math.round(height * panZoom);
+            const centerX = Math.round((scaledWidth - width) / 2);
+            const centerY = Math.round((scaledHeight - height) / 2);
+            const maxPanRange = Math.floor(centerX * 0.9);
+            const panRangePercent = { low: 0.15, medium: 0.22, high: 0.30 };
+            const desiredPanRange = Math.round(width * (panRangePercent[effect.intensity as keyof typeof panRangePercent] || 0.22));
+            const panRange = Math.min(desiredPanRange, maxPanRange);
+            const startX = centerX - panRange;
+            const pixelsPerSecond = (panRange * 2) / duration;
+
+            logEffectCalculation(`--- Pan Right (scale+crop) ---`);
+            logEffectCalculation(`Pan Zoom: ${panZoom}`);
+            logEffectCalculation(`Scaled Size: ${scaledWidth}x${scaledHeight}`);
+            logEffectCalculation(`Center X: ${centerX}, Center Y: ${centerY}`);
+            logEffectCalculation(`Max Pan Range: ${maxPanRange}`);
+            logEffectCalculation(`Actual Pan Range: ${panRange}`);
+            logEffectCalculation(`Start X: ${startX}`);
+            logEffectCalculation(`Pixels per Second: ${pixelsPerSecond}`);
+
+            // scale to larger size, then crop with x position increasing over time
+            const filter = `scale=${scaledWidth}:${scaledHeight},crop=${width}:${height}:'${startX}+t*${pixelsPerSecond}':'${centerY}'`;
+            logEffectCalculation(`Filter: ${filter}`);
+            return filter;
+        }
+        case "slide_up": {
+            const panZoom = baseZoom + 0.5;
+            const scaledWidth = Math.round(width * panZoom);
+            const scaledHeight = Math.round(height * panZoom);
+            const centerX = Math.round((scaledWidth - width) / 2);
+            const centerY = Math.round((scaledHeight - height) / 2);
+            const maxPanRange = Math.floor(centerY * 0.9);
+            const panRangePercent = { low: 0.15, medium: 0.22, high: 0.30 };
+            const desiredPanRange = Math.round(height * (panRangePercent[effect.intensity as keyof typeof panRangePercent] || 0.22));
+            const panRange = Math.min(desiredPanRange, maxPanRange);
+            const startY = centerY + panRange;
+            const pixelsPerSecond = (panRange * 2) / duration;
+
+            logEffectCalculation(`--- Slide Up (scale+crop) ---`);
+            logEffectCalculation(`Pan Zoom: ${panZoom}`);
+            logEffectCalculation(`Scaled Size: ${scaledWidth}x${scaledHeight}`);
+            logEffectCalculation(`Center X: ${centerX}, Center Y: ${centerY}`);
+            logEffectCalculation(`Max Pan Range: ${maxPanRange}`);
+            logEffectCalculation(`Actual Pan Range: ${panRange}`);
+            logEffectCalculation(`Start Y: ${startY}`);
+            logEffectCalculation(`Pixels per Second: ${pixelsPerSecond}`);
+
+            const filter = `scale=${scaledWidth}:${scaledHeight},crop=${width}:${height}:'${centerX}':'${startY}-t*${pixelsPerSecond}'`;
+            logEffectCalculation(`Filter: ${filter}`);
+            return filter;
+        }
+        case "slide_down": {
+            const panZoom = baseZoom + 0.5;
+            const scaledWidth = Math.round(width * panZoom);
+            const scaledHeight = Math.round(height * panZoom);
+            const centerX = Math.round((scaledWidth - width) / 2);
+            const centerY = Math.round((scaledHeight - height) / 2);
+            const maxPanRange = Math.floor(centerY * 0.9);
+            const panRangePercent = { low: 0.15, medium: 0.22, high: 0.30 };
+            const desiredPanRange = Math.round(height * (panRangePercent[effect.intensity as keyof typeof panRangePercent] || 0.22));
+            const panRange = Math.min(desiredPanRange, maxPanRange);
+            const startY = centerY - panRange;
+            const pixelsPerSecond = (panRange * 2) / duration;
+
+            logEffectCalculation(`--- Slide Down (scale+crop) ---`);
+            logEffectCalculation(`Pan Zoom: ${panZoom}`);
+            logEffectCalculation(`Scaled Size: ${scaledWidth}x${scaledHeight}`);
+            logEffectCalculation(`Center X: ${centerX}, Center Y: ${centerY}`);
+            logEffectCalculation(`Max Pan Range: ${maxPanRange}`);
+            logEffectCalculation(`Actual Pan Range: ${panRange}`);
+            logEffectCalculation(`Start Y: ${startY}`);
+            logEffectCalculation(`Pixels per Second: ${pixelsPerSecond}`);
+
+            const filter = `scale=${scaledWidth}:${scaledHeight},crop=${width}:${height}:'${centerX}':'${startY}+t*${pixelsPerSecond}'`;
+            logEffectCalculation(`Filter: ${filter}`);
+            return filter;
+        }
         case "static":
-        default:
-            return `scale=${width}:${height}`;
+        default: {
+            // Simple scale for static
+            const scaledWidth = Math.round(width * baseZoom);
+            const scaledHeight = Math.round(height * baseZoom);
+            const centerX = Math.round((scaledWidth - width) / 2);
+            const centerY = Math.round((scaledHeight - height) / 2);
+            logEffectCalculation(`--- Static (scale+crop) ---`);
+            const filter = `scale=${scaledWidth}:${scaledHeight},crop=${width}:${height}:${centerX}:${centerY}`;
+            logEffectCalculation(`Filter: ${filter}`);
+            return filter;
+        }
     }
 }
 
@@ -708,6 +892,9 @@ module.exports = (
                     // Generate video for each scene (with narration only, no BGM)
                     const sceneVideoPaths: string[] = [];
 
+                    // Clear effect logs before processing scenes
+                    clearEffectLogs();
+
                     for (let i = 0; i < shortVideoDetails.scenes.length; i++) {
                         const scene = shortVideoDetails.scenes[i];
                         console.log(`\nProcessing scene ${i + 1}/${shortVideoDetails.scenes.length}`);
@@ -799,12 +986,22 @@ module.exports = (
                         const sceneVideoPath = path.join(tmpDir, `scene_${i}.mp4`);
                         const effect = getFFmpegEffect(scene.visual.effect, scene.duration);
 
+                        // Scale and crop image to exactly 1920x1080 before applying zoompan
+                        // This ensures consistent coordinates regardless of AI-generated image size
+                        // Combine filters into a single string to avoid fluent-ffmpeg escaping issues
+                        const scaleFilter = "scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080";
+                        const combinedFilter = `${scaleFilter},${effect}`;
+                        console.log(`Scene ${i + 1} filter: ${combinedFilter}`);
+
                         await new Promise<void>((resolve, reject) => {
+                            // -loop 1: loop the static image infinitely
+                            // -framerate 25: set input framerate to match output fps
+                            // For zoom effects (d=1), each input frame produces 1 output frame
+                            // For pan/slide effects (scale+crop with 't'), time variable works correctly
                             Ffmpeg()
                                 .input(imagePath)
-                                .loop(scene.duration)
-                                .fps(25)
-                                .videoFilters(effect)
+                                .inputOptions(["-loop", "1", "-framerate", "25"])
+                                .videoFilters(combinedFilter)
                                 .input(paddedNarrationPath)
                                 .outputOptions([
                                     "-map", "0:v",
@@ -821,7 +1018,7 @@ module.exports = (
                                 ])
                                 .output(sceneVideoPath)
                                 .on("start", (cmd) => {
-                                    console.log(`FFmpeg command: ${cmd.substring(0, 200)}...`);
+                                    console.log(`FFmpeg command for scene ${i + 1}: ${cmd}`);
                                 })
                                 .on("end", () => {
                                     console.log(`Scene ${i + 1} video created: ${sceneVideoPath}`);
@@ -836,6 +1033,11 @@ module.exports = (
 
                         sceneVideoPaths.push(sceneVideoPath);
                     }
+
+                    // Save effect calculation logs to file for debugging
+                    const effectLogPath = path.join(tmpDir, "effect_calculations.log");
+                    fs.writeFileSync(effectLogPath, getEffectLogs().join("\n"));
+                    console.log(`Effect calculation logs saved to: ${effectLogPath}`);
 
                     // Concatenate all scene videos (without BGM)
                     console.log(`\nConcatenating ${sceneVideoPaths.length} scene videos...`);
@@ -996,6 +1198,18 @@ module.exports = (
                     };
 
                 } finally {
+                    // Copy effect calculation logs to test/tmp before cleanup (for debugging)
+                    const effectLogPath = path.join(tmpDir, "effect_calculations.log");
+                    if (fs.existsSync(effectLogPath) && (process.env.NODE_ENV === "test" || process.env.JEST_WORKER_ID)) {
+                        const testTmpDir = path.join(__dirname, "../../test/tmp");
+                        if (!fs.existsSync(testTmpDir)) {
+                            fs.mkdirSync(testTmpDir, { recursive: true });
+                        }
+                        const destLogPath = path.join(testTmpDir, `effect_calculations_${assetId}.log`);
+                        fs.copyFileSync(effectLogPath, destLogPath);
+                        console.log(`Effect logs copied to: ${destLogPath}`);
+                    }
+
                     // Cleanup temporary files
                     if (fs.existsSync(tmpDir)) {
                         fs.rmSync(tmpDir, { recursive: true, force: true });
