@@ -36,7 +36,7 @@
   },
   "homepage": "https://github.com/mathrunet/node_masamune#readme",
   "dependencies": {
-    "@mathrunet/masamune": "^3.7.0",
+    "@mathrunet/masamune": "^3.8.4",
     "@google-cloud/text-to-speech": "^6.4.0",
     "firebase-admin": "^13.1.0",
     "firebase-functions": "^6.3.2",
