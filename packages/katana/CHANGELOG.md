@@ -1,31 +1,57 @@
-## [3.9.4](https://github.com/mathrunet/node_masamune/compare/v3.7.0...v3.9.4) (2025-11-23)
+## [3.9.5](https://github.com/mathrunet/node_masamune/compare/v3.7.0...v3.9.5) (2025-11-28)
 
 
 ### chore
 
 * Add Node.js 20 engine requirement to all package.json files ([1e60d25](https://github.com/mathrunet/node_masamune/commit/1e60d25b2c44e1efd398a6a1229d2ba3f46da1f5))
 * Update @mathrunet/katana to version 3.9.1 ([d8e32a1](https://github.com/mathrunet/node_masamune/commit/d8e32a1f238ed3b29003bd83799fde57a054c063))
+* Update Masamune package to version 3.8.3 ([8e8155e](https://github.com/mathrunet/node_masamune/commit/8e8155e3380f05fb05abdb087c9bfff0b05c1795))
 * Update masamune package version ([f4998d6](https://github.com/mathrunet/node_masamune/commit/f4998d654dee28f2f12c5d2d8b9c861563825dbd))
 * Update Node.js engine to v22 and bump development dependencies across packages. ([d840a0f](https://github.com/mathrunet/node_masamune/commit/d840a0f503230f80edbdf01f9516841cff36798d))
 * update TypeScript compilation target to es2022 in tsconfig files across packages ([99253dd](https://github.com/mathrunet/node_masamune/commit/99253dd84a09e1c6026b9a6b88b6fef1ca2f4d14))
+* Upgrade `@mathrunet/katana` to `3.9.4` and update `@mathrunet/masamune` dependencies. ([4eb3e8f](https://github.com/mathrunet/node_masamune/commit/4eb3e8ffcd17334eb380ea780605eb1f925b8eea))
+
+### docs
+
+* Move development, requirements, and setup guide documents to masamune_asset_pipeline package. ([1aa4ccb](https://github.com/mathrunet/node_masamune/commit/1aa4ccb995791c34de7901e98554aaca80bf22cc))
 
 ### feat
 
+* Add an interface and methods for repository analysis to the GitHub client, and create document files for bug lists and tasks. ([f7cf613](https://github.com/mathrunet/node_masamune/commit/f7cf6137b95b9040ea55f1b6fb6d029e188926ef))
 * Add Lyria background music generation, Google Cloud Text-to-Speech integration, updated test configuration, and new development documentation. ([d234b83](https://github.com/mathrunet/node_masamune/commit/d234b83b0ab706bfa3c93f2f887755aa022baa48))
+* add marketing pipeline for data collection and scheduling, and update short video generation tests to include narration and BGM. ([4020466](https://github.com/mathrunet/node_masamune/commit/402046616c18ae3c65fe0eb43e1a103a95f1cc04))
 * add scheduler notification tests and update general test utilities and Firestore tests. ([710e462](https://github.com/mathrunet/node_masamune/commit/710e46287e7eb7fea6dd461e0d5354ce2f1bbfd2))
 * Add short video generation function using Gemini 2.5 Flash and FFmpeg, including tests, documentation, and updated ignore rules for temporary files. ([7e6cde2](https://github.com/mathrunet/node_masamune/commit/7e6cde28f7760c54058cb1e2073c6e97f552d39e))
+* Added charts, storage, and PDF generation services to the marketing pipeline, improved video effects, and introduced bug list documentation. ([5ac0fd5](https://github.com/mathrunet/node_masamune/commit/5ac0fd5d6e0d1cfeaeae0b422e2d099f7c863bc4))
+* Create a market pipeline. ([7ce61fe](https://github.com/mathrunet/node_masamune/commit/7ce61feae9829bd7e8d969ef967f39f3f9ba0cfe))
+* Develop an AI analysis service ([0a3d8c7](https://github.com/mathrunet/node_masamune/commit/0a3d8c7cbff6e23b524ca78b8bcbc674b2045bcf))
 * Enhance detailed research to guide content creation, determine asset type, and add new documentation files. ([bf6125a](https://github.com/mathrunet/node_masamune/commit/bf6125a2e35f7b52f9a84468770901a98ef226be))
 * implement Firebase function to generate short video metadata using Vertex AI, including tests and development documentation. ([2251993](https://github.com/mathrunet/node_masamune/commit/22519933c8b1f84fc7ae26a5754c6c02d96b5969))
+* Implementation of data retrieval API. ([df9ad88](https://github.com/mathrunet/node_masamune/commit/df9ad88da46ccb85cea4172ed8c0107ea2c431f7))
 * Package separation. And monorepo management. ([2647952](https://github.com/mathrunet/node_masamune/commit/2647952ad48823ac0c3d578a366f4af0bf60bcc1))
+* refactor short video BGM handling to use `bgmTracks` array and introduce `masamune_marketing_pipeline`. ([6fe3878](https://github.com/mathrunet/node_masamune/commit/6fe3878bf02ecc40008a3aa7f10dd13a78a028e7))
 * Update Masamune package versions to 3.8.0. ([318f89a](https://github.com/mathrunet/node_masamune/commit/318f89a7427dfa71149026207eae19c4ff845edc))
 
 ### fix
 
+* Add ModelFieldValue interface. ([0ff33aa](https://github.com/mathrunet/node_masamune/commit/0ff33aa6f1331569658a3fd629b1329eafef8c50))
+* Audio-related fixes ([9e2440b](https://github.com/mathrunet/node_masamune/commit/9e2440b9e78c15ecc9d495da5ed0f173250bf88c))
+* Create E2E tests. ([e33ed27](https://github.com/mathrunet/node_masamune/commit/e33ed2702cc6d2771036fd3bc8e5c4de811229e7))
 * Explicitly pass the Firebase Admin app during Firestore and Storage initialization, and update the version. ([9169415](https://github.com/mathrunet/node_masamune/commit/9169415adb873a0ce1534a5762158d84ca477212))
+* implement AI-driven music prompt improvement for Lyria BGM generation failures and add marketing pipeline requirements. ([81cfd3b](https://github.com/mathrunet/node_masamune/commit/81cfd3bd114669360c0bef465f81f5b4fad8804d))
 * Initialize Firebase Admin SDK if not already initialized when loading Firestore or Storage. ([678c1bd](https://github.com/mathrunet/node_masamune/commit/678c1bd1896ddd3fe0e541e9eeea29797b63e300))
 * Move `@types/node-fetch` from devDependencies to dependencies. ([d5bc8be](https://github.com/mathrunet/node_masamune/commit/d5bc8be021d25469d9fb58d6b73f8471883969c8))
 * remove debug logs from Firebase loaders and bump package version. ([36e721e](https://github.com/mathrunet/node_masamune/commit/36e721ec6cc597aced1fc91105f9a04625cde0d2))
 * Update dependency versions for `@mathrunet/katana` ([d4a9aea](https://github.com/mathrunet/node_masamune/commit/d4a9aeadb6541d808618098c5a4b2eaf72bf7d50))
+* Video bug fix. ([0fa5f9f](https://github.com/mathrunet/node_masamune/commit/0fa5f9f8ef2cda5420a54db9445f72e9b1f4d6e6))
+
+### refactor
+
+* Remove various cloud functions and tests, and add new tests for short video generation functionality. ([b5a2f34](https://github.com/mathrunet/node_masamune/commit/b5a2f34d474218c76cb25fdc1f6c0fe3b6c13413))
+
+### test
+
+* Extend the timeout for the short video generation test. ([9e46c82](https://github.com/mathrunet/node_masamune/commit/9e46c828c791d933b32344842e63830782aa0fa5))
 
 
 
