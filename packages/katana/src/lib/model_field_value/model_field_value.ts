@@ -1,3 +1,175 @@
+import * as admin from "firebase-admin";
+
+/**
+ * ModelCounter interface.
+ * 
+ * katana_modelの`ModelCounter`用のインターフェース。
+ */
+export interface ModelCounter {
+    "@increment": number;
+    "@target": string;
+    "@type": string;
+    "@value": number;
+}
+
+/**
+ * ModelTimestamp interface.
+ * 
+ * katana_modelの`ModelTimestamp`用のインターフェース。
+ */
+export interface ModelTimestamp {
+    "@target": string;
+    "@type": string;
+    "@time": number;
+}
+
+/**
+ * ModelDate interface.
+ * 
+ * katana_modelの`ModelDate`用のインターフェース。
+ */
+export interface ModelDate {
+    "@target": string;
+    "@type": string;
+    "@time": number;
+}
+
+/**
+ * ModelTime interface.
+ * 
+ * katana_modelの`ModelTime`用のインターフェース。
+ */
+export interface ModelTime {
+    "@target": string;
+    "@type": string;
+    "@time": number;
+}
+
+/**
+ * ModelTimestampRange interface.
+ * 
+ * katana_modelの`ModelTimestampRange`用のインターフェース。
+ */
+export interface ModelTimestampRange {
+    "@type": string;
+    "@start": number;
+    "@end": number;
+    "@target": string;
+}
+
+/**
+ * ModelDateRange interface.
+ * 
+ * katana_modelの`ModelDateRange`用のインターフェース。
+ */
+export interface ModelDateRange {
+    "@type": string;
+    "@start": number;
+    "@end": number;
+    "@target": string;
+}
+
+/**
+ * ModelTimeRange interface.
+ * 
+ * katana_modelの`ModelTimeRange`用のインターフェース。
+ */
+export interface ModelTimeRange {
+    "@type": string;
+    "@start": number;
+    "@end": number;
+    "@target": string;
+}
+
+/**
+ * ModelLocale interface.
+ * 
+ * katana_modelの`ModelLocale`用のインターフェース。
+ */
+export interface ModelLocale {
+    "@target": string;
+    "@type": string;
+    "@language": string;
+    "@country": string;
+}
+
+/**
+ * ModelLocalizedValue interface.
+ * 
+ * katana_modelの`ModelLocalizedValue`用のインターフェース。
+ */
+export interface ModelLocalizedValue {
+    "@target": string;
+    "@type": string;
+    "@localized": {[field:string]: any},
+}
+
+/**
+ * ModelUri interface.
+ * 
+ * katana_modelの`ModelUri`用のインターフェース。
+ */
+export interface ModelUri {
+    "@target": string;
+    "@type": string;
+    "@uri": string;
+}
+
+/**
+ * ModelImageUri interface.
+ * 
+ * katana_modelの`ModelImageUri`用のインターフェース。
+ */
+export interface ModelImageUri {
+    "@target": string;
+    "@type": string;
+    "@uri": string;
+}
+
+/**
+ * ModelVideoUri interface.
+ * 
+ * katana_modelの`ModelVideoUri`用のインターフェース。
+ */
+export interface ModelVideoUri {
+    "@target": string;
+    "@type": string;
+    "@uri": string;
+}
+
+/**
+ * ModelSearch interface.
+ * 
+ * katana_modelの`ModelSearch`用のインターフェース。
+ */
+export interface ModelSearch {
+    "@type": string;
+    "@list": string[];
+    "@target": string;
+}
+
+/**
+ * ModelToken interface.
+ * 
+ * katana_modelの`ModelToken`用のインターフェース。
+ */
+export interface ModelToken {
+    "@type": string;
+    "@list": string[];
+    "@target": string;
+}
+
+/**
+ * ModelGeoValue interface.
+ * 
+ * katana_modelの`ModelGeoValue`用のインターフェース。
+ */
+export interface ModelGeoValue {
+    "@type": string;
+    "@latitude": number;
+    "@longitude": number;
+    "@target": string;
+}
 
 /**
  * Class for generating values for `ModelFieldValue` in katana_model.
@@ -66,12 +238,13 @@ export class ModelFieldValue {
     }): { [key: string]: any } {
         const res: { [key: string]: any } = {};
         res[key] = value;
-        res[`#${key}`] = {
+        const modelCounter: ModelCounter = {
             "@increment": increment ?? 0,
             "@target": key,
             "@type": "ModelCounter",
             "@value": value,
         };
+        res[`#${key}`] = modelCounter;
         return res;
     }
 
@@ -103,11 +276,12 @@ export class ModelFieldValue {
         const res: { [key: string]: any } = {};
         date ??= new Date();
         res[key] = date;
-        res[`#${key}`] = {
+        const modelTimestamp: ModelTimestamp = {
             "@time": date.getTime(),
             "@target": key,
             "@type": "ModelTimestamp",
         };
+        res[`#${key}`] = modelTimestamp;
         return res;
     }
     /**
@@ -139,11 +313,192 @@ export class ModelFieldValue {
         date ??= new Date();
         date.setHours(0, 0, 0, 0);
         res[key] = date;
-        res[`#${key}`] = {
+        const modelDate: ModelDate = {
             "@time": date.getTime(),
             "@target": key,
             "@type": "ModelDate",
         };
+        res[`#${key}`] = modelDate;
+        return res;
+    }
+    /**
+     * Class for generating data for `ModelTime`.
+     * 
+     * `ModelTime`用のデータを生成するためのクラス。
+     * 
+     * @param {string} key
+     * Data key.
+     * 
+     * データのキー。
+     * 
+     * @param {Date} date
+     * Date and time.
+     * 
+     * 時間。
+     * 
+     * @returns { [key: string]: any }
+     * Data for `ModelTime`.
+     * 
+     * `ModelTime`用のデータ。
+     */
+    static modelTime({
+        key, date,
+    }: {
+        key: string, date?: Date | undefined,
+    }): { [key: string]: any } {
+        const res: { [key: string]: any } = {};
+        date ??= new Date();
+        res[key] = date;
+        const modelTime: ModelTime = {
+            "@time": date.getTime(),
+            "@target": key,
+            "@type": "ModelTime",
+        };
+        res[`#${key}`] = modelTime;
+        return res;
+    }
+    /**
+     * Class for generating data for `ModelTimestampRange`.
+     * 
+     * `ModelTimestampRange`用のデータを生成するためのクラス。
+     * 
+     * @param {string} key
+     * Data key.
+     * 
+     * データのキー。
+     * 
+     * @param {Date} start
+     * Start date and time.
+     * 
+     * 開始日時。
+     * 
+     * @param {Date} end
+     * End date and time.
+     * 
+     * 終了日時。
+     * 
+     * @returns { [key: string]: any }
+     * Data for `ModelTimestampRange`.
+     * 
+     * `ModelTimestampRange`用のデータ。
+     */
+    static modelTimestampRange({
+        key, start, end,
+    }: {
+        key: string, start?: Date | undefined, end?: Date | undefined,
+    }): { [key: string]: any } {
+        const res: { [key: string]: any } = {};
+        start ??= new Date();
+        end ??= new Date();
+        if(start.getTime() > end.getTime()) {
+            const temp = start;
+            start = end;
+            end = temp;
+        }
+        res[key] = { start, end };
+        const modelTimestampRange: ModelTimestampRange = {
+            "@start": start.getTime(),
+            "@end": end.getTime(),
+            "@target": key,
+            "@type": "ModelTimestampRange",
+        };
+        res[`#${key}`] = modelTimestampRange;
+        return res;
+    }
+    /**
+     * Class for generating data for `ModelDateRange`.
+     * 
+     * `ModelDateRange`用のデータを生成するためのクラス。
+     * 
+     * @param {string} key
+     * Data key.
+     * 
+     * データのキー。
+     * 
+     * @param {Date} start
+     * Start date and time.
+     * 
+     * 開始日時。
+     * 
+     * @param {Date} end
+     * End date and time.
+     * 
+     * 終了日時。
+     * 
+     * @returns { [key: string]: any }
+     * Data for `ModelDateRange`.
+     * 
+     * `ModelDateRange`用のデータ。
+     */
+    static modelDateRange({
+        key, start, end,
+    }: {
+        key: string, start?: Date | undefined, end?: Date | undefined,
+    }): { [key: string]: any } {
+        const res: { [key: string]: any } = {};
+        start ??= new Date();
+        end ??= new Date();
+        if(start.getTime() > end.getTime()) {
+            const temp = start;
+            start = end;
+            end = temp;
+        }
+        res[key] = { start, end };
+        const modelDateRange: ModelDateRange = {
+            "@start": start.getTime(),
+            "@end": end.getTime(),
+            "@target": key,
+            "@type": "ModelDateRange",
+        };
+        res[`#${key}`] = modelDateRange;
+        return res;
+    }
+    /**
+     * Class for generating data for `ModelTimeRange`.
+     * 
+     * `ModelTimeRange`用のデータを生成するためのクラス。
+     * 
+     * @param {string} key
+     * Data key.
+     * 
+     * データのキー。
+     * 
+     * @param {Date} start
+     * Start date and time.
+     * 
+     * 開始日時。
+     * 
+     * @param {Date} end
+     * End date and time.
+     * 
+     * 終了日時。
+     * 
+     * @returns { [key: string]: any }
+     * Data for `ModelTimeRange`.
+     * 
+     * `ModelTimeRange`用のデータ。
+     */
+    static modelTimeRange({
+        key, start, end,
+    }: {
+        key: string, start?: Date | undefined, end?: Date | undefined,
+    }): { [key: string]: any } {
+        const res: { [key: string]: any } = {};
+        start ??= new Date();
+        end ??= new Date();
+        if(start.getTime() > end.getTime()) {
+            const temp = start;
+            start = end;
+            end = temp;
+        }
+        res[key] = { start, end };
+        const modelTimeRange: ModelTimeRange = {
+            "@start": start.getTime(),
+            "@end": end.getTime(),
+            "@target": key,
+            "@type": "ModelTimeRange",
+        };
+        res[`#${key}`] = modelTimeRange;
         return res;
     }
     /**
@@ -178,12 +533,48 @@ export class ModelFieldValue {
     }): { [key: string]: any } {
         const res: { [key: string]: any } = {};
         res[key] = `${language}_${country}`;
-        res[`#${key}`] = {
+        const modelLocale: ModelLocale = {
             "@country": country,
             "@language": language,
             "@target": key,
             "@type": "ModelLocale",
         };
+        res[`#${key}`] = modelLocale;
+        return res;
+    }
+    /**
+     * Class for generating data for `ModelLocalizedValue`.
+     * 
+     * `ModelLocalizedValue`用のデータを生成するためのクラス。
+     * 
+     * @param {string} key
+     * Data key.
+     * 
+     * データのキー。
+     * 
+     * @param {string} value
+     * Value.
+     * 
+     * 値。
+     * 
+     * @returns { [key: string]: any }
+     * Data for `ModelLocalizedValue`.
+     * 
+     * `ModelLocalizedValue`用のデータ。
+     */
+    static modelLocalizedValue({
+        key, localized,
+    }: {
+        key: string, localized: {[field:string]: any},
+    }): { [key: string]: any } {
+        const res: { [key: string]: any } = {};
+        res[key] = localized;
+        const modelLocalizedValue: ModelLocalizedValue = {
+            "@localized": localized,
+            "@target": key,
+            "@type": "ModelLocalizedValue",
+        };
+        res[`#${key}`] = modelLocalizedValue;
         return res;
     }
     /**
@@ -211,11 +602,12 @@ export class ModelFieldValue {
     }): { [key: string]: any } {
         const res: { [key: string]: any } = {};
         res[key] = uri;
-        res[`#${key}`] = {
+        const modelUri: ModelUri = {
             "@target": key,
             "@type": "ModelUri",
             "@uri": uri,
         };
+        res[`#${key}`] = modelUri;
         return res;
     }
     /**
@@ -243,11 +635,12 @@ export class ModelFieldValue {
     }): { [key: string]: any } {
         const res: { [key: string]: any } = {};
         res[key] = uri;
-        res[`#${key}`] = {
+        const modelImageUri: ModelImageUri ={
             "@target": key,
             "@type": "ModelImageUri",
             "@uri": uri,
         };
+        res[`#${key}`] = modelImageUri;
         return res;
     }
     /**
@@ -275,11 +668,12 @@ export class ModelFieldValue {
     }): { [key: string]: any } {
         const res: { [key: string]: any } = {};
         res[key] = uri;
-        res[`#${key}`] = {
+        const modelVideoUri: ModelVideoUri ={
             "@target": key,
             "@type": "ModelVideoUri",
             "@uri": uri,
         };
+        res[`#${key}`] = modelVideoUri;
         return res;
     }
     /**
@@ -309,10 +703,12 @@ export class ModelFieldValue {
     }): { [key: string]: any } {
         const res: { [key: string]: any } = {};
         res[key] = list;
-        res[`#${key}`] = {
-            "@list": list,
+        const modelSearch: ModelSearch = {
+            "@list": list ?? [],
             "@type": "ModelSearch",
+            "@target": key,
         };
+        res[`#${key}`] = modelSearch;
         return res;
     }
     /**
@@ -342,10 +738,48 @@ export class ModelFieldValue {
     }): { [key: string]: any } {
         const res: { [key: string]: any } = {};
         res[key] = list;
-        res[`#${key}`] = {
-            "@list": list,
+        const modelToken: ModelToken = {
+            "@list": list ?? [],
             "@type": "ModelToken",
+            "@target": key,
         };
+        res[`#${key}`] = modelToken;
+        return res;
+    }
+    /**
+     * Class for generating data for `ModelGeoValue`.
+     * 
+     * `ModelGeoValue`用のデータを生成するためのクラス。
+     * 
+     * @param {string} key
+     * Data key.
+     * 
+     * データのキー。
+     * 
+     * @param {string[]} list
+     * List of token values.
+     * 
+     * トークンのリスト。
+     * 
+     * @returns { [key: string]: any }
+     * Data for `ModelToken`.
+     * 
+     * `ModelToken`用のデータ。
+     */
+    static modelGeoValue({
+        key, latitude, longitude,
+    }: {
+        key: string, latitude?: number | undefined, longitude?: number | undefined,
+    }): { [key: string]: any } {
+        const res: { [key: string]: any } = {};
+        res[key] = new admin.firestore.GeoPoint(latitude ?? 0, longitude ?? 0);
+        const modelGeoValue: ModelGeoValue = {
+            "@latitude": latitude ?? 0,
+            "@longitude": longitude ?? 0,
+            "@type": "ModelGeoValue",
+            "@target": key,
+        };
+        res[`#${key}`] = modelGeoValue;
         return res;
     }
 }
