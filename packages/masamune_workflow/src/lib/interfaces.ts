@@ -104,7 +104,8 @@ export interface Task {
 	"materials"?: {[key: string]: any};
 	"results"?: {[key: string]: any};
 	"assets"?: {[key: string]: any};
-	"@result"?: any;
+    "search"?: string;
+	"@search"?: admin.firestore.FieldValue;
 	"usage": number;
     "#startTime"?: ModelTimestamp;
 	"startTime"?: Date;
@@ -136,6 +137,7 @@ export interface Action {
 	"results"?: {[key: string]: any};
 	"assets"?: {[key: string]: any};
 	"usage": number;
+    "search"?: string;
 	"token"?: string;
     "#tokenExpiredTime"?: ModelTimestamp;
 	"tokenExpiredTime"?: Date;
@@ -207,10 +209,26 @@ export interface Usage {
 	"@time": Date;
 	"organization"?: admin.firestore.DocumentReference;
 	"usage": number;
+    "latestPlan"?: string;
+    "bucketBalance"?: number;
+    "lastCheckTime"?: admin.firestore.Timestamp;
+    "currentMonth"?: string;
     "#createdTime": ModelTimestamp;
     "createdTime": Date;
     "#updatedTime": ModelTimestamp;
     "updatedTime": Date;
+}
+
+/**
+ * Plan interface.
+ * 
+ * プランのインターフェース。
+ */
+export interface Plan {
+    "@uid": string;
+	"@time": Date;
+    "limit": number;
+    "burst": number;
 }
 
 /**
@@ -259,5 +277,6 @@ export interface Subscription {
     "userId": string;
     "expired": boolean;
     "expiredTime": number;
+    "productId": string;
     [key: string]: any;
 }

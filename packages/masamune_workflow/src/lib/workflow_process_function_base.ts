@@ -2,14 +2,17 @@ import * as functions from "firebase-functions/v2";
 import { FunctionsBase, HttpFunctionsOptions, ModelFieldValue } from "@mathrunet/masamune";
 import * as admin from "firebase-admin";
 import { getFirestore } from "firebase-admin/firestore";
-import { Action, ActionCommand, Task, Usage } from "./interfaces";
-export { CallableRequest } from "firebase-functions/v2/https";
+import { Action, Task, Usage, Plan, Subscription, Campaign } from "./interfaces";
+import { GoogleGenAI } from "@google/genai";
 
 const _kDefaultCpuPrice = 0.000025 * 4.0; // 4CPU秒
 const _kDefaultMemoryPrice = 0.0000025 * 1.0; // 1GB秒
 const _kDefaultRequetPrice = 0.4 / 1000000.0 * 2; // 2リクエスト
-const _kDefaultLoadPrice = 0.038 / 100000.0 * 6; // 6ロード
+const _kDefaultLoadPrice = 0.038 / 100000.0 * 12; // 12ロード
 const _kDefaultSavePrice = 0.115 / 100000.0 * 8; // 8保存
+const _kDefaultEmbeddingPrice = 0.15 / 1000000.0 * 2; // 2埋め込み
+const _kDefaultMonthlyLimit = 5.0; // 月間制限（フリーだと$5）
+const _kDefaultBurstCapacity = 0.05; // バースト許容量 (5%)
 
 /**
  * Base class for defining Function data for Workflow action execution.
@@ -61,7 +64,13 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
             },
             async (query) => {
                 try {
+                    const emmbedingModelName = process.env.EMBEDDING_MODEL ?? "gemini-embedding-001";
                     const startedTime = new Date();
+                    const projectId =  process.env.GCLOUD_PROJECT || process.env.GOOGLE_CLOUD_PROJECT;
+                    let region = options?.region ?? regions;
+                    if(Array.isArray(region)){
+                        region = region[0];
+                    }
                     const path = query.data.path as string | undefined | null;
                     const token = query.data.token as string | undefined | null;
                     if (!path || !token) {
@@ -79,6 +88,9 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                     if (!actionData || !organization || !organizationId || !command) {
                         throw Error("action-not-found");
                     }
+                    const subscriptions = await firestore.collection(`plugins/iap/subscription`).where("userId", "==", organizationId).get();
+                    const subscription = subscriptions.size > 0 ? subscriptions.docs[0].data() as Subscription | undefined | null : null;
+                    const plan = subscription?.productId ? (await firestore.doc(`plugins/workflow/plan/${subscription?.productId}`).get()).data() as Plan | undefined | null : null;
                     try {
                         const expiredTime = actionData.tokenExpiredTime;
                         if (!expiredTime || startedTime.getTime() > expiredTime.getTime()) {
@@ -87,11 +99,15 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                         if (token !== actionData.token) {
                             throw Error("invalid-token");
                         }
-                        // TODO: 利用量チェック
+                        await this.checkUsage({
+                            firestore: firestore,
+                            organizationId: organizationId,
+                            plan: plan,
+                        });
                         const result = await this.process(actionData);
                         const finishedTime = new Date();
                         const duration = (finishedTime.getTime() - startedTime.getTime()) / 1000.0;
-                        const usage = _kDefaultLoadPrice + _kDefaultSavePrice + _kDefaultRequetPrice + duration * _kDefaultCpuPrice + duration * _kDefaultMemoryPrice;
+                        let usage = _kDefaultLoadPrice + _kDefaultSavePrice + _kDefaultRequetPrice + duration * _kDefaultCpuPrice + duration * _kDefaultMemoryPrice;
                         const task = await actionData.task?.get();
                         if (!task || !task.exists) {
                             throw Error("task-not-found");
@@ -139,10 +155,25 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                                 finishedTime: finishedTime,
                                 usage: usage,
                                 organizationId: organizationId,
+                                plan: plan,
                             });
                         } else {
                             // 完了済み
                             if(index >= actions.length - 1){
+                                let search: number[] | undefined;
+                                if(result.search){
+                                    const vertexAI = new GoogleGenAI({
+                                        vertexai: true,
+                                        project: projectId,
+                                        location: region,
+                                    });
+                                    const embedResult = await vertexAI.models.embedContent({ 
+                                        model: emmbedingModelName,
+                                        contents: JSON.stringify(result.results ?? []),
+                                    });
+                                    search = embedResult?.embeddings?.[0]?.values;
+                                    usage += (embedResult?.embeddings?.[0]?.statistics?.tokenCount ?? 0) * _kDefaultEmbeddingPrice;
+                                }
                                 const updatedActionData: Action = {
                                     ...actionData,
                                     ...result,
@@ -185,6 +216,8 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                                         key: "updatedTime",
                                         date: finishedTime,
                                     }),
+                                    "search": result.search,
+                                    "@search": search ? admin.firestore.FieldValue.vector(search) : admin.firestore.FieldValue.delete(),
                                 };
                                 await task.ref.set(
                                     updatedTaskData,
@@ -195,8 +228,24 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                                     finishedTime: finishedTime,
                                     usage: usage,
                                     organizationId: organizationId,
+                                    plan: plan,
                                 });
+                            // 続きがある場合
                             } else {
+                                let search: number[] | undefined;
+                                if(result.search){
+                                    const vertexAI = new GoogleGenAI({
+                                        vertexai: true,
+                                        project: projectId,
+                                        location: region,
+                                    });
+                                    const embedResult = await vertexAI.models.embedContent({ 
+                                        model: emmbedingModelName,
+                                        contents: JSON.stringify(result.results ?? []),
+                                    });
+                                    search = embedResult?.embeddings?.[0]?.values;
+                                    usage += (embedResult?.embeddings?.[0]?.statistics?.tokenCount ?? 0) * _kDefaultEmbeddingPrice;
+                                }
                                 const nextCommand = actions[index + 1];
                                 const updatedActionData: Action = {
                                     ...actionData,
@@ -240,6 +289,8 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                                         key: "updatedTime",
                                         date: finishedTime,
                                     }),
+                                    "search": result.search,
+                                    "@search": search ? admin.firestore.FieldValue.vector(search) : admin.firestore.FieldValue.delete(),
                                 };
                                 await task.ref.set(
                                     updatedTaskData,
@@ -250,6 +301,7 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                                     finishedTime: finishedTime,
                                     usage: usage,
                                     organizationId: organizationId,
+                                    plan: plan,
                                 });
                             }
                         }
@@ -350,6 +402,7 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                             finishedTime: finishedTime,
                             usage: usage,
                             organizationId: organizationId,
+                            plan: plan,
                         });
                         console.error(JSON.stringify(error));
                         return error;
@@ -383,49 +436,163 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
         );
     }
 
+    private async checkUsage({
+        firestore,
+        organizationId,
+        plan,
+    }: {
+        firestore: admin.firestore.Firestore,
+        organizationId: string,
+        plan: Plan | undefined | null,
+    }): Promise<void> {
+        const now = admin.firestore.Timestamp.now();
+        const year = now.toDate().getFullYear();
+        const month = (now.toDate().getMonth() + 1).toString().padStart(2, '0');
+        const dateId = `${year}${month}`;
+        const usageRef = firestore.doc(`plugins/workflow/organization/${organizationId}/usage/${dateId}`);
+        const campaignRef = firestore.doc(`plugins/workflow/campaign`);
+
+        const usageDoc = await usageRef.get();
+        const campaignDoc = await campaignRef.get();
+        const campaignData = campaignDoc.data() as Campaign | undefined | null;
+        let campaignLimit: number | undefined | null = campaignData?.limit;
+        const campaignExpiredTime = campaignData?.expiredTime;
+
+        if(campaignExpiredTime && campaignExpiredTime.getTime() > now.toDate().getTime()){
+            campaignLimit = null;
+        }
+        if(campaignLimit && campaignLimit < 0){
+            return;
+        }
+        if (usageDoc.exists) {
+            const data = usageDoc.data() as Usage;
+            const currentMonthStr = new Date().toISOString().slice(0, 7);
+            
+            // 月が変わっている場合はチェックしない（updateUsageでリセットされるため）
+            if (data.currentMonth === currentMonthStr) {
+                const totalUsage = data.usage ?? 0.0;
+                const planLimit = campaignLimit ? campaignLimit : (plan?.limit ?? Number(process.env.MONTHLY_LIMIT) ?? _kDefaultMonthlyLimit);
+                const burstCapacity = plan?.burst ?? Number(process.env.BURST_CAPACITY) ?? _kDefaultBurstCapacity;
+                const bucketBalance = data.bucketBalance ?? (planLimit * burstCapacity);
+                const latestPlan = data.latestPlan;
+
+                if (totalUsage >= planLimit) {
+                    throw new Error("limit-usage");
+                }
+                
+                // バースト容量が0以下かつなら制限
+                if (bucketBalance <= 0 && latestPlan === plan?.["@uid"]) {
+                     throw new Error("limit-usage");
+                }
+            }
+        }
+    }
+
     private async updateUsage({
         firestore,
         finishedTime,
         usage,
+        plan,
         organizationId,
     }: {
         firestore: admin.firestore.Firestore,
         finishedTime: Date,
         usage: number,
+        plan: Plan | undefined | null,
         organizationId: string,
     }): Promise<void> {
         try {
+            const planId = plan?.["@uid"];
+            const planLimit = plan?.limit ?? Number(process.env.MONTHLY_LIMIT) ?? _kDefaultMonthlyLimit;
+            const burstCapacity = plan?.burst ?? Number(process.env.BURST_CAPACITY) ?? _kDefaultBurstCapacity;
             const year = finishedTime.getFullYear();
-            const month = (finishedTime.getMonth() + 1).toString().padStart(2, '0');
+            const month = (finishedTime.getMonth() + 1).toString().padStart(2, "0");
             const dateId = `${year}${month}`;
-            const usageDoc = await firestore.doc(`plugins/workflow/organization/${organizationId}/usage/${dateId}`).get();
-            const usageData = usageDoc.data() as Usage | undefined | null;
-            if (!usageData) {
-                const updatedUsageData = {
-                    "@uid": dateId,
+            const usageRef = firestore.doc(`plugins/workflow/organization/${organizationId}/usage/${dateId}`);
+            const currentMonthStr = finishedTime.toISOString().slice(0, 7);
+            const nowMillis = finishedTime.getTime();
+
+            const doc = await usageRef.get();
+            let totalUsage = 0;
+            let bucketBalance = planLimit * burstCapacity;
+            let lastCheckTimeMillis = nowMillis;
+
+            if (doc.exists) {
+                const data = doc.data() as Usage;
+                if (data.currentMonth !== currentMonthStr) {
+                    // 月初リセット
+                    totalUsage = 0;
+                    bucketBalance = planLimit * burstCapacity;
+                    lastCheckTimeMillis = nowMillis;
+                } else {
+                    totalUsage = data.usage || 0;
+                    bucketBalance = data.bucketBalance ?? (planLimit * burstCapacity);
+                    lastCheckTimeMillis = data.lastCheckTime?.toMillis() ?? nowMillis;
+                }
+            }
+
+            // 回復計算
+            const endOfMonth = new Date(finishedTime);
+            endOfMonth.setMonth(endOfMonth.getMonth() + 1);
+            endOfMonth.setDate(0);
+            endOfMonth.setHours(23, 59, 59, 999);
+
+            let timeLeftMillis = endOfMonth.getTime() - nowMillis;
+            if (timeLeftMillis <= 0){
+                timeLeftMillis = 1;
+            }
+
+            const remainingBudget = planLimit - totalUsage;
+            const recoveryRate = remainingBudget / timeLeftMillis;
+            const timeDelta = nowMillis - lastCheckTimeMillis;
+            const tokensToAdd = timeDelta * recoveryRate;
+            
+            let newBucketBalance = Math.min(planLimit * burstCapacity, bucketBalance + tokensToAdd);
+
+            // 消費
+            newBucketBalance -= usage;
+            totalUsage += usage;
+
+            if(doc.exists){
+                const updateData: any = {
+                    ...doc.data(),
+                    usage: totalUsage,
+                    bucketBalance: newBucketBalance,
+                    currentMonth: currentMonthStr,
                     "@time": finishedTime,
-                    usage: usage,
+                    "latestPlan": planId ? planId : admin.firestore.FieldValue.delete(),
+                    ...ModelFieldValue.modelTimestamp({
+                        key: "lastCheckTime",
+                        date: finishedTime,
+                    }),
                     ...ModelFieldValue.modelTimestamp({
                         key: "updatedTime",
+                        date: finishedTime,
+                    }),
+                };
+                await usageRef.set(updateData, { merge: true });
+            } else {
+                const updateData: any = {
+                    "@uid": dateId,
+                    usage: totalUsage,
+                    bucketBalance: newBucketBalance,
+                    currentMonth: currentMonthStr,
+                    "@time": finishedTime,
+                    ...ModelFieldValue.modelTimestamp({
+                        key: "lastCheckTime",
                         date: finishedTime,
                     }),
                     ...ModelFieldValue.modelTimestamp({
                         key: "createdTime",
                         date: finishedTime,
                     }),
-                };
-                await usageDoc.ref.set(updatedUsageData, {merge: true});
-            } else {
-                const updatedUsageData = {
-                    "@time": finishedTime,
-                    usage: usageData.usage + usage,
                     ...ModelFieldValue.modelTimestamp({
                         key: "updatedTime",
                         date: finishedTime,
                     }),
                 };
-                await usageDoc.ref.set(updatedUsageData, {merge: true});
-            }
+                await usageRef.set(updateData, { merge: true });
+            }            
         } catch (err) {
             console.error(err);
         }
@@ -434,162 +601,3 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
 
 
 
-import * as functions from "firebase-functions";
-
-import * as admin from "firebase-admin";
-
-admin.initializeApp();
-
-const db = admin.firestore();
-
-// 設定値
-
-const MONTHLY_LIMIT = 10000; // 月間制限
-
-const BURST_CAPACITY = MONTHLY_LIMIT * 0.05; // バースト許容量 (5%)
-
-interface UsageCheckResult {
-
-  allowed: boolean;
-
-  retryAfterSeconds?: number;
-
-  currentUsage: number;
-
-}
-
-export const checkUsageLimit = functions.https.onCall(async (data, context) => {
-
-  if (!context.auth) {
-
-    throw new functions.https.HttpsError("unauthenticated", "User must be logged in.");
-
-  }
-
-  const userId = context.auth.uid;
-
-  const requestedCost = data.cost || 1; 
-
-  const userRef = db.collection("user_usage_limits").doc(userId);
-
-  return db.runTransaction(async (transaction): Promise<UsageCheckResult> => {
-
-    const doc = await transaction.get(userRef);
-
-    const now = admin.firestore.Timestamp.now();
-
-    const nowMillis = now.toMillis();
-
-    const currentMonthStr = new Date().toISOString().slice(0, 7);
-
-    let totalUsage = 0;
-
-    let bucketBalance = BURST_CAPACITY;
-
-    let lastCheckTimeMillis = nowMillis;
-
-    if (doc.exists) {
-
-      const data = doc.data()!;
-
-      if (data.currentMonth !== currentMonthStr) {
-
-        // 月初リセット
-
-        totalUsage = 0;
-
-        bucketBalance = BURST_CAPACITY;
-
-        lastCheckTimeMillis = nowMillis;
-
-      } else {
-
-        totalUsage = data.totalUsage || 0;
-
-        bucketBalance = data.bucketBalance || 0;
-
-        lastCheckTimeMillis = data.lastCheckTime.toMillis();
-
-      }
-
-    }
-
-    // 月間上限チェック
-
-    if (totalUsage >= MONTHLY_LIMIT) {
-
-      const nextMonth = new Date();
-
-      nextMonth.setMonth(nextMonth.getMonth() + 1);
-
-      nextMonth.setDate(1);
-
-      nextMonth.setHours(0, 0, 0, 0);
-
-      const waitSeconds = Math.ceil((nextMonth.getTime() - nowMillis) / 1000);
-
-      return { allowed: false, retryAfterSeconds: waitSeconds, currentUsage: totalUsage };
-
-    }
-
-    // 回復計算
-
-    const endOfMonth = new Date();
-
-    endOfMonth.setMonth(endOfMonth.getMonth() + 1);
-
-    endOfMonth.setDate(0); 
-
-    endOfMonth.setHours(23, 59, 59, 999);
-
-    
-
-    let timeLeftMillis = endOfMonth.getTime() - nowMillis;
-
-    if (timeLeftMillis <= 0) timeLeftMillis = 1;
-
-    const remainingBudget = MONTHLY_LIMIT - totalUsage;
-
-    const recoveryRate = remainingBudget / timeLeftMillis;
-
-    const timeDelta = nowMillis - lastCheckTimeMillis;
-
-    const tokensToAdd = timeDelta * recoveryRate;
-
-    let newBucketBalance = Math.min(BURST_CAPACITY, bucketBalance + tokensToAdd);
-
-    // 利用判定
-
-    if (newBucketBalance >= requestedCost) {
-
-      newBucketBalance -= requestedCost;
-
-      totalUsage += requestedCost;
-
-      transaction.set(userRef, {
-
-        totalUsage: totalUsage,
-
-        bucketBalance: newBucketBalance,
-
-        lastCheckTime: now,
-
-        currentMonth: currentMonthStr
-
-      }, { merge: true });
-
-      return { allowed: true, currentUsage: totalUsage };
-
-    } else {
-
-      const deficit = requestedCost - newBucketBalance;
-
-      const waitSeconds = Math.ceil((deficit / recoveryRate) / 1000);
-
-      return { allowed: false, retryAfterSeconds: waitSeconds, currentUsage: totalUsage };
-
-    }
-
-  });
-
-});
