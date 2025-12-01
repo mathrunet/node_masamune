@@ -40,12 +40,14 @@
     "@mathrunet/masamune": "^3.8.4",
     "firebase-admin": "^13.1.0",
     "firebase-functions": "^6.3.2",
+    "googleapis": "^140.0.0",
     "typescript": "^5.9.2",
     "@mathrunet/masamune_workflow": "^3.8.1"
   },
   "devDependencies": {
     "@types/jest": "^29.5.12",
     "conventional-changelog-cli": "^5.0.0",
+    "dotenv": "^16.4.5",
     "firebase-functions-test": "^3.4.0",
     "jest": "^29.7.0",
     "ts-jest": "^29.1.2"
