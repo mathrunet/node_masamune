@@ -36,16 +36,19 @@
   },
   "homepage": "https://github.com/mathrunet/node_masamune#readme",
   "dependencies": {
+    "@google-analytics/data": "^4.9.0",
     "@google/genai": "^1.30.0",
     "@mathrunet/masamune": "^3.8.4",
     "firebase-admin": "^13.1.0",
     "firebase-functions": "^6.3.2",
     "googleapis": "^140.0.0",
+    "jsonwebtoken": "^9.0.2",
     "typescript": "^5.9.2",
     "@mathrunet/masamune_workflow": "^3.8.1"
   },
   "devDependencies": {
     "@types/jest": "^29.5.12",
+    "@types/jsonwebtoken": "^9.0.9",
     "conventional-changelog-cli": "^5.0.0",
     "dotenv": "^16.4.5",
     "firebase-functions-test": "^3.4.0",

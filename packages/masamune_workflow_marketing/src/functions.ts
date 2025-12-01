@@ -17,4 +17,26 @@ export const Functions = {
             func: require("./functions/collect_from_google_play_console"),
             options: options
         }),
+    /**
+     * A function for collecting data from App Store Connect.
+     *
+     * App Store Connectからデータを収集するためのFunction。
+     */
+    collectFromAppStore: (options: masamune.HttpFunctionsOptions = {}) =>
+        new masamune.FunctionsData({
+            id: "collect_from_app_store",
+            func: require("./functions/collect_from_app_store"),
+            options: options
+        }),
+    /**
+     * A function for collecting data from Firebase Analytics.
+     *
+     * Firebase Analyticsからデータを収集するためのFunction。
+     */
+    collectFromFirebaseAnalytics: (options: masamune.HttpFunctionsOptions = {}) =>
+        new masamune.FunctionsData({
+            id: "collect_from_firebase_analytics",
+            func: require("./functions/collect_from_firebase_analytics"),
+            options: options
+        }),
 } as const;
