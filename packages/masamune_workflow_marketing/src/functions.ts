@@ -50,4 +50,15 @@ export const Functions = {
             func: require("./functions/analyze_marketing_data"),
             options: options
         }),
+    /**
+     * A function for generating marketing analytics PDF report.
+     *
+     * マーケティング分析PDFレポートを生成するためのFunction。
+     */
+    generateMarketingPdf: (options: masamune.HttpFunctionsOptions = {}) =>
+        new masamune.FunctionsData({
+            id: "generate_marketing_pdf",
+            func: require("./functions/generate_marketing_pdf"),
+            options: options
+        }),
 } as const;

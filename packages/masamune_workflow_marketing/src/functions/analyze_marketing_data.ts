@@ -112,7 +112,7 @@ export class AnalyzeMarketingData extends WorkflowProcessFunctionBase {
         // 3. 環境変数からプロジェクト情報を取得
         const projectId = process.env.GCLOUD_PROJECT || process.env.GOOGLE_CLOUD_PROJECT || process.env.GCP_PROJECT_ID;
         const region = process.env.GCLOUD_REGION || "us-central1";
-        const modelName = process.env.GEMINI_MODEL || "gemini-2.0-flash";
+        const modelName = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 
         if (!projectId) {
             console.error("AnalyzeMarketingData: No GCP project ID found");
