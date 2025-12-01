@@ -1,4 +1,4 @@
-# [3.8.0](https://github.com/mathrunet/node_masamune/compare/v3.7.0...v3.8.0) (2025-12-01)
+## [3.8.1](https://github.com/mathrunet/node_masamune/compare/v3.7.0...v3.8.1) (2025-12-01)
 
 
 ### chore
@@ -44,9 +44,11 @@
 * Audio-related fixes ([9e2440b](https://github.com/mathrunet/node_masamune/commit/9e2440b9e78c15ecc9d495da5ed0f173250bf88c))
 * Create E2E tests. ([e33ed27](https://github.com/mathrunet/node_masamune/commit/e33ed2702cc6d2771036fd3bc8e5c4de811229e7))
 * Explicitly pass the Firebase Admin app during Firestore and Storage initialization, and update the version. ([9169415](https://github.com/mathrunet/node_masamune/commit/9169415adb873a0ce1534a5762158d84ca477212))
+* Fixed missing export. ([f8948be](https://github.com/mathrunet/node_masamune/commit/f8948bee2d089c6df7a1b2e34bab844413f42e87))
 * implement AI-driven music prompt improvement for Lyria BGM generation failures and add marketing pipeline requirements. ([81cfd3b](https://github.com/mathrunet/node_masamune/commit/81cfd3bd114669360c0bef465f81f5b4fad8804d))
 * Initialize Firebase Admin SDK if not already initialized when loading Firestore or Storage. ([678c1bd](https://github.com/mathrunet/node_masamune/commit/678c1bd1896ddd3fe0e541e9eeea29797b63e300))
 * Move `@types/node-fetch` from devDependencies to dependencies. ([d5bc8be](https://github.com/mathrunet/node_masamune/commit/d5bc8be021d25469d9fb58d6b73f8471883969c8))
+* Package update ([038b6c5](https://github.com/mathrunet/node_masamune/commit/038b6c51885e6e59bc469e9728e790e2021f6e05))
 * Package Update ([2709b18](https://github.com/mathrunet/node_masamune/commit/2709b18899189e6373baf08c141cd10e0b9afa34))
 * Package update. ([9acad0a](https://github.com/mathrunet/node_masamune/commit/9acad0a058338a75e700e53b0a94e4bc0fcf3c3e))
 * remove debug logs from Firebase loaders and bump package version. ([36e721e](https://github.com/mathrunet/node_masamune/commit/36e721ec6cc597aced1fc91105f9a04625cde0d2))
