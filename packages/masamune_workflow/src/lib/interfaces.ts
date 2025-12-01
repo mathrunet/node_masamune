@@ -2,6 +2,49 @@ import { ModelTimestamp } from "@mathrunet/masamune";
 import * as admin from "firebase-admin";
 
 /**
+ * Workflow repeat type.
+ * 
+ * ワークフローの繰り返しタイプ。
+ */
+export const WorkflowRepeatList = ["none", "daily", "weekly", "monthly"] as const;
+
+/**
+ * Workflow repeat type.
+ * 
+ * ワークフローの繰り返しタイプ。
+ */
+export type WorkflowRepeat = (typeof WorkflowRepeatList)[number];
+
+/**
+ * Workflow status type.
+ * 
+ * ワークフローのステータスタイプ。
+ */
+export const WorkflowTaskStatusList = ["waiting", "running", "failed", "completed", "canceled"] as const;
+
+/**
+ * Workflow status type.
+ * 
+ * ワークフローのステータスタイプ。
+ */
+export type WorkflowTaskStatus = (typeof WorkflowTaskStatusList)[number];
+
+
+/**
+ * Workflow role type.
+ * 
+ * ワークフローのロールタイプ。
+ */
+export const WorkflowRoleList = ["admin", "editor", "viewer"] as const;
+
+/**
+ * Workflow role type.
+ * 
+ * ワークフローのロールタイプ。
+ */
+export type WorkflowRole = (typeof WorkflowRoleList)[number];
+
+/**
  * Organization interface.
  * 
  * 組織のインターフェース。
@@ -29,7 +72,7 @@ export interface Member {
     "@time": Date;
     "organization"?: admin.firestore.DocumentReference;
     "user"?: admin.firestore.DocumentReference;
-    "role": "admin" | "editor" | "viewer";
+    "role": WorkflowRole;
     "#createdTime": ModelTimestamp;
     "createdTime": Date;
     "#updatedTime": ModelTimestamp;
@@ -72,10 +115,12 @@ export interface Workflow {
 	"name"?: string;
 	"project"?: admin.firestore.DocumentReference;
 	"organization"?: admin.firestore.DocumentReference;
-	"repeat": "none" | "daily" | "weekly" | "monthly";
+    "repeat": WorkflowRepeat;
 	"actions": ActionCommand[];
 	"prompt"?: string;
 	"materials"?: {[key: string]: any};
+    "#nextTime"?: ModelTimestamp | admin.firestore.FieldValue;
+	"nextTime"?: Date | admin.firestore.FieldValue;
     "#startTime"?: ModelTimestamp;
 	"startTime"?: Date;
     "#createdTime": ModelTimestamp;
@@ -95,9 +140,9 @@ export interface Task {
 	"workflow"?: admin.firestore.DocumentReference;
 	"organization"?: admin.firestore.DocumentReference;
 	"project"?: admin.firestore.DocumentReference;
-	"status": "waiting" | "running" | "failed" | "completed" | "canceled";
+	"status": WorkflowTaskStatus;
 	"actions": ActionCommand[];
-	"currentAction"?: string | admin.firestore.FieldValue;
+	"currentAction"?: admin.firestore.DocumentReference | admin.firestore.FieldValue;
 	"nextAction"?: ActionCommand | admin.firestore.FieldValue;
 	"error"?:  {[key: string]: any};
 	"prompt"?: string;
@@ -130,7 +175,7 @@ export interface Action {
 	"workflow"?: admin.firestore.DocumentReference;
 	"organization"?: admin.firestore.DocumentReference;
 	"project"?: admin.firestore.DocumentReference;
-	"status": "waiting" | "running" | "failed" | "completed" | "canceled";
+	"status": WorkflowTaskStatus;
 	"error"?: {[key: string]: any};
 	"prompt"?: string;
 	"materials"?: {[key: string]: any};

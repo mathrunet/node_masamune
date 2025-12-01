@@ -5,10 +5,23 @@ import * as masamune from "@mathrunet/masamune";
  * 
  * FirebaseFunctions用の適用可能なFunctionの一覧を定義します。
  */
-export const Functions = {  /**
-   * Conduct detailed asset research.
+export const Functions = {
+  /**
+   * A function for scheduling tasks.
    * 
-   * アセットの詳細なリサーチを行います。
+   * TaskをスケジュールするためのFunction。
    */
-  conductDetailedResearch: (options: masamune.HttpFunctionsOptions = {}) => new masamune.FunctionsData({ id: "conductDetailedResearch", func: require("./functions/conduct_detailed_research"), options: options }),
+  taskScheduler: (options: masamune.SchedulerFunctionsOptions = {}) => new masamune.FunctionsData({ id: "task_scheduler", func: require("./functions/task_scheduler"), options: options }),
+  /**
+   * A function for cleaning up tasks.
+   * 
+   * TaskをクリーンアップするためのFunction。
+   */
+  taskCleaner: (options: masamune.SchedulerFunctionsOptions = {}) => new masamune.FunctionsData({ id: "task_cleaner", func: require("./functions/task_cleaner"), options: options }),
+  /**
+   * A function for processing workflows.
+   * 
+   * Workflowを処理するためのFunction。
+   */
+  workflowScheduler: (options: masamune.SchedulerFunctionsOptions = {}) => new masamune.FunctionsData({ id: "workflow_scheduler", func: require("./functions/workflow_scheduler"), options: options }),
 } as const;

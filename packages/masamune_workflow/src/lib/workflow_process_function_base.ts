@@ -50,19 +50,16 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
     data: { [key: string]: any } = {};
     build(regions: string[]): Function {
         const options = this.options as HttpFunctionsOptions | undefined | null;
-        return functions.https.onCall(
+        return functions.tasks.onTaskDispatched(
             {
-                region: options?.region ?? regions,
                 timeoutSeconds: options?.timeoutSeconds,
                 memory: options?.memory,
                 minInstances: options?.minInstances,
                 concurrency: options?.concurrency,
                 maxInstances: options?.maxInstances,
                 serviceAccount: options?.serviceAccount ?? undefined,
-                enforceAppCheck: options?.enforceAppCheck ?? undefined,
-                consumeAppCheckToken: options?.consumeAppCheckToken ?? undefined,
             },
-            async (query) => {
+            async (request) => {
                 try {
                     const emmbedingModelName = process.env.EMBEDDING_MODEL ?? "gemini-embedding-001";
                     const startedTime = new Date();
@@ -71,8 +68,8 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                     if(Array.isArray(region)){
                         region = region[0];
                     }
-                    const path = query.data.path as string | undefined | null;
-                    const token = query.data.token as string | undefined | null;
+                    const path = request.data.path as string | undefined | null;
+                    const token = request.data.token as string | undefined | null;
                     if (!path || !token) {
                         throw Error("invalid-argument");
                     }
@@ -308,24 +305,27 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                     } catch (err) {
                         let error: { [key: string]: any };
                         switch (err) {
-                            case "token-expired":
+                            case "token-expired": {
                                 error = {
                                     status: 403,
                                     message: err,
                                 };
                                 break;
-                            case "invalid-token":
+                            }
+                            case "invalid-token": {
                                 error = {
                                     status: 403,
                                     message: err,
                                 };
                                 break;
-                            default:
+                            }
+                            default: {
                                 error = {
                                     status: 500,
                                     message: err,
                                 };
                                 break;
+                            }
                         }
                         const finishedTime = new Date();
                         const duration = (finishedTime.getTime() - startedTime.getTime()) / 1000.0;
@@ -405,32 +405,35 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                             plan: plan,
                         });
                         console.error(JSON.stringify(error));
-                        return error;
+                        // return error;
                     }
                 } catch (err) {
                     let error: { [key: string]: any };
                     switch (err) {
-                        case "invalid-argument":
+                        case "invalid-argument": {
                             error = {
                                 status: 404,
                                 message: err,
                             };
                             break;
-                        case "action-not-found":
+                        }
+                        case "action-not-found": {
                             error = {
                                 status: 404,
                                 message: err,
                             };
                             break;
-                        default:
+                        }
+                        default: {
                             error = {
                                 status: 404,
                                 message: err,
                             };
                             break;
+                        }
                     }
                     console.error(JSON.stringify(error));
-                    return error;
+                    // return error;
                 }
             }
         );
