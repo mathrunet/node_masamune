@@ -149,7 +149,7 @@ export interface Task {
 	"materials"?: {[key: string]: any};
 	"results"?: {[key: string]: any};
 	"assets"?: {[key: string]: any};
-    "search"?: string;
+    "search"?: string | admin.firestore.FieldValue;
 	"@search"?: admin.firestore.FieldValue;
 	"usage": number;
     "#startTime"?: ModelTimestamp;

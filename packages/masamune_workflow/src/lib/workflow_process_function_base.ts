@@ -1,7 +1,6 @@
 import * as functions from "firebase-functions/v2";
 import { FunctionsBase, HttpFunctionsOptions, ModelFieldValue } from "@mathrunet/masamune";
 import * as admin from "firebase-admin";
-import { getFirestore } from "firebase-admin/firestore";
 import { Action, Task, Usage, Plan, Subscription, Campaign } from "./interfaces";
 import { GoogleGenAI } from "@google/genai";
 
@@ -71,30 +70,40 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                     const path = request.data.path as string | undefined | null;
                     const token = request.data.token as string | undefined | null;
                     if (!path || !token) {
-                        throw Error("invalid-argument");
+                        throw new Error("invalid-argument");
                     }
-                    const firestore = getFirestore();
+                    // Auto-initialize Firebase Admin if not already initialized
+                    if (admin.apps.length === 0) {
+                        admin.initializeApp();
+                    }
+                    const firestore = admin.firestore();
                     const action = await firestore.doc(path).get();
                     if (!action.exists) {
-                        throw Error("action-not-found");
+                        throw new Error("action-not-found");
                     }
                     const actionData = action.data() as Action | undefined | null;
                     const organization = actionData?.organization;
                     const organizationId = organization?.id;
                     const command = actionData?.command;
                     if (!actionData || !organization || !organizationId || !command) {
-                        throw Error("action-not-found");
+                        throw new Error("action-not-found");
                     }
                     const subscriptions = await firestore.collection(`plugins/iap/subscription`).where("userId", "==", organizationId).get();
                     const subscription = subscriptions.size > 0 ? subscriptions.docs[0].data() as Subscription | undefined | null : null;
                     const plan = subscription?.productId ? (await firestore.doc(`plugins/workflow/plan/${subscription?.productId}`).get()).data() as Plan | undefined | null : null;
                     try {
                         const expiredTime = actionData.tokenExpiredTime;
-                        if (!expiredTime || startedTime.getTime() > expiredTime.getTime()) {
-                            throw Error("token-expired");
+                        // Handle both Date and Firestore Timestamp
+                        const expiredTimeMs = expiredTime
+                            ? (expiredTime instanceof admin.firestore.Timestamp
+                                ? expiredTime.toDate().getTime()
+                                : expiredTime.getTime())
+                            : 0;
+                        if (!expiredTime || startedTime.getTime() > expiredTimeMs) {
+                            throw new Error("token-expired");
                         }
                         if (token !== actionData.token) {
-                            throw Error("invalid-token");
+                            throw new Error("invalid-token");
                         }
                         await this.checkUsage({
                             firestore: firestore,
@@ -107,13 +116,13 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                         let usage = _kDefaultLoadPrice + _kDefaultSavePrice + _kDefaultRequetPrice + duration * _kDefaultCpuPrice + duration * _kDefaultMemoryPrice;
                         const task = await actionData.task?.get();
                         if (!task || !task.exists) {
-                            throw Error("task-not-found");
+                            throw new Error("task-not-found");
                         }
                         const taskData = task.data() as Task | undefined | null;
                         const actions = taskData?.actions;
                         const index = command.index;
                         if (!taskData || !actions) {
-                            throw Error("task-not-found");
+                            throw new Error("task-not-found");
                         }
                         // キャンセルされた場合
                         if(taskData.status === "canceled"){
@@ -213,7 +222,7 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                                         key: "updatedTime",
                                         date: finishedTime,
                                     }),
-                                    "search": result.search,
+                                    "search": result.search ? result.search : admin.firestore.FieldValue.delete(),
                                     "@search": search ? admin.firestore.FieldValue.vector(search) : admin.firestore.FieldValue.delete(),
                                 };
                                 await task.ref.set(
@@ -286,7 +295,7 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                                         key: "updatedTime",
                                         date: finishedTime,
                                     }),
-                                    "search": result.search,
+                                    "search": result.search ? result.search : admin.firestore.FieldValue.delete(),
                                     "@search": search ? admin.firestore.FieldValue.vector(search) : admin.firestore.FieldValue.delete(),
                                 };
                                 await task.ref.set(
@@ -302,9 +311,9 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                                 });
                             }
                         }
-                    } catch (err) {
+                    } catch (err: any) {
                         let error: { [key: string]: any };
-                        switch (err) {
+                        switch (err.message) {
                             case "token-expired": {
                                 error = {
                                     status: 403,
@@ -320,9 +329,11 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                                 break;
                             }
                             default: {
+                                // Convert Error objects to string for Firestore compatibility
+                                const errorMessage = err instanceof Error ? err.message : String(err);
                                 error = {
                                     status: 500,
-                                    message: err,
+                                    message: errorMessage,
                                 };
                                 break;
                             }
@@ -333,11 +344,11 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                         try {
                             const task = await actionData.task?.get();
                             if (!task || !task.exists) {
-                                throw Error("task-not-found");
+                                throw new Error("task-not-found");
                             }
                             const taskData = task.data() as Task | undefined | null;
                             if (!taskData) {
-                                throw Error("task-not-found");
+                                throw new Error("task-not-found");
                             }
                             const updatedTaskData: Task = {
                                 ...taskData,
@@ -407,9 +418,9 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                         console.error(JSON.stringify(error));
                         // return error;
                     }
-                } catch (err) {
+                } catch (err: any) {
                     let error: { [key: string]: any };
-                    switch (err) {
+                    switch (err.message) {
                         case "invalid-argument": {
                             error = {
                                 status: 404,
@@ -425,9 +436,11 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                             break;
                         }
                         default: {
+                            // Convert Error objects to string for Firestore compatibility
+                            const errorMessage = err instanceof Error ? err.message : String(err);
                             error = {
                                 status: 404,
-                                message: err,
+                                message: errorMessage,
                             };
                             break;
                         }
@@ -453,7 +466,7 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
         const month = (now.toDate().getMonth() + 1).toString().padStart(2, '0');
         const dateId = `${year}${month}`;
         const usageRef = firestore.doc(`plugins/workflow/organization/${organizationId}/usage/${dateId}`);
-        const campaignRef = firestore.doc(`plugins/workflow/campaign`);
+        const campaignRef = firestore.doc(`plugins/workflow/campaign/default`);
 
         const usageDoc = await usageRef.get();
         const campaignDoc = await campaignRef.get();
@@ -480,12 +493,12 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                 const latestPlan = data.latestPlan;
 
                 if (totalUsage >= planLimit) {
-                    throw new Error("limit-usage");
+                    throw "limit-usage";
                 }
                 
                 // バースト容量が0以下かつなら制限
                 if (bucketBalance <= 0 && latestPlan === plan?.["@uid"]) {
-                     throw new Error("limit-usage");
+                     throw "limit-usage";
                 }
             }
         }
