@@ -39,4 +39,15 @@ export const Functions = {
             func: require("./functions/collect_from_firebase_analytics"),
             options: options
         }),
+    /**
+     * A function for analyzing marketing data using AI (Gemini).
+     *
+     * AIを使用してマーケティングデータを解析するためのFunction。
+     */
+    analyzeMarketingData: (options: masamune.HttpFunctionsOptions = {}) =>
+        new masamune.FunctionsData({
+            id: "analyze_marketing_data",
+            func: require("./functions/analyze_marketing_data"),
+            options: options
+        }),
 } as const;
