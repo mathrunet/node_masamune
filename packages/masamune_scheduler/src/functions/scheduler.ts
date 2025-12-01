@@ -33,9 +33,9 @@ module.exports = (
         try {
             let error: any | null = null;
             const firestoreDatabaseIds = options.firestoreDatabaseIds ?? [""];
+            const collectionPath = process.env.SCHEDULER_COLLECTION_PATH ?? data["path"] ?? "schedule";
             for (const databaseId of firestoreDatabaseIds) {
                 try {
-                    const collectionPath = process.env.SCHEDULER_COLLECTION_PATH ?? data["path"] ?? "schedule";
                     const firestoreInstance = firestoreLoader(databaseId);
                     console.log(`Time: ${Date.now()} @${collectionPath}`);
                     const collection = await firestoreInstance.collection(collectionPath).where("_done", "==", false).where("_time", "<=", Date.now()).orderBy("_time", "asc").get();

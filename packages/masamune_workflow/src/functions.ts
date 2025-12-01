@@ -7,6 +7,12 @@ import * as masamune from "@mathrunet/masamune";
  */
 export const Functions = {
   /**
+   * A function to get asset data and return signed URL if necessary.
+   * 
+   * アセットデータを取得し、必要であれば署名付きURLを返すためのFunction。
+   */
+  asset: (options: masamune.HttpFunctionsOptions = {}) => new masamune.FunctionsData({ id: "asset", func: require("./functions/asset"), options: options }),
+  /**
    * A function for scheduling tasks.
    * 
    * TaskをスケジュールするためのFunction。
