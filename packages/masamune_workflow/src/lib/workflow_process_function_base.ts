@@ -317,23 +317,21 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                             case "token-expired": {
                                 error = {
                                     status: 403,
-                                    message: err,
+                                    message: err.message,
                                 };
                                 break;
                             }
                             case "invalid-token": {
                                 error = {
                                     status: 403,
-                                    message: err,
+                                    message: err.message,
                                 };
                                 break;
                             }
                             default: {
-                                // Convert Error objects to string for Firestore compatibility
-                                const errorMessage = err instanceof Error ? err.message : String(err);
                                 error = {
                                     status: 500,
-                                    message: errorMessage,
+                                    message: err.message,
                                 };
                                 break;
                             }
@@ -424,23 +422,21 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                         case "invalid-argument": {
                             error = {
                                 status: 404,
-                                message: err,
+                                message: err.message,
                             };
                             break;
                         }
                         case "action-not-found": {
                             error = {
                                 status: 404,
-                                message: err,
+                                message: err.message,
                             };
                             break;
                         }
                         default: {
-                            // Convert Error objects to string for Firestore compatibility
-                            const errorMessage = err instanceof Error ? err.message : String(err);
                             error = {
                                 status: 404,
-                                message: errorMessage,
+                                message: err.message,
                             };
                             break;
                         }
