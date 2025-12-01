@@ -1,6 +1,6 @@
 import * as functions from "firebase-functions/v2";
 import { HttpFunctionsOptions } from "@mathrunet/masamune";
-import { Action, WorkflowProcessFunctionBase, Project } from "@mathrunet/masamune_workflow";
+import { Action, WorkflowProcessFunctionBase, Project, WorkflowContext } from "@mathrunet/masamune_workflow";
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
@@ -22,14 +22,15 @@ export class CollectFromAppStore extends WorkflowProcessFunctionBase {
     /**
      * The process of the function.
      *
-     * @param action
-     * The action of the function.
+     * @param context
+     * The context of the function.
      *
      * @returns
      * The action of the function.
      */
-    async process(action: Action): Promise<Action> {
+    async process(context: WorkflowContext): Promise<Action> {
         // 1. action.projectからProjectデータを取得
+        const action = context.action;
         const project = await action.project?.get();
         const projectData = project?.data() as Project | undefined;
         const issuerId = projectData?.appstore_issuer_id;

@@ -43,7 +43,7 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
      * 
      * 処理の戻り値。
      */
-    abstract process(action: Action): Promise<Action>;
+    abstract process(context: WorkflowContext): Promise<Action>;
 
     abstract id: string;
     data: { [key: string]: any } = {};
@@ -110,10 +110,6 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                             organizationId: organizationId,
                             plan: plan,
                         });
-                        const result = await this.process(actionData);
-                        const finishedTime = new Date();
-                        const duration = (finishedTime.getTime() - startedTime.getTime()) / 1000.0;
-                        let usage = _kDefaultLoadPrice + _kDefaultSavePrice + _kDefaultRequetPrice + duration * _kDefaultCpuPrice + duration * _kDefaultMemoryPrice;
                         const task = await actionData.task?.get();
                         if (!task || !task.exists) {
                             throw new Error("task-not-found");
@@ -124,6 +120,14 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                         if (!taskData || !actions) {
                             throw new Error("task-not-found");
                         }
+                        const context: WorkflowContext = {
+                            action: actionData,
+                            task: taskData,
+                        };
+                        const result = await this.process(context);
+                        const finishedTime = new Date();
+                        const duration = (finishedTime.getTime() - startedTime.getTime()) / 1000.0;
+                        let usage = _kDefaultLoadPrice + _kDefaultSavePrice + _kDefaultRequetPrice + duration * _kDefaultCpuPrice + duration * _kDefaultMemoryPrice;
                         // キャンセルされた場合
                         if(taskData.status === "canceled"){
                             const updatedActionData: Action = {
@@ -313,25 +317,29 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                         }
                     } catch (err: any) {
                         let error: { [key: string]: any };
-                        switch (err.message) {
+                        // Ensure error message is a plain string for Firestore serialization
+                        const errorMessage = typeof err?.message === "string"
+                            ? err.message
+                            : (err?.details || err?.toString?.() || "Unknown error");
+                        switch (errorMessage) {
                             case "token-expired": {
                                 error = {
                                     status: 403,
-                                    message: err.message,
+                                    message: errorMessage,
                                 };
                                 break;
                             }
                             case "invalid-token": {
                                 error = {
                                     status: 403,
-                                    message: err.message,
+                                    message: errorMessage,
                                 };
                                 break;
                             }
                             default: {
                                 error = {
                                     status: 500,
-                                    message: err.message,
+                                    message: errorMessage,
                                 };
                                 break;
                             }
@@ -418,25 +426,29 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                     }
                 } catch (err: any) {
                     let error: { [key: string]: any };
-                    switch (err.message) {
+                        // Ensure error message is a plain string for Firestore serialization
+                    const errorMessage = typeof err?.message === "string"
+                        ? err.message
+                        : (err?.details || err?.toString?.() || "Unknown error");
+                    switch (errorMessage) {
                         case "invalid-argument": {
                             error = {
                                 status: 404,
-                                message: err.message,
+                                message: errorMessage,
                             };
                             break;
                         }
                         case "action-not-found": {
                             error = {
                                 status: 404,
-                                message: err.message,
+                                message: errorMessage,
                             };
                             break;
                         }
                         default: {
                             error = {
                                 status: 404,
-                                message: err.message,
+                                message: errorMessage,
                             };
                             break;
                         }
@@ -611,5 +623,12 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
     }
 }
 
-
-
+/**
+ * Workflow context.
+ * 
+ * ワークフローのコンテキスト。
+ */
+export interface WorkflowContext {
+    action: Action;
+    task: Task;
+}
