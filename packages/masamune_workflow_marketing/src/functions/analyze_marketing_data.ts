@@ -10,6 +10,15 @@ import {
 } from "../models";
 
 /**
+ * Result of AI generation including token usage.
+ */
+interface GenerationResult<T> {
+    data: T;
+    inputTokens: number;
+    outputTokens: number;
+}
+
+/**
  * Combined marketing data for analysis.
  */
 interface CombinedData {
@@ -64,6 +73,8 @@ export class AnalyzeMarketingData extends WorkflowProcessFunctionBase {
         const projectId = process.env.GCLOUD_PROJECT || process.env.GOOGLE_CLOUD_PROJECT || process.env.GCP_PROJECT_ID;
         const region = process.env.GCLOUD_REGION || "us-central1";
         const modelName = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+        const inputPrice = process.env.MODEL_INPUT_PRICE || 0.0000003;
+        const outputPrice = process.env.MODEL_OUTPUT_PRICE || 0.0000025;
 
         if (!projectId) {
             console.error("AnalyzeMarketingData: No GCP project ID found");
@@ -97,8 +108,12 @@ export class AnalyzeMarketingData extends WorkflowProcessFunctionBase {
                 ...(appStore?.recentReviews || []),
             ];
 
+            // 価格を数値に変換（環境変数は文字列の可能性があるため）
+            const inputPriceNum = Number(inputPrice);
+            const outputPriceNum = Number(outputPrice);
+
             // 5. 各解析を並列実行
-            const [overallAnalysis, improvementSuggestions, trendAnalysis, reviewAnalysis] =
+            const [overallResult, suggestionsResult, trendResult, reviewResult] =
                 await Promise.all([
                     this.generateOverallAnalysis(genai, combinedData, modelName),
                     this.generateImprovementSuggestions(genai, combinedData, modelName),
@@ -106,21 +121,42 @@ export class AnalyzeMarketingData extends WorkflowProcessFunctionBase {
                     reviews.length > 0
                         ? this.analyzeReviews(genai, reviews, modelName)
                         : Promise.resolve({
-                            sentiment: { positive: 0, neutral: 0, negative: 0 },
-                            commonThemes: [],
-                            actionableInsights: [],
+                            data: {
+                                sentiment: { positive: 0, neutral: 0, negative: 0 },
+                                commonThemes: [],
+                                actionableInsights: [],
+                            },
+                            inputTokens: 0,
+                            outputTokens: 0,
                         }),
                 ]);
 
-            // 6. 結果を marketingAnalytics キーで返却
+            // 6. トークン使用量を集計してコストを計算
+            const totalInputTokens =
+                overallResult.inputTokens +
+                suggestionsResult.inputTokens +
+                trendResult.inputTokens +
+                reviewResult.inputTokens;
+
+            const totalOutputTokens =
+                overallResult.outputTokens +
+                suggestionsResult.outputTokens +
+                trendResult.outputTokens +
+                reviewResult.outputTokens;
+
+            // コスト計算（1トークンあたりのドル × トークン数）
+            const aiCost = totalInputTokens * inputPriceNum + totalOutputTokens * outputPriceNum;
+
+            // 7. 結果を marketingAnalytics キーで返却
             return {
                 ...action,
+                usage: (action.usage ?? 0) + aiCost,
                 results: {
                     marketingAnalytics: {
-                        overallAnalysis,
-                        improvementSuggestions,
-                        trendAnalysis,
-                        reviewAnalysis,
+                        overallAnalysis: overallResult.data,
+                        improvementSuggestions: suggestionsResult.data,
+                        trendAnalysis: trendResult.data,
+                        reviewAnalysis: reviewResult.data,
                         generatedAt: new Date().toISOString(),
                     },
                 }
@@ -145,7 +181,7 @@ export class AnalyzeMarketingData extends WorkflowProcessFunctionBase {
         genai: GoogleGenAI,
         data: CombinedData,
         modelName: string
-    ): Promise<OverallAnalysis> {
+    ): Promise<GenerationResult<OverallAnalysis>> {
         try {
             const prompt = this.buildOverallAnalysisPrompt(data);
             const response = await genai.models.generateContent({
@@ -187,14 +223,25 @@ export class AnalyzeMarketingData extends WorkflowProcessFunctionBase {
                 throw new Error("No response from AI model");
             }
 
-            return JSON.parse(text) as OverallAnalysis;
+            const inputTokens = response.usageMetadata?.promptTokenCount ?? 0;
+            const outputTokens = response.usageMetadata?.candidatesTokenCount ?? 0;
+
+            return {
+                data: JSON.parse(text) as OverallAnalysis,
+                inputTokens,
+                outputTokens,
+            };
         } catch (err: any) {
             console.error("Failed to generate overall analysis:", err.message);
             return {
-                summary: "",
-                highlights: [],
-                concerns: [],
-                keyMetrics: [],
+                data: {
+                    summary: "",
+                    highlights: [],
+                    concerns: [],
+                    keyMetrics: [],
+                },
+                inputTokens: 0,
+                outputTokens: 0,
             };
         }
     }
@@ -206,7 +253,7 @@ export class AnalyzeMarketingData extends WorkflowProcessFunctionBase {
         genai: GoogleGenAI,
         data: CombinedData,
         modelName: string
-    ): Promise<ImprovementSuggestion[]> {
+    ): Promise<GenerationResult<ImprovementSuggestion[]>> {
         try {
             const prompt = this.buildImprovementSuggestionsPrompt(data);
             const response = await genai.models.generateContent({
@@ -236,10 +283,21 @@ export class AnalyzeMarketingData extends WorkflowProcessFunctionBase {
                 throw new Error("No response from AI model");
             }
 
-            return JSON.parse(text) as ImprovementSuggestion[];
+            const inputTokens = response.usageMetadata?.promptTokenCount ?? 0;
+            const outputTokens = response.usageMetadata?.candidatesTokenCount ?? 0;
+
+            return {
+                data: JSON.parse(text) as ImprovementSuggestion[],
+                inputTokens,
+                outputTokens,
+            };
         } catch (err: any) {
             console.error("Failed to generate improvement suggestions:", err.message);
-            return [];
+            return {
+                data: [],
+                inputTokens: 0,
+                outputTokens: 0,
+            };
         }
     }
 
@@ -250,7 +308,7 @@ export class AnalyzeMarketingData extends WorkflowProcessFunctionBase {
         genai: GoogleGenAI,
         data: CombinedData,
         modelName: string
-    ): Promise<TrendAnalysis> {
+    ): Promise<GenerationResult<TrendAnalysis>> {
         try {
             const prompt = this.buildTrendAnalysisPrompt(data);
             const response = await genai.models.generateContent({
@@ -279,14 +337,25 @@ export class AnalyzeMarketingData extends WorkflowProcessFunctionBase {
                 throw new Error("No response from AI model");
             }
 
-            return JSON.parse(text) as TrendAnalysis;
+            const inputTokens = response.usageMetadata?.promptTokenCount ?? 0;
+            const outputTokens = response.usageMetadata?.candidatesTokenCount ?? 0;
+
+            return {
+                data: JSON.parse(text) as TrendAnalysis,
+                inputTokens,
+                outputTokens,
+            };
         } catch (err: any) {
             console.error("Failed to generate trend analysis:", err.message);
             return {
-                userGrowthTrend: "",
-                engagementTrend: "",
-                ratingTrend: "",
-                predictions: [],
+                data: {
+                    userGrowthTrend: "",
+                    engagementTrend: "",
+                    ratingTrend: "",
+                    predictions: [],
+                },
+                inputTokens: 0,
+                outputTokens: 0,
             };
         }
     }
@@ -298,7 +367,7 @@ export class AnalyzeMarketingData extends WorkflowProcessFunctionBase {
         genai: GoogleGenAI,
         reviews: Review[],
         modelName: string
-    ): Promise<ReviewAnalysis> {
+    ): Promise<GenerationResult<ReviewAnalysis>> {
         try {
             const prompt = this.buildReviewAnalysisPrompt(reviews);
             const response = await genai.models.generateContent({
@@ -336,13 +405,24 @@ export class AnalyzeMarketingData extends WorkflowProcessFunctionBase {
                 throw new Error("No response from AI model");
             }
 
-            return JSON.parse(text) as ReviewAnalysis;
+            const inputTokens = response.usageMetadata?.promptTokenCount ?? 0;
+            const outputTokens = response.usageMetadata?.candidatesTokenCount ?? 0;
+
+            return {
+                data: JSON.parse(text) as ReviewAnalysis,
+                inputTokens,
+                outputTokens,
+            };
         } catch (err: any) {
             console.error("Failed to analyze reviews:", err.message);
             return {
-                sentiment: { positive: 0, neutral: 0, negative: 0 },
-                commonThemes: [],
-                actionableInsights: [],
+                data: {
+                    sentiment: { positive: 0, neutral: 0, negative: 0 },
+                    commonThemes: [],
+                    actionableInsights: [],
+                },
+                inputTokens: 0,
+                outputTokens: 0,
             };
         }
     }
