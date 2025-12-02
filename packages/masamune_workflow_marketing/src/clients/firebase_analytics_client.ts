@@ -12,116 +12,36 @@
 
 import { BetaAnalyticsDataClient } from "@google-analytics/data";
 import * as fs from "fs";
+import {
+    DateRange,
+    FirebaseAnalyticsClientConfig,
+    AgeGroupDistribution,
+    GenderDistribution,
+    CountryDistribution,
+    LanguageDistribution,
+    DeviceTypeDistribution,
+    OsVersionDistribution,
+    ActiveUsersMetrics,
+    UserDemographics,
+    DeviceInfo,
+    EngagementMetrics,
+} from "../models";
 
-/**
- * Date range for data collection.
- */
-export interface DateRange {
-    startDate: string; // YYYY-MM-DD
-    endDate: string;   // YYYY-MM-DD
-}
-
-/**
- * Configuration for Firebase Analytics Client.
- */
-export interface FirebaseAnalyticsClientConfig {
-    /** Path to service account JSON file */
-    serviceAccountPath: string;
-    /** GA4 property ID (e.g., "properties/123456789") */
-    propertyId: string;
-}
-
-/**
- * Age group distribution.
- */
-export interface AgeGroupDistribution {
-    "18-24"?: number;
-    "25-34"?: number;
-    "35-44"?: number;
-    "45-54"?: number;
-    "55-64"?: number;
-    "65+"?: number;
-    "unknown"?: number;
-    [key: string]: number | undefined;
-}
-
-/**
- * Gender distribution.
- */
-export interface GenderDistribution {
-    male?: number;
-    female?: number;
-    unknown?: number;
-}
-
-/**
- * Country distribution (country code -> count).
- */
-export interface CountryDistribution {
-    [countryCode: string]: number;
-}
-
-/**
- * Language distribution (language code -> count).
- */
-export interface LanguageDistribution {
-    [languageCode: string]: number;
-}
-
-/**
- * Device type distribution.
- */
-export interface DeviceTypeDistribution {
-    phone?: number;
-    tablet?: number;
-    desktop?: number;
-    other?: number;
-}
-
-/**
- * OS version distribution.
- */
-export interface OsVersionDistribution {
-    [version: string]: number;
-}
-
-/**
- * Active users metrics.
- */
-export interface ActiveUsersMetrics {
-    dau: number;
-    wau: number;
-    mau: number;
-    newUsers: number;
-    returningUsers: number;
-}
-
-/**
- * User demographics data.
- */
-export interface UserDemographics {
-    ageGroups: AgeGroupDistribution;
-    genderDistribution: GenderDistribution;
-    countryDistribution: CountryDistribution;
-    languageDistribution: LanguageDistribution;
-}
-
-/**
- * Device information data.
- */
-export interface DeviceInfo {
-    deviceTypes: DeviceTypeDistribution;
-    osVersions: OsVersionDistribution;
-}
-
-/**
- * Engagement metrics.
- */
-export interface EngagementMetrics {
-    averageSessionDuration: number;
-    sessionsPerUser: number;
-    screenPageViews: number;
-}
+// Re-export types for backward compatibility
+export {
+    DateRange,
+    FirebaseAnalyticsClientConfig,
+    AgeGroupDistribution,
+    GenderDistribution,
+    CountryDistribution,
+    LanguageDistribution,
+    DeviceTypeDistribution,
+    OsVersionDistribution,
+    ActiveUsersMetrics,
+    UserDemographics,
+    DeviceInfo,
+    EngagementMetrics,
+};
 
 /**
  * Firebase Analytics Data API Client.

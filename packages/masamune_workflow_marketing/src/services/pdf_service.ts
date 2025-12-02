@@ -10,108 +10,14 @@
 import PDFDocument from "pdfkit";
 import * as path from "path";
 import * as fs from "fs";
-import { GeneratedCharts } from "./chart_service";
+import { PDFInputData, PDFGenerationOptions, GeneratedCharts } from "../models";
+
+// Re-export types for backward compatibility
+export { PDFInputData, PDFGenerationOptions, GeneratedCharts };
 
 // Font names for registration
 const FONT_REGULAR = "NotoSansJP";
 const FONT_BOLD = "NotoSansJP-Bold";
-
-/**
- * PDF generation input data from task.results.
- */
-export interface PDFInputData {
-    googlePlayConsole?: {
-        packageName?: string;
-        averageRating?: number;
-        totalRatings?: number;
-        ratingDistribution?: {
-            star1: number;
-            star2: number;
-            star3: number;
-            star4: number;
-            star5: number;
-        };
-        [key: string]: any;
-    };
-    appStore?: {
-        appId?: string;
-        appName?: string;
-        averageRating?: number;
-        totalRatings?: number;
-        ratingDistribution?: {
-            star1: number;
-            star2: number;
-            star3: number;
-            star4: number;
-            star5: number;
-        };
-        [key: string]: any;
-    };
-    firebaseAnalytics?: {
-        dau?: number;
-        wau?: number;
-        mau?: number;
-        newUsers?: number;
-        totalUsers?: number;
-        averageSessionDuration?: number;
-        sessionsPerUser?: number;
-        demographics?: {
-            ageGroups?: { [key: string]: number };
-            countryDistribution?: { [key: string]: number };
-        };
-        [key: string]: any;
-    };
-    marketingAnalytics?: {
-        overallAnalysis?: {
-            summary?: string;
-            highlights?: string[];
-            concerns?: string[];
-            keyMetrics?: Array<{
-                metric: string;
-                value: string;
-                trend: "up" | "down" | "stable";
-            }>;
-        };
-        improvementSuggestions?: Array<{
-            priority: "high" | "medium" | "low";
-            category: string;
-            title: string;
-            description: string;
-            expectedImpact?: string;
-        }>;
-        trendAnalysis?: {
-            userGrowthTrend?: string;
-            engagementTrend?: string;
-            ratingTrend?: string;
-            predictions?: string[];
-        };
-        reviewAnalysis?: {
-            sentiment?: {
-                positive: number;
-                neutral: number;
-                negative: number;
-            };
-            commonThemes?: string[];
-            actionableInsights?: string[];
-        };
-        generatedAt?: string;
-        [key: string]: any;
-    };
-}
-
-/**
- * PDF generation options.
- */
-export interface PDFGenerationOptions {
-    data: PDFInputData;
-    charts?: GeneratedCharts;
-    appName?: string;
-    reportType?: "daily" | "weekly" | "monthly";
-    dateRange?: {
-        startDate: string;
-        endDate: string;
-    };
-}
 
 /**
  * PDF Service for generating marketing reports.

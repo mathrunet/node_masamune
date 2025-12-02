@@ -1,39 +1,13 @@
 /**
- * Date range for data collection.
- * データ収集の日付範囲。
+ * Google Play data types.
+ *
+ * Google Playデータ型。
  */
-export interface DateRange {
-    startDate: string; // YYYY-MM-DD
-    endDate: string;   // YYYY-MM-DD
-}
 
-/**
- * Rating distribution across star levels.
- * 星評価の分布。
- */
-export interface RatingDistribution {
-    star1: number;
-    star2: number;
-    star3: number;
-    star4: number;
-    star5: number;
-}
+import { DateRange, RatingDistribution, Review } from "./common";
 
-/**
- * User review data.
- * ユーザーレビューデータ。
- */
-export interface Review {
-    id: string;
-    rating: number;
-    title?: string;
-    text: string;
-    authorName?: string;
-    date: string;
-    language?: string;
-    replyText?: string;
-    replyDate?: string;
-}
+// Re-export common types for backward compatibility
+export { DateRange, RatingDistribution, Review };
 
 /**
  * Google Play metrics data.

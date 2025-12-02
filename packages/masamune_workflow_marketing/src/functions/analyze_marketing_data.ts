@@ -1,54 +1,13 @@
 import { HttpFunctionsOptions } from "@mathrunet/masamune";
 import { Action, WorkflowProcessFunctionBase, Project, WorkflowContext } from "@mathrunet/masamune_workflow";
 import { GoogleGenAI, Type } from "@google/genai";
-
-/**
- * Overall analysis result.
- */
-interface OverallAnalysis {
-    summary: string;
-    highlights: string[];
-    concerns: string[];
-    keyMetrics: {
-        metric: string;
-        value: string;
-        trend: "up" | "down" | "stable";
-    }[];
-}
-
-/**
- * Improvement suggestion.
- */
-interface ImprovementSuggestion {
-    title: string;
-    description: string;
-    priority: "high" | "medium" | "low";
-    category: string;
-    expectedImpact?: string;
-}
-
-/**
- * Trend analysis result.
- */
-interface TrendAnalysis {
-    userGrowthTrend: string;
-    engagementTrend: string;
-    ratingTrend: string;
-    predictions: string[];
-}
-
-/**
- * Review analysis result.
- */
-interface ReviewAnalysis {
-    sentiment: {
-        positive: number;
-        neutral: number;
-        negative: number;
-    };
-    commonThemes: string[];
-    actionableInsights: string[];
-}
+import {
+    OverallAnalysis,
+    ImprovementSuggestion,
+    TrendAnalysis,
+    ReviewAnalysis,
+    Review,
+} from "../models";
 
 /**
  * Combined marketing data for analysis.
@@ -57,14 +16,6 @@ interface CombinedData {
     googlePlayConsole?: { [key: string]: any };
     appStore?: { [key: string]: any };
     firebaseAnalytics?: { [key: string]: any };
-}
-
-/**
- * Review data structure.
- */
-interface Review {
-    rating: number;
-    text: string;
 }
 
 /**

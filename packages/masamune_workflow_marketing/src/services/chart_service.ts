@@ -7,74 +7,32 @@
  * @see https://quickchart.io/documentation/
  */
 
+import {
+    RatingDistribution,
+    DemographicsChartData,
+    CountryDistributionChartData,
+    EngagementChartData,
+    SentimentChartData,
+    GeneratedCharts,
+    ChartOptions,
+    ChartInputData,
+} from "../models";
+
+// Re-export types for backward compatibility
+export {
+    RatingDistribution,
+    DemographicsChartData,
+    EngagementChartData,
+    SentimentChartData,
+    GeneratedCharts,
+    ChartOptions,
+    ChartInputData,
+};
+
+// Local alias for backward compatibility
+export type CountryDistributionData = CountryDistributionChartData;
+
 const QUICKCHART_API_URL = "https://quickchart.io/chart";
-
-/**
- * Rating distribution data.
- */
-export interface RatingDistribution {
-    star1: number;
-    star2: number;
-    star3: number;
-    star4: number;
-    star5: number;
-}
-
-/**
- * Demographics chart data.
- */
-export interface DemographicsChartData {
-    labels: string[];
-    values: number[];
-}
-
-/**
- * Country distribution chart data.
- */
-export interface CountryDistributionData {
-    labels: string[];
-    values: number[];
-}
-
-/**
- * Engagement chart data.
- */
-export interface EngagementChartData {
-    dau: number;
-    wau: number;
-    mau: number;
-}
-
-/**
- * Sentiment chart data.
- */
-export interface SentimentChartData {
-    positive: number;
-    neutral: number;
-    negative: number;
-}
-
-/**
- * Generated charts collection.
- */
-export interface GeneratedCharts {
-    ratingDistribution?: Buffer;
-    demographics?: Buffer;
-    countryDistribution?: Buffer;
-    engagement?: Buffer;
-    sentiment?: Buffer;
-    retentionRatio?: Buffer;
-}
-
-/**
- * Chart generation options.
- */
-export interface ChartOptions {
-    width?: number;
-    height?: number;
-    backgroundColor?: string;
-    format?: "png" | "webp" | "svg";
-}
 
 const DEFAULT_OPTIONS: ChartOptions = {
     width: 400,
@@ -82,36 +40,6 @@ const DEFAULT_OPTIONS: ChartOptions = {
     backgroundColor: "#ffffff",
     format: "png",
 };
-
-/**
- * Input data for chart generation from task.results.
- */
-export interface ChartInputData {
-    googlePlayConsole?: {
-        ratingDistribution?: RatingDistribution;
-        [key: string]: any;
-    };
-    appStore?: {
-        ratingDistribution?: RatingDistribution;
-        [key: string]: any;
-    };
-    firebaseAnalytics?: {
-        dau?: number;
-        wau?: number;
-        mau?: number;
-        demographics?: {
-            ageGroups?: { [key: string]: number };
-            countryDistribution?: { [key: string]: number };
-        };
-        [key: string]: any;
-    };
-    marketingAnalytics?: {
-        reviewAnalysis?: {
-            sentiment?: SentimentChartData;
-        };
-        [key: string]: any;
-    };
-}
 
 /**
  * Chart Service using QuickChart API.
