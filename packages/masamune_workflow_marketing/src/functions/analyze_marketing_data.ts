@@ -7,6 +7,8 @@ import {
     TrendAnalysis,
     ReviewAnalysis,
     Review,
+    GitHubRepositoryAnalysis,
+    GitHubImprovementsAnalysis,
 } from "../models";
 
 /**
@@ -25,6 +27,7 @@ interface CombinedData {
     googlePlayConsole?: { [key: string]: any };
     appStore?: { [key: string]: any };
     firebaseAnalytics?: { [key: string]: any };
+    githubRepository?: GitHubRepositoryAnalysis;
 }
 
 /**
@@ -57,6 +60,7 @@ export class AnalyzeMarketingData extends WorkflowProcessFunctionBase {
         const googlePlayConsole = task.results?.googlePlayConsole as { [key: string]: any } | undefined;
         const appStore = task.results?.appStore as { [key: string]: any } | undefined;
         const firebaseAnalytics = task.results?.firebaseAnalytics as { [key: string]: any } | undefined;
+        const githubRepository = task.results?.githubRepository as GitHubRepositoryAnalysis | undefined;
 
         // 2. いずれのデータも無ければ空データを返却
         if (!googlePlayConsole && !appStore && !firebaseAnalytics) {
@@ -100,6 +104,7 @@ export class AnalyzeMarketingData extends WorkflowProcessFunctionBase {
                 googlePlayConsole,
                 appStore,
                 firebaseAnalytics,
+                githubRepository,
             };
 
             // レビューデータを抽出
@@ -113,7 +118,7 @@ export class AnalyzeMarketingData extends WorkflowProcessFunctionBase {
             const outputPriceNum = Number(outputPrice);
 
             // 5. 各解析を並列実行
-            const [overallResult, suggestionsResult, trendResult, reviewResult] =
+            const [overallResult, suggestionsResult, trendResult, reviewResult, githubImprovementsResult] =
                 await Promise.all([
                     this.generateOverallAnalysis(genai, combinedData, modelName),
                     this.generateImprovementSuggestions(genai, combinedData, modelName),
@@ -129,6 +134,10 @@ export class AnalyzeMarketingData extends WorkflowProcessFunctionBase {
                             inputTokens: 0,
                             outputTokens: 0,
                         }),
+                    // GitHub改善提案（GitHubデータがある場合のみ）
+                    githubRepository && !("error" in githubRepository)
+                        ? this.generateGitHubImprovements(genai, combinedData, modelName)
+                        : Promise.resolve(null),
                 ]);
 
             // 6. トークン使用量を集計してコストを計算
@@ -136,13 +145,15 @@ export class AnalyzeMarketingData extends WorkflowProcessFunctionBase {
                 overallResult.inputTokens +
                 suggestionsResult.inputTokens +
                 trendResult.inputTokens +
-                reviewResult.inputTokens;
+                reviewResult.inputTokens +
+                (githubImprovementsResult?.inputTokens ?? 0);
 
             const totalOutputTokens =
                 overallResult.outputTokens +
                 suggestionsResult.outputTokens +
                 trendResult.outputTokens +
-                reviewResult.outputTokens;
+                reviewResult.outputTokens +
+                (githubImprovementsResult?.outputTokens ?? 0);
 
             // コスト計算（1トークンあたりのドル × トークン数）
             const aiCost = totalInputTokens * inputPriceNum + totalOutputTokens * outputPriceNum;
@@ -159,6 +170,8 @@ export class AnalyzeMarketingData extends WorkflowProcessFunctionBase {
                         reviewAnalysis: reviewResult.data,
                         generatedAt: new Date().toISOString(),
                     },
+                    // GitHub改善提案（GitHubデータがある場合のみ）
+                    ...(githubImprovementsResult?.data ? { githubImprovements: githubImprovementsResult.data } : {}),
                 }
             };
         } catch (error: any) {
@@ -529,6 +542,175 @@ Analyze the reviews and provide:
 3. actionableInsights: List 3-5 specific, actionable insights based on the feedback
 
 Respond in Japanese.`;
+    }
+
+    /**
+     * Generate GitHub-aware improvement suggestions.
+     *
+     * GitHubリポジトリ分析に基づく改善提案を生成。
+     */
+    private async generateGitHubImprovements(
+        genai: GoogleGenAI,
+        data: CombinedData,
+        modelName: string
+    ): Promise<GenerationResult<GitHubImprovementsAnalysis>> {
+        try {
+            const prompt = this.buildGitHubImprovementsPrompt(data);
+            const response = await genai.models.generateContent({
+                model: modelName,
+                contents: prompt,
+                config: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: Type.OBJECT,
+                        properties: {
+                            improvementSummary: { type: Type.STRING },
+                            improvements: {
+                                type: Type.ARRAY,
+                                items: {
+                                    type: Type.OBJECT,
+                                    properties: {
+                                        title: { type: Type.STRING },
+                                        description: { type: Type.STRING },
+                                        priority: { type: Type.STRING },
+                                        category: { type: Type.STRING },
+                                        expectedImpact: { type: Type.STRING },
+                                        relatedFeature: { type: Type.STRING },
+                                        codeReferences: {
+                                            type: Type.ARRAY,
+                                            items: {
+                                                type: Type.OBJECT,
+                                                properties: {
+                                                    filePath: { type: Type.STRING },
+                                                    currentFunctionality: { type: Type.STRING },
+                                                    proposedChange: { type: Type.STRING },
+                                                    modificationType: { type: Type.STRING },
+                                                },
+                                                required: ["filePath", "currentFunctionality", "proposedChange", "modificationType"],
+                                            },
+                                        },
+                                    },
+                                    required: ["title", "description", "priority", "category", "expectedImpact", "codeReferences"],
+                                },
+                            },
+                        },
+                        required: ["improvementSummary", "improvements"],
+                    },
+                },
+            });
+
+            const text = response.text;
+            if (!text) {
+                throw new Error("No response from AI model");
+            }
+
+            const inputTokens = response.usageMetadata?.promptTokenCount ?? 0;
+            const outputTokens = response.usageMetadata?.candidatesTokenCount ?? 0;
+
+            const parsed = JSON.parse(text);
+            const githubRepo = data.githubRepository!;
+
+            return {
+                data: {
+                    repository: githubRepo.repository,
+                    framework: githubRepo.framework,
+                    improvements: parsed.improvements,
+                    improvementSummary: parsed.improvementSummary,
+                    generatedAt: new Date().toISOString(),
+                },
+                inputTokens,
+                outputTokens,
+            };
+        } catch (err: any) {
+            console.error("Failed to generate GitHub improvements:", err.message);
+            return {
+                data: {
+                    repository: data.githubRepository?.repository ?? "",
+                    framework: data.githubRepository?.framework ?? "",
+                    improvements: [],
+                    improvementSummary: "",
+                    generatedAt: new Date().toISOString(),
+                },
+                inputTokens: 0,
+                outputTokens: 0,
+            };
+        }
+    }
+
+    /**
+     * Build prompt for GitHub-aware improvements.
+     *
+     * GitHub対応改善提案用のプロンプトを生成。
+     */
+    private buildGitHubImprovementsPrompt(data: CombinedData): string {
+        const github = data.githubRepository!;
+
+        // フィーチャーをテキストに変換（最大15件に制限）
+        const featuresText = github.features
+            .slice(0, 15)
+            .map((f) => `### ${f.name}\n${f.description}\nFiles: ${f.relatedFiles.join(", ")}`)
+            .join("\n\n");
+
+        // 全てのファイルパスを収集
+        const allFilePaths = github.features
+            .slice(0, 15)
+            .flatMap((f) => f.relatedFiles)
+            .filter((v, i, a) => a.indexOf(v) === i) // 重複排除
+            .join("\n- ");
+
+        return `あなたはアプリ開発とマーケティング戦略の専門家です。以下のマーケティングデータとコードベース分析に基づいて、具体的なコード改善提案を行ってください。
+
+## アプリケーション情報
+- Repository: ${github.repository}
+- Framework: ${github.framework}
+- Platforms: ${github.platforms.join(", ")}
+
+## アプリケーション概要
+${github.overview}
+
+## アーキテクチャ
+${github.architecture}
+
+## 機能とファイル
+${featuresText}
+
+## 利用可能なファイルパス
+以下のファイルパスのみをcodeReferencesで使用してください：
+- ${allFilePaths}
+
+## マーケティングデータ
+
+### Google Play Console
+${data.googlePlayConsole ? JSON.stringify(data.googlePlayConsole, null, 2) : "データなし"}
+
+### App Store
+${data.appStore ? JSON.stringify(data.appStore, null, 2) : "データなし"}
+
+### Firebase Analytics
+${data.firebaseAnalytics ? JSON.stringify(data.firebaseAnalytics, null, 2) : "データなし"}
+
+## 指示
+マーケティングデータとコードベース分析に基づいて、5-8個の具体的な改善提案を行ってください。
+
+各提案には必ず以下を含めてください：
+1. **title**: 簡潔なタイトル（50文字以内）
+2. **description**: 詳細な説明（100-200文字）
+3. **priority**: "high", "medium", "low" のいずれか
+4. **category**: "user_acquisition", "retention", "engagement", "monetization", "quality", "development" のいずれか
+5. **expectedImpact**: 期待される効果（具体的な数値目標があれば含める）
+6. **relatedFeature**: 上記の機能名から関連するものを選択
+7. **codeReferences**: 具体的なファイル修正の配列
+   - **filePath**: 上記「利用可能なファイルパス」から選択した実際のパス
+   - **currentFunctionality**: 現在のファイル/機能の説明
+   - **proposedChange**: 提案する具体的な変更内容
+   - **modificationType**: "add"（新規追加）, "modify"（修正）, "refactor"（リファクタリング）, "optimize"（最適化）のいずれか
+
+重要：
+- codeReferencesのfilePathは必ず「利用可能なファイルパス」リストから選択してください
+- マーケティング指標（ユーザー獲得、リテンション、エンゲージメント、収益化）を改善するコード変更に焦点を当ててください
+- 各改善提案は具体的で実行可能なものにしてください
+
+日本語で回答してください。`;
     }
 }
 

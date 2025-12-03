@@ -19,5 +19,6 @@
     "setupFiles": [
         "<rootDir>/test/setup.ts"
     ],
+    "global_teardown": "<rootDir>/test/global_teardown.ts",
     "testTimeout": 120000
 }

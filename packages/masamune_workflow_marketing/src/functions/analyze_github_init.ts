@@ -150,6 +150,8 @@ export class AnalyzeGitHubInit extends WorkflowProcessFunctionBase {
 
             // 9. Update task.actions dynamically
             const taskRef = action.task;
+            console.log(`AnalyzeGitHubInit: action.task =`, taskRef ? taskRef.path : "undefined");
+            console.log(`AnalyzeGitHubInit: task.actions length =`, task.actions?.length);
             if (taskRef) {
                 await this.updateTaskActions(
                     taskRef,
@@ -160,6 +162,10 @@ export class AnalyzeGitHubInit extends WorkflowProcessFunctionBase {
                     githubRepositoryPath
                 );
                 console.log(`AnalyzeGitHubInit: Task actions updated`);
+                // Verify update
+                const updatedDoc = await taskRef.get();
+                const updatedActions = updatedDoc.data()?.actions || [];
+                console.log(`AnalyzeGitHubInit: Verified actions count =`, updatedActions.length);
             }
 
             // 10. Return success

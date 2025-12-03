@@ -6,7 +6,8 @@
 
 import { RatingDistribution } from "./common";
 import { GeneratedCharts } from "./chart_data";
-import { OverallAnalysis, ImprovementSuggestion, TrendAnalysis, ReviewAnalysis } from "./marketing_analysis_data";
+import { OverallAnalysis, ImprovementSuggestion, TrendAnalysis, ReviewAnalysis, GitHubImprovementsAnalysis } from "./marketing_analysis_data";
+import { GitHubRepositoryAnalysis } from "./github_analysis_data";
 
 /**
  * Input data for PDF generation.
@@ -51,6 +52,10 @@ export interface PDFInputData {
         generatedAt?: string;
         [key: string]: any;
     };
+    /** GitHub repository analysis data */
+    githubRepository?: GitHubRepositoryAnalysis | { [key: string]: any };
+    /** GitHub-aware improvements */
+    githubImprovements?: GitHubImprovementsAnalysis | { [key: string]: any };
 }
 
 /**

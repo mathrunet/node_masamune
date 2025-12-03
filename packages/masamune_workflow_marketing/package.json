@@ -8,6 +8,7 @@
     "build": "tsc",
     "prepare": "npm run build",
     "test": "NODE_OPTIONS='--experimental-vm-modules' jest",
+    "cleanup": "npx ts-node scripts/cleanup_test_data.ts",
     "postversion": "npm run changelog",
     "changelog": "conventional-changelog -p eslint -i CHANGELOG.md -s -r 0 && git add CHANGELOG.md && git commit -m 'chore(release): publish package'",
     "publish": "npm publish",

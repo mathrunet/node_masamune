@@ -86,3 +86,59 @@ export interface MarketingAnalyticsData {
     reviewAnalysis?: ReviewAnalysis;
     generatedAt: string;
 }
+
+/**
+ * Code reference for a specific improvement.
+ *
+ * 特定の改善のためのコード参照。
+ */
+export interface CodeReference {
+    /** File path in the repository */
+    filePath: string;
+    /** Current functionality description */
+    currentFunctionality: string;
+    /** Proposed change description */
+    proposedChange: string;
+    /** Type of modification needed */
+    modificationType: "add" | "modify" | "refactor" | "optimize";
+}
+
+/**
+ * GitHub-aware improvement suggestion with code references.
+ *
+ * コード参照付きのGitHub対応改善提案。
+ */
+export interface GitHubImprovementSuggestion {
+    /** Brief title of the improvement */
+    title: string;
+    /** Detailed description of what to improve */
+    description: string;
+    /** Priority level */
+    priority: "high" | "medium" | "low";
+    /** Category of improvement */
+    category: "user_acquisition" | "retention" | "engagement" | "monetization" | "quality" | "development";
+    /** Expected impact if implemented */
+    expectedImpact: string;
+    /** Code-specific references */
+    codeReferences: CodeReference[];
+    /** Related feature from GitHub analysis */
+    relatedFeature?: string;
+}
+
+/**
+ * GitHub-based improvements analysis result.
+ *
+ * GitHubベースの改善分析結果。
+ */
+export interface GitHubImprovementsAnalysis {
+    /** Repository analyzed */
+    repository: string;
+    /** Framework detected */
+    framework: string;
+    /** List of improvements with code references */
+    improvements: GitHubImprovementSuggestion[];
+    /** Summary of improvement areas */
+    improvementSummary: string;
+    /** When analysis was generated */
+    generatedAt: string;
+}

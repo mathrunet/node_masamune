@@ -35,6 +35,8 @@ export class GenerateMarketingPdf extends WorkflowProcessFunctionBase {
         const appStore = task.results?.appStore as { [key: string]: any } | undefined;
         const firebaseAnalytics = task.results?.firebaseAnalytics as { [key: string]: any } | undefined;
         const marketingAnalytics = task.results?.marketingAnalytics as { [key: string]: any } | undefined;
+        const githubRepository = task.results?.githubRepository as { [key: string]: any } | undefined;
+        const githubImprovements = task.results?.githubImprovements as { [key: string]: any } | undefined;
 
         // 2. いずれのデータも無ければ空データを返却
         if (!googlePlayConsole && !appStore && !firebaseAnalytics && !marketingAnalytics) {
@@ -68,6 +70,8 @@ export class GenerateMarketingPdf extends WorkflowProcessFunctionBase {
                 appStore,
                 firebaseAnalytics,
                 marketingAnalytics,
+                githubRepository,
+                githubImprovements,
             };
 
             // Determine app name from available data

@@ -6,12 +6,14 @@
  * 1. Google Play Console data collection
  * 2. App Store data collection
  * 3. Firebase Analytics data collection
- * 4. AI Analysis
- * 5. PDF Generation
+ * 4. GitHub Repository Analysis (init → process × N → summary)
+ * 5. AI Analysis (with GitHub-aware improvements)
+ * 6. PDF Generation (including code improvement suggestions)
  *
  * Required:
  * - Service account: test/mathru-net-39425d37638c.json
  * - Environment variables in test/.env
+ * - GITHUB_TOKEN and GITHUB_REPO for GitHub analysis
  */
 
 import * as admin from "firebase-admin";
@@ -52,6 +54,10 @@ const appStoreIssuerId = process.env.APP_STORE_ISSUER_ID || "69a6de82-60ca-47e3-
 const appStorePrivateKeyPath = process.env.APP_STORE_PRIVATE_KEY_PATH || "./AuthKey_48T4WJHF5B.p8";
 const appStoreAppId = process.env.APP_STORE_APP_ID || "6692619607";
 const appStoreVendorNumber = process.env.APP_STORE_VENDOR_NUMBER || "93702699";
+
+// GitHub configuration
+const githubToken = process.env.GITHUB_TOKEN;
+const githubRepo = process.env.GITHUB_REPO || "mathrunet/flutter_masamune";
 
 // Generate unique IDs for test data
 const testTimestamp = Date.now();
@@ -143,6 +149,7 @@ describe("GenerateMarketingPdf Integration Tests", () => {
             appstore_issuer_id: appStoreIssuerId,
             appstore_auth_key_id: appStoreKeyId,
             appstore_auth_key: appStorePrivateKey,
+            github_personal_access_token: githubToken,
             "#createdTime": { "@target": "createdTime", "@type": "DateTime", "@time": nowTs },
             createdTime: nowTs,
             "#updatedTime": { "@target": "updatedTime", "@type": "DateTime", "@time": nowTs },
@@ -256,7 +263,8 @@ describe("GenerateMarketingPdf Integration Tests", () => {
             };
 
             // Define the full pipeline actions
-            const actions = [
+            // Note: analyze_github_init will dynamically add process and summary actions
+            const actions: any[] = [
                 {
                     command: "collect_from_google_play_console",
                     index: 0,
@@ -279,13 +287,19 @@ describe("GenerateMarketingPdf Integration Tests", () => {
                     startDate: dateRange.startDate,
                     endDate: dateRange.endDate,
                 },
+                // GitHub Analysis (init only - process/summary are dynamically added by init)
+                {
+                    command: "analyze_github_init",
+                    index: 3,
+                    githubRepository: githubRepo,
+                },
                 {
                     command: "analyze_marketing_data",
-                    index: 3,
+                    index: 4,
                 },
                 {
                     command: "generate_marketing_pdf",
-                    index: 4,
+                    index: 5,
                     reportType: "weekly",
                     startDate: dateRange.startDate,
                     endDate: dateRange.endDate,
@@ -369,17 +383,146 @@ describe("GenerateMarketingPdf Integration Tests", () => {
 
                 await firestore.doc(faRefs.actionPath).delete().catch(() => {});
 
-                // Step 4: Analyze Marketing Data
-                console.log("Step 4: Analyzing marketing data with AI...");
+                // Step 4: Analyze GitHub Repository
+                let currentActions = actions;
+                if (githubToken) {
+                    console.log("Step 4: Analyzing GitHub repository...");
+
+                    // 4a: Run analyze_github_init
+                    const ghInitActionId = `${pipelineTaskId}-gh-init`;
+                    const ghInitRefs = await createTestDataWithResults({
+                        taskId: pipelineTaskId,
+                        actionId: ghInitActionId,
+                        actions,
+                        token,
+                        tokenExpiredTime,
+                        accumulatedResults,
+                        actionIndex: 3,
+                    });
+
+                    await firestore.doc(ghInitRefs.taskPath).update({
+                        results: accumulatedResults,
+                    });
+
+                    accumulatedResults = await runDataCollectionFunction(
+                        "../../src/functions/analyze_github_init",
+                        ghInitRefs.actionPath,
+                        token
+                    );
+                    console.log("  GitHub Init completed:", Object.keys(accumulatedResults));
+                    await firestore.doc(ghInitRefs.actionPath).delete().catch(() => {});
+
+                    // 4b: Run analyze_github_process for each batch
+                    // Use batchCount from init result to build process actions
+                    const initResult = accumulatedResults.githubAnalysisInit;
+                    const batchCount = initResult?.batchCount || 0;
+                    console.log("  Batch count from init result:", batchCount);
+
+                    // Build updated actions array manually (since Firestore may have caching issues)
+                    const processActionsToRun: any[] = [];
+                    const initIndex = 3;
+                    for (let i = 0; i < batchCount; i++) {
+                        processActionsToRun.push({
+                            command: "analyze_github_process",
+                            index: initIndex + 1 + i,
+                            githubRepository: githubRepo,
+                            batchIndex: i,
+                        });
+                    }
+                    const summaryActionToRun = {
+                        command: "analyze_github_summary",
+                        index: initIndex + 1 + batchCount,
+                        githubRepository: githubRepo,
+                    };
+
+                    // Build full updated actions array
+                    const updatedActions = [
+                        ...actions.slice(0, initIndex + 1), // original actions up to and including init
+                        ...processActionsToRun,
+                        summaryActionToRun,
+                        { command: "analyze_marketing_data", index: initIndex + 2 + batchCount },
+                        { command: "generate_marketing_pdf", index: initIndex + 3 + batchCount, reportType: "weekly" },
+                    ];
+                    currentActions = updatedActions;
+
+                    console.log("  Updated actions count:", updatedActions.length);
+                    console.log("  Process actions count:", processActionsToRun.length);
+
+                    for (let i = 0; i < processActionsToRun.length; i++) {
+                        const processAction = processActionsToRun[i];
+                        console.log(`  Processing batch ${i + 1}/${processActionsToRun.length}...`);
+
+                        const ghProcessActionId = `${pipelineTaskId}-gh-process-${i}`;
+                        const ghProcessRefs = await createTestDataWithResults({
+                            taskId: pipelineTaskId,
+                            actionId: ghProcessActionId,
+                            actions: updatedActions,
+                            token,
+                            tokenExpiredTime,
+                            accumulatedResults,
+                            actionIndex: processAction.index,
+                        });
+
+                        await firestore.doc(ghProcessRefs.taskPath).update({
+                            results: accumulatedResults,
+                        });
+
+                        accumulatedResults = await runDataCollectionFunction(
+                            "../../src/functions/analyze_github_process",
+                            ghProcessRefs.actionPath,
+                            token
+                        );
+                        await firestore.doc(ghProcessRefs.actionPath).delete().catch(() => {});
+                    }
+
+                    // 4c: Run analyze_github_summary
+                    if (batchCount > 0) {
+                        console.log("  Generating GitHub summary...");
+                        const ghSummaryActionId = `${pipelineTaskId}-gh-summary`;
+                        const ghSummaryRefs = await createTestDataWithResults({
+                            taskId: pipelineTaskId,
+                            actionId: ghSummaryActionId,
+                            actions: updatedActions,
+                            token,
+                            tokenExpiredTime,
+                            accumulatedResults,
+                            actionIndex: summaryActionToRun.index,
+                        });
+
+                        await firestore.doc(ghSummaryRefs.taskPath).update({
+                            results: accumulatedResults,
+                        });
+
+                        accumulatedResults = await runDataCollectionFunction(
+                            "../../src/functions/analyze_github_summary",
+                            ghSummaryRefs.actionPath,
+                            token
+                        );
+                        console.log("  GitHub Analysis completed:", Object.keys(accumulatedResults));
+                        await firestore.doc(ghSummaryRefs.actionPath).delete().catch(() => {});
+                    }
+                } else {
+                    console.warn("Step 4: Skipping GitHub analysis - No GITHUB_TOKEN");
+                }
+
+                // Step 5: Analyze Marketing Data
+                console.log("Step 5: Analyzing marketing data with AI...");
+
+                // Find analyze_marketing_data action in current actions
+                const analyzeAction = currentActions.find(
+                    (a: any) => a.command === "analyze_marketing_data"
+                );
+                const analyzeActionIndex = analyzeAction?.index ?? 4;
+
                 const analyzeActionId = `${pipelineTaskId}-analyze`;
                 const analyzeRefs = await createTestDataWithResults({
                     taskId: pipelineTaskId,
                     actionId: analyzeActionId,
-                    actions,
+                    actions: currentActions,
                     token,
                     tokenExpiredTime,
                     accumulatedResults,
-                    actionIndex: 3,
+                    actionIndex: analyzeActionIndex,
                 });
 
                 await firestore.doc(analyzeRefs.taskPath).update({
@@ -395,17 +538,24 @@ describe("GenerateMarketingPdf Integration Tests", () => {
 
                 await firestore.doc(analyzeRefs.actionPath).delete().catch(() => {});
 
-                // Step 5: Generate Marketing PDF
-                console.log("Step 5: Generating marketing PDF...");
+                // Step 6: Generate Marketing PDF
+                console.log("Step 6: Generating marketing PDF...");
+
+                // Find generate_marketing_pdf action in current actions
+                const pdfAction = currentActions.find(
+                    (a: any) => a.command === "generate_marketing_pdf"
+                );
+                const pdfActionIndex = pdfAction?.index ?? 5;
+
                 const pdfActionId = `${pipelineTaskId}-pdf`;
                 const pdfRefs = await createTestDataWithResults({
                     taskId: pipelineTaskId,
                     actionId: pdfActionId,
-                    actions,
+                    actions: currentActions,
                     token,
                     tokenExpiredTime,
                     accumulatedResults,
-                    actionIndex: 4,
+                    actionIndex: pdfActionIndex,
                 });
 
                 await firestore.doc(pdfRefs.taskPath).update({
@@ -429,6 +579,65 @@ describe("GenerateMarketingPdf Integration Tests", () => {
 
                 expect(taskData).toBeDefined();
                 expect(taskData?.status).toBe("completed");
+
+                // Check for GitHub improvements in results
+                console.log("\n=== GitHub Integration Results ===");
+                console.log("githubRepository present:", !!accumulatedResults.githubRepository);
+                console.log("githubImprovements present:", !!accumulatedResults.githubImprovements);
+
+                // Detailed githubRepository logging
+                if (accumulatedResults.githubRepository) {
+                    const ghRepo = accumulatedResults.githubRepository;
+                    console.log("\n--- GitHub Repository Analysis ---");
+                    console.log("Repository:", ghRepo.repository || "N/A");
+                    console.log("Framework:", ghRepo.framework || "N/A");
+                    console.log("Platforms:", ghRepo.platforms?.join(", ") || "N/A");
+                    console.log("Overview:", ghRepo.overview || "N/A");
+                    console.log("Architecture:", ghRepo.architecture || "N/A");
+                    if (ghRepo.features?.length) {
+                        console.log(`Features (${ghRepo.features.length}):`);
+                        ghRepo.features.slice(0, 5).forEach((f: any, i: number) => {
+                            console.log(`  ${i + 1}. ${f.name}: ${f.description?.substring(0, 100)}...`);
+                        });
+                        if (ghRepo.features.length > 5) {
+                            console.log(`  ... and ${ghRepo.features.length - 5} more features`);
+                        }
+                    }
+                    if (ghRepo.folderStructure?.length) {
+                        console.log(`Folder Structure (${ghRepo.folderStructure.length}):`);
+                        ghRepo.folderStructure.slice(0, 5).forEach((f: any, i: number) => {
+                            console.log(`  ${i + 1}. ${f.path}: ${f.summary?.substring(0, 80)}...`);
+                        });
+                        if (ghRepo.folderStructure.length > 5) {
+                            console.log(`  ... and ${ghRepo.folderStructure.length - 5} more folders`);
+                        }
+                    }
+                }
+
+                // Detailed githubImprovements logging
+                if (accumulatedResults.githubImprovements) {
+                    const ghImprov = accumulatedResults.githubImprovements;
+                    console.log("\n--- GitHub Improvement Suggestions ---");
+                    console.log("Total Improvements:", ghImprov.improvements?.length || 0);
+                    if (ghImprov.improvements?.length) {
+                        ghImprov.improvements.forEach((imp: any, i: number) => {
+                            console.log(`\n  [Improvement ${i + 1}]`);
+                            console.log(`    Category: ${imp.category || "N/A"}`);
+                            console.log(`    Priority: ${imp.priority || "N/A"}`);
+                            console.log(`    Title: ${imp.title || "N/A"}`);
+                            console.log(`    Description: ${imp.description?.substring(0, 150)}...`);
+                            if (imp.codeReferences?.length) {
+                                console.log(`    Code References (${imp.codeReferences.length}):`);
+                                imp.codeReferences.slice(0, 3).forEach((ref: any, j: number) => {
+                                    console.log(`      ${j + 1}. ${ref.filePath}:${ref.lineNumber || "?"} - ${ref.description?.substring(0, 60)}...`);
+                                });
+                                if (imp.codeReferences.length > 3) {
+                                    console.log(`      ... and ${imp.codeReferences.length - 3} more references`);
+                                }
+                            }
+                        });
+                    }
+                }
 
                 // Check for PDF asset
                 const actionDoc = await firestore.doc(pdfRefs.actionPath).get();
@@ -465,7 +674,7 @@ describe("GenerateMarketingPdf Integration Tests", () => {
                 console.error("Pipeline test error:", error);
                 throw error;
             }
-        }, 300000); // 5 minutes timeout for full pipeline
+        }, 600000); // 10 minutes timeout for full pipeline with GitHub analysis
     });
 
     describe("Empty Data Test", () => {

@@ -128,6 +128,12 @@ export class PDFService {
                     this.addImprovementsPage(doc, options);
                 }
 
+                // GitHub-based Code Improvements page(s)
+                if (options.data.githubImprovements?.improvements?.length) {
+                    doc.addPage();
+                    this.addGitHubImprovementsPage(doc, options);
+                }
+
                 // Trend Analysis page
                 if (options.data.marketingAnalytics?.trendAnalysis) {
                     doc.addPage();
@@ -763,5 +769,178 @@ export class PDFService {
             { width: this.contentWidth, align: "center" }
         );
         doc.fillColor("#000000");
+    }
+
+    /**
+     * Add GitHub-based code improvements page.
+     *
+     * GitHubベースのコード改善提案ページを追加。
+     */
+    private addGitHubImprovementsPage(
+        doc: PDFKit.PDFDocument,
+        options: PDFGenerationOptions
+    ): void {
+        let y = this.margin;
+        const githubImprovements = options.data.githubImprovements;
+        const improvements = githubImprovements?.improvements || [];
+
+        // Page title
+        doc.fontSize(20).font(this.getFont(true));
+        doc.text("コードベース改善提案", this.margin, y);
+        y += 25;
+
+        // Repository info
+        doc.fontSize(10).font(this.getFont());
+        doc.fillColor("#757575");
+        const repo = githubImprovements?.repository || "";
+        const framework = githubImprovements?.framework || "";
+        doc.text(`Repository: ${repo} | Framework: ${framework}`, this.margin, y);
+        y += 20;
+
+        // Summary
+        if (githubImprovements?.improvementSummary) {
+            doc.fillColor("#000000");
+            doc.fontSize(11).font(this.getFont());
+            doc.text(githubImprovements.improvementSummary, this.margin, y, {
+                width: this.contentWidth,
+            });
+            y = doc.y + 25;
+        }
+
+        // Each improvement
+        for (const improvement of improvements) {
+            // Check if we need a new page
+            if (y > this.pageHeight - 200) {
+                doc.addPage();
+                y = this.margin;
+                doc.fontSize(16).font(this.getFont(true));
+                doc.fillColor("#000000");
+                doc.text("コードベース改善提案 (続き)", this.margin, y);
+                y += 30;
+            }
+
+            // Priority badge
+            const priorityColor =
+                improvement.priority === "high"
+                    ? "#c62828"
+                    : improvement.priority === "medium"
+                        ? "#f57c00"
+                        : "#2e7d32";
+
+            doc.fillColor(priorityColor);
+            doc.rect(this.margin, y, 60, 18).fill();
+            doc.fillColor("#ffffff");
+            doc.fontSize(9).font(this.getFont(true));
+            doc.text(improvement.priority?.toUpperCase() || "MEDIUM", this.margin + 5, y + 4);
+
+            // Category badge
+            doc.fillColor("#1565c0");
+            doc.rect(this.margin + 65, y, 80, 18).fill();
+            doc.fillColor("#ffffff");
+            doc.fontSize(9).font(this.getFont());
+            doc.text(improvement.category || "", this.margin + 70, y + 4);
+
+            y += 25;
+
+            // Title
+            doc.fillColor("#000000");
+            doc.fontSize(13).font(this.getFont(true));
+            doc.text(improvement.title || "", this.margin, y);
+            y += 20;
+
+            // Description
+            doc.fontSize(10).font(this.getFont());
+            doc.text(improvement.description || "", this.margin + 10, y, {
+                width: this.contentWidth - 10,
+            });
+            y = doc.y + 10;
+
+            // Related Feature
+            if (improvement.relatedFeature) {
+                doc.fillColor("#6a1b9a");
+                doc.fontSize(9).font(this.getFont());
+                doc.text(`関連機能: ${improvement.relatedFeature}`, this.margin + 10, y);
+                y = doc.y + 8;
+            }
+
+            // Code References
+            const codeRefs = improvement.codeReferences || [];
+            if (codeRefs.length > 0) {
+                doc.fillColor("#000000");
+                doc.fontSize(10).font(this.getFont(true));
+                doc.text("ファイル修正:", this.margin + 10, y);
+                y += 15;
+
+                for (const ref of codeRefs) {
+                    // Check page break
+                    if (y > this.pageHeight - 100) {
+                        doc.addPage();
+                        y = this.margin;
+                        doc.fontSize(16).font(this.getFont(true));
+                        doc.fillColor("#000000");
+                        doc.text("コードベース改善提案 (続き)", this.margin, y);
+                        y += 30;
+                    }
+
+                    // Modification type icon
+                    const modIcon: Record<string, string> = {
+                        add: "+",
+                        modify: "~",
+                        refactor: "R",
+                        optimize: "O",
+                    };
+                    const modColor: Record<string, string> = {
+                        add: "#2e7d32",
+                        modify: "#f57c00",
+                        refactor: "#1565c0",
+                        optimize: "#6a1b9a",
+                    };
+
+                    const icon = modIcon[ref.modificationType] || "?";
+                    const color = modColor[ref.modificationType] || "#757575";
+
+                    // Modification type badge
+                    doc.fillColor(color);
+                    doc.roundedRect(this.margin + 15, y, 20, 16, 2).fill();
+                    doc.fillColor("#ffffff");
+                    doc.fontSize(9).font(this.getFont(true));
+                    doc.text(icon, this.margin + 21, y + 3);
+
+                    // File path
+                    doc.fillColor("#1565c0");
+                    doc.fontSize(9).font(this.getFont());
+                    doc.text(ref.filePath || "", this.margin + 40, y + 3, {
+                        width: this.contentWidth - 50,
+                    });
+                    y += 18;
+
+                    // Current functionality
+                    doc.fillColor("#757575");
+                    doc.fontSize(8).font(this.getFont());
+                    doc.text(`現状: ${ref.currentFunctionality || ""}`, this.margin + 40, y, {
+                        width: this.contentWidth - 50,
+                    });
+                    y = doc.y + 3;
+
+                    // Proposed change
+                    doc.fillColor("#2e7d32");
+                    doc.text(`変更: ${ref.proposedChange || ""}`, this.margin + 40, y, {
+                        width: this.contentWidth - 50,
+                    });
+                    y = doc.y + 8;
+                }
+            }
+
+            // Expected Impact
+            if (improvement.expectedImpact) {
+                doc.fillColor("#1565c0");
+                doc.fontSize(9).font(this.getFont());
+                doc.text(`期待効果: ${improvement.expectedImpact}`, this.margin + 10, y);
+                y = doc.y + 5;
+            }
+
+            doc.fillColor("#000000");
+            y += 20;
+        }
     }
 }
