@@ -61,4 +61,37 @@ export const Functions = {
             func: require("./functions/generate_marketing_pdf"),
             options: options
         }),
+    /**
+     * A function for initializing GitHub repository analysis.
+     *
+     * GitHubリポジトリ解析を初期化するためのFunction。
+     */
+    analyzeGithubInit: (options: masamune.HttpFunctionsOptions = {}) =>
+        new masamune.FunctionsData({
+            id: "analyze_github_init",
+            func: require("./functions/analyze_github_init"),
+            options: options
+        }),
+    /**
+     * A function for processing a batch of GitHub files.
+     *
+     * GitHubファイルのバッチを処理するためのFunction。
+     */
+    analyzeGithubProcess: (options: masamune.HttpFunctionsOptions = {}) =>
+        new masamune.FunctionsData({
+            id: "analyze_github_process",
+            func: require("./functions/analyze_github_process"),
+            options: options
+        }),
+    /**
+     * A function for generating final GitHub repository analysis.
+     *
+     * GitHubリポジトリの最終解析を生成するためのFunction。
+     */
+    analyzeGithubSummary: (options: masamune.HttpFunctionsOptions = {}) =>
+        new masamune.FunctionsData({
+            id: "analyze_github_summary",
+            func: require("./functions/analyze_github_summary"),
+            options: options
+        }),
 } as const;

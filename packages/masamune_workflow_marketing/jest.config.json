@@ -15,5 +15,9 @@
     ],
     "transform": {
         "^.+\\.(ts|tsx)$": "ts-jest"
-    }
+    },
+    "setupFiles": [
+        "<rootDir>/test/setup.ts"
+    ],
+    "testTimeout": 120000
 }

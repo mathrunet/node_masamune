@@ -62,9 +62,9 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                 try {
                     const emmbedingModelName = process.env.EMBEDDING_MODEL ?? "gemini-embedding-001";
                     const startedTime = new Date();
-                    const projectId =  process.env.GCLOUD_PROJECT || process.env.GOOGLE_CLOUD_PROJECT;
+                    const projectId = process.env.GCLOUD_PROJECT || process.env.GOOGLE_CLOUD_PROJECT;
                     let region = options?.region ?? regions;
-                    if(Array.isArray(region)){
+                    if (Array.isArray(region)) {
                         region = region[0];
                     }
                     const path = request.data.path as string | undefined | null;
@@ -110,12 +110,12 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                             organizationId: organizationId,
                             plan: plan,
                         });
-                        const task = await actionData.task?.get();
+                        let task = await actionData.task?.get();
                         if (!task || !task.exists) {
                             throw new Error("task-not-found");
                         }
-                        const taskData = task.data() as Task | undefined | null;
-                        const actions = taskData?.actions;
+                        let taskData = task.data() as Task | undefined | null;
+                        let actions = taskData?.actions;
                         const index = command.index;
                         if (!taskData || !actions) {
                             throw new Error("task-not-found");
@@ -129,7 +129,7 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                         const duration = (finishedTime.getTime() - startedTime.getTime()) / 1000.0;
                         let usage = _kDefaultLoadPrice + _kDefaultSavePrice + _kDefaultRequetPrice + duration * _kDefaultCpuPrice + duration * _kDefaultMemoryPrice;
                         // キャンセルされた場合
-                        if(taskData.status === "canceled"){
+                        if (taskData.status === "canceled") {
                             const updatedActionData: Action = {
                                 ...actionData,
                                 "@time": finishedTime,
@@ -142,7 +142,7 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                             };
                             await action.ref.set(
                                 updatedActionData,
-                                {merge: true}
+                                { merge: true }
                             );
                             const updatedTaskData: Task = {
                                 ...taskData,
@@ -168,16 +168,26 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                                 plan: plan,
                             });
                         } else {
+                            let task = await actionData.task?.get();
+                            if (!task || !task.exists) {
+                                throw new Error("task-not-found");
+                            }
+                            let taskData = task.data() as Task | undefined | null;
+                            let actions = taskData?.actions;
+                            const index = command.index;
+                            if (!taskData || !actions) {
+                                throw new Error("task-not-found");
+                            }
                             // 完了済み
-                            if(index >= actions.length - 1){
+                            if (index >= actions.length - 1) {
                                 let search: number[] | undefined;
-                                if(result.search){
+                                if (result.search) {
                                     const vertexAI = new GoogleGenAI({
                                         vertexai: true,
                                         project: projectId,
                                         location: region,
                                     });
-                                    const embedResult = await vertexAI.models.embedContent({ 
+                                    const embedResult = await vertexAI.models.embedContent({
                                         model: emmbedingModelName,
                                         contents: JSON.stringify(result.results ?? []),
                                     });
@@ -201,7 +211,7 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                                 };
                                 await action.ref.set(
                                     updatedActionData,
-                                    {merge: true}
+                                    { merge: true }
                                 );
                                 const updatedTaskData: Task = {
                                     ...taskData,
@@ -240,16 +250,16 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                                     organizationId: organizationId,
                                     plan: plan,
                                 });
-                            // 続きがある場合
+                                // 続きがある場合
                             } else {
                                 let search: number[] | undefined;
-                                if(result.search){
+                                if (result.search) {
                                     const vertexAI = new GoogleGenAI({
                                         vertexai: true,
                                         project: projectId,
                                         location: region,
                                     });
-                                    const embedResult = await vertexAI.models.embedContent({ 
+                                    const embedResult = await vertexAI.models.embedContent({
                                         model: emmbedingModelName,
                                         contents: JSON.stringify(result.results ?? []),
                                     });
@@ -274,7 +284,7 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                                 };
                                 await action.ref.set(
                                     updatedActionData,
-                                    {merge: true}
+                                    { merge: true }
                                 );
                                 const updatedTaskData: Task = {
                                     ...taskData,
@@ -409,7 +419,7 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                             };
                             await action.ref.set(
                                 updatedActionData,
-                                {merge: true}
+                                { merge: true }
                             );
                         } catch (err) {
                             console.error(err);
@@ -426,7 +436,7 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                     }
                 } catch (err: any) {
                     let error: { [key: string]: any };
-                        // Ensure error message is a plain string for Firestore serialization
+                    // Ensure error message is a plain string for Firestore serialization
                     const errorMessage = typeof err?.message === "string"
                         ? err.message
                         : (err?.details || err?.toString?.() || "Unknown error");
