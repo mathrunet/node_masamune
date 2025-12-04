@@ -1,4 +1,4 @@
-## [3.8.2](https://github.com/mathrunet/node_masamune/compare/v3.7.0...v3.8.2) (2025-12-04)
+## [3.8.3](https://github.com/mathrunet/node_masamune/compare/v3.7.0...v3.8.3) (2025-12-04)
 
 
 ### chore
@@ -51,14 +51,17 @@
 
 * Add ModelFieldValue interface. ([0ff33aa](https://github.com/mathrunet/node_masamune/commit/0ff33aa6f1331569658a3fd629b1329eafef8c50))
 * Audio-related fixes ([9e2440b](https://github.com/mathrunet/node_masamune/commit/9e2440b9e78c15ecc9d495da5ed0f173250bf88c))
+* Bug fix. ([14d3ba4](https://github.com/mathrunet/node_masamune/commit/14d3ba4df05b723eb95768dc90a683f38fb8baa3))
 * Bug fixes. ([8cd7f92](https://github.com/mathrunet/node_masamune/commit/8cd7f92aaaea9da295fa232262e8df896c87e1d5))
 * Change error object handling ([d49aed4](https://github.com/mathrunet/node_masamune/commit/d49aed435c381c6b537a6a23accdf73125b4aa61))
 * Change GitHub analysis method ([abc2336](https://github.com/mathrunet/node_masamune/commit/abc233693cad2070a57db4d0472a16781d00c0c9))
 * Change process arguments. ([17fca7b](https://github.com/mathrunet/node_masamune/commit/17fca7b72ccc8ecf7576e5a0772b2d05f197940d))
 * Create E2E tests. ([e33ed27](https://github.com/mathrunet/node_masamune/commit/e33ed2702cc6d2771036fd3bc8e5c4de811229e7))
 * Explicitly pass the Firebase Admin app during Firestore and Storage initialization, and update the version. ([9169415](https://github.com/mathrunet/node_masamune/commit/9169415adb873a0ce1534a5762158d84ca477212))
+* Firestore interface change. ([027e464](https://github.com/mathrunet/node_masamune/commit/027e4647febaac184123ad5d8d7dc0ea452e3df7))
 * Fixed an issue where usage was not being added. ([ae0a9ee](https://github.com/mathrunet/node_masamune/commit/ae0a9ee1224d7bdc019140bd5889cbcab5e8bdd2))
 * Fixed missing export. ([f8948be](https://github.com/mathrunet/node_masamune/commit/f8948bee2d089c6df7a1b2e34bab844413f42e87))
+* I made it output. ([6d17645](https://github.com/mathrunet/node_masamune/commit/6d1764546c2c68b3af61148eac9ca1635e9fddf7))
 * implement AI-driven music prompt improvement for Lyria BGM generation failures and add marketing pipeline requirements. ([81cfd3b](https://github.com/mathrunet/node_masamune/commit/81cfd3bd114669360c0bef465f81f5b4fad8804d))
 * Initialize Firebase Admin SDK if not already initialized when loading Firestore or Storage. ([678c1bd](https://github.com/mathrunet/node_masamune/commit/678c1bd1896ddd3fe0e541e9eeea29797b63e300))
 * Move `@types/node-fetch` from devDependencies to dependencies. ([d5bc8be](https://github.com/mathrunet/node_masamune/commit/d5bc8be021d25469d9fb58d6b73f8471883969c8))
