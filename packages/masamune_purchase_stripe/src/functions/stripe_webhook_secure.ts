@@ -102,7 +102,7 @@ module.exports = (
           const successUrl = param["successUrl"];
           const failureUrl = param["failureUrl"];
 
-          const doc = await firestoreInstance.doc(`${stripeUserPath}/${userId}/${stripePurchasePath}/${orderId}`).get();
+          const doc = await firestoreInstance.doc(`${stripeUserPath}/${userId}/${stripePurchasePath}/${orderId}`).load();
           const data = doc.data();
           if (!data || !data["paymentId"]) {
             res.status(404).send(JSON.stringify({

@@ -281,7 +281,7 @@ export async function sendNotification({
             let cursor: FirebaseFirestore.QueryDocumentSnapshot | null = null;
             let collection: FirebaseFirestore.QuerySnapshot<FirebaseFirestore.DocumentData, FirebaseFirestore.DocumentData> | null = null;
             do {
-                collection = await firestore.cursor({ query: collectionRef, limit: 500, cursor: cursor }).get();
+                collection = await firestore.cursor({ query: collectionRef, limit: 500, cursor: cursor }).load();
                 for (let doc of collection.docs) {
                     const docData = doc.data();
                     if (showLog) {
@@ -327,7 +327,7 @@ export async function sendNotification({
             }
             const documentRef = firestoreInstance.doc(targetDocumentPath);
             const results: any[] = [];
-            const doc = await documentRef.get();
+            const doc = await documentRef.load();
             const docData = doc.data();
             if (docData) {
                 if (showLog) {

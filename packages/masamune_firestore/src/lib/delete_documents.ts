@@ -42,7 +42,7 @@ export async function deleteDocuments({
         let cursor: FirebaseFirestore.QueryDocumentSnapshot | null = null;
         let collection: FirebaseFirestore.QuerySnapshot<FirebaseFirestore.DocumentData, FirebaseFirestore.DocumentData> | null = null;
         do {
-            collection = await firestore.cursor({ query: collectionRef, limit: 500, cursor: cursor }).get();
+            collection = await firestore.cursor({ query: collectionRef, limit: 500, cursor: cursor }).load();
             const deleteList: admin.firestore.DocumentReference<admin.firestore.DocumentData, admin.firestore.DocumentData>[] = [];
             for (let doc of collection.docs) {
                 const data = doc.data() as { [key: string]: any };

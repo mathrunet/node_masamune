@@ -218,7 +218,7 @@ module.exports = (
                 throw new functions.https.HttpsError("invalid-argument", "The user id is empty.");
               }
               const country = locale.split("_")[1];
-              const doc = await firestoreInstance.doc(`${stripeUserPath}/${userId}`).get();
+              const doc = await firestoreInstance.doc(`${stripeUserPath}/${userId}`).load();
               const data = doc.data();
               if (!data || !data["account"]) {
                 const account = await stripeClient.accounts.create({
@@ -230,9 +230,9 @@ module.exports = (
                 update["@time"] = new Date();
                 update["user"] = userId;
                 update["account"] = account.id;
-                await firestoreInstance.doc(`${stripeUserPath}/${userId}`).set(update, {
-                  merge: true,
-                });
+                await firestoreInstance.doc(`${stripeUserPath}/${userId}`).save(
+                  update, { merge: true }
+                );
                 const endpoint = await stripeClient.accountLinks.create({
                   type: "account_onboarding",
                   account: account.id,
@@ -256,9 +256,9 @@ module.exports = (
                   update["capability"] = {
                     transfers: true,
                   };
-                  await doc.ref.set(update, {
-                    merge: true,
-                  });
+                  await doc.ref.save(
+                    update, { merge: true }
+                  );
                   return {
                     next: "none",
                   };
@@ -282,7 +282,7 @@ module.exports = (
               if (!userId) {
                 throw new functions.https.HttpsError("invalid-argument", "The user id is empty.");
               }
-              const doc = await firestoreInstance.doc(`${stripeUserPath}/${userId}`).get();
+              const doc = await firestoreInstance.doc(`${stripeUserPath}/${userId}`).load();
               const data = doc.data();
               if (!data || !data["account"]) {
                 throw new functions.https.HttpsError("not-found", "Account id is not found.");
@@ -293,9 +293,9 @@ module.exports = (
               update["capability"] = admin.firestore.FieldValue.arrayRemove({
                 "transfers": true
               });
-              await doc.ref.set(update, {
-                merge: true,
-              });
+              await doc.ref.save(
+                update, { merge: true }
+              );
               return {
                 success: true,
               };
@@ -305,7 +305,7 @@ module.exports = (
               if (!userId) {
                 throw new functions.https.HttpsError("invalid-argument", "The user id is empty.");
               }
-              const doc = await firestoreInstance.doc(`${stripeUserPath}/${userId}`).get();
+              const doc = await firestoreInstance.doc(`${stripeUserPath}/${userId}`).load();
               const data = doc.data();
               if (!data || !data["account"]) {
                 throw new functions.https.HttpsError("not-found", "Account id is not found.");
@@ -318,7 +318,7 @@ module.exports = (
               if (!userId) {
                 throw new functions.https.HttpsError("invalid-argument", "The user id is empty.");
               }
-              const doc = await firestoreInstance.doc(`${stripeUserPath}/${userId}`).get();
+              const doc = await firestoreInstance.doc(`${stripeUserPath}/${userId}`).load();
               const data = doc.data();
               if (!data || !data["account"]) {
                 throw new functions.https.HttpsError("not-found", "Account id is not found.");
@@ -340,7 +340,7 @@ module.exports = (
               if (!user) {
                 throw new functions.https.HttpsError("not-found", "The user is not found.");
               }
-              const doc = await firestoreInstance.doc(`${stripeUserPath}/${userId}`).get();
+              const doc = await firestoreInstance.doc(`${stripeUserPath}/${userId}`).load();
               const data = doc.data();
               if (!data || !data["customer"]) {
                 const customer = await stripeClient.customers.create({
@@ -354,9 +354,9 @@ module.exports = (
                 update["@time"] = new Date();
                 update["user"] = userId;
                 update["customer"] = customer.id;
-                await firestoreInstance.doc(`${stripeUserPath}/${userId}`).set(update, {
-                  merge: true,
-                });
+                await firestoreInstance.doc(`${stripeUserPath}/${userId}`).save(
+                  update, { merge: true }
+                );
                 const session = await stripeClient.checkout.sessions.create({
                   payment_method_types: ["card"],
                   mode: "setup",
@@ -394,12 +394,12 @@ module.exports = (
               if (!userId) {
                 throw new functions.https.HttpsError("invalid-argument", "The user id is empty.");
               }
-              const doc = await firestoreInstance.doc(`${stripeUserPath}/${userId}`).get();
+              const doc = await firestoreInstance.doc(`${stripeUserPath}/${userId}`).load();
               const data = doc.data();
               if (!data || !data["customer"]) {
                 throw new functions.https.HttpsError("not-found", "The customer is empty.");
               }
-              const payment = await firestoreInstance.doc(`${stripeUserPath}/${userId}/${stripePaymentPath}/${paymentId}`).get();
+              const payment = await firestoreInstance.doc(`${stripeUserPath}/${userId}/${stripePaymentPath}/${paymentId}`).load();
               const paymentData = payment.data();
               if (!paymentData || !paymentData["id"]) {
                 throw new functions.https.HttpsError("not-found", "The payment method is empty.");
@@ -415,9 +415,9 @@ module.exports = (
               if (data["defaultPayment"] !== paymentData["id"]) {
                 const update: { [key: string]: any } = {};
                 update["defaultPayment"] = paymentData["id"];
-                await doc.ref.set(update, {
-                  merge: true,
-                });
+                await doc.ref.save(
+                  update, { merge: true }
+                );
               }
               return {
                 success: true,
@@ -432,12 +432,12 @@ module.exports = (
               if (!userId) {
                 throw new functions.https.HttpsError("invalid-argument", "The user id is empty.");
               }
-              const doc = await firestoreInstance.doc(`${stripeUserPath}/${userId}`).get();
+              const doc = await firestoreInstance.doc(`${stripeUserPath}/${userId}`).load();
               const data = doc.data();
               if (!data || !data["customer"]) {
                 throw new functions.https.HttpsError("not-found", "The customer is empty.");
               }
-              const payment = await firestoreInstance.doc(`${stripeUserPath}/${userId}/${stripePaymentPath}/${paymentId}`).get();
+              const payment = await firestoreInstance.doc(`${stripeUserPath}/${userId}/${stripePaymentPath}/${paymentId}`).load();
               const paymentData = payment.data();
               if (!paymentData || !paymentData["id"]) {
                 throw new functions.https.HttpsError("not-found", "The payment method is empty.");
@@ -448,9 +448,9 @@ module.exports = (
               if (data["defaultPayment"] === paymentData["id"]) {
                 const update: { [key: string]: any } = {};
                 update["defaultPayment"] = admin.firestore.FieldValue.delete();
-                await doc.ref.set(update, {
-                  merge: true,
-                });
+                await doc.ref.save(
+                  update, { merge: true }
+                );
               }
               return {
                 success: true,
@@ -461,7 +461,7 @@ module.exports = (
               if (!userId) {
                 throw new functions.https.HttpsError("invalid-argument", "The user id is empty.");
               }
-              const doc = await firestoreInstance.doc(`${stripeUserPath}/${userId}`).get();
+              const doc = await firestoreInstance.doc(`${stripeUserPath}/${userId}`).load();
               const data = doc.data();
               if (!data || !data["customer"]) {
                 throw new functions.https.HttpsError("not-found", "Customer id is not found.");
@@ -469,9 +469,9 @@ module.exports = (
               await stripeClient.customers.del(data["customer"]);
               const update: { [key: string]: any } = {};
               update["customer"] = admin.firestore.FieldValue.delete();
-              await doc.ref.set(update, {
-                merge: true,
-              });
+              await doc.ref.save(
+                update, { merge: true }
+              );
               return {
                 success: true,
               };
@@ -489,7 +489,7 @@ module.exports = (
               if (!userId) {
                 throw new functions.https.HttpsError("invalid-argument", "The user id is empty.");
               }
-              const userDoc = await firestoreInstance.doc(`${stripeUserPath}/${userId}`).get();
+              const userDoc = await firestoreInstance.doc(`${stripeUserPath}/${userId}`).load();
               const userData = userDoc.data();
               if (!userData || !userData["customer"]) {
                 throw new functions.https.HttpsError("not-found", "The customer id is not found.");
@@ -501,7 +501,7 @@ module.exports = (
                 ) as stripe.Stripe.Customer;
                 defaultPayment = customer.invoice_settings.default_payment_method;
                 if (!defaultPayment) {
-                  const payments = await firestoreInstance.collection(`${stripeUserPath}/${userId}/${stripePaymentPath}`).get();
+                  const payments = await firestoreInstance.collection(`${stripeUserPath}/${userId}/${stripePaymentPath}`).load();
                   if (payments.size <= 0) {
                     throw new functions.https.HttpsError("not-found", "The payment method is not found.");
                   }
@@ -509,9 +509,9 @@ module.exports = (
                 }
                 const update: { [key: string]: any } = {};
                 update["defaultPayment"] = defaultPayment;
-                await userDoc.ref.set(update, {
-                  merge: true,
-                });
+                await userDoc.ref.save(
+                  update, { merge: true }
+                );
               }
               const user = await authInstance.getUser(userId);
               if (!user) {
@@ -614,7 +614,7 @@ module.exports = (
               if (!userId) {
                 throw new functions.https.HttpsError("invalid-argument", "The user id is empty.");
               }
-              const userDoc = await firestoreInstance.doc(`${stripeUserPath}/${userId}`).get();
+              const userDoc = await firestoreInstance.doc(`${stripeUserPath}/${userId}`).load();
               const userData = userDoc.data();
               if (!userData || !userData["customer"]) {
                 throw new functions.https.HttpsError("not-found", "The customer id is not found.");
@@ -626,7 +626,7 @@ module.exports = (
                 ) as stripe.Stripe.Customer;
                 defaultPayment = customer.invoice_settings.default_payment_method;
                 if (!defaultPayment) {
-                  const payments = await firestoreInstance.collection(`${stripeUserPath}/${userId}/${stripePaymentPath}`).get();
+                  const payments = await firestoreInstance.collection(`${stripeUserPath}/${userId}/${stripePaymentPath}`).load();
                   if (payments.size <= 0) {
                     throw new functions.https.HttpsError("not-found", "The payment method is not found.");
                   }
@@ -634,9 +634,9 @@ module.exports = (
                 }
                 const update: { [key: string]: any } = {};
                 update["defaultPayment"] = defaultPayment;
-                await userDoc.ref.set(update, {
-                  merge: true,
-                });
+                await userDoc.ref.save(
+                  update, { merge: true }
+                );
               }
               const user = await authInstance.getUser(userId);
               if (!user) {
@@ -655,7 +655,7 @@ module.exports = (
                 }
               }
               if (targetUserId) {
-                const targetDoc = await firestoreInstance.doc(`${stripeUserPath}/${targetUserId}`).get();
+                const targetDoc = await firestoreInstance.doc(`${stripeUserPath}/${targetUserId}`).load();
                 const targetData = targetDoc.data();
                 if (!targetData || !targetData["account"]) {
                   throw new functions.https.HttpsError("not-found", "The target data is not found.");
@@ -713,9 +713,9 @@ module.exports = (
                 update["emailTitle"] = emailTitle;
                 update["emailContent"] = emailContent;
                 update["locale"] = locale;
-                await firestoreInstance.doc(`${stripeUserPath}/${userId}/${stripePurchasePath}/${orderId}`).set(update, {
-                  merge: true,
-                });
+                await firestoreInstance.doc(`${stripeUserPath}/${userId}/${stripePurchasePath}/${orderId}`).save(
+                  update, { merge: true }
+                );
                 return {
                   purchaseId: paymentIntent.id,
                 };
@@ -767,9 +767,9 @@ module.exports = (
                 update["emailTitle"] = emailTitle;
                 update["emailContent"] = emailContent;
                 update["locale"] = locale;
-                await firestoreInstance.doc(`${stripeUserPath}/${userId}/${stripePurchasePath}/${orderId}`).set(update, {
-                  merge: true,
-                });
+                await firestoreInstance.doc(`${stripeUserPath}/${userId}/${stripePurchasePath}/${orderId}`).save(
+                  update, { merge: true }
+                );
                 return {
                   purchaseId: paymentIntent.id,
                 };
@@ -799,7 +799,7 @@ module.exports = (
                   ivKey: apiKey.slice(-16),
                 });
               }
-              const doc = await firestoreInstance.doc(`${stripeUserPath}/${userId}/${stripePurchasePath}/${orderId}`).get();
+              const doc = await firestoreInstance.doc(`${stripeUserPath}/${userId}/${stripePurchasePath}/${orderId}`).load();
               const data = doc.data();
               if (!data || !data["purchaseId"]) {
                 throw new functions.https.HttpsError("not-found", "The purchase data is invalid.");
@@ -852,9 +852,9 @@ module.exports = (
                       url: nextActionUrl,
                       returnUrl: paymentIntent.next_action?.redirect_to_url?.return_url ?? "",
                     };
-                    await doc.ref.set(update, {
-                      merge: true,
-                    });
+                    await doc.ref.save(
+                      update, { merge: true }
+                    );
                     return {
                       url: online ? nextActionUrl : "",
                       returnUrl: online ? paymentIntent.next_action?.redirect_to_url?.return_url ?? "" : "",
@@ -863,9 +863,9 @@ module.exports = (
                   } else {
                     update["verify"] = true;
                     update["nextAction"] = admin.firestore.FieldValue.delete();
-                    await doc.ref.set(update, {
-                      merge: true,
-                    });
+                    await doc.ref.save(
+                      update, { merge: true }
+                    );
                     return {
                       url: "",
                       returnUrl: "",
@@ -876,9 +876,9 @@ module.exports = (
                   const update: { [key: string]: any } = {};
                   update["error"] = true;
                   update["errorMessage"] = "The Purchase confirmation failed. Please replace the billing information and Refresh.";
-                  await doc.ref.set(update, {
-                    merge: true,
-                  });
+                  await doc.ref.save(
+                    update, { merge: true }
+                  );
                   throw err;
                 }
               } else {
@@ -922,9 +922,9 @@ module.exports = (
                     url: nextActionUrl,
                     returnUrl: paymentIntent.next_action?.redirect_to_url?.return_url ?? "",
                   };
-                  await doc.ref.set(update, {
-                    merge: true,
-                  });
+                  await doc.ref.save(
+                    update, { merge: true }
+                  );
                   return {
                     url: online ? nextActionUrl : "",
                     returnUrl: online ? paymentIntent.next_action?.redirect_to_url?.return_url ?? "" : "",
@@ -934,9 +934,9 @@ module.exports = (
                   const update: { [key: string]: any } = {};
                   update["error"] = true;
                   update["errorMessage"] = "The Purchase confirmation failed. Please replace the billing information and Refresh.";
-                  await doc.ref.set(update, {
-                    merge: true,
-                  });
+                  await doc.ref.save(
+                    update, { merge: true }
+                  );
                   throw err;
                 }
               }
@@ -951,7 +951,7 @@ module.exports = (
               if (!userId) {
                 throw new functions.https.HttpsError("invalid-argument", "The user id is empty.");
               }
-              const doc = await firestoreInstance.doc(`${stripeUserPath}/${userId}/${stripePurchasePath}/${orderId}`).get();
+              const doc = await firestoreInstance.doc(`${stripeUserPath}/${userId}/${stripePurchasePath}/${orderId}`).load();
               const data = doc.data();
               if (!data || !data["purchaseId"]) {
                 throw new functions.https.HttpsError("not-found", "The purchase data is invalid.");
@@ -990,9 +990,9 @@ module.exports = (
                 const update: { [key: string]: any } = {};
                 update["error"] = true;
                 update["errorMessage"] = "The Purchase capture failed. Please replace the billing information and Refresh.";
-                await doc.ref.set(update, {
-                  merge: true,
-                });
+                await doc.ref.save(
+                  update, { merge: true }
+                );
                 throw err;
               }
             }
@@ -1005,7 +1005,7 @@ module.exports = (
               if (!userId) {
                 throw new functions.https.HttpsError("invalid-argument", "The user id is empty.");
               }
-              const doc = await firestoreInstance.doc(`${stripeUserPath}/${userId}/${stripePurchasePath}/${orderId}`).get();
+              const doc = await firestoreInstance.doc(`${stripeUserPath}/${userId}/${stripePurchasePath}/${orderId}`).load();
               const data = doc.data();
               if (!data || !data["purchaseId"]) {
                 throw new functions.https.HttpsError("not-found", "The purchase data is invalid.");
@@ -1018,7 +1018,7 @@ module.exports = (
                   success: true,
                 };
               }
-              const userDoc = await firestoreInstance.doc(`${stripeUserPath}/${userId}`).get();
+              const userDoc = await firestoreInstance.doc(`${stripeUserPath}/${userId}`).load();
               const userData = userDoc.data();
               if (!userData || !userData["customer"]) {
                 throw new functions.https.HttpsError("not-found", "The customer id is not found.");
@@ -1030,7 +1030,7 @@ module.exports = (
                 ) as stripe.Stripe.Customer;
                 defaultPayment = customer.invoice_settings.default_payment_method;
                 if (!defaultPayment) {
-                  const payments = await firestoreInstance.collection(`${stripeUserPath}/${userId}/${stripePaymentPath}`).get();
+                  const payments = await firestoreInstance.collection(`${stripeUserPath}/${userId}/${stripePaymentPath}`).load();
                   if (payments.size <= 0) {
                     throw new functions.https.HttpsError("not-found", "The payment method is not found.");
                   }
@@ -1038,9 +1038,9 @@ module.exports = (
                 }
                 const update: { [key: string]: any } = {};
                 update["defaultPayment"] = defaultPayment;
-                await userDoc.ref.set(update, {
-                  merge: true,
-                });
+                await userDoc.ref.save(
+                  update, { merge: true }
+                );
               }
               if (defaultPayment === data["payment_method"]) {
                 throw new functions.https.HttpsError("failed-precondition", "There was no change in the Payment method.");
@@ -1055,9 +1055,9 @@ module.exports = (
               update["paymentMethodId"] = defaultPayment;
               update["error"] = admin.firestore.FieldValue.delete();
               update["errorMessage"] = admin.firestore.FieldValue.delete();
-              await doc.ref.set(update, {
-                merge: true,
-              });
+              await doc.ref.save(
+                update, { merge: true }
+              );
               return {
                 success: true,
               };
@@ -1071,7 +1071,7 @@ module.exports = (
               if (!userId) {
                 throw new functions.https.HttpsError("invalid-argument", "The user id is empty.");
               }
-              const doc = await firestoreInstance.doc(`${stripeUserPath}/${userId}/${stripePurchasePath}/${orderId}`).get();
+              const doc = await firestoreInstance.doc(`${stripeUserPath}/${userId}/${stripePurchasePath}/${orderId}`).load();
               const data = doc.data();
               if (!data || !data["purchaseId"]) {
                 throw new functions.https.HttpsError("not-found", "The purchase data is invalid.");
@@ -1089,9 +1089,9 @@ module.exports = (
               update["cancel"] = true;
               update["error"] = admin.firestore.FieldValue.delete();
               update["errorMessage"] = admin.firestore.FieldValue.delete();
-              await doc.ref.set(update, {
-                merge: true,
-              });
+              await doc.ref.save(
+                update, { merge: true }
+              );
               return {
                 success: true,
               };
@@ -1106,7 +1106,7 @@ module.exports = (
               if (!userId) {
                 throw new functions.https.HttpsError("invalid-argument", "The user id is empty.");
               }
-              const doc = await firestoreInstance.doc(`${stripeUserPath}/${userId}/${stripePurchasePath}/${orderId}`).get();
+              const doc = await firestoreInstance.doc(`${stripeUserPath}/${userId}/${stripePurchasePath}/${orderId}`).load();
               const data = doc.data();
               if (!data || !data["purchaseId"]) {
                 throw new functions.https.HttpsError("not-found", "The purchase data is invalid.");
@@ -1131,9 +1131,9 @@ module.exports = (
                 const update: { [key: string]: any } = {};
                 update["refund"] = true;
                 update["cancel"] = true;
-                await doc.ref.set(update, {
-                  merge: true,
-                });
+                await doc.ref.save(
+                  update, { merge: true }
+                );
                 return {
                   success: true,
                 };
@@ -1141,9 +1141,9 @@ module.exports = (
                 const update: { [key: string]: any } = {};
                 update["error"] = true;
                 update["errorMessage"] = "The Purchase confirmation failed. Please replace the billing information and Refresh.";
-                await doc.ref.set(update, {
-                  merge: true,
-                });
+                await doc.ref.save(
+                  update, { merge: true }
+                );
                 throw err;
               }
             }
@@ -1190,7 +1190,7 @@ module.exports = (
               if (!orderId) {
                 throw new functions.https.HttpsError("invalid-argument", "The order id is empty.");
               }
-              const doc = await firestoreInstance.doc(`${stripePurchasePath}/${orderId}`).get();
+              const doc = await firestoreInstance.doc(`${stripePurchasePath}/${orderId}`).load();
               if (!doc.exists || !doc.get("subscription")) {
                 throw new functions.https.HttpsError("not-found", "The orderId data is not found");
               }

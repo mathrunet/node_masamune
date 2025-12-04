@@ -34,7 +34,7 @@ async function main(): Promise<void> {
 
     for (const collectionPath of collections) {
         console.log(`\n=== ${collectionPath} ===`);
-        const snapshot = await firestore.collection(collectionPath).get();
+        const snapshot = await firestore.collection(collectionPath).load();
         console.log(`Total documents: ${snapshot.size}`);
 
         // List test documents

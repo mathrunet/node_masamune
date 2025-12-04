@@ -38,7 +38,7 @@ module.exports = (
                 try {
                     const firestoreInstance = firestoreLoader(databaseId);
                     console.log(`Time: ${Date.now()} @${collectionPath}`);
-                    const collection = await firestoreInstance.collection(collectionPath).where("_done", "==", false).where("_time", "<=", Date.now()).orderBy("_time", "asc").get();
+                    const collection = await firestoreInstance.collection(collectionPath).where("_done", "==", false).where("_time", "<=", Date.now()).orderBy("_time", "asc").load();
                     console.log(`Length: ${collection.size}`);
                     for (var doc of collection.docs) {
                         console.log(`Doc: ${doc.id} ${doc.data()}`);
@@ -73,14 +73,14 @@ module.exports = (
                         }
                         if (res !== null && Object.keys(res).length > 0) {
                             console.log(res);
-                            await doc.ref.set({
+                            await doc.ref.save({
                                 "_done": true,
                                 ...res,
                             }, {
                                 merge: true
                             });
                         } else {
-                            await doc.ref.set({
+                            await doc.ref.save({
                                 "_done": true,
                             }, {
                                 merge: true

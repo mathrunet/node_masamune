@@ -102,7 +102,7 @@ module.exports = (
                 }));
                 return;
               }
-              const userCol = await firestoreInstance.collection(`${stripeUserPath}`).where("customer", "==", customerId).get();
+              const userCol = await firestoreInstance.collection(`${stripeUserPath}`).where("customer", "==", customerId).load();
               if (userCol.empty) {
                 res.status(404).send(JSON.stringify({
                   "error": "The account data is not found.",
@@ -111,7 +111,7 @@ module.exports = (
               }
               const user = userCol.docs[0];
               const userId = user.id;
-              const purchaseCol = await firestoreInstance.collection(`${stripeUserPath}/${userId}/${stripePurchasePath}`).where("purchaseId", "==", purchaseId).get();
+              const purchaseCol = await firestoreInstance.collection(`${stripeUserPath}/${userId}/${stripePurchasePath}`).where("purchaseId", "==", purchaseId).load();
               if (purchaseCol.empty) {
                 res.status(404).send(JSON.stringify({
                   "error": "The purchase data is not found.",
@@ -145,9 +145,9 @@ module.exports = (
                 }
               }
               update["updatedTime"] = new Date();
-              await purchase.ref.set(update, {
-                merge: true,
-              });
+              await purchase.ref.save(
+                update, { merge: true }
+              );
 
               res.status(200).send(JSON.stringify({
                 "success": true,
@@ -166,7 +166,7 @@ module.exports = (
                 }));
                 return;
               }
-              const userCol = await firestoreInstance.collection(`${stripeUserPath}`).where("customer", "==", customerId).get();
+              const userCol = await firestoreInstance.collection(`${stripeUserPath}`).where("customer", "==", customerId).load();
               if (userCol.empty) {
                 res.status(404).send(JSON.stringify({
                   "error": "The account data is not found.",
@@ -175,7 +175,7 @@ module.exports = (
               }
               const user = userCol.docs[0];
               const userId = user.id;
-              const purchaseCol = await firestoreInstance.collection(`${stripeUserPath}/${userId}/${stripePurchasePath}`).where("purchaseId", "==", purchaseId).get();
+              const purchaseCol = await firestoreInstance.collection(`${stripeUserPath}/${userId}/${stripePurchasePath}`).where("purchaseId", "==", purchaseId).load();
               if (purchaseCol.empty) {
                 res.status(404).send(JSON.stringify({
                   "error": "The purchase data is not found.",
@@ -200,9 +200,9 @@ module.exports = (
                   update["capturedAmount"] = payment["charges"]["data"][0]["amount_captured"];
                 }
               }
-              await purchase.ref.set(update, {
-                merge: true,
-              });
+              await purchase.ref.save(
+                update, { merge: true }
+              );
 
               res.status(200).send(JSON.stringify({
                 "success": true,
@@ -222,7 +222,7 @@ module.exports = (
                 }));
                 return;
               }
-              const userCol = await firestoreInstance.collection(`${stripeUserPath}`).where("customer", "==", customerId).get();
+              const userCol = await firestoreInstance.collection(`${stripeUserPath}`).where("customer", "==", customerId).load();
               if (userCol.empty) {
                 res.status(404).send(JSON.stringify({
                   "error": "The account data is not found.",
@@ -231,7 +231,7 @@ module.exports = (
               }
               const user = userCol.docs[0];
               const userId = user.id;
-              const purchaseCol = await firestoreInstance.collection(`${stripeUserPath}/${userId}/${stripePurchasePath}`).where("purchaseId", "==", purchaseId).get();
+              const purchaseCol = await firestoreInstance.collection(`${stripeUserPath}/${userId}/${stripePurchasePath}`).where("purchaseId", "==", purchaseId).load();
               if (purchaseCol.empty) {
                 res.status(404).send(JSON.stringify({
                   "error": "The purchase data is not found.",
@@ -268,9 +268,9 @@ module.exports = (
               update["updatedTime"] = new Date();
               update["error"] = true;
               update["errorMessage"] = errorMessage;
-              await purchase.ref.set(update, {
-                merge: true,
-              });
+              await purchase.ref.save(
+                update, { merge: true }
+              );
 
               res.status(200).send(JSON.stringify({
                 "success": true,
@@ -295,7 +295,7 @@ module.exports = (
                 }));
                 return;
               }
-              const col = await firestoreInstance.collection(`${stripeUserPath}`).where("customer", "==", customerId).get();
+              const col = await firestoreInstance.collection(`${stripeUserPath}`).where("customer", "==", customerId).load();
               if (col.empty) {
                 res.status(404).send(JSON.stringify({
                   "error": "The account data is not found.",
@@ -327,7 +327,7 @@ module.exports = (
                 }));
                 return;
               }
-              const col = await firestoreInstance.collection(`${stripeUserPath}`).where("customer", "==", customerId).get();
+              const col = await firestoreInstance.collection(`${stripeUserPath}`).where("customer", "==", customerId).load();
               if (col.empty) {
                 res.status(404).send(JSON.stringify({
                   "error": "The account data is not found.",
@@ -366,7 +366,7 @@ module.exports = (
                 }));
                 return;
               }
-              const col = await firestoreInstance.collection(`${stripeUserPath}`).where("customer", "==", customerId).get();
+              const col = await firestoreInstance.collection(`${stripeUserPath}`).where("customer", "==", customerId).load();
               if (col.empty) {
                 res.status(404).send(JSON.stringify({
                   "error": "The account data is not found.",
@@ -379,9 +379,9 @@ module.exports = (
               if (session["setup_intent"]) {
                 update["setupIntent"] = session["setup_intent"];
               }
-              await user.ref.set(update, {
-                merge: true,
-              });
+              await user.ref.save(
+                update, { merge: true }
+              );
 
               await syncStripePayment(
                 stripeClient,
@@ -420,7 +420,7 @@ module.exports = (
               };
 
               let doc: FirebaseFirestore.DocumentReference<FirebaseFirestore.DocumentData>;
-              const subscriptionCol = await firestoreInstance.collection(`${stripePurchasePath}`).where("subscription", "==", id).get();
+              const subscriptionCol = await firestoreInstance.collection(`${stripePurchasePath}`).where("subscription", "==", id).load();
               if (subscriptionCol.empty) {
                 doc = await firestoreInstance.doc(targetPath);
               } else {
@@ -457,9 +457,9 @@ module.exports = (
               update["start_date"] = subscription["start_date"];
               update["start_date"] = subscription["start_date"];
               console.log(`Subscription status is ${status} ${stripePurchasePath}.`);
-              await doc.set(update, {
-                merge: true,
-              });
+              await doc.save(
+                update, { merge: true }
+              );
               res.status(200).send(JSON.stringify({
                 "success": "Subscription is active.",
               }));
@@ -549,7 +549,7 @@ async function syncStripePayment(stripeClient: stripe.Stripe, firestoreInstance:
     );
   }
 
-  const payments = await firestoreInstance.collection(`${stripeUserPath}/${userId}/${stripePaymentPath}`).get();
+  const payments = await firestoreInstance.collection(`${stripeUserPath}/${userId}/${stripePaymentPath}`).load();
 
   await firestoreInstance.runTransaction(
     async (transaction) => {

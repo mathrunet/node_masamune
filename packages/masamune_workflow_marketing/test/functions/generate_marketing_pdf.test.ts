@@ -20,6 +20,7 @@ import * as admin from "firebase-admin";
 import * as dotenv from "dotenv";
 import * as path from "path";
 import * as fs from "fs";
+import { ModelTimestamp } from "@mathrunet/masamune";
 
 // Load test environment variables
 dotenv.config({ path: path.join(__dirname, "../.env") });
@@ -129,18 +130,15 @@ describe("GenerateMarketingPdf Integration Tests", () => {
         const actionRef = firestore.doc(actionPath);
 
         // Create Organization
-        await organizationRef.set({
+        await organizationRef.save({
             "@uid": testOrganizationId,
             "@time": nowTs,
             name: "Test Organization",
-            "#createdTime": { "@target": "createdTime", "@type": "DateTime", "@time": nowTs },
-            createdTime: nowTs,
-            "#updatedTime": { "@target": "updatedTime", "@type": "DateTime", "@time": nowTs },
-            updatedTime: nowTs,
-        }, { merge: true });
-
+            "createdTime": new ModelTimestamp(nowTs.toDate()),
+            "updatedTime": new ModelTimestamp(nowTs.toDate()),
+        });
         // Create Project with all credentials
-        await projectRef.set({
+        await projectRef.save({
             "@uid": testProjectId,
             "@time": nowTs,
             name: "Test Project",
@@ -150,14 +148,12 @@ describe("GenerateMarketingPdf Integration Tests", () => {
             appstore_auth_key_id: appStoreKeyId,
             appstore_auth_key: appStorePrivateKey,
             github_personal_access_token: githubToken,
-            "#createdTime": { "@target": "createdTime", "@type": "DateTime", "@time": nowTs },
-            createdTime: nowTs,
-            "#updatedTime": { "@target": "updatedTime", "@type": "DateTime", "@time": nowTs },
-            updatedTime: nowTs,
-        }, { merge: true });
+            "createdTime": new ModelTimestamp(nowTs.toDate()),
+            "updatedTime": new ModelTimestamp(nowTs.toDate()),
+        });
 
         // Create Task with accumulated results
-        await taskRef.set({
+        await taskRef.save({
             "@uid": options.taskId,
             "@time": nowTs,
             organization: organizationRef,
@@ -166,15 +162,13 @@ describe("GenerateMarketingPdf Integration Tests", () => {
             actions: options.actions,
             usage: 0,
             results: options.accumulatedResults || {},
-            "#createdTime": { "@target": "createdTime", "@type": "DateTime", "@time": nowTs },
-            createdTime: nowTs,
-            "#updatedTime": { "@target": "updatedTime", "@type": "DateTime", "@time": nowTs },
-            updatedTime: nowTs,
+            "createdTime": new ModelTimestamp(nowTs.toDate()),
+            "updatedTime": new ModelTimestamp(nowTs.toDate()),
         });
 
         // Create Action
         const actionIndex = options.actionIndex ?? 0;
-        await actionRef.set({
+        await actionRef.save({
             "@uid": options.actionId,
             "@time": nowTs,
             command: options.actions[actionIndex],
@@ -183,13 +177,10 @@ describe("GenerateMarketingPdf Integration Tests", () => {
             project: projectRef,
             status: "running",
             token: options.token,
-            "#tokenExpiredTime": { "@target": "tokenExpiredTime", "@type": "DateTime", "@time": tokenExpiredTs },
-            tokenExpiredTime: tokenExpiredTs,
+            "tokenExpiredTime": new ModelTimestamp(tokenExpiredTs.toDate()),
             usage: 0,
-            "#createdTime": { "@target": "createdTime", "@type": "DateTime", "@time": nowTs },
-            createdTime: nowTs,
-            "#updatedTime": { "@target": "updatedTime", "@type": "DateTime", "@time": nowTs },
-            updatedTime: nowTs,
+            "createdTime": new ModelTimestamp(nowTs.toDate()),
+            "updatedTime": new ModelTimestamp(nowTs.toDate()),
         });
 
         return { organizationRef, projectRef, taskRef, actionRef, taskPath, actionPath };
@@ -215,9 +206,9 @@ describe("GenerateMarketingPdf Integration Tests", () => {
         });
 
         // Get the task to retrieve accumulated results
-        const actionDoc = await firestore.doc(actionPath).get();
+        const actionDoc = await firestore.doc(actionPath).load();
         const actionData = actionDoc.data();
-        const taskDoc = await actionData?.task?.get();
+        const taskDoc = await actionData?.task?.load();
         const taskData = taskDoc?.data();
 
         return taskData?.results || {};
@@ -574,7 +565,7 @@ describe("GenerateMarketingPdf Integration Tests", () => {
                 });
 
                 // Verify results
-                const taskDoc = await firestore.doc(pdfRefs.taskPath).get();
+                const taskDoc = await firestore.doc(pdfRefs.taskPath).load();
                 const taskData = taskDoc.data();
 
                 expect(taskData).toBeDefined();
@@ -640,7 +631,7 @@ describe("GenerateMarketingPdf Integration Tests", () => {
                 }
 
                 // Check for PDF asset
-                const actionDoc = await firestore.doc(pdfRefs.actionPath).get();
+                const actionDoc = await firestore.doc(pdfRefs.actionPath).load();
                 const actionData = actionDoc.data();
                 console.log("\n=== PDF Generation Results ===");
                 console.log("Action assets:", actionData?.assets);
@@ -712,7 +703,7 @@ describe("GenerateMarketingPdf Integration Tests", () => {
                 });
 
                 // Verify results
-                const actionDoc = await firestore.doc(refs.actionPath).get();
+                const actionDoc = await firestore.doc(refs.actionPath).load();
                 const actionData = actionDoc.data();
 
                 expect(actionData).toBeDefined();
@@ -763,7 +754,7 @@ describe("GenerateMarketingPdf Integration Tests", () => {
                 });
 
                 // Verify Task - should be failed
-                const taskDoc = await firestore.doc(refs.taskPath).get();
+                const taskDoc = await firestore.doc(refs.taskPath).load();
                 const taskData = taskDoc.data();
 
                 expect(taskData).toBeDefined();
@@ -814,7 +805,7 @@ describe("GenerateMarketingPdf Integration Tests", () => {
                 });
 
                 // Verify Task - should be failed
-                const taskDoc = await firestore.doc(refs.taskPath).get();
+                const taskDoc = await firestore.doc(refs.taskPath).load();
                 const taskData = taskDoc.data();
 
                 expect(taskData).toBeDefined();

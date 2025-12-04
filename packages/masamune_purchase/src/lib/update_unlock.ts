@@ -39,10 +39,10 @@ export async function updateUnlock({
     update[key] = true;
     update["@uid"] = uid;
     update["@time"] = new Date();
-    await firestoreInstance.doc(parent).set(update, {
-        merge: true,
-    });
-    await firestoreInstance.doc(`${parent}/transaction/${transactionId}`).set(transactionData, {
-        merge: true,
-    });
+    await firestoreInstance.doc(parent).save(
+        update, { merge: true }
+    );
+    await firestoreInstance.doc(`${parent}/transaction/${transactionId}`).save(
+        transactionData, { merge: true }
+    );
 }

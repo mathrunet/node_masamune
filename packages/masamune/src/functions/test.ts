@@ -31,7 +31,7 @@ module.exports = (
       const firestoreDatabaseIds = options.firestoreDatabaseIds ?? [""];
       for (const databaseId of firestoreDatabaseIds) {
         const firestoreInstance = firestoreLoader(databaseId);
-        const doc = await firestoreInstance.doc(path).get();
+        const doc = await firestoreInstance.doc(path).load();
         return { ...doc.data() };
       }
     } catch (err) {

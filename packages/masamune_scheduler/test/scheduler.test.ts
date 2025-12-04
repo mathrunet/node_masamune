@@ -41,12 +41,12 @@ describe("Firestore Test", () => {
                 user: firestoreInstance.doc(`${userCollectionPath}/${userUid}`),
             });
         }
-        await firestoreInstance.doc(`${sourceCollectionPath}/${sourceData.uid}`).set(sourceData);
+        await firestoreInstance.doc(`${sourceCollectionPath}/${sourceData.uid}`).save(sourceData);
         for (const userData of userDatas) {
-            await firestoreInstance.doc(`${userCollectionPath}/${userData.uid}`).set(userData);
+            await firestoreInstance.doc(`${userCollectionPath}/${userData.uid}`).save(userData);
         }
         for (const sourceUserData of sourceUserDatas) {
-            await firestoreInstance.doc(`${sourceCollectionPath}/${sourceData.uid}/user/${sourceUserData.uid}`).set(sourceUserData);
+            await firestoreInstance.doc(`${sourceCollectionPath}/${sourceData.uid}/user/${sourceUserData.uid}`).save(sourceUserData);
         }
         const func = require("@mathrunet/masamune_notification/src/functions/send_notification");
         let wrapped = config.wrap(func([], {}, {}));
@@ -151,7 +151,7 @@ describe("Firestore Test", () => {
             "@type": "ModelServerCommandBase",
         };
         let doc = firestoreInstance.doc(`${schedulerCollectionPath}/${uid}`);
-        await doc.set({
+        await doc.save({
             "#command": command,
             "uid": uid,
             "_done": false,
@@ -161,7 +161,7 @@ describe("Firestore Test", () => {
         const func = require("../src/functions/scheduler");
         let wrapped = config.wrap(func([], {}, { path: schedulerCollectionPath }));
         await wrapped({});
-        let res = await doc.get();
+        let res = await doc.load();
         let data = res.data();
         expect(data!["_done"]).toBe(true);
         expect(data!["results"]).toEqual(JSON.stringify([command["@private"]["targetToken"]]));
@@ -185,7 +185,7 @@ describe("Firestore Test", () => {
             "@type": "ModelServerCommandBase",
         };
         let doc = firestoreInstance.doc(`${schedulerCollectionPath}/${uid}`);
-        await doc.set({
+        await doc.save({
             "#command": command,
             "command": "copy_document",
             "uid": uid,
@@ -199,10 +199,10 @@ describe("Firestore Test", () => {
         const func = require("../src/functions/scheduler");
         let wrapped = config.wrap(func([], {}, { path: schedulerCollectionPath }));
         await wrapped({});
-        let res = await doc.get();
+        let res = await doc.load();
         let data = res.data();
         expect(data!["_done"]).toBe(true);
-        res = await firestoreInstance.doc(targetPath).get();
+        res = await firestoreInstance.doc(targetPath).load();
         data = res.data();
         expect(data!["name"]).toEqual("aaa");
         expect(data!["text"]).toEqual("bbb");
@@ -226,7 +226,7 @@ describe("Firestore Test", () => {
             sourceDatas.push(sourceData);
         }
         for (const sourceData of sourceDatas) {
-            await firestoreInstance.doc(`${sourceCollection}/${sourceData.uid}`).set(sourceData);
+            await firestoreInstance.doc(`${sourceCollection}/${sourceData.uid}`).save(sourceData);
         }
         const schedulerCollectionPath = "unit/test/schedule";
         let uid = "notificationTestUid";
@@ -250,14 +250,14 @@ describe("Firestore Test", () => {
             "@type": "ModelServerCommandBase",
         };
         let doc = firestoreInstance.doc(`${schedulerCollectionPath}/${uid}`);
-        await doc.set({
+        await doc.save({
             "#command": command,
             "command": "delete_documents",
             "uid": uid,
             "_done": false,
             "_time": now.getTime(),
         });
-        let col = await firestoreInstance.collection(sourceCollection).get();
+        let col = await firestoreInstance.collection(sourceCollection).load();
         let d = col.docs.find((e) => e.id === "sourceTestUid4");
         expect(d).not.toBeUndefined();
         d = col.docs.find((e) => e.id === "sourceTestUid8");
@@ -265,10 +265,10 @@ describe("Firestore Test", () => {
         const func = require("../src/functions/scheduler");
         let wrapped = config.wrap(func([], {}, { path: schedulerCollectionPath }));
         await wrapped({});
-        let res = await doc.get();
+        let res = await doc.load();
         let data = res.data();
         expect(data!["_done"]).toBe(true);
-        col = await firestoreInstance.collection(sourceCollection).get();
+        col = await firestoreInstance.collection(sourceCollection).load();
         d = col.docs.find((e) => e.id === "sourceTestUid4");
         expect(d).not.toBeUndefined();
         d = col.docs.find((e) => e.id === "sourceTestUid8");

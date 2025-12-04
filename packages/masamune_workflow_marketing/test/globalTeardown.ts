@@ -25,7 +25,7 @@ async function deleteCollection(
 
     // Process in batches to avoid memory issues
     let query = collectionRef.limit(batchSize);
-    let snapshot = await query.get();
+    let snapshot = await query.load();
 
     while (!snapshot.empty) {
         const batch = firestore.batch();
@@ -49,7 +49,7 @@ async function deleteCollection(
         deletedCount += docsToDelete.length;
 
         // Get next batch
-        snapshot = await query.get();
+        snapshot = await query.load();
     }
 
     return deletedCount;
@@ -69,7 +69,7 @@ async function deleteTestDocuments(
     const snapshot = await collectionRef
         .where(admin.firestore.FieldPath.documentId(), ">=", "test-")
         .where(admin.firestore.FieldPath.documentId(), "<", "test-\uf8ff")
-        .get();
+        .load();
 
     if (snapshot.empty) {
         return 0;
@@ -108,7 +108,7 @@ async function deleteOrphanedTestSubcollections(
 
     // Query using collection group to find all subcollections with the given name
     const collectionGroup = firestore.collectionGroup(subcollectionName);
-    const snapshot = await collectionGroup.get();
+    const snapshot = await collectionGroup.load();
 
     if (snapshot.empty) {
         return 0;

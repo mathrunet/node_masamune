@@ -84,7 +84,7 @@ module.exports = (
                 }));
                 return;
               }
-              const col = await firestoreInstance.collection(`${stripeUserPath}`).where("account", "==", id).get();
+              const col = await firestoreInstance.collection(`${stripeUserPath}`).where("account", "==", id).load();
               if (col.empty) {
                 res.status(404).send(JSON.stringify({
                   "error": "The account data is not found.",
@@ -102,9 +102,9 @@ module.exports = (
                 }
                 update["capability"] = capability;
               }
-              await col.docs[0].ref.set(update, {
-                merge: true,
-              });
+              await col.docs[0].ref.save(
+                update, { merge: true }
+              );
 
               res.status(200).send(JSON.stringify({
                 "success": true,

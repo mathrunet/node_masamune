@@ -31,7 +31,7 @@ export class CollectFromFirebaseAnalytics extends WorkflowProcessFunctionBase {
     async process(context: WorkflowContext): Promise<Action> {
         // 1. action.projectからProjectデータを取得
         const action = context.action;
-        const project = await action.project?.get();
+        const project = await action.project?.load();
         const projectData = project?.data() as Project | undefined;
         const serviceAccountJson = projectData?.google_service_account;
 

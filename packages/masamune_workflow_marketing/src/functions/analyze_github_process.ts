@@ -138,7 +138,7 @@ export class AnalyzeGitHubProcess extends WorkflowProcessFunctionBase {
             }
 
             // 4. Get GitHub token from project
-            const projectDoc = await projectRef.get();
+            const projectDoc = await projectRef.load();
             const projectData = projectDoc.data() as Project | undefined;
             const githubToken = projectData?.github_personal_access_token;
 

@@ -18,7 +18,7 @@ describe("Firestore Test", () => {
             number: 100,
         };
         const firestoreInstance = admin.firestore();
-        await firestoreInstance.doc(testPath).set(testData);
+        await firestoreInstance.doc(testPath).save(testData);
         const func = require("@mathrunet/masamune/src/functions/test");
         const wrapped = config.wrap(func([], {}, {}));
         const res = await wrapped({
@@ -45,9 +45,9 @@ describe("Firestore Test", () => {
             sourceDatas.push(sourceData);
         }
         for (const sourceData of sourceDatas) {
-            await firestoreInstance.doc(`${sourceCollection}/${sourceData.uid}`).set(sourceData);
+            await firestoreInstance.doc(`${sourceCollection}/${sourceData.uid}`).save(sourceData);
         }
-        let col = await firestoreInstance.collection(sourceCollection).get();
+        let col = await firestoreInstance.collection(sourceCollection).load();
         let d = col.docs.find((e) => e.id === "deleteTestUid4");
         expect(d).not.toBeUndefined();
         d = col.docs.find((e) => e.id === "deleteTestUid8");
@@ -60,7 +60,7 @@ describe("Firestore Test", () => {
             afterSnap: afterSnap,
             beforeSnap: beforeSnap,
         });
-        col = await firestoreInstance.collection(sourceCollection).get();
+        col = await firestoreInstance.collection(sourceCollection).load();
         d = col.docs.find((e) => e.id === "deleteTestUid4");
         expect(d).toBeUndefined();
         d = col.docs.find((e) => e.id === "deleteTestUid8");

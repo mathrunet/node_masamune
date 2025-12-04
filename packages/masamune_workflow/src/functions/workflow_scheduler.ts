@@ -1,5 +1,5 @@
 import * as functions from "firebase-functions/v2";
-import { SchedulerFunctionsOptions, firestoreLoader, ModelFieldValue, utils } from "@mathrunet/masamune";
+import { SchedulerFunctionsOptions, firestoreLoader, ModelFieldValue, utils, ModelTimestamp } from "@mathrunet/masamune";
 import { Task, Workflow, WorkflowRepeatList } from "../lib/interfaces";
 import * as admin from "firebase-admin";
 
@@ -33,7 +33,7 @@ module.exports = (
                 try {
                     const now = new Date();
                     const firestoreInstance = firestoreLoader(databaseId);
-                    const workflowCollection = await firestoreInstance.collection("plugins/workflow/workflow").where("nextTime", "<=", new Date()).orderBy("nextTime", "asc").limit(_kCollectionLimit).get();
+                    const workflowCollection = await firestoreInstance.collection("plugins/workflow/workflow").where("nextTime", "<=", new Date()).orderBy("nextTime", "asc").limit(_kCollectionLimit).load();
                     const taskCollection = firestoreInstance.collection("plugins/workflow/task");
                     const promies: Promise<any>[] = [];
                     for (var doc of workflowCollection.docs) {
@@ -46,15 +46,11 @@ module.exports = (
                             const updatedWorkflowData: Workflow = {
                                 ...data,
                                 "@time": now,
-                                "#nextTime": admin.firestore.FieldValue.delete(),
                                 "nextTime": admin.firestore.FieldValue.delete(),
-                                ...ModelFieldValue.modelTimestamp({
-                                    key: "updatedTime",
-                                    date: now,
-                                }),
+                                "updatedTime": new ModelTimestamp(now),
                             };
                             promies.push(
-                                doc.ref.set(
+                                doc.ref.save(
                                     updatedWorkflowData, { merge: true }
                                 )
                             );
@@ -64,7 +60,7 @@ module.exports = (
                         const task = taskCollection.doc(taskId);
                         const nextAction = data.actions[0];
                         promies.push(
-                            task.set(
+                            task.save(
                                 {
                                     "@uid": taskId,
                                     "@time": now,
@@ -77,18 +73,9 @@ module.exports = (
                                     "prompt": data.prompt,
                                     "materials": data.materials,
                                     "usage": 0,
-                                    ...ModelFieldValue.modelTimestamp({
-                                        key: "startTime",
-                                        date: now,
-                                    }),
-                                    ...ModelFieldValue.modelTimestamp({
-                                        key: "createdTime",
-                                        date: now,
-                                    }),
-                                    ...ModelFieldValue.modelTimestamp({
-                                        key: "updatedTime",
-                                        date: now,
-                                    }),
+                                    "startTime": new ModelTimestamp(now),
+                                    "createdTime": new ModelTimestamp(now),
+                                    "updatedTime": new ModelTimestamp(now),
                                 }, { merge: true }
                             )
                         );
@@ -97,17 +84,11 @@ module.exports = (
                                 const updatedWorkflowData: Workflow = {
                                     ...data,
                                     "@time": now,
-                                    ...ModelFieldValue.modelTimestamp({
-                                        key: "nextTime",
-                                        date: new Date(now.getTime() + 24 * 60 * 60 * 1000),
-                                    }),
-                                    ...ModelFieldValue.modelTimestamp({
-                                        key: "updatedTime",
-                                        date: now,
-                                    }),
+                                    "nextTime": new ModelTimestamp(new Date(now.getTime() + 24 * 60 * 60 * 1000)),
+                                    "updatedTime": new ModelTimestamp(now),
                                 };
                                 promies.push(
-                                    doc.ref.set(
+                                    doc.ref.save(
                                         updatedWorkflowData, { merge: true }
                                     )
                                 );
@@ -117,17 +98,11 @@ module.exports = (
                                 const updatedWorkflowData: Workflow = {
                                     ...data,
                                     "@time": now,
-                                    ...ModelFieldValue.modelTimestamp({
-                                        key: "nextTime",
-                                        date: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000),
-                                    }),
-                                    ...ModelFieldValue.modelTimestamp({
-                                        key: "updatedTime",
-                                        date: now,
-                                    }),
+                                    "nextTime": new ModelTimestamp(new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)),
+                                    "updatedTime": new ModelTimestamp(now),
                                 };
                                 promies.push(
-                                    doc.ref.set(
+                                    doc.ref.save(
                                         updatedWorkflowData, { merge: true }
                                     )
                                 );
@@ -141,17 +116,11 @@ module.exports = (
                                 const updatedWorkflowData: Workflow = {
                                     ...data,
                                     "@time": now,
-                                    ...ModelFieldValue.modelTimestamp({
-                                        key: "nextTime",
-                                        date: new Date(now.getFullYear(), now.getMonth() + 1, date, now.getHours(), now.getMinutes(), now.getSeconds(), now.getMilliseconds()),
-                                    }),
-                                    ...ModelFieldValue.modelTimestamp({
-                                        key: "updatedTime",
-                                        date: now,
-                                    }),
+                                    "nextTime": new ModelTimestamp(new Date(now.getFullYear(), now.getMonth() + 1, date, now.getHours(), now.getMinutes(), now.getSeconds(), now.getMilliseconds())),
+                                    "updatedTime": new ModelTimestamp(now),
                                 };
                                 promies.push(
-                                    doc.ref.set(
+                                    doc.ref.save(
                                         updatedWorkflowData, { merge: true }
                                     )
                                 );
@@ -161,15 +130,11 @@ module.exports = (
                                 const updatedWorkflowData: Workflow = {
                                     ...data,
                                     "@time": now,
-                                    "#nextTime": admin.firestore.FieldValue.delete(),
                                     "nextTime": admin.firestore.FieldValue.delete(),
-                                    ...ModelFieldValue.modelTimestamp({
-                                        key: "updatedTime",
-                                        date: now,
-                                    }),
+                                    "updatedTime": new ModelTimestamp(now),
                                 };
                                 promies.push(
-                                    doc.ref.set(
+                                    doc.ref.save(
                                         updatedWorkflowData, { merge: true }
                                     )
                                 );

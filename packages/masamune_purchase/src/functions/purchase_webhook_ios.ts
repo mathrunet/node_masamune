@@ -58,7 +58,7 @@ module.exports = (
                             const targetPath = process.env.PURCHASE_SUBSCRIPTIONPATH;
                             if (transactionInfo) {
                                 const transactionId = transactionInfo.originalTransactionId;
-                                const doc = await firestoreInstance.doc(`${targetPath}/${transactionId}`).get();
+                                const doc = await firestoreInstance.doc(`${targetPath}/${transactionId}`).load();
                                 const data = doc?.data();
                                 const path = doc?.ref.path;
                                 if (!data) {
@@ -81,7 +81,9 @@ module.exports = (
                                         data["expiredTime"] = parseInt(transactionInfo["expiresDate"]);
                                         data["productId"] = data["product_id"] = transactionInfo["productId"];
                                         data["orderId"] = transactionInfo["transactionId"];
-                                        await firestoreInstance.doc(path).set(data);
+                                        await firestoreInstance.doc(path).save(
+                                            data, { merge: true }
+                                        );
                                         console.log(`Updated subscription: ${data["productId"]}:${user}`);
                                         break;
                                     }
@@ -101,7 +103,9 @@ module.exports = (
                                         data["expiredTime"] = parseInt(transactionInfo["expiresDate"]);
                                         data["productId"] = data["product_id"] = transactionInfo["productId"];
                                         data["orderId"] = transactionInfo["transactionId"];
-                                        await firestoreInstance.doc(path).set(data);
+                                        await firestoreInstance.doc(path).save(
+                                            data, { merge: true }
+                                        );
                                         console.log(`Updated subscription: ${data["productId"]}:${user}`);
                                         break;
                                     }
@@ -119,7 +123,9 @@ module.exports = (
                                         data["paused"] = false;
                                         data["productId"] = data["product_id"] = transactionInfo["productId"];
                                         data["orderId"] = transactionInfo["transactionId"];
-                                        await firestoreInstance.doc(path).set(data);
+                                        await firestoreInstance.doc(path).save(
+                                            data, { merge: true }
+                                        );
                                         console.log(`Expired subscription: ${data["productId"]}:${user}`);
                                         break;
                                     }

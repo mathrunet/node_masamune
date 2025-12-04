@@ -52,7 +52,7 @@ module.exports = (
                     "invalid-argument", "The id is not set.",
                 );
             }
-            const asset = await firestoreInstance.collection("plugins/workflow/asset").doc(assetId).get();
+            const asset = await firestoreInstance.collection("plugins/workflow/asset").doc(assetId).load();
             if (!asset.exists) {
                 throw new functions.https.HttpsError("not-found", "The asset is not found.");
             }

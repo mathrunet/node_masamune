@@ -125,7 +125,7 @@ export async function updateSubscription({
     }
     update["@time"] = new Date();
     update["@uid"] = path.basename(targetCollectionPath);
-    await firestoreInstance.doc(targetCollectionPath).set(update, {
-        merge: true,
-    });
+    await firestoreInstance.doc(targetCollectionPath).save(
+        update, { merge: true }
+    );
 }

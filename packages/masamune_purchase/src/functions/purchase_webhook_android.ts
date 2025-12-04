@@ -95,7 +95,7 @@ module.exports = (
                                 productId: subscriptionId,
                                 purchaseToken: purchaseToken,
                             });
-                            const search = await firestoreInstance.collection(targetPath).where("token", "==", purchaseToken).get();
+                            const search = await firestoreInstance.collection(targetPath).where("token", "==", purchaseToken).load();
                             if (search.empty) {
                                 console.error("The purchased data is not found.");
                                 return;
@@ -125,7 +125,9 @@ module.exports = (
                                     data["expiredTime"] = parseInt(res["expiryTimeMillis"]);
                                     data["orderId"] = res["orderId"];
                                     data["@time"] = new Date();
-                                    await firestoreInstance.doc(path).set(data);
+                                    await firestoreInstance.doc(path).save(
+                                        data, { merge: true }
+                                    );
                                     console.log(`Updated subscription: ${data["productId"]}:${user}`);
                                     break;
                                 }
@@ -141,7 +143,9 @@ module.exports = (
                                     data["expiredTime"] = parseInt(res["expiryTimeMillis"]);
                                     data["orderId"] = res["orderId"];
                                     data["@time"] = new Date();
-                                    await firestoreInstance.doc(path).set(data);
+                                    await firestoreInstance.doc(path).save(
+                                        data, { merge: true }
+                                    );
                                     console.log(`Updated subscription: ${data["productId"]}:${user}`);
                                     break;
                                 }
@@ -159,12 +163,16 @@ module.exports = (
                                     if (expiryTimeMillis <= time) {
                                         data["expired"] = true;
                                         data["paused"] = false;
-                                        await firestoreInstance.doc(path).set(data);
+                                        await firestoreInstance.doc(path).save(
+                                            data, { merge: true }
+                                        );
                                         console.log(`Expired subscription: ${data["productId"]}:${user}`);
                                     } else {
                                         data["expired"] = false;
                                         data["paused"] = false;
-                                        await firestoreInstance.doc(path).set(data);
+                                        await firestoreInstance.doc(path).save(
+                                            data, { merge: true }
+                                        );
                                         console.log(`Updated subscription: ${data["productId"]}:${user}`);
                                     }
                                     break;
@@ -182,11 +190,15 @@ module.exports = (
                                     data["expired"] = true;
                                     if (notificationType === SubscriptionNotificationTypes.SUBSCRIPTION_PAUSED || notificationType === SubscriptionNotificationTypes.SUBSCRIPTION_ON_HOLD) {
                                         data["paused"] = true;
-                                        await firestoreInstance.doc(path).set(data);
+                                        await firestoreInstance.doc(path).save(
+                                            data, { merge: true }
+                                        );
                                         console.log(`Paused subscription: ${data["productId"]}:${user}`);
                                     } else {
                                         data["paused"] = false;
-                                        await firestoreInstance.doc(path).set(data);
+                                        await firestoreInstance.doc(path).save(
+                                            data, { merge: true }
+                                        );
                                         console.log(`Expired subscription: ${data["productId"]}:${user}`);
                                     }
                                     break;
@@ -196,7 +208,7 @@ module.exports = (
                             }
                             if (res["linkedPurchaseToken"]) {
                                 const linkedPurchaseToken = res["linkedPurchaseToken"];
-                                const search = await firestoreInstance.collection(targetPath).where("token", "==", linkedPurchaseToken).get();
+                                const search = await firestoreInstance.collection(targetPath).where("token", "==", linkedPurchaseToken).load();
                                 if (search.empty) {
                                     return;
                                 }
@@ -210,7 +222,9 @@ module.exports = (
                                 data["expired"] = true;
                                 data["paused"] = false;
                                 data["@time"] = new Date();
-                                await firestoreInstance.doc(path).set(data);
+                                await firestoreInstance.doc(path).save(
+                                    data, { merge: true }
+                                );
                                 console.log(`Expired subscription: ${data["productId"]}:${user}`);
                             }
                         }

@@ -47,10 +47,8 @@ export async function copyDocument({
         update[key] = docData[key];
     }
     update["@uid"] = id;
-    await firestoreInstance.doc(path).set(
-        update, {
-        merge: true
-    }
+    await firestoreInstance.doc(path).save(
+        update, { merge: true }
     );
     return {};
 }

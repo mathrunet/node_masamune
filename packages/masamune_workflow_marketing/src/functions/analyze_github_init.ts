@@ -84,7 +84,7 @@ export class AnalyzeGitHubInit extends WorkflowProcessFunctionBase {
             admin.initializeApp();
         }
 
-        const projectDoc = await projectRef.get();
+        const projectDoc = await projectRef.load();
         const projectData = projectDoc.data() as Project | undefined;
         const githubToken = projectData?.github_personal_access_token;
 
@@ -166,7 +166,7 @@ export class AnalyzeGitHubInit extends WorkflowProcessFunctionBase {
                 );
                 console.log(`AnalyzeGitHubInit: Task actions updated`);
                 // Verify update
-                const updatedDoc = await taskRef.get();
+                const updatedDoc = await taskRef.load();
                 const updatedActions = updatedDoc.data()?.actions || [];
                 console.log(`AnalyzeGitHubInit: Verified actions count =`, updatedActions.length);
             }
@@ -279,7 +279,7 @@ export class AnalyzeGitHubInit extends WorkflowProcessFunctionBase {
             const folderPath = lastSlash === -1 ? "" : filePath.substring(0, lastSlash);
 
             if (folderFileMap.has(folderPath)) {
-                folderFileMap.get(folderPath)!.push(filePath);
+                folderFileMap.get(folderPath)?.push(filePath);
             } else {
                 // Find the closest parent folder
                 let parent = folderPath;

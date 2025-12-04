@@ -1,5 +1,5 @@
 import * as functions from "firebase-functions/v2";
-import { FunctionsBase, HttpFunctionsOptions, ModelFieldValue } from "@mathrunet/masamune";
+import { FunctionsBase, HttpFunctionsOptions, ModelFieldValue, ModelTimestamp } from "@mathrunet/masamune";
 import * as admin from "firebase-admin";
 import { Action, Task, Usage, Plan, Subscription, Campaign } from "./interfaces";
 import { GoogleGenAI } from "@google/genai";
@@ -77,7 +77,7 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                         admin.initializeApp();
                     }
                     const firestore = admin.firestore();
-                    const action = await firestore.doc(path).get();
+                    const action = await firestore.doc(path).load();
                     if (!action.exists) {
                         throw new Error("action-not-found");
                     }
@@ -88,16 +88,16 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                     if (!actionData || !organization || !organizationId || !command) {
                         throw new Error("action-not-found");
                     }
-                    const subscriptions = await firestore.collection(`plugins/iap/subscription`).where("userId", "==", organizationId).get();
+                    const subscriptions = await firestore.collection(`plugins/iap/subscription`).where("userId", "==", organizationId).load();
                     const subscription = subscriptions.size > 0 ? subscriptions.docs[0].data() as Subscription | undefined | null : null;
-                    const plan = subscription?.productId ? (await firestore.doc(`plugins/workflow/plan/${subscription?.productId}`).get()).data() as Plan | undefined | null : null;
+                    const plan = subscription?.productId ? (await firestore.doc(`plugins/workflow/plan/${subscription?.productId}`).load()).data() as Plan | undefined | null : null;
                     try {
                         const expiredTime = actionData.tokenExpiredTime;
                         // Handle both Date and Firestore Timestamp
                         const expiredTimeMs = expiredTime
                             ? (expiredTime instanceof admin.firestore.Timestamp
                                 ? expiredTime.toDate().getTime()
-                                : expiredTime.getTime())
+                                : expiredTime.value().getTime())
                             : 0;
                         if (!expiredTime || startedTime.getTime() > expiredTimeMs) {
                             throw new Error("token-expired");
@@ -110,7 +110,7 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                             organizationId: organizationId,
                             plan: plan,
                         });
-                        let task = await actionData.task?.get();
+                        let task = await actionData.task?.load();
                         if (!task || !task.exists) {
                             throw new Error("task-not-found");
                         }
@@ -135,12 +135,9 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                                 "@time": finishedTime,
                                 status: "canceled",
                                 usage: actionData.usage + usage,
-                                ...ModelFieldValue.modelTimestamp({
-                                    key: "updatedTime",
-                                    date: finishedTime,
-                                }),
+                                "updatedTime": new ModelTimestamp(finishedTime),
                             };
-                            await action.ref.set(
+                            await action.ref.save(
                                 updatedActionData,
                                 { merge: true }
                             );
@@ -151,12 +148,9 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                                 nextAction: command,
                                 usage: taskData.usage + usage,
                                 status: "canceled",
-                                ...ModelFieldValue.modelTimestamp({
-                                    key: "updatedTime",
-                                    date: finishedTime,
-                                }),
+                                "updatedTime": new ModelTimestamp(finishedTime),
                             };
-                            await task.ref.set(
+                            await task.ref.save(
                                 updatedTaskData,
                                 { merge: true }
                             );
@@ -168,7 +162,7 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                                 plan: plan,
                             });
                         } else {
-                            let task = await actionData.task?.get();
+                            let task = await actionData.task?.load();
                             if (!task || !task.exists) {
                                 throw new Error("task-not-found");
                             }
@@ -200,16 +194,10 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                                     "@time": finishedTime,
                                     status: "completed",
                                     usage: actionData.usage + result.usage + usage,
-                                    ...ModelFieldValue.modelTimestamp({
-                                        key: "finishedTime",
-                                        date: finishedTime,
-                                    }),
-                                    ...ModelFieldValue.modelTimestamp({
-                                        key: "updatedTime",
-                                        date: finishedTime,
-                                    }),
+                                    "finishedTime": new ModelTimestamp(finishedTime),
+                                    "updatedTime": new ModelTimestamp(finishedTime),
                                 };
-                                await action.ref.set(
+                                await action.ref.save(
                                     updatedActionData,
                                     { merge: true }
                                 );
@@ -228,18 +216,12 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                                         ...result.assets,
                                         ...taskData.assets,
                                     },
-                                    ...ModelFieldValue.modelTimestamp({
-                                        key: "finishedTime",
-                                        date: finishedTime,
-                                    }),
-                                    ...ModelFieldValue.modelTimestamp({
-                                        key: "updatedTime",
-                                        date: finishedTime,
-                                    }),
+                                    "finishedTime": new ModelTimestamp(finishedTime),
+                                    "updatedTime": new ModelTimestamp(finishedTime),
                                     "search": result.search ? result.search : admin.firestore.FieldValue.delete(),
                                     "@search": search ? admin.firestore.FieldValue.vector(search) : admin.firestore.FieldValue.delete(),
                                 };
-                                await task.ref.set(
+                                await task.ref.save(
                                     updatedTaskData,
                                     { merge: true }
                                 );
@@ -273,16 +255,10 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                                     "@time": finishedTime,
                                     status: "completed",
                                     usage: actionData.usage + result.usage + usage,
-                                    ...ModelFieldValue.modelTimestamp({
-                                        key: "finishedTime",
-                                        date: finishedTime,
-                                    }),
-                                    ...ModelFieldValue.modelTimestamp({
-                                        key: "updatedTime",
-                                        date: finishedTime,
-                                    }),
+                                    "finishedTime": new ModelTimestamp(finishedTime),
+                                    "updatedTime": new ModelTimestamp(finishedTime),
                                 };
-                                await action.ref.set(
+                                await action.ref.save(
                                     updatedActionData,
                                     { merge: true }
                                 );
@@ -301,18 +277,12 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                                         ...result.assets,
                                         ...taskData.assets,
                                     },
-                                    ...ModelFieldValue.modelTimestamp({
-                                        key: "finishedTime",
-                                        date: finishedTime,
-                                    }),
-                                    ...ModelFieldValue.modelTimestamp({
-                                        key: "updatedTime",
-                                        date: finishedTime,
-                                    }),
+                                    "finishedTime": new ModelTimestamp(finishedTime),
+                                    "updatedTime": new ModelTimestamp(finishedTime),
                                     "search": result.search ? result.search : admin.firestore.FieldValue.delete(),
                                     "@search": search ? admin.firestore.FieldValue.vector(search) : admin.firestore.FieldValue.delete(),
                                 };
-                                await task.ref.set(
+                                await task.ref.save(
                                     updatedTaskData,
                                     { merge: true }
                                 );
@@ -358,7 +328,7 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                         const duration = (finishedTime.getTime() - startedTime.getTime()) / 1000.0;
                         const usage = _kDefaultLoadPrice + _kDefaultSavePrice + _kDefaultRequetPrice + duration * _kDefaultCpuPrice + duration * _kDefaultMemoryPrice;
                         try {
-                            const task = await actionData.task?.get();
+                            const task = await actionData.task?.load();
                             if (!task || !task.exists) {
                                 throw new Error("task-not-found");
                             }
@@ -374,12 +344,9 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                                 usage: taskData.usage + usage,
                                 status: "failed",
                                 error: error,
-                                ...ModelFieldValue.modelTimestamp({
-                                    key: "updatedTime",
-                                    date: finishedTime,
-                                }),
+                                "updatedTime": new ModelTimestamp(finishedTime),
                             };
-                            await task.ref.set(
+                            await task.ref.save(
                                 updatedTaskData,
                                 { merge: true }
                             );
@@ -393,12 +360,9 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                                 status: "failed",
                                 error: error,
                                 usage: actionData.usage + usage,
-                                ...ModelFieldValue.modelTimestamp({
-                                    key: "updatedTime",
-                                    date: finishedTime,
-                                }),
+                                "updatedTime": new ModelTimestamp(finishedTime),
                             };
-                            await action.ref.set(
+                            await action.ref.save(
                                 updatedActionData,
                                 { merge: true }
                             );
@@ -412,12 +376,9 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                                 status: "failed",
                                 error: error,
                                 usage: actionData.usage + usage,
-                                ...ModelFieldValue.modelTimestamp({
-                                    key: "updatedTime",
-                                    date: finishedTime,
-                                }),
+                                "updatedTime": new ModelTimestamp(finishedTime),
                             };
-                            await action.ref.set(
+                            await action.ref.save(
                                 updatedActionData,
                                 { merge: true }
                             );
@@ -486,13 +447,13 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
         const usageRef = firestore.doc(`plugins/workflow/organization/${organizationId}/usage/${dateId}`);
         const campaignRef = firestore.doc(`plugins/workflow/campaign/default`);
 
-        const usageDoc = await usageRef.get();
-        const campaignDoc = await campaignRef.get();
+        const usageDoc = await usageRef.load();
+        const campaignDoc = await campaignRef.load();
         const campaignData = campaignDoc.data() as Campaign | undefined | null;
         let campaignLimit: number | undefined | null = campaignData?.limit;
         const campaignExpiredTime = campaignData?.expiredTime;
 
-        if(campaignExpiredTime && campaignExpiredTime.getTime() > now.toDate().getTime()){
+        if(campaignExpiredTime && campaignExpiredTime.value().getTime() > now.toDate().getTime()){
             campaignLimit = null;
         }
         if(campaignLimit && campaignLimit < 0){
@@ -546,7 +507,7 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
             const currentMonthStr = finishedTime.toISOString().slice(0, 7);
             const nowMillis = finishedTime.getTime();
 
-            const doc = await usageRef.get();
+            const doc = await usageRef.load();
             let totalUsage = 0;
             let bucketBalance = planLimit * burstCapacity;
             let lastCheckTimeMillis = nowMillis;
@@ -595,16 +556,10 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                     currentMonth: currentMonthStr,
                     "@time": finishedTime,
                     "latestPlan": planId ? planId : admin.firestore.FieldValue.delete(),
-                    ...ModelFieldValue.modelTimestamp({
-                        key: "lastCheckTime",
-                        date: finishedTime,
-                    }),
-                    ...ModelFieldValue.modelTimestamp({
-                        key: "updatedTime",
-                        date: finishedTime,
-                    }),
+                    "lastCheckTime": new ModelTimestamp(finishedTime),
+                    "updatedTime": new ModelTimestamp(finishedTime),
                 };
-                await usageRef.set(updateData, { merge: true });
+                await usageRef.save(updateData, { merge: true });
             } else {
                 const updateData: any = {
                     "@uid": dateId,
@@ -612,20 +567,11 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                     bucketBalance: newBucketBalance,
                     currentMonth: currentMonthStr,
                     "@time": finishedTime,
-                    ...ModelFieldValue.modelTimestamp({
-                        key: "lastCheckTime",
-                        date: finishedTime,
-                    }),
-                    ...ModelFieldValue.modelTimestamp({
-                        key: "createdTime",
-                        date: finishedTime,
-                    }),
-                    ...ModelFieldValue.modelTimestamp({
-                        key: "updatedTime",
-                        date: finishedTime,
-                    }),
+                    "lastCheckTime": new ModelTimestamp(finishedTime),
+                    "createdTime": new ModelTimestamp(finishedTime),
+                    "updatedTime": new ModelTimestamp(finishedTime),
                 };
-                await usageRef.set(updateData, { merge: true });
+                await usageRef.save(updateData, { merge: true });
             }            
         } catch (err) {
             console.error(err);

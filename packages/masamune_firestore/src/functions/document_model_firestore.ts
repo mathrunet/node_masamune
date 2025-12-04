@@ -136,7 +136,7 @@ module.exports = (
                 case "get": {
                     console.log(`Attempting to get document at path: ${path}`);
                     try {
-                        const doc = await firestoreInstance.doc(path).get();
+                        const doc = await firestoreInstance.doc(path).load();
                         const converted = FirestoreModelFieldValueConverterUtils.convertFrom({ data: doc.data() ?? {}, firestoreInstance });
                         console.log(`Document exists: ${doc.exists}`);
                         return {
@@ -166,11 +166,9 @@ module.exports = (
                         if (!converted) {
                             throw new functions.https.HttpsError("invalid-argument", "Invalid data specified for set operation.");
                         }
-                        await firestoreInstance.doc(path).set(
+                        await firestoreInstance.doc(path).save(
                             {
                                 ...converted,
-                                "@uid": path.split("/").pop(),
-                                "@time": new Date(),
                             },
                             { merge: true }
                         );

@@ -128,7 +128,7 @@ module.exports = (
                 case "get": {
                     console.log(`Attempting to get collection at path: ${path}`);
                     try {
-                        const col = await firestoreInstance.collection(path).get();
+                        const col = await firestoreInstance.collection(path).load();
                         const data: { [key: string]: { [key: string]: any } } = {};
                         for (const doc of col.docs) {
                             if (doc.exists) {
@@ -162,7 +162,7 @@ module.exports = (
                         // NullはFieldValue.delete()に変換される
                         for (const docId in collectionData) {
                             collectionData[docId] = FirestoreModelFieldValueConverterUtils.convertTo({ data: collectionData[docId], firestoreInstance });
-                            await firestoreInstance.doc(path + "/" + docId).set(
+                            await firestoreInstance.doc(path + "/" + docId).save(
                                 {
                                     ...collectionData[docId],
                                     "@uid": docId,
@@ -186,7 +186,7 @@ module.exports = (
                 case "delete": {
                     console.log(`Attempting to delete collection at path: ${path}`);
                     try {
-                        const col = await firestoreInstance.collection(path).get();
+                        const col = await firestoreInstance.collection(path).load();
                         for (const doc of col.docs) {
                             await doc.ref.delete();
                         }

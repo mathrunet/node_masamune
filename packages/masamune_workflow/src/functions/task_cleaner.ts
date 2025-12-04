@@ -1,5 +1,5 @@
 import * as functions from "firebase-functions/v2";
-import { SchedulerFunctionsOptions, firestoreLoader, ModelFieldValue } from "@mathrunet/masamune";
+import { SchedulerFunctionsOptions, firestoreLoader, ModelFieldValue, ModelTimestamp } from "@mathrunet/masamune";
 import { Task, Action } from "../lib/interfaces";
 import * as admin from "firebase-admin";
 
@@ -33,7 +33,7 @@ module.exports = (
                 try {
                     const now = new Date();
                     const firestoreInstance = firestoreLoader(databaseId);
-                    const taskCollection = await firestoreInstance.collection("plugins/workflow/task").where("status", "==", "running").where("updatedTime", "<", new Date(now.getTime() - 1000 * 60 * 60 * 24)).orderBy("updatedTime", "asc").limit(_kCollectionLimit).get();
+                    const taskCollection = await firestoreInstance.collection("plugins/workflow/task").where("status", "==", "running").where("updatedTime", "<", new Date(now.getTime() - 1000 * 60 * 60 * 24)).orderBy("updatedTime", "asc").limit(_kCollectionLimit).load();
                     const actionsCollection = firestoreInstance.collection("plugins/workflow/action");
                     const promies: Promise<any>[] = [];
                     for (var task of taskCollection.docs) {
@@ -52,17 +52,14 @@ module.exports = (
                                 status: 500,
                                 "message": "Task timed out",
                             },
-                            ...ModelFieldValue.modelTimestamp({
-                                key: "updatedTime",
-                                date: now,
-                            }),
+                            "updatedTime":  new ModelTimestamp(now),
                         };
                         promies.push(
-                            task.ref.set(
+                            task.ref.save(
                                 updatedTaskData, { merge: true }
                             )
                         );
-                        const actions = await firestoreInstance.collection("plugins/workflow/action").where("task", "==", task.ref).get();
+                        const actions = await firestoreInstance.collection("plugins/workflow/action").where("task", "==", task.ref).load();
                         for (var action of actions.docs) {
                             const actionData = action.data() as Action;
                             const status = actionData.status;
@@ -77,13 +74,10 @@ module.exports = (
                                     status: 500,
                                     "message": "Task timed out",
                                 },
-                                ...ModelFieldValue.modelTimestamp({
-                                    key: "updatedTime",
-                                    date: now,
-                                }),
+                                "updatedTime":  new ModelTimestamp(now),
                             };
                             promies.push(
-                                action.ref.set(
+                                action.ref.save(
                                     updatedActionData, { merge: true }
                                 )
                             );

@@ -13,6 +13,7 @@ import * as admin from "firebase-admin";
 import * as dotenv from "dotenv";
 import * as path from "path";
 import * as fs from "fs";
+import { ModelTimestamp } from "@mathrunet/masamune";
 
 // Load test environment variables
 dotenv.config({ path: path.join(__dirname, "../.env") });
@@ -103,31 +104,26 @@ describe("CollectFromGooglePlayConsole Integration Tests", () => {
         const actionRef = firestore.doc(actionPath);
 
         // Create Organization
-        await organizationRef.set({
+        await organizationRef.save({
             "@uid": testOrganizationId,
             "@time": nowTs,
             name: "Test Organization",
-            "#createdTime": { "@target": "createdTime", "@type": "DateTime", "@time": nowTs },
-            createdTime: nowTs,
-            "#updatedTime": { "@target": "updatedTime", "@type": "DateTime", "@time": nowTs },
-            updatedTime: nowTs,
+            "createdTime": new ModelTimestamp(nowTs.toDate()),
+            "updatedTime": new ModelTimestamp(nowTs.toDate()),
         });
-
         // Create Project with google_service_account
-        await projectRef.set({
+        await projectRef.save({
             "@uid": testProjectId,
             "@time": nowTs,
             name: "Test Project",
             organization: organizationRef,
             google_service_account: googlePlayServiceAccount,
-            "#createdTime": { "@target": "createdTime", "@type": "DateTime", "@time": nowTs },
-            createdTime: nowTs,
-            "#updatedTime": { "@target": "updatedTime", "@type": "DateTime", "@time": nowTs },
-            updatedTime: nowTs,
+            "createdTime": new ModelTimestamp(nowTs.toDate()),
+            "updatedTime": new ModelTimestamp(nowTs.toDate()),
         });
 
         // Create Task
-        await taskRef.set({
+        await taskRef.save({
             "@uid": testTaskId,
             "@time": nowTs,
             organization: organizationRef,
@@ -136,15 +132,13 @@ describe("CollectFromGooglePlayConsole Integration Tests", () => {
             actions: options.actions,
             usage: 0,
             results: {},
-            "#createdTime": { "@target": "createdTime", "@type": "DateTime", "@time": nowTs },
-            createdTime: nowTs,
-            "#updatedTime": { "@target": "updatedTime", "@type": "DateTime", "@time": nowTs },
-            updatedTime: nowTs,
+            "createdTime": new ModelTimestamp(nowTs.toDate()),
+            "updatedTime": new ModelTimestamp(nowTs.toDate()),
         });
 
         // Create Action
         const actionIndex = options.actionIndex ?? 0;
-        await actionRef.set({
+        await actionRef.save({
             "@uid": testActionId,
             "@time": nowTs,
             command: options.actions[actionIndex],
@@ -153,13 +147,10 @@ describe("CollectFromGooglePlayConsole Integration Tests", () => {
             project: projectRef,
             status: "running",
             token: options.token,
-            "#tokenExpiredTime": { "@target": "tokenExpiredTime", "@type": "DateTime", "@time": tokenExpiredTs },
-            tokenExpiredTime: tokenExpiredTs,
-            usage: 0,
-            "#createdTime": { "@target": "createdTime", "@type": "DateTime", "@time": nowTs },
-            createdTime: nowTs,
-            "#updatedTime": { "@target": "updatedTime", "@type": "DateTime", "@time": nowTs },
-            updatedTime: nowTs,
+            "tokenExpiredTime": new ModelTimestamp(tokenExpiredTs.toDate()),
+            "usage": 0,
+            "createdTime": new ModelTimestamp(nowTs.toDate()),
+            "updatedTime": new ModelTimestamp(nowTs.toDate()),
         });
 
         return { organizationRef, projectRef, taskRef, actionRef };
@@ -220,7 +211,7 @@ describe("CollectFromGooglePlayConsole Integration Tests", () => {
                 });
 
                 // Verify Action document
-                const actionDoc = await firestore.doc(actionPath).get();
+                const actionDoc = await firestore.doc(actionPath).load();
                 const actionData = actionDoc.data();
 
                 expect(actionData).toBeDefined();
@@ -231,7 +222,7 @@ describe("CollectFromGooglePlayConsole Integration Tests", () => {
                 expect(actionData?.finishedTime).toBeDefined();
 
                 // Verify Task document
-                const taskDoc = await firestore.doc(taskPath).get();
+                const taskDoc = await firestore.doc(taskPath).load();
                 const taskData = taskDoc.data();
 
                 expect(taskData).toBeDefined();
@@ -295,30 +286,26 @@ describe("CollectFromGooglePlayConsole Integration Tests", () => {
             const actionRef = firestore.doc(multiActionPath);
 
             // Create Organization and Project (reuse if exists)
-            await organizationRef.set({
+            await organizationRef.save({
                 "@uid": testOrganizationId,
                 "@time": nowTs,
                 name: "Test Organization",
-                "#createdTime": { "@target": "createdTime", "@type": "DateTime", "@time": nowTs },
-                createdTime: nowTs,
-                "#updatedTime": { "@target": "updatedTime", "@type": "DateTime", "@time": nowTs },
-                updatedTime: nowTs,
+                "createdTime": new ModelTimestamp(nowTs.toDate()),
+                "updatedTime": new ModelTimestamp(nowTs.toDate()),
             }, { merge: true });
 
-            await projectRef.set({
+            await projectRef.save({
                 "@uid": testProjectId,
                 "@time": nowTs,
                 name: "Test Project",
                 organization: organizationRef,
                 google_service_account: googlePlayServiceAccount,
-                "#createdTime": { "@target": "createdTime", "@type": "DateTime", "@time": nowTs },
-                createdTime: nowTs,
-                "#updatedTime": { "@target": "updatedTime", "@type": "DateTime", "@time": nowTs },
-                updatedTime: nowTs,
+                "createdTime": new ModelTimestamp(nowTs.toDate()),
+                "updatedTime": new ModelTimestamp(nowTs.toDate()),
             }, { merge: true });
 
             // Create Task with multiple actions
-            await taskRef.set({
+            await taskRef.save({
                 "@uid": multiTaskId,
                 "@time": nowTs,
                 organization: organizationRef,
@@ -327,14 +314,12 @@ describe("CollectFromGooglePlayConsole Integration Tests", () => {
                 actions: actions,
                 usage: 0,
                 results: {},
-                "#createdTime": { "@target": "createdTime", "@type": "DateTime", "@time": nowTs },
-                createdTime: nowTs,
-                "#updatedTime": { "@target": "updatedTime", "@type": "DateTime", "@time": nowTs },
-                updatedTime: nowTs,
+                "createdTime": new ModelTimestamp(nowTs.toDate()),
+                "updatedTime": new ModelTimestamp(nowTs.toDate()),
             });
 
             // Create Action for first command
-            await actionRef.set({
+            await actionRef.save({
                 "@uid": multiActionId,
                 "@time": nowTs,
                 command: actions[0],
@@ -343,13 +328,10 @@ describe("CollectFromGooglePlayConsole Integration Tests", () => {
                 project: projectRef,
                 status: "running",
                 token: token,
-                "#tokenExpiredTime": { "@target": "tokenExpiredTime", "@type": "DateTime", "@time": tokenExpiredTs },
-                tokenExpiredTime: tokenExpiredTs,
-                usage: 0,
-                "#createdTime": { "@target": "createdTime", "@type": "DateTime", "@time": nowTs },
-                createdTime: nowTs,
-                "#updatedTime": { "@target": "updatedTime", "@type": "DateTime", "@time": nowTs },
-                updatedTime: nowTs,
+                "tokenExpiredTime": new ModelTimestamp(tokenExpiredTs.toDate()),
+                "usage": 0,
+                "createdTime": new ModelTimestamp(nowTs.toDate()),
+                "updatedTime": new ModelTimestamp(nowTs.toDate()),
             });
 
             try {
@@ -367,7 +349,7 @@ describe("CollectFromGooglePlayConsole Integration Tests", () => {
                 });
 
                 // Verify Action document - should be completed
-                const actionDoc = await firestore.doc(multiActionPath).get();
+                const actionDoc = await firestore.doc(multiActionPath).load();
                 const actionData = actionDoc.data();
 
                 expect(actionData).toBeDefined();
@@ -375,7 +357,7 @@ describe("CollectFromGooglePlayConsole Integration Tests", () => {
                 expect(actionData?.results?.googlePlayConsole).toBeDefined();
 
                 // Verify Task document - should be waiting (not completed) with nextAction
-                const taskDoc = await firestore.doc(multiTaskPath).get();
+                const taskDoc = await firestore.doc(multiTaskPath).load();
                 const taskData = taskDoc.data();
 
                 expect(taskData).toBeDefined();
@@ -427,30 +409,26 @@ describe("CollectFromGooglePlayConsole Integration Tests", () => {
             const actionRef = firestore.doc(expiredActionPath);
 
             // Create Organization and Project
-            await organizationRef.set({
+            await organizationRef.save({
                 "@uid": testOrganizationId,
                 "@time": nowTs,
                 name: "Test Organization",
-                "#createdTime": { "@target": "createdTime", "@type": "DateTime", "@time": nowTs },
-                createdTime: nowTs,
-                "#updatedTime": { "@target": "updatedTime", "@type": "DateTime", "@time": nowTs },
-                updatedTime: nowTs,
+                "createdTime": new ModelTimestamp(nowTs.toDate()),
+                "updatedTime": new ModelTimestamp(nowTs.toDate()),
             }, { merge: true });
 
-            await projectRef.set({
+            await projectRef.save({
                 "@uid": testProjectId,
                 "@time": nowTs,
                 name: "Test Project",
                 organization: organizationRef,
                 google_service_account: googlePlayServiceAccount,
-                "#createdTime": { "@target": "createdTime", "@type": "DateTime", "@time": nowTs },
-                createdTime: nowTs,
-                "#updatedTime": { "@target": "updatedTime", "@type": "DateTime", "@time": nowTs },
-                updatedTime: nowTs,
+                "createdTime": new ModelTimestamp(nowTs.toDate()),
+                "updatedTime": new ModelTimestamp(nowTs.toDate()),
             }, { merge: true });
 
             // Create Task
-            await taskRef.set({
+            await taskRef.save({
                 "@uid": expiredTaskId,
                 "@time": nowTs,
                 organization: organizationRef,
@@ -459,14 +437,12 @@ describe("CollectFromGooglePlayConsole Integration Tests", () => {
                 actions: actions,
                 usage: 0,
                 results: {},
-                "#createdTime": { "@target": "createdTime", "@type": "DateTime", "@time": nowTs },
-                createdTime: nowTs,
-                "#updatedTime": { "@target": "updatedTime", "@type": "DateTime", "@time": nowTs },
-                updatedTime: nowTs,
+                "createdTime": new ModelTimestamp(nowTs.toDate()),
+                "updatedTime": new ModelTimestamp(nowTs.toDate()),
             });
 
             // Create Action with expired token
-            await actionRef.set({
+            await actionRef.save({
                 "@uid": expiredActionId,
                 "@time": nowTs,
                 command: actions[0],
@@ -475,13 +451,10 @@ describe("CollectFromGooglePlayConsole Integration Tests", () => {
                 project: projectRef,
                 status: "running",
                 token: token,
-                "#tokenExpiredTime": { "@target": "tokenExpiredTime", "@type": "DateTime", "@time": tokenExpiredTs },
-                tokenExpiredTime: tokenExpiredTs,
-                usage: 0,
-                "#createdTime": { "@target": "createdTime", "@type": "DateTime", "@time": nowTs },
-                createdTime: nowTs,
-                "#updatedTime": { "@target": "updatedTime", "@type": "DateTime", "@time": nowTs },
-                updatedTime: nowTs,
+                "tokenExpiredTime": new ModelTimestamp(tokenExpiredTs.toDate()),
+                "usage": 0,
+                "createdTime": new ModelTimestamp(nowTs.toDate()),
+                "updatedTime": new ModelTimestamp(nowTs.toDate()),
             });
 
             try {
@@ -499,7 +472,7 @@ describe("CollectFromGooglePlayConsole Integration Tests", () => {
                 });
 
                 // Verify Task document - should be failed
-                const taskDoc = await firestore.doc(expiredTaskPath).get();
+                const taskDoc = await firestore.doc(expiredTaskPath).load();
                 const taskData = taskDoc.data();
 
                 expect(taskData).toBeDefined();
@@ -508,7 +481,7 @@ describe("CollectFromGooglePlayConsole Integration Tests", () => {
                 expect(taskData?.error?.message).toBe("token-expired");
 
                 // Verify Action document - should be failed
-                const actionDoc = await firestore.doc(expiredActionPath).get();
+                const actionDoc = await firestore.doc(expiredActionPath).load();
                 const actionData = actionDoc.data();
 
                 expect(actionData).toBeDefined();
@@ -558,30 +531,26 @@ describe("CollectFromGooglePlayConsole Integration Tests", () => {
             const actionRef = firestore.doc(invalidActionPath);
 
             // Create Organization and Project
-            await organizationRef.set({
+            await organizationRef.save({
                 "@uid": testOrganizationId,
                 "@time": nowTs,
                 name: "Test Organization",
-                "#createdTime": { "@target": "createdTime", "@type": "DateTime", "@time": nowTs },
-                createdTime: nowTs,
-                "#updatedTime": { "@target": "updatedTime", "@type": "DateTime", "@time": nowTs },
-                updatedTime: nowTs,
+                "createdTime": new ModelTimestamp(nowTs.toDate()),
+                "updatedTime": new ModelTimestamp(nowTs.toDate()),
             }, { merge: true });
 
-            await projectRef.set({
+            await projectRef.save({
                 "@uid": testProjectId,
                 "@time": nowTs,
                 name: "Test Project",
                 organization: organizationRef,
                 google_service_account: googlePlayServiceAccount,
-                "#createdTime": { "@target": "createdTime", "@type": "DateTime", "@time": nowTs },
-                createdTime: nowTs,
-                "#updatedTime": { "@target": "updatedTime", "@type": "DateTime", "@time": nowTs },
-                updatedTime: nowTs,
+                "createdTime": new ModelTimestamp(nowTs.toDate()),
+                "updatedTime": new ModelTimestamp(nowTs.toDate()),
             }, { merge: true });
 
             // Create Task
-            await taskRef.set({
+            await taskRef.save({
                 "@uid": invalidTaskId,
                 "@time": nowTs,
                 organization: organizationRef,
@@ -590,14 +559,12 @@ describe("CollectFromGooglePlayConsole Integration Tests", () => {
                 actions: actions,
                 usage: 0,
                 results: {},
-                "#createdTime": { "@target": "createdTime", "@type": "DateTime", "@time": nowTs },
-                createdTime: nowTs,
-                "#updatedTime": { "@target": "updatedTime", "@type": "DateTime", "@time": nowTs },
-                updatedTime: nowTs,
+                "createdTime": new ModelTimestamp(nowTs.toDate()),
+                "updatedTime": new ModelTimestamp(nowTs.toDate()),
             });
 
             // Create Action with one token
-            await actionRef.set({
+            await actionRef.save({
                 "@uid": invalidActionId,
                 "@time": nowTs,
                 command: actions[0],
@@ -606,13 +573,10 @@ describe("CollectFromGooglePlayConsole Integration Tests", () => {
                 project: projectRef,
                 status: "running",
                 token: storedToken, // Stored token
-                "#tokenExpiredTime": { "@target": "tokenExpiredTime", "@type": "DateTime", "@time": tokenExpiredTs },
-                tokenExpiredTime: tokenExpiredTs,
-                usage: 0,
-                "#createdTime": { "@target": "createdTime", "@type": "DateTime", "@time": nowTs },
-                createdTime: nowTs,
-                "#updatedTime": { "@target": "updatedTime", "@type": "DateTime", "@time": nowTs },
-                updatedTime: nowTs,
+                "tokenExpiredTime": new ModelTimestamp(tokenExpiredTs.toDate()),
+                "usage": 0,
+                "createdTime": new ModelTimestamp(nowTs.toDate()),
+                "updatedTime": new ModelTimestamp(nowTs.toDate()),
             });
 
             try {
@@ -630,7 +594,7 @@ describe("CollectFromGooglePlayConsole Integration Tests", () => {
                 });
 
                 // Verify Task document - should be failed
-                const taskDoc = await firestore.doc(invalidTaskPath).get();
+                const taskDoc = await firestore.doc(invalidTaskPath).load();
                 const taskData = taskDoc.data();
 
                 expect(taskData).toBeDefined();
@@ -639,7 +603,7 @@ describe("CollectFromGooglePlayConsole Integration Tests", () => {
                 expect(taskData?.error?.message).toBe("invalid-token");
 
                 // Verify Action document - should be failed
-                const actionDoc = await firestore.doc(invalidActionPath).get();
+                const actionDoc = await firestore.doc(invalidActionPath).load();
                 const actionData = actionDoc.data();
 
                 expect(actionData).toBeDefined();

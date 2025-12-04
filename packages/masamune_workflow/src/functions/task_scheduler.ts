@@ -1,5 +1,5 @@
 import * as functions from "firebase-functions/v2";
-import { SchedulerFunctionsOptions, firestoreLoader, ModelFieldValue, utils } from "@mathrunet/masamune";
+import { SchedulerFunctionsOptions, firestoreLoader, ModelFieldValue, utils, ModelTimestamp } from "@mathrunet/masamune";
 import { Task } from "../lib/interfaces";
 import * as admin from "firebase-admin";
 import * as adminFunctions from "firebase-admin/functions";
@@ -35,7 +35,7 @@ module.exports = (
                 try {
                     const now = new Date();
                     const firestoreInstance = firestoreLoader(databaseId);
-                    const taskCollection = await firestoreInstance.collection("plugins/workflow/task").where("status", "==", "waiting").orderBy("updatedTime", "asc").limit(_kCollectionLimit).get();
+                    const taskCollection = await firestoreInstance.collection("plugins/workflow/task").where("status", "==", "waiting").orderBy("updatedTime", "asc").limit(_kCollectionLimit).load();
                     const actionsCollection = firestoreInstance.collection("plugins/workflow/action");
                     const promies: Promise<any>[] = [];
                     for (var task of taskCollection.docs) {
@@ -68,21 +68,12 @@ module.exports = (
                             "usage": 0,
                             "token": token,
                             "tokenExpiredTime": new Date(now.getTime() + 1000 * 60 * 60 * 1),
-                            ...ModelFieldValue.modelTimestamp({
-                                key: "startTime",
-                                date: now,
-                            }),
-                            ...ModelFieldValue.modelTimestamp({
-                                key: "createdTime",
-                                date: now,
-                            }),
-                            ...ModelFieldValue.modelTimestamp({
-                                key: "updatedTime",
-                                date: now,
-                            }),
+                            "startTime": new ModelTimestamp(now),
+                            "createdTime": new ModelTimestamp(now),
+                            "updatedTime": new ModelTimestamp(now),
                         };
                         promies.push(
-                            actionDoc.set(
+                            actionDoc.save(
                                 updatedActionData, { merge: true }
                             )
                         );
@@ -92,13 +83,10 @@ module.exports = (
                             "status": "running",
                             "currentAction": actionDoc,
                             "nextAction": admin.firestore.FieldValue.delete(),
-                            ...ModelFieldValue.modelTimestamp({
-                                key: "updatedTime",
-                                date: now,
-                            }),
+                            "updatedTime": new ModelTimestamp(now),
                         };
                         promies.push(
-                            task.ref.set(
+                            task.ref.save(
                                 updatedTaskData, { merge: true }
                             )
                         );

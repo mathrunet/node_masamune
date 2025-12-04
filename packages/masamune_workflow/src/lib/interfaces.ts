@@ -56,10 +56,8 @@ export interface Organization {
     "description"?: string;
     "icon"?: string;
     "owner"?: admin.firestore.DocumentReference;
-    "#createdTime": ModelTimestamp;
-    "createdTime": Date;
-    "#updatedTime": ModelTimestamp;
-    "updatedTime": Date;
+    "createdTime": ModelTimestamp;
+    "updatedTime": ModelTimestamp;
 }
 
 /**
@@ -73,10 +71,8 @@ export interface Member {
     "organization"?: admin.firestore.DocumentReference;
     "user"?: admin.firestore.DocumentReference;
     "role": WorkflowRole;
-    "#createdTime": ModelTimestamp;
-    "createdTime": Date;
-    "#updatedTime": ModelTimestamp;
-    "updatedTime": Date;
+    "createdTime": ModelTimestamp;
+    "updatedTime": ModelTimestamp;
 }
 
 /**
@@ -98,10 +94,8 @@ export interface Project {
 	"appstore_issuer_id"?: string;
 	"appstore_auth_key_id"?: string;
 	"appstore_auth_key"?: string;
-    "#createdTime": ModelTimestamp;
-    "createdTime": Date;
-    "#updatedTime": ModelTimestamp;
-    "updatedTime": Date;
+    "createdTime": ModelTimestamp;
+    "updatedTime": ModelTimestamp;
 }
 
 /**
@@ -119,14 +113,10 @@ export interface Workflow {
 	"actions": ActionCommand[];
 	"prompt"?: string;
 	"materials"?: {[key: string]: any};
-    "#nextTime"?: ModelTimestamp | admin.firestore.FieldValue;
-	"nextTime"?: Date | admin.firestore.FieldValue;
-    "#startTime"?: ModelTimestamp;
-	"startTime"?: Date;
-    "#createdTime": ModelTimestamp;
-    "createdTime": Date;
-    "#updatedTime": ModelTimestamp;
-    "updatedTime": Date;
+    "nextTime"?: ModelTimestamp | admin.firestore.FieldValue;
+    "startTime"?: ModelTimestamp;
+    "createdTime": ModelTimestamp;
+    "updatedTime": ModelTimestamp;
 }
 
 /**
@@ -152,14 +142,10 @@ export interface Task {
     "search"?: string | admin.firestore.FieldValue;
 	"@search"?: admin.firestore.FieldValue;
 	"usage": number;
-    "#startTime"?: ModelTimestamp;
-	"startTime"?: Date;
-    "#finishedTime"?: ModelTimestamp;
-	"finishedTime"?: Date;
-    "#createdTime": ModelTimestamp;
-    "createdTime": Date;
-    "#updatedTime": ModelTimestamp;
-    "updatedTime": Date;
+    "startTime"?: ModelTimestamp;
+    "finishedTime"?: ModelTimestamp;
+    "createdTime": ModelTimestamp;
+    "updatedTime": ModelTimestamp;
 }
 
 /**
@@ -184,16 +170,11 @@ export interface Action {
 	"usage": number;
     "search"?: string;
 	"token"?: string;
-    "#tokenExpiredTime"?: ModelTimestamp;
-	"tokenExpiredTime"?: Date;
-    "#startTime"?: ModelTimestamp;
-	"startTime"?: Date;
-    "#finishedTime"?: ModelTimestamp;
-	"finishedTime"?: Date;
-    "#createdTime": ModelTimestamp;
-    "createdTime": Date;
-    "#updatedTime": ModelTimestamp;
-    "updatedTime": Date;
+    "tokenExpiredTime"?: ModelTimestamp;
+    "startTime"?: ModelTimestamp;
+    "finishedTime"?: ModelTimestamp;
+    "createdTime": ModelTimestamp;
+    "updatedTime": ModelTimestamp;
 }
 
 /**
@@ -220,10 +201,8 @@ export interface Asset {
 	"content"?: string;
 	"path"?: string;
 	"mimtType"?: string;
-    "#createdTime": ModelTimestamp;
-    "createdTime": Date;
-    "#updatedTime": ModelTimestamp;
-    "updatedTime": Date;
+    "createdTime": ModelTimestamp;
+    "updatedTime": ModelTimestamp;
 }
 
 /**
@@ -238,10 +217,8 @@ export interface Page {
 	"project"?: admin.firestore.DocumentReference;
 	"content"?: string;
 	"path"?: string;
-    "#createdTime": ModelTimestamp;
-    "createdTime": Date;
-    "#updatedTime": ModelTimestamp;
-    "updatedTime": Date;
+    "createdTime": ModelTimestamp;
+    "updatedTime": ModelTimestamp;
 }
 
 /**
@@ -258,10 +235,8 @@ export interface Usage {
     "bucketBalance"?: number;
     "lastCheckTime"?: admin.firestore.Timestamp;
     "currentMonth"?: string;
-    "#createdTime": ModelTimestamp;
-    "createdTime": Date;
-    "#updatedTime": ModelTimestamp;
-    "updatedTime": Date;
+    "createdTime": ModelTimestamp;
+    "updatedTime": ModelTimestamp;
 }
 
 /**
@@ -286,12 +261,9 @@ export interface Campaign {
     "@time": Date;
     "organization"?: admin.firestore.DocumentReference;
     "limit"?: number;
-    "#expiredTime"?: ModelTimestamp;
-    "expiredTime"?: Date;
-    "#createdTime": ModelTimestamp;
-    "createdTime": Date;
-    "#updatedTime": ModelTimestamp;
-    "updatedTime": Date;
+    "expiredTime"?: ModelTimestamp;
+    "createdTime": ModelTimestamp;
+    "updatedTime": ModelTimestamp;
 }
 
 /**
@@ -305,12 +277,9 @@ export interface Certificate {
 	"organization"?: admin.firestore.DocumentReference;
 	"token"?: string;
 	"scope"?: string[];
-    "#expiredTime"?: ModelTimestamp;
-	"expiredTime"?: Date;
-    "#createdTime": ModelTimestamp;
-    "createdTime": Date;
-    "#updatedTime": ModelTimestamp;
-    "updatedTime": Date;
+    "expiredTime"?: ModelTimestamp;
+    "createdTime": ModelTimestamp;
+    "updatedTime": ModelTimestamp;
 }
 
 /**
