@@ -1,4 +1,4 @@
-# [3.10.0](https://github.com/mathrunet/node_masamune/compare/v3.7.0...v3.10.0) (2025-12-04)
+## [3.10.1](https://github.com/mathrunet/node_masamune/compare/v3.7.0...v3.10.1) (2025-12-04)
 
 
 ### chore
@@ -66,6 +66,7 @@
 * Package Update ([2709b18](https://github.com/mathrunet/node_masamune/commit/2709b18899189e6373baf08c141cd10e0b9afa34))
 * Package update. ([9acad0a](https://github.com/mathrunet/node_masamune/commit/9acad0a058338a75e700e53b0a94e4bc0fcf3c3e))
 * remove debug logs from Firebase loaders and bump package version. ([36e721e](https://github.com/mathrunet/node_masamune/commit/36e721ec6cc597aced1fc91105f9a04625cde0d2))
+* Save metadata on save. ([4cd3404](https://github.com/mathrunet/node_masamune/commit/4cd340499f47c1da850b9dfd77abac84c6ca8230))
 * Update dependency versions for `@mathrunet/katana` ([d4a9aea](https://github.com/mathrunet/node_masamune/commit/d4a9aeadb6541d808618098c5a4b2eaf72bf7d50))
 * Video bug fix. ([0fa5f9f](https://github.com/mathrunet/node_masamune/commit/0fa5f9f8ef2cda5420a54db9445f72e9b1f4d6e6))
 
