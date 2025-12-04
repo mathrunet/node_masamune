@@ -1,4 +1,4 @@
-## [3.8.7](https://github.com/mathrunet/node_masamune/compare/v3.7.0...v3.8.7) (2025-12-04)
+## [3.8.8](https://github.com/mathrunet/node_masamune/compare/v3.7.0...v3.8.8) (2025-12-04)
 
 
 ### chore
@@ -57,6 +57,7 @@
 * Change process arguments. ([17fca7b](https://github.com/mathrunet/node_masamune/commit/17fca7b72ccc8ecf7576e5a0772b2d05f197940d))
 * Create E2E tests. ([e33ed27](https://github.com/mathrunet/node_masamune/commit/e33ed2702cc6d2771036fd3bc8e5c4de811229e7))
 * Explicitly pass the Firebase Admin app during Firestore and Storage initialization, and update the version. ([9169415](https://github.com/mathrunet/node_masamune/commit/9169415adb873a0ce1534a5762158d84ca477212))
+* Firestore interface change. ([027e464](https://github.com/mathrunet/node_masamune/commit/027e4647febaac184123ad5d8d7dc0ea452e3df7))
 * Fixed an issue where usage was not being added. ([ae0a9ee](https://github.com/mathrunet/node_masamune/commit/ae0a9ee1224d7bdc019140bd5889cbcab5e8bdd2))
 * Fixed missing export. ([f8948be](https://github.com/mathrunet/node_masamune/commit/f8948bee2d089c6df7a1b2e34bab844413f42e87))
 * I made it output. ([6d17645](https://github.com/mathrunet/node_masamune/commit/6d1764546c2c68b3af61148eac9ca1635e9fddf7))
