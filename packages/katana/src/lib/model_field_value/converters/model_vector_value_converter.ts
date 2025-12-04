@@ -1,6 +1,56 @@
-import { FirestoreModelFieldValueConverter } from "../firestore_model_field_value_converter";
+import { FirestoreModelFieldValueConverter, ModelFieldValueConverter } from "../model_field_value_converter";
 import { isDynamicMap } from "../../utils";
-import { FieldValue } from "@google-cloud/firestore";
+import { ModelVectorValue } from "../model_field_value";
+import { firestore } from "firebase-admin";
+import { VectorValue } from "@google-cloud/firestore";
+
+/**
+ * ModelVectorValue ModelFieldValueConverter.
+ * 
+ * ModelVectorValue用のModelFieldValueConverter。
+ */
+export class ModelVectorValueConverter extends ModelFieldValueConverter {
+  /**
+   * ModelVectorValue ModelFieldValueConverter.
+   * 
+   * ModelVectorValue用のModelFieldValueConverter。
+ */
+  constructor() {
+    super();
+  }
+  type: string = "ModelVectorValue";
+
+  convertFrom(
+    key: string,
+    value: any,
+    original: { [field: string]: any },
+  ): { [field: string]: any } | null {
+    if (value !== null && typeof value === "object" && "@type" in value && value["@type"] === this.type) {
+      const vector = value["@vector"] as number[] | null | undefined ?? [];
+      return {
+        [key]: new ModelVectorValue(vector, "server"),
+      };
+    }
+    return null;
+  }
+  
+  convertTo(
+    key: string,
+    value: any,
+    original: { [field: string]: any },
+  ): { [field: string]: any } | null {
+    if (value instanceof ModelVectorValue) {
+      return {
+        [key]: {
+          "@type": this.type,
+          "@vector": value["@vector"],
+          "@source": value["@source"],
+        },
+      };
+    }
+    return null;
+  }
+}
 
 /**
  * FirestoreConverter for [ModelVectorValue].
@@ -25,13 +75,22 @@ export class FirestoreModelVectorValueConverter extends FirestoreModelFieldValue
     original: { [field: string]: any },
     firestoreInstance: FirebaseFirestore.Firestore
   ): { [field: string]: any } | null {
-    if (Array.isArray(value)) {
+    if (value instanceof VectorValue) {
       const targetKey = `#${key}`;
       const targetMap = original[targetKey] as { [field: string]: any } | null | undefined ?? {};
       const type = targetMap["@type"] as string | null | undefined ?? "";
       if (type == this.type) {
+        const vectorValue = value.toArray();
+        const vector: number[] = [];
+        for (const item of vectorValue) {
+          vector.push(Number(item));
+        }
         return {
-          [key]: value.map((e) => Number(e)),
+          [key]: {
+            "@type": this.type,
+            "@vector": vector,
+          },
+          [targetKey]: null,
         };
       }
     }
@@ -48,12 +107,8 @@ export class FirestoreModelVectorValueConverter extends FirestoreModelFieldValue
       const type = value["@type"] as string | null | undefined ?? "";
       if (type === this.type) {
         const fromUser = (value["@source"] as string | null | undefined ?? "") === "user";
-        const val = value["@list"] as number[] | null | undefined ?? [];
+        const val = value["@vector"] as number[] | null | undefined ?? [];
         const targetKey = `#${key}`;
-        
-        // Handle deletion of existing keys similar to Dart implementation
-        const targetData = original[targetKey] as { [field: string]: any } | null | undefined;
-        const existingKeys = (targetData && targetData["@list"]) as { [field: string]: any } | null | undefined ?? {};
         
         const result: { [field: string]: any } = {
           [targetKey]: {
@@ -63,7 +118,7 @@ export class FirestoreModelVectorValueConverter extends FirestoreModelFieldValue
         };
         
         if (fromUser) {
-          result[key] = val;
+          result[key] = firestore.FieldValue.vector(val);
         }
         
         return result;

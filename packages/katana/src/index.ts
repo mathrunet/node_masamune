@@ -23,6 +23,7 @@ export * from "./lib/src/request_process_function_base";
 export * from "./lib/src/schedule_process_function_base";
 
 export * from "./lib/model_field_value/model_field_value";
-export * from "./lib/model_field_value/default_firestore_model_field_value_converter";
+export * from "./lib/model_field_value/default_model_field_value_converter";
 
 export * from "./lib/exntensions/string.extension";
+export * from "./lib/exntensions/firestore.extension";

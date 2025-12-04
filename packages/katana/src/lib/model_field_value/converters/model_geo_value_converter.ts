@@ -1,6 +1,57 @@
-import { FirestoreModelFieldValueConverter } from "../firestore_model_field_value_converter";
+import { FirestoreModelFieldValueConverter, ModelFieldValueConverter } from "../model_field_value_converter";
 import { isDynamicMap } from "../../utils";
 import { GeoPoint } from "firebase-admin/firestore";
+import { ModelGeoValue } from "../model_field_value";
+
+/**
+ * ModelGeoValue ModelFieldValueConverter.
+ * 
+ * ModelGeoValue用のModelFieldValueConverter。
+ */
+export class ModelGeoValueConverter extends ModelFieldValueConverter {
+  /**
+   * ModelGeoValue ModelFieldValueConverter.
+   * 
+   * ModelGeoValue用のModelFieldValueConverter。
+ */
+  constructor() {
+    super();
+  }
+  type: string = "ModelGeoValue";
+
+  convertFrom(
+    key: string,
+    value: any,
+    original: { [field: string]: any },
+  ): { [field: string]: any } | null {
+    if (value !== null && typeof value === "object" && "@type" in value && value["@type"] === this.type) {
+      const latitude = value["@latitude"] as number | null | undefined ?? 0;
+      const longitude = value["@longitude"] as number | null | undefined ?? 0;
+      return {
+        [key]: new ModelGeoValue(latitude, longitude, "server"),
+      };
+    }
+    return null;
+  }
+
+  convertTo(
+    key: string,
+    value: any,
+    original: { [field: string]: any },
+  ): { [field: string]: any } | null {
+    if (value instanceof ModelGeoValue) {
+      return {
+        [key]: {
+          "@type": this.type,
+          "@latitude": value["@latitude"],
+          "@longitude": value["@longitude"],
+          "@source": value["@source"],
+        },
+      };
+    }
+    return null;
+  }
+}
 
 /**
  * FirestoreConverter for [ModelGeoValue].
@@ -31,24 +82,30 @@ export class FirestoreModelGeoValueConverter extends FirestoreModelFieldValueCon
       const type = targetMap["@type"] as string | null | undefined ?? "";
       if (type == this.type) {
         return {
-          [key]: targetMap["@geoHash"] as string | null | undefined ?? "",
+          [key]: {
+            "@type": this.type,
+            "@latitude": targetMap["@latitude"] as number | null | undefined ?? 0,
+            "@longitude": targetMap["@longitude"] as number | null | undefined ?? 0,
+          },
+          [targetKey]: null,
         };
       }
     } else if (Array.isArray(value)) {
       const targetKey = `#${key}`;
       const targetList = original[targetKey] as { [field: string]: any }[] | null | undefined ?? [];
       if (targetList != null && targetList.length > 0 && targetList.every((e) => e["@type"] === this.type)) {
-        const res: string[] = [];
+        const res: { [field: string]: any }[] = [];
         for (const tmp of targetList) {
-          res.push(
-            tmp["@geoHash"] as string | null | undefined ?? "",
-          );
+          res.push({
+            "@type": this.type,
+            "@latitude": tmp["@latitude"] as number | null | undefined ?? 0,
+            "@longitude": tmp["@longitude"] as number | null | undefined ?? 0,
+          });
         }
-        if (res.length > 0) {
-          return {
-            [key]: res,
-          };
-        }
+        return {
+          [key]: res,
+          [targetKey]: null,
+        };
       }
     } else if (isDynamicMap(value)) {
       const targetKey = `#${key}`;
@@ -56,7 +113,7 @@ export class FirestoreModelGeoValueConverter extends FirestoreModelFieldValueCon
       targetMap
       if (targetMap != null) {
         const res: {
-          [field: string]: string
+          [field: string]: { [field: string]: any }
         } = {};
         for (const key in value) {
           const val = value[key];
@@ -66,11 +123,16 @@ export class FirestoreModelGeoValueConverter extends FirestoreModelFieldValueCon
             continue;
           }
           if (typeof val === "string" || val instanceof GeoPoint) {
-            res[key] = mapVal["@geoHash"] as string | null | undefined ?? "";
+            res[key] = {
+              "@type": this.type,
+              "@latitude": mapVal["@latitude"] as number | null | undefined ?? 0,
+              "@longitude": mapVal["@longitude"] as number | null | undefined ?? 0,
+            };
           }
         }
         if (Object.keys(res).length > 0) {
           return {
+            [targetKey]: null,
             [key]: res,
           };
         }

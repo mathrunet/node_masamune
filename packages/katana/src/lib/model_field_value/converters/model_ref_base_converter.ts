@@ -1,14 +1,62 @@
-import { FirestoreModelFieldValueConverter } from "../firestore_model_field_value_converter";
+import { FirestoreModelFieldValueConverter, ModelFieldValueConverter } from "../model_field_value_converter";
 import { isDynamicMap } from "../../utils";
 import { DocumentReference } from "firebase-admin/firestore";
-import { firestoreLoader } from "../../src/firebase_loader";
+import { ModelRefBase } from "../model_field_value";
+
+/**
+ * ModelFieldValueConverter for [ModelRefBase].
+ * 
+ * [ModelRefBase]用のModelFieldValueConverter。
+ */
+export class ModelRefBaseConverter extends ModelFieldValueConverter {
+  /**
+   * ModelRefBase ModelFieldValueConverter.
+   * 
+   * ModelRefBase用のModelFieldValueConverter。
+ */
+  constructor() {
+    super();
+  }
+  type: string = "ModelRefBase";
+
+  convertFrom(
+    key: string,
+    value: any,
+    original: { [field: string]: any },
+  ): { [field: string]: any } | null {
+    if (value !== null && typeof value === "object" && "@type" in value && value["@type"] === this.type) {
+      const ref = value["@ref"] as string | null | undefined ?? "";
+      return {
+        [key]: new ModelRefBase(ref, "server"),
+      };
+    }
+    return null;
+  }
+
+  convertTo(
+    key: string,
+    value: any,
+    original: { [field: string]: any },
+  ): { [field: string]: any } | null {
+    if (value instanceof ModelRefBase) {
+      return {
+        [key]: {
+          "@type": this.type,
+          "@ref": value["@ref"],
+          "@source": value["@source"],
+        },
+      };
+    }
+    return null;
+  }
+}
 
 /**
  * FirestoreConverter for [ModelRef].
  * 
  * [ModelRef]用のFirestoreConverter。
  */
-export class FirestoreModelRefConverter extends FirestoreModelFieldValueConverter {
+export class FirestoreModelRefBaseConverter extends FirestoreModelFieldValueConverter {
   /**
    * FirestoreConverter for [ModelRef].
    * 

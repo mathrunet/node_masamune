@@ -1,21 +1,73 @@
-import { FirestoreModelFieldValueConverter } from "../firestore_model_field_value_converter";
+import { FirestoreModelFieldValueConverter, ModelFieldValueConverter } from "../model_field_value_converter";
 import { isDynamicMap } from "../../utils";
+import { ModelLocale } from "../model_field_value";
 
 /**
- * FirestoreConverter for [ModelLocale].
+ * ModelLocale ModelFieldValueConverter.
  * 
- * [ModelLocale]用のFirestoreConverter。
+ * ModelLocale用のModelFieldValueConverter。
+ */
+export class ModelLocaleConverter extends ModelFieldValueConverter {
+  /**
+   * ModelLocale ModelFieldValueConverter.
+   * 
+   * ModelLocale用のModelFieldValueConverter。
+ */
+  constructor() {
+    super();
+  }
+  type: string = "ModelLocale";
+
+  convertFrom(
+    key: string,
+    value: any,
+    original: { [field: string]: any },
+  ): { [field: string]: any } | null {
+    if (value !== null && typeof value === "object" && "@type" in value && value["@type"] === this.type) {
+      const language = value["@language"] as string | undefined ?? "en";
+      const country = value["@country"] as string | undefined;
+      return {
+        [key]: new ModelLocale(language, country, "server"),
+      };
+    }
+    return null;
+  }
+
+  convertTo(
+    key: string,
+    value: any,
+    original: { [field: string]: any },
+  ): { [field: string]: any } | null {
+    if (value instanceof ModelLocale) {
+      return {
+        [key]: {
+          "@type": this.type,
+          "@language": value["@language"],
+          "@country": value["@country"],
+          "@source": value["@source"],
+        },
+      };
+    }
+    return null;
+  }
+}
+
+/**
+ * ModelLocale ModelFieldValueConverter.
+ * 
+ * ModelLocale用のModelFieldValueConverter。
  */
 export class FirestoreModelLocaleConverter extends FirestoreModelFieldValueConverter {
   /**
-   * FirestoreConverter for [ModelLocale].
+   * ModelLocale ModelFieldValueConverter.
    * 
-   * [ModelLocale]用のFirestoreConverter。
+   * ModelLocale用のModelFieldValueConverter。
+   * 
+   * ModelLocale用のModelFieldValueConverter。
    */
   constructor() {
     super();
   }
-
   type: string = "ModelLocale";
 
   convertFrom(
@@ -29,21 +81,37 @@ export class FirestoreModelLocaleConverter extends FirestoreModelFieldValueConve
       const targetMap = original[targetKey] as { [field: string]: any } | null | undefined ?? {};
       const type = targetMap["@type"] as string | null | undefined ?? "";
       if (type == this.type) {
+        const split = value.split("_");
+        const language = split[0];
+        const country = split.length > 1 ? split[1] : undefined;
         return {
-          [key]: String(value),
+          [key]: {
+            "@type": this.type,
+            "@language": language,
+            "@country": country,
+          },
+          [targetKey]: null,
         };
       }
     } else if (Array.isArray(value)) {
       const targetKey = `#${key}`;
       const targetList = original[targetKey] as { [field: string]: any }[] | null | undefined ?? [];
       if (targetList != null && targetList.length > 0 && targetList.every((e) => e["@type"] === this.type)) {
-        const res: string[] = [];
+        const res: { [field: string]: any }[] = [];
         for (const tmp of value) {
-          res.push(String(tmp));
+          const split = tmp.split("_");
+          const language = split[0];
+          const country = split.length > 1 ? split[1] : undefined;
+          res.push({
+            "@type": this.type,
+            "@language": language,
+            "@country": country,
+          });
         }
         if (res.length > 0) {
           return {
             [key]: res,
+            [targetKey]: null,
           };
         }
       }
@@ -53,7 +121,7 @@ export class FirestoreModelLocaleConverter extends FirestoreModelFieldValueConve
       targetMap
       if (targetMap != null) {
         const res: {
-          [field: string]: string
+          [field: string]: { [field: string]: any }
         } = {};
         for (const key in value) {
           const val = value[key];
@@ -62,11 +130,19 @@ export class FirestoreModelLocaleConverter extends FirestoreModelFieldValueConve
           if (type != this.type) {
             continue;
           }
-          res[key] = String(val);
+          const split = val.split("_");
+          const language = split[0];
+          const country = split.length > 1 ? split[1] : undefined;
+          res[key] = {
+            "@type": this.type,
+            "@language": language,
+            "@country": country,
+          };
         }
         if (Object.keys(res).length > 0) {
           return {
             [key]: res,
+            [targetKey]: null,
           };
         }
       }

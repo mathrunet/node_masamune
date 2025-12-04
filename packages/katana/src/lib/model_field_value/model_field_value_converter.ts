@@ -5,6 +5,56 @@ import { DocumentReference, Timestamp } from "firebase-admin/firestore";
  * 
  * Firestoreで利用するための[ModelFieldValue]の変換を行うベースクラス。
  */
+export abstract class ModelFieldValueConverter {
+    /**
+     * Base class for converting [ModelFieldValue] for use in Firestore.
+     * 
+     * Firestoreで利用するための[ModelFieldValue]の変換を行うベースクラス。
+     */
+    constructor() { }
+    /**
+     * The type of [ModelFieldValue] that can be converted.
+     * 
+     * 変換可能な[ModelFieldValue]の型。
+     */
+    abstract type: string;
+    /**
+     * Convert from Firestore manageable type to [ModelFieldValue].
+     * 
+     * Firestoreで管理可能な型から[ModelFieldValue]に変換します。
+     * 
+     * @param key
+     * @param value
+     * @param original
+     * @returns
+     */
+    abstract convertFrom(
+        key: string,
+        value: any,
+        original: { [field: string]: any },
+    ): { [field: string]: any } | null;
+    /**
+     * Convert from [ModelFieldValue] to Firestore manageable type.
+     * 
+     * [ModelFieldValue]からFirestoreで管理可能な型に変換します。
+     * 
+     * @param key
+     * @param value
+     * @param original
+     * @returns
+     */
+    abstract convertTo(
+        key: string,
+        value: any,
+        original: { [field: string]: any },
+    ): { [field: string]: any } | null;
+}
+
+/**
+ * Base class for converting [ModelFieldValue] for use in Firestore.
+ * 
+ * Firestoreで利用するための[ModelFieldValue]の変換を行うベースクラス。
+ */
 export abstract class FirestoreModelFieldValueConverter {
     /**
      * Base class for converting [ModelFieldValue] for use in Firestore.
@@ -74,112 +124,4 @@ export abstract class FirestoreModelFieldValueConverter {
             "@type": this.type,
         };
     };
-
-}
-
-/**
- * Class for generating values for `ModelFieldValue` for Firestore.
- * 
- * Firestore用の`ModelFieldValue`用の値を生成するためのクラス。
- */
-export class FirestoreModelFieldValue {
-    /**
-     * Generate data for `ModelRef`.
-     * 
-     * `ModelRef`用のデータを生成します。
-     * 
-     * @param {string} key
-     * Data key.
-     * 
-     * データのキー。
-     * 
-     * @param {DocumentReference} ref
-     * Document reference data.
-     * 
-     * ドキュメントのリファレンスデータ。
-     *  
-     * @returns { [key: string]: any }
-     * Data for `ModelRef`.
-     * 
-     * `ModelRef`用のデータ。
-     */
-    static documentReferenceToModelRef({
-        key, ref,
-    }: {
-        key: string, ref: DocumentReference,
-    }) {
-        const res: { [key: string]: any } = {};
-        res[key] = {
-            "@ref": ref.path,
-            "@type": "ModelRefBase",
-        };
-        return res;
-    }
-
-    /**
-     * Generate data for `ModelTimestamp`.
-     * 
-     * `ModelTimestamp`用のデータを生成します。
-     * 
-     * @param {string} key
-     * Data key.
-     * 
-     * データのキー。
-     * 
-     * @param {Timestamp} timestamp
-     * Time stamp data.
-     * 
-     * タイムスタンプデータ。
-     *  
-     * @returns { [key: string]: any }
-     * Data for `ModelTimestamp`.
-     * 
-     * `ModelTimestamp`用のデータ。
-     */
-    static timestampToModelTimestamp({
-        key, timestamp,
-    }: {
-        key: string, timestamp: Timestamp,
-    }) {
-        const res: { [key: string]: any } = {};
-        res[key] = {
-            "@time": timestamp.toMillis(),
-            "@type": "ModelTimestamp",
-        };
-        return res;
-    }
-
-
-    /**
-     * Generate data for `ModelGeoValue`.
-     * 
-     * `ModelGeoValue`用のデータを生成します。
-     * 
-     * @param {string} key
-     * Data key.
-     * 
-     * データのキー。
-     * 
-     * @param {Timestamp} timestamp
-     * Time stamp data.
-     * 
-     * タイムスタンプデータ。
-     *  
-     * @returns { [key: string]: any }
-     * Data for `ModelGeoValue`.
-     * 
-     * `ModelGeoValue`用のデータ。
-     */
-    static geoPointToModelGeoValue({
-        key, timestamp,
-    }: {
-        key: string, timestamp: Timestamp,
-    }) {
-        const res: { [key: string]: any } = {};
-        res[key] = {
-            "@time": timestamp.toMillis(),
-            "@type": "ModelTimestamp",
-        };
-        return res;
-    }
 }

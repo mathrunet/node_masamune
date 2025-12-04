@@ -1,6 +1,57 @@
-import { FirestoreModelFieldValueConverter } from "../firestore_model_field_value_converter";
+import { FirestoreModelFieldValueConverter, ModelFieldValueConverter } from "../model_field_value_converter";
 import { isDynamicMap } from "../../utils";
 import { FieldValue } from "@google-cloud/firestore";
+import { ModelCounter } from "../model_field_value";
+
+/**
+ * ModelCounter ModelFieldValueConverter.
+ * 
+ * ModelCounter用のModelFieldValueConverter。
+ */
+export class ModelCounterConverter extends ModelFieldValueConverter {
+  /**
+   * ModelCounter ModelFieldValueConverter.
+   * 
+   * ModelCounter用のModelFieldValueConverter。
+   */
+  constructor() {
+    super();
+  }
+  type: string = "ModelCounter";
+
+  convertFrom(
+    key: string,
+    value: any,
+    original: { [field: string]: any },
+  ): { [field: string]: any } | null {
+    if (value !== null && typeof value === "object" && "@type" in value && value["@type"] === this.type) {
+      const increment = value["@increment"] as number | null | undefined ?? 0;
+      const count = value["@value"] as number | null | undefined ?? 0;
+      return {
+        [key]: new ModelCounter(count, increment, "server"),
+      };
+    }
+    return null;
+  }
+
+  convertTo(
+    key: string,
+    value: any,
+    original: { [field: string]: any },
+  ): { [field: string]: any } | null {
+    if (value instanceof ModelCounter) {
+      return {
+        [key]: {
+          "@type": this.type,
+          "@value": value["@value"],
+          "@increment": value["@increment"],
+          "@source": value["@source"],
+        },
+      };
+    }
+    return null;
+  }
+}
 
 /**
  * FirestoreConverter for [ModelCounter].
@@ -33,7 +84,7 @@ export class FirestoreModelCounterConverter extends FirestoreModelFieldValueConv
         const increment = targetMap["@increment"] as number | null | undefined ?? 0;
         return {
           [key]: {
-            "@type": "ModelCounter",
+            "@type": this.type,
             "@value": value,
             "@increment": increment,
             "@source": "server"
@@ -51,7 +102,7 @@ export class FirestoreModelCounterConverter extends FirestoreModelFieldValueConv
           if (typeof tmp === "number" && i < targetList.length) {
             const increment = targetList[i]["@increment"] as number | null | undefined ?? 0;
             res.push({
-              "@type": "ModelCounter",
+              "@type": this.type,
               "@value": tmp,
               "@increment": increment,
               "@source": "server"
@@ -83,7 +134,7 @@ export class FirestoreModelCounterConverter extends FirestoreModelFieldValueConv
           if (typeof val === "number") {
             const increment = mapVal["@increment"] as number | null | undefined ?? 0;
             res[key] = {
-              "@type": "ModelCounter",
+              "@type": this.type,
               "@value": val,
               "@increment": increment,
               "@source": "server"
@@ -107,7 +158,7 @@ export class FirestoreModelCounterConverter extends FirestoreModelFieldValueConv
     _original: { [field: string]: any },
     firestoreInstance: FirebaseFirestore.Firestore
   ): { [field: string]: any } | null {
-    if (value != null && typeof value === "object" && "@type" in value) {
+    if (value !== null && typeof value === "object" && "@type" in value) {
       const type = value["@type"] as string | null | undefined ?? "";
       if (type === this.type) {
         const fromUser = value["@source"] === "user";

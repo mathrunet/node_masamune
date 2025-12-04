@@ -1,5 +1,56 @@
-import { FirestoreModelFieldValueConverter } from "../firestore_model_field_value_converter";
+import { FirestoreModelFieldValueConverter, ModelFieldValueConverter } from "../model_field_value_converter";
 import { isDynamicMap } from "../../utils";
+import { ModelDateRange } from "../model_field_value";
+
+/**
+ * ModelDateRange ModelFieldValueConverter.
+ * 
+ * ModelDateRange用のModelFieldValueConverter。
+ */
+export class ModelDateRangeConverter extends ModelFieldValueConverter {
+  /**
+   * ModelDateRange ModelFieldValueConverter.
+   * 
+   * ModelDateRange用のModelFieldValueConverter。
+   */
+  constructor() {
+    super();
+  }
+  type: string = "ModelDateRange";
+
+  convertFrom(
+    key: string,
+    value: any,
+    original: { [field: string]: any },
+  ): { [field: string]: any } | null {
+    if (value !== null && typeof value === "object" && "@type" in value && value["@type"] === this.type) {
+      const start = value["@start"] as number | null | undefined ?? 0;
+      const end = value["@end"] as number | null | undefined ?? 0;
+      return {
+        [key]: new ModelDateRange(new Date(start / 1000.0), new Date(end / 1000.0), "server"),
+      };
+    }
+    return null;
+  }
+
+  convertTo(
+    key: string,
+    value: any,
+    original: { [field: string]: any },
+  ): { [field: string]: any } | null {
+    if (value instanceof ModelDateRange) {
+      return {
+        [key]: {
+          "@type": this.type,
+          "@start": value["@start"] * 1000,
+          "@end": value["@end"] * 1000,
+          "@source": value["@source"],
+        },
+      };
+    }
+    return null;
+  }
+}
 
 /**
  * FirestoreConverter for [ModelDateRange].
@@ -37,9 +88,10 @@ export class FirestoreModelDateRangeConverter extends FirestoreModelFieldValueCo
             return {
               [key]: {
                 "@type": this.type,
-                "@startTime": start.getTime() * 1000,
-                "@endTime": end.getTime() * 1000,
+                "@start": start.getTime() * 1000,
+                "@end": end.getTime() * 1000,
               },
+              [targetKey]: null,
             };
           }
         }
@@ -58,8 +110,8 @@ export class FirestoreModelDateRangeConverter extends FirestoreModelFieldValueCo
               if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
                 res.push({
                   "@type": this.type,
-                  "@startTime": start.getTime() * 1000,
-                  "@endTime": end.getTime() * 1000,
+                  "@start": start.getTime() * 1000,
+                  "@end": end.getTime() * 1000,
                 });
               }
             }
@@ -68,6 +120,7 @@ export class FirestoreModelDateRangeConverter extends FirestoreModelFieldValueCo
         if (res.length > 0) {
           return {
             [key]: res,
+            [targetKey]: null,
           };
         }
       }
@@ -91,8 +144,8 @@ export class FirestoreModelDateRangeConverter extends FirestoreModelFieldValueCo
               if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
                 res[k] = {
                   "@type": this.type,
-                  "@startTime": start.getTime() * 1000,
-                  "@endTime": end.getTime() * 1000,
+                  "@start": start.getTime() * 1000,
+                  "@end": end.getTime() * 1000,
                 };
               }
             }
@@ -101,6 +154,7 @@ export class FirestoreModelDateRangeConverter extends FirestoreModelFieldValueCo
         if (Object.keys(res).length > 0) {
           return {
             [key]: res,
+            [targetKey]: null,
           };
         }
       }
@@ -117,17 +171,17 @@ export class FirestoreModelDateRangeConverter extends FirestoreModelFieldValueCo
     if (value != null && typeof value === "object" && "@type" in value) {
       const type = value["@type"] as string | null | undefined ?? "";
       if (type === this.type) {
-        const start = value["@startTime"] as number | null | undefined ?? 0;
-        const end = value["@endTime"] as number | null | undefined ?? 0;
+        const start = value["@start"] as number | null | undefined ?? 0;
+        const end = value["@end"] as number | null | undefined ?? 0;
         const targetKey = `#${key}`;
         return {
           [targetKey]: {
             "@type": this.type,
-            "@startTime": start,
-            "@endTime": end,
+            "@start": start,
+            "@end": end,
             "@target": key,
           },
-          [key]: `${new Date(start / 1000).toISOString()}|${new Date(end / 1000).toISOString()}`,
+          [key]: `${new Date(start / 1000.0).toISOString()}|${new Date(end / 1000.0).toISOString()}`,
         };
       }
     } else if (Array.isArray(value)) {
@@ -137,15 +191,15 @@ export class FirestoreModelDateRangeConverter extends FirestoreModelFieldValueCo
         const res: string[] = [];
         const targetKey = `#${key}`;
         for (const entry of list) {
-          const start = entry["@startTime"] as number | null | undefined ?? 0;
-          const end = entry["@endTime"] as number | null | undefined ?? 0;
+          const start = entry["@start"] as number | null | undefined ?? 0;
+          const end = entry["@end"] as number | null | undefined ?? 0;
           target.push({
             "@type": this.type,
-            "@startTime": start,
-            "@endTime": end,
+            "@start": start,
+            "@end": end,
             "@target": key,
           });
-          res.push(`${new Date(start / 1000).toISOString()}|${new Date(end / 1000).toISOString()}`);
+          res.push(`${new Date(start / 1000.0).toISOString()}|${new Date(end / 1000.0).toISOString()}`);
         }
         return {
           [targetKey]: target,
@@ -165,15 +219,15 @@ export class FirestoreModelDateRangeConverter extends FirestoreModelFieldValueCo
         const res: { [key: string]: string } = {};
         const targetKey = `#${key}`;
         for (const [k, entry] of Object.entries(map)) {
-          const start = entry["@startTime"] as number | null | undefined ?? 0;
-          const end = entry["@endTime"] as number | null | undefined ?? 0;
+          const start = entry["@start"] as number | null | undefined ?? 0;
+          const end = entry["@end"] as number | null | undefined ?? 0;
           target[k] = {
             "@type": this.type,
-            "@startTime": start,
-            "@endTime": end,
+            "@start": start,
+            "@end": end,
             "@target": key,
           };
-          res[k] = `${new Date(start / 1000).toISOString()}|${new Date(end / 1000).toISOString()}`;
+          res[k] = `${new Date(start / 1000.0).toISOString()}|${new Date(end / 1000.0).toISOString()}`;
         }
         return {
           [targetKey]: target,

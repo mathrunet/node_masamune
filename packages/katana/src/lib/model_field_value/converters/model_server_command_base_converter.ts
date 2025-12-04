@@ -1,11 +1,64 @@
-import { FirestoreModelFieldValueConverter } from "../firestore_model_field_value_converter";
+import { FirestoreModelFieldValueConverter, ModelFieldValueConverter } from "../model_field_value_converter";
+import { ModelServerCommandBase } from "../model_field_value";
+
+/**
+ * ModelServerCommandBase ModelFieldValueConverter.
+ * 
+ * ModelServerCommandBase用のModelFieldValueConverter。
+ */
+export class ModelServerCommandBaseConverter extends ModelFieldValueConverter {
+  /**
+   * ModelServerCommandBase ModelFieldValueConverter.
+   * 
+   * ModelServerCommandBase用のModelFieldValueConverter。
+   */
+  constructor() {
+    super();
+  }
+  type: string = "ModelServerCommandBase";
+
+  convertFrom(
+    key: string,
+    value: any,
+    original: { [field: string]: any },
+  ): { [field: string]: any } | null {
+    if (value !== null && typeof value === "object" && "@type" in value && value["@type"] === this.type) {
+      const command = value["@command"] as string | null | undefined ?? "";
+      const publicParameters = value["@public"] as { [field: string]: any } | null | undefined ?? {};
+      const privateParameters = value["@private"] as { [field: string]: any } | null | undefined ?? {};
+      return {
+        [key]: new ModelServerCommandBase(command, publicParameters, privateParameters, "server"),
+      };
+    }
+    return null;
+  }
+
+  convertTo(
+    key: string,
+    value: any,
+    original: { [field: string]: any },
+  ): { [field: string]: any } | null {
+    if (value instanceof ModelServerCommandBase) {
+      return {
+        [key]: {
+          "@type": this.type,
+          "@command": value["@command"],
+          "@public": value["@public"] as { [field: string]: any },
+          "@private": value["@private"] as { [field: string]: any },
+          "@source": value["@source"],
+        },
+      };
+    }
+    return null;
+  }
+}
 
 /**
  * FirestoreConverter for [ModelServerCommandBase].
  * 
  * [ModelServerCommandBase]用のFirestoreConverter。
  */
-export class FirestoreModelCommandBaseConverter extends FirestoreModelFieldValueConverter {
+export class FirestoreModelServerCommandBaseConverter extends FirestoreModelFieldValueConverter {
   /**
    * FirestoreConverter for [ModelServerCommandBase].
    * 

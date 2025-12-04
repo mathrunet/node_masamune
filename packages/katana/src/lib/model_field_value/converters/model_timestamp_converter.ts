@@ -1,7 +1,84 @@
-import { FirestoreModelFieldValueConverter } from "../firestore_model_field_value_converter";
+import { FirestoreModelFieldValueConverter, ModelFieldValueConverter } from "../model_field_value_converter";
 import { isDynamicMap } from "../../utils";
 import { Timestamp } from "firebase-admin/firestore";
 import { FieldValue } from "@google-cloud/firestore";
+import { ModelTimestamp } from "../model_field_value";
+
+/**
+ * ModelTimestamp ModelFieldValueConverter.
+ * 
+ * ModelTimestamp用のModelFieldValueConverter。
+ */
+export class ModelTimestampConverter extends ModelFieldValueConverter {
+  /**
+   * ModelTimestamp ModelFieldValueConverter.
+   * 
+   * ModelTimestamp用のModelFieldValueConverter。
+   */
+  constructor() {
+    super();
+  }
+  type: string = "ModelTimestamp";
+
+  convertFrom(
+    key: string,
+    value: any,
+    original: { [field: string]: any },
+  ): { [field: string]: any } | null {
+    if (value !== null && typeof value === "object" && "@type" in value && value["@type"] === this.type) {
+      const time = value["@time"] as number | null | undefined ?? 0;
+      return {
+        [key]: new ModelTimestamp(new Date(time / 1000.0), "server"),
+      };
+    }
+    return null;
+  }
+
+  convertTo(
+    key: string,
+    value: any,
+    original: { [field: string]: any },
+  ): { [field: string]: any } | null {
+    if (value instanceof ModelTimestamp) {
+      return {
+        [key]: {
+          "@type": this.type,
+          "@time": value["@time"] * 1000,
+          "@source": value["@source"],
+        },
+      };
+    }
+    return null;
+  }
+}
+
+/**
+ * Create Timestamp from microseconds.
+ * 
+ * マイクロ秒からTimestampを作成します。
+ * 
+ * @param microseconds
+ * Microseconds.
+ * 
+ * マイクロ秒。
+ * 
+ * @returns {Timestamp}
+ * Timestamp.
+ * 
+ * Timestamp。
+ */
+export function createTimestampFromMicroseconds(microseconds: number): Timestamp {
+  if (microseconds >= 0) {
+    return Timestamp.fromMillis(microseconds / 1000);
+  }
+  const seconds = Math.floor(microseconds / 1000000);
+  const remainingMicros = microseconds - (seconds * 1000000);
+  const nanoseconds = remainingMicros * 1000;
+  if (nanoseconds < 0) {
+    return new Timestamp(seconds - 1, nanoseconds + 1000000000);
+  }
+  return new Timestamp(seconds, nanoseconds);
+}
 
 /**
  * FirestoreConverter for [ModelTimestamp].
@@ -9,18 +86,6 @@ import { FieldValue } from "@google-cloud/firestore";
  * [ModelTimestamp]用のFirestoreConverter。
  */
 export class FirestoreModelTimestampConverter extends FirestoreModelFieldValueConverter {
-  private static _createTimestampFromMicroseconds(microseconds: number): Timestamp {
-    if (microseconds >= 0) {
-      return Timestamp.fromMillis(microseconds / 1000);
-    }
-    const seconds = Math.floor(microseconds / 1000000);
-    const remainingMicros = microseconds - (seconds * 1000000);
-    const nanoseconds = remainingMicros * 1000;
-    if (nanoseconds < 0) {
-      return new Timestamp(seconds - 1, nanoseconds + 1000000000);
-    }
-    return new Timestamp(seconds, nanoseconds);
-  }
 
   /**
    * FirestoreConverter for [ModelTimestamp].
@@ -46,7 +111,7 @@ export class FirestoreModelTimestampConverter extends FirestoreModelFieldValueCo
       if (type == this.type) {
         return {
           [key]: {
-            "@type": "ModelTimestamp",
+            "@type": this.type,
             "@time": value * 1000, // Convert milliseconds to microseconds
             "@now": false,
             "@source": "server"
@@ -61,7 +126,7 @@ export class FirestoreModelTimestampConverter extends FirestoreModelFieldValueCo
       if (type == this.type) {
         return {
           [key]: {
-            "@type": "ModelTimestamp",
+            "@type": this.type,
             "@time": value.toMillis() * 1000, // Convert milliseconds to microseconds
             "@now": false,
             "@source": "server"
@@ -77,14 +142,14 @@ export class FirestoreModelTimestampConverter extends FirestoreModelFieldValueCo
         for (const tmp of value) {
           if (typeof tmp === "number") {
             res.push({
-              "@type": "ModelTimestamp",
+              "@type": this.type,
               "@time": tmp * 1000, // Convert milliseconds to microseconds
               "@now": false,
               "@source": "server"
             });
           } else if (tmp instanceof Timestamp) {
             res.push({
-              "@type": "ModelTimestamp",
+              "@type": this.type,
               "@time": tmp.toMillis() * 1000, // Convert milliseconds to microseconds
               "@now": false,
               "@source": "server"
@@ -115,14 +180,14 @@ export class FirestoreModelTimestampConverter extends FirestoreModelFieldValueCo
           }
           if (typeof val === "number") {
             res[key] = {
-              "@type": "ModelTimestamp",
+              "@type": this.type,
               "@time": val * 1000, // Convert milliseconds to microseconds
               "@now": false,
               "@source": "server"
             };
           } else if (val instanceof Timestamp) {
             res[key] = {
-              "@type": "ModelTimestamp",
+              "@type": this.type,
               "@time": val.toMillis() * 1000, // Convert milliseconds to microseconds
               "@now": false,
               "@source": "server"
@@ -146,7 +211,7 @@ export class FirestoreModelTimestampConverter extends FirestoreModelFieldValueCo
     _original: { [field: string]: any },
     firestoreInstance: FirebaseFirestore.Firestore
   ): { [field: string]: any } | null {
-    if (value != null && typeof value === "object" && "@type" in value) {
+    if (value !== null && typeof value === "object" && "@type" in value) {
       const type = value["@type"] as string | null | undefined ?? "";
       if (type === this.type) {
         const fromUser = (value["@source"] as string | null | undefined ?? "") === "user";
@@ -166,10 +231,10 @@ export class FirestoreModelTimestampConverter extends FirestoreModelFieldValueCo
           if (useNow) {
             result[key] = FieldValue.serverTimestamp();
           } else {
-            result[key] = FirestoreModelTimestampConverter._createTimestampFromMicroseconds(val);
+            result[key] = createTimestampFromMicroseconds(val);
           }
         } else {
-          result[key] = FirestoreModelTimestampConverter._createTimestampFromMicroseconds(val);
+          result[key] = createTimestampFromMicroseconds(val);
         }
         
         return result;
@@ -196,10 +261,10 @@ export class FirestoreModelTimestampConverter extends FirestoreModelFieldValueCo
             if (useNow) {
               res.push(FieldValue.serverTimestamp());
             } else {
-              res.push(FirestoreModelTimestampConverter._createTimestampFromMicroseconds(time));
+              res.push(createTimestampFromMicroseconds(time));
             }
           } else {
-            res.push(FirestoreModelTimestampConverter._createTimestampFromMicroseconds(time));
+            res.push(createTimestampFromMicroseconds(time));
           }
         }
         
@@ -236,10 +301,10 @@ export class FirestoreModelTimestampConverter extends FirestoreModelFieldValueCo
             if (useNow) {
               res[k] = FieldValue.serverTimestamp();
             } else {
-              res[k] = FirestoreModelTimestampConverter._createTimestampFromMicroseconds(time);
+              res[k] = createTimestampFromMicroseconds(time);
             }
           } else {
-            res[k] = FirestoreModelTimestampConverter._createTimestampFromMicroseconds(time);
+            res[k] = createTimestampFromMicroseconds(time);
           }
         }
         

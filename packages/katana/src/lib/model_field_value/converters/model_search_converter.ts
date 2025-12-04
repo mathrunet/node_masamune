@@ -1,23 +1,72 @@
-import { FirestoreModelFieldValueConverter } from "../firestore_model_field_value_converter";
+import { FirestoreModelFieldValueConverter, ModelFieldValueConverter } from "../model_field_value_converter";
 import { isDynamicMap } from "../../utils";
 import { FieldValue } from "@google-cloud/firestore";
+import { ModelSearch } from "../model_field_value";
 
 /**
- * FirestoreConverter for [ModelToken].
+ * ModelSearch ModelFieldValueConverter.
  * 
- * [ModelToken]用のFirestoreConverter。
+ * ModelSearch用のModelFieldValueConverter。
  */
-export class FirestoreModelTokenConverter extends FirestoreModelFieldValueConverter {
+export class ModelSearchConverter extends ModelFieldValueConverter {
   /**
-   * FirestoreConverter for [ModelToken].
+   * ModelSearch ModelFieldValueConverter.
    * 
-   * [ModelToken]用のFirestoreConverter。
+   * ModelSearch用のModelFieldValueConverter。
+ */
+  constructor() {
+    super();
+  }
+  type: string = "ModelSearch";
+
+  convertFrom(
+    key: string,
+    value: any,
+    original: { [field: string]: any },
+  ): { [field: string]: any } | null {
+    if (value !== null && typeof value === "object" && "@type" in value && value["@type"] === this.type) {
+      const list = value["@list"] as string[] | null | undefined ?? [];
+      return {
+        [key]: new ModelSearch(list, "server"),
+      };
+    }
+    return null;
+  }
+
+  convertTo(
+    key: string,
+    value: any,
+    original: { [field: string]: any },
+  ): { [field: string]: any } | null {
+    if (value instanceof ModelSearch) {
+      return {
+        [key]: {
+          "@type": this.type,
+          "@list": value["@list"],
+          "@source": value["@source"],
+        },
+      };
+    }
+    return null;
+  }
+}
+
+/**
+ * FirestoreConverter for [ModelSearch].
+ * 
+ * [ModelSearch]用のFirestoreConverter。
+ */
+export class FirestoreModelSearchConverter extends FirestoreModelFieldValueConverter {
+  /**
+   * FirestoreConverter for [ModelSearch].
+   * 
+   * [ModelSearch]用のFirestoreConverter。
    */
   constructor() {
     super();
   }
 
-  type: string = "ModelToken";
+  type: string = "ModelSearch";
 
   convertFrom(
     key: string,
@@ -30,8 +79,18 @@ export class FirestoreModelTokenConverter extends FirestoreModelFieldValueConver
       const targetMap = original[targetKey] as { [field: string]: any } | null | undefined ?? {};
       const type = targetMap["@type"] as string | null | undefined ?? "";
       if (type == this.type) {
+        const list: string[] = [];
+        for (const item of value) {
+          if (typeof item === "string") {
+            list.push(item);
+          }
+        }
         return {
-          [key]: value.map((e) => String(e)),
+          [key]: {
+            "@type": this.type,
+            "@list": list,
+          },
+          [targetKey]: null,
         };
       }
     }
@@ -62,8 +121,8 @@ export class FirestoreModelTokenConverter extends FirestoreModelFieldValueConver
         }
         
         // Set new keys to true
-        for (const tokenKey of val) {
-          keys[tokenKey] = true;
+        for (const searchKey of val) {
+          keys[searchKey] = true;
         }
         
         const result: { [field: string]: any } = {
@@ -83,7 +142,7 @@ export class FirestoreModelTokenConverter extends FirestoreModelFieldValueConver
     } else if (Array.isArray(value)) {
       const list = value.filter((e) => e != null && typeof e === "object" && "@type" in e);
       if (list.length > 0 && list.every((e) => e["@type"] === this.type)) {
-        throw new Error("ModelToken cannot be included in a listing or map. It must be placed in the top field.");
+        throw new Error("ModelSearch cannot be included in a listing or map. It must be placed in the top field.");
       }
     } else if (isDynamicMap(value)) {
       const map: { [key: string]: any } = {};
@@ -94,7 +153,7 @@ export class FirestoreModelTokenConverter extends FirestoreModelFieldValueConver
         }
       }
       if (Object.keys(map).length > 0 && Object.values(map).every((e) => e["@type"] === this.type)) {
-        throw new Error("ModelToken cannot be included in a listing or map. It must be placed in the top field.");
+        throw new Error("ModelSearch cannot be included in a listing or map. It must be placed in the top field.");
       }
     }
     return null;

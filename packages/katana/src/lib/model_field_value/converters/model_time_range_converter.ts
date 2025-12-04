@@ -1,5 +1,56 @@
-import { FirestoreModelFieldValueConverter } from "../firestore_model_field_value_converter";
+import { FirestoreModelFieldValueConverter, ModelFieldValueConverter } from "../model_field_value_converter";
 import { isDynamicMap } from "../../utils";
+import { ModelTimeRange } from "../model_field_value";
+
+/**
+ * ModelTimeRange ModelFieldValueConverter.
+ * 
+ * ModelTimeRange用のModelFieldValueConverter。
+ */
+export class ModelTimeRangeConverter extends ModelFieldValueConverter {
+  /**
+   * ModelTimeRange ModelFieldValueConverter.
+   * 
+   * ModelTimeRange用のModelFieldValueConverter。
+ */
+  constructor() {
+    super();
+  }
+  type: string = "ModelTimeRange";
+
+  convertFrom(
+    key: string,
+    value: any,
+    original: { [field: string]: any },
+  ): { [field: string]: any } | null {
+    if (value !== null && typeof value === "object" && "@type" in value && value["@type"] === this.type) {
+      const start = value["@start"] as number | null | undefined ?? 0;
+      const end = value["@end"] as number | null | undefined ?? 0;
+      return {
+        [key]: new ModelTimeRange(new Date(start / 1000.0), new Date(end / 1000.0), "server"),
+      };
+    }
+    return null;
+  }
+  
+  convertTo(
+    key: string,
+    value: any,
+    original: { [field: string]: any },
+  ): { [field: string]: any } | null {
+    if (value instanceof ModelTimeRange) {
+      return {
+        [key]: {
+          "@type": this.type,
+          "@start": value["@start"] * 1000,
+          "@end": value["@end"] * 1000,
+          "@source": value["@source"],
+        },
+      };
+    }
+    return null;
+  }
+}
 
 /**
  * FirestoreConverter for [ModelTimeRange].
@@ -40,6 +91,7 @@ export class FirestoreModelTimeRangeConverter extends FirestoreModelFieldValueCo
                 "@start": start.getTime() * 1000,
                 "@end": end.getTime() * 1000,
               },
+              [targetKey]: null,
             };
           }
         }
@@ -68,6 +120,7 @@ export class FirestoreModelTimeRangeConverter extends FirestoreModelFieldValueCo
         if (res.length > 0) {
           return {
             [key]: res,
+            [targetKey]: null,
           };
         }
       }
@@ -101,6 +154,7 @@ export class FirestoreModelTimeRangeConverter extends FirestoreModelFieldValueCo
         if (Object.keys(res).length > 0) {
           return {
             [key]: res,
+            [targetKey]: null,
           };
         }
       }
@@ -127,7 +181,7 @@ export class FirestoreModelTimeRangeConverter extends FirestoreModelFieldValueCo
             "@end": end,
             "@target": key,
           },
-          [key]: `${new Date(start / 1000).toISOString()}|${new Date(end / 1000).toISOString()}`,
+          [key]: `${new Date(start / 1000.0).toISOString()}|${new Date(end / 1000.0).toISOString()}`,
         };
       }
     } else if (Array.isArray(value)) {
@@ -145,7 +199,7 @@ export class FirestoreModelTimeRangeConverter extends FirestoreModelFieldValueCo
             "@end": end,
             "@target": key,
           });
-          res.push(`${new Date(start / 1000).toISOString()}|${new Date(end / 1000).toISOString()}`);
+          res.push(`${new Date(start / 1000.0).toISOString()}|${new Date(end / 1000.0).toISOString()}`);
         }
         return {
           [targetKey]: target,
@@ -173,7 +227,7 @@ export class FirestoreModelTimeRangeConverter extends FirestoreModelFieldValueCo
             "@end": end,
             "@target": key,
           };
-          res[k] = `${new Date(start / 1000).toISOString()}|${new Date(end / 1000).toISOString()}`;
+          res[k] = `${new Date(start / 1000.0).toISOString()}|${new Date(end / 1000.0).toISOString()}`;
         }
         return {
           [targetKey]: target,

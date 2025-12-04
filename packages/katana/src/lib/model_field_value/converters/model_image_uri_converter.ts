@@ -1,5 +1,54 @@
-import { FirestoreModelFieldValueConverter } from "../firestore_model_field_value_converter";
+import { FirestoreModelFieldValueConverter, ModelFieldValueConverter } from "../model_field_value_converter";
 import { isDynamicMap } from "../../utils";
+import { ModelImageUri } from "../model_field_value";
+
+/**
+ * ModelImageUri ModelFieldValueConverter.
+ * 
+ * ModelImageUri用のModelFieldValueConverter。
+ */
+export class ModelImageUriConverter extends ModelFieldValueConverter {
+  /**
+   * ModelImageUri ModelFieldValueConverter.
+   * 
+   * ModelImageUri用のModelFieldValueConverter。
+ */
+  constructor() {
+    super();
+  }
+  type: string = "ModelImageUri";
+
+  convertFrom(
+    key: string,
+    value: any,
+    original: { [field: string]: any },
+  ): { [field: string]: any } | null {
+    if (value !== null && typeof value === "object" && "@type" in value && value["@type"] === this.type) {
+      const uri = value["@uri"] as string | null | undefined ?? "";
+      return {
+        [key]: new ModelImageUri(uri, "server"),
+      };
+    }
+    return null;
+  }
+
+  convertTo(
+    key: string,
+    value: any,
+    original: { [field: string]: any },
+  ): { [field: string]: any } | null {
+    if (value instanceof ModelImageUri) {
+      return {
+        [key]: {
+          "@type": this.type,
+          "@uri": value["@uri"],
+          "@source": value["@source"],
+        },
+      };
+    }
+    return null;
+  }
+}
 
 /**
  * FirestoreConverter for [ModelImageUri].
@@ -30,20 +79,28 @@ export class FirestoreModelImageUriConverter extends FirestoreModelFieldValueCon
       const type = targetMap["@type"] as string | null | undefined ?? "";
       if (type == this.type) {
         return {
-          [key]: String(value),
+          [key]: {
+            "@type": this.type,
+            "@uri": value,
+          },
+          [targetKey]: null,
         };
       }
     } else if (Array.isArray(value)) {
       const targetKey = `#${key}`;
       const targetList = original[targetKey] as { [field: string]: any }[] | null | undefined ?? [];
       if (targetList != null && targetList.length > 0 && targetList.every((e) => e["@type"] === this.type)) {
-        const res: string[] = [];
+        const res: { [field: string]: any }[] = [];
         for (const tmp of value) {
-          res.push(String(tmp));
+          res.push({
+            "@type": this.type,
+            "@uri": tmp,
+          });
         }
         if (res.length > 0) {
           return {
             [key]: res,
+            [targetKey]: null,
           };
         }
       }
@@ -53,7 +110,7 @@ export class FirestoreModelImageUriConverter extends FirestoreModelFieldValueCon
       targetMap
       if (targetMap != null) {
         const res: {
-          [field: string]: string
+          [field: string]: { [field: string]: any }
         } = {};
         for (const key in value) {
           const val = value[key];
@@ -62,11 +119,15 @@ export class FirestoreModelImageUriConverter extends FirestoreModelFieldValueCon
           if (type != this.type) {
             continue;
           }
-          res[key] = String(val);
+          res[key] = {
+            "@type": this.type,
+            "@uri": val,
+          };
         }
         if (Object.keys(res).length > 0) {
           return {
             [key]: res,
+            [targetKey]: null,
           };
         }
       }

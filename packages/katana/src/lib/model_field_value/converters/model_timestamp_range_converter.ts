@@ -1,6 +1,56 @@
-import { FirestoreModelFieldValueConverter } from "../firestore_model_field_value_converter";
+import { FirestoreModelFieldValueConverter, ModelFieldValueConverter } from "../model_field_value_converter";
 import { isDynamicMap } from "../../utils";
-import { Timestamp } from "firebase-admin/firestore";
+import { ModelTimestampRange } from "../model_field_value";
+
+/**
+ * ModelTimestampRange ModelFieldValueConverter.
+ * 
+ * ModelTimestampRange用のModelFieldValueConverter。
+ */
+export class ModelTimestampRangeConverter extends ModelFieldValueConverter {
+  /**
+   * ModelTimestampRange ModelFieldValueConverter.
+   * 
+   * ModelTimestampRange用のModelFieldValueConverter。
+   */
+  constructor() {
+    super();
+  }
+  type: string = "ModelTimestampRange";
+
+  convertFrom(
+    key: string,
+    value: any,
+    original: { [field: string]: any },
+  ): { [field: string]: any } | null {
+    if (value !== null && typeof value === "object" && "@type" in value && value["@type"] === this.type) {
+      const start = value["@start"] as number | null | undefined ?? 0;
+      const end = value["@end"] as number | null | undefined ?? 0;
+      return {
+        [key]: new ModelTimestampRange(new Date(start / 1000.0), new Date(end / 1000.0), "server"),
+      };
+    }
+    return null;
+  }
+
+  convertTo(
+    key: string,
+    value: any,
+    original: { [field: string]: any },
+  ): { [field: string]: any } | null {
+    if (value instanceof ModelTimestampRange) {
+      return {
+        [key]: {
+          "@type": this.type,
+          "@start": value["@start"] * 1000,
+          "@end": value["@end"] * 1000,
+          "@source": value["@source"],
+        },
+      };
+    }
+    return null;
+  }
+}
 
 /**
  * FirestoreConverter for [ModelTimestampRange].
@@ -41,6 +91,7 @@ export class FirestoreModelTimestampRangeConverter extends FirestoreModelFieldVa
                 "@start": start.getTime() * 1000,
                 "@end": end.getTime() * 1000,
               },
+              [targetKey]: null,
             };
           }
         }
@@ -69,6 +120,7 @@ export class FirestoreModelTimestampRangeConverter extends FirestoreModelFieldVa
         if (res.length > 0) {
           return {
             [key]: res,
+            [targetKey]: null,
           };
         }
       }
@@ -102,6 +154,7 @@ export class FirestoreModelTimestampRangeConverter extends FirestoreModelFieldVa
         if (Object.keys(res).length > 0) {
           return {
             [key]: res,
+            [targetKey]: null,
           };
         }
       }
@@ -128,7 +181,7 @@ export class FirestoreModelTimestampRangeConverter extends FirestoreModelFieldVa
             "@end": end,
             "@target": key,
           },
-          [key]: `${new Date(start / 1000).toISOString()}|${new Date(end / 1000).toISOString()}`,
+          [key]: `${new Date(start / 1000.0).toISOString()}|${new Date(end / 1000.0).toISOString()}`,
         };
       }
     } else if (Array.isArray(value)) {
@@ -146,7 +199,7 @@ export class FirestoreModelTimestampRangeConverter extends FirestoreModelFieldVa
             "@end": end,
             "@target": key,
           });
-          res.push(`${new Date(start / 1000).toISOString()}|${new Date(end / 1000).toISOString()}`);
+          res.push(`${new Date(start / 1000.0).toISOString()}|${new Date(end / 1000.0).toISOString()}`);
         }
         return {
           [targetKey]: target,
@@ -174,7 +227,7 @@ export class FirestoreModelTimestampRangeConverter extends FirestoreModelFieldVa
             "@end": end,
             "@target": key,
           };
-          res[k] = `${new Date(start / 1000).toISOString()}|${new Date(end / 1000).toISOString()}`;
+          res[k] = `${new Date(start / 1000.0).toISOString()}|${new Date(end / 1000.0).toISOString()}`;
         }
         return {
           [targetKey]: target,
