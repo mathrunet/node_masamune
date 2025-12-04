@@ -37,6 +37,17 @@ export class ModelServerCommandBase extends ModelFieldValue {
     "@command": string;
     "@public": { [field: string]: any };
     "@private": { [field: string]: any };
+
+    /**
+     * Get the value of the command.
+     * 
+     * コマンドの値を取得します。
+     * 
+     * @returns The value of the command.
+     */
+    value(): string {
+        return this["@command"] as string;
+    }
 }
 
 /**
@@ -52,6 +63,17 @@ export class ModelCounter extends ModelFieldValue {
     }
     "@increment": number;
     "@value": number;
+
+    /**
+     * Get the value of the counter.
+     * 
+     * カウンターの値を取得します。
+     * 
+     * @returns The value of the counter.
+     */
+    value(): number {
+        return (this["@value"] as number) + (this["@increment"] as number);
+    }
 }
 
 /**
@@ -65,6 +87,17 @@ export class ModelTimestamp extends ModelFieldValue {
         this["@time"] = time?.getTime() ?? Date.now();
     }
     "@time": number;
+
+    /**
+     * Get the value of the timestamp.
+     * 
+     * タイムスタンプの値を取得します。
+     * 
+     * @returns 
+     */
+    value(): Date {
+        return new Date((this["@time"] as number) / 1000.0);
+    }
 }
 
 /**
@@ -80,6 +113,17 @@ export class ModelDate extends ModelFieldValue {
         this["@time"] = date.getTime();
     }
     "@time": number;
+
+    /**
+     * Get the value of the timestamp.
+     * 
+     * タイムスタンプの値を取得します。
+     * 
+     * @returns 
+     */
+    value(): Date {
+        return new Date((this["@time"] as number) / 1000.0);
+    }
 }
 
 /**
@@ -96,6 +140,17 @@ export class ModelTime extends ModelFieldValue {
         this["@time"] = time.getTime();
     }
     "@time": number;
+
+    /**
+     * Get the value of the timestamp.
+     * 
+     * タイムスタンプの値を取得します。
+     * 
+     * @returns 
+     */
+    value(): Date {
+        return new Date((this["@time"] as number) / 1000.0);
+    }
 }
 
 /**
@@ -118,6 +173,21 @@ export class ModelTimestampRange extends ModelFieldValue {
     }
     "@start": number;
     "@end": number;
+
+
+    /**
+     * Get the value of the timestamp.
+     * 
+     * タイムスタンプの値を取得します。
+     * 
+     * @returns 
+     */
+    value(): { start: Date, end: Date } {
+        return {
+            start: new Date((this["@start"] as number) / 1000.0),
+            end: new Date((this["@end"] as number) / 1000.0),
+        };
+    }
 }
 
 /**
@@ -142,6 +212,20 @@ export class ModelDateRange extends ModelFieldValue {
     }
     "@start": number;
     "@end": number;
+
+    /**
+     * Get the value of the timestamp.
+     * 
+     * タイムスタンプの値を取得します。
+     * 
+     * @returns 
+     */
+    value(): { start: Date, end: Date } {
+        return {
+            start: new Date((this["@start"] as number) / 1000.0),
+            end: new Date((this["@end"] as number) / 1000.0),
+        };
+    }
 }
 
 /**
@@ -167,6 +251,20 @@ export class ModelTimeRange extends ModelFieldValue {
     }
     "@start": number;
     "@end": number;
+
+    /**
+     * Get the value of the timestamp.
+     * 
+     * タイムスタンプの値を取得します。
+     * 
+     * @returns 
+     */
+    value(): { start: Date, end: Date } {
+        return {
+            start: new Date((this["@start"] as number) / 1000.0),
+            end: new Date((this["@end"] as number) / 1000.0),
+        };
+    }
 }
 
 /**
@@ -182,6 +280,20 @@ export class ModelLocale extends ModelFieldValue {
     }
     "@language": string;
     "@country"?: string;
+
+    /**
+     * Get the value of the locale.
+     * 
+     * ロケールの値を取得します。
+     * 
+     * @returns The value of the locale.
+     */
+    value(): string {
+        if(this["@country"]) {
+            return `${this["@language"]}_${this["@country"]}`;
+        }
+        return this["@language"];
+    }
 }
 
 /**
@@ -195,6 +307,29 @@ export class ModelLocalizedValue extends ModelFieldValue {
         this["@localized"] = localized;
     }
     "@localized": ModelLocalizedLocaleVaue[];
+
+    /**
+     * Get the value of the localized value.
+     * 
+     * ローカライズされた値の値を取得します。
+     * 
+     * @returns The value of the localized value.
+     */
+    value(): ModelLocalizedLocaleVaue[] {
+        return this["@localized"];
+    }
+
+    /**
+     * Get the value of the localized value for the specified locale.
+     * 
+     * 指定されたロケールのローカライズされた値の値を取得します。
+     * 
+     * @param locale The locale to get the value for.
+     * @returns The value of the localized value for the specified locale.
+     */
+    get(locale: string): ModelLocalizedLocaleVaue | null {
+        return this["@localized"].find((e) => e.language === locale) ?? null;
+    }
 }
 
 /**
@@ -233,6 +368,17 @@ export class ModelUri extends ModelFieldValue {
         this["@uri"] = uri;
     }
     "@uri": string;
+
+    /**
+     * Get the value of the uri.
+     * 
+     * URIの値を取得します。
+     * 
+     * @returns The value of the uri.
+     */
+    value(): string {
+        return this["@uri"] as string;
+    }
 }
 
 /**
@@ -246,6 +392,17 @@ export class ModelImageUri extends ModelFieldValue {
         this["@uri"] = uri;
     }
     "@uri": string;
+
+    /**
+     * Get the value of the uri.
+     * 
+     * URIの値を取得します。
+     * 
+     * @returns The value of the uri.
+     */
+    value(): string {
+        return this["@uri"] as string;
+    }
 }
 
 /**
@@ -259,6 +416,17 @@ export class ModelVideoUri extends ModelFieldValue {
         this["@uri"] = uri;
     }
     "@uri": string;
+
+    /**
+     * Get the value of the uri.
+     * 
+     * URIの値を取得します。
+     * 
+     * @returns The value of the uri.
+     */
+    value(): string {
+        return this["@uri"] as string;
+    }
 }
 
 /**
@@ -272,6 +440,17 @@ export class ModelSearch extends ModelFieldValue {
         this["@list"] = list;
     }
     "@list": string[];
+
+    /**
+     * Get the value of the search.
+     * 
+     * 検索の値を取得します。
+     * 
+     * @returns The value of the search.
+     */
+    value(): string[] {
+        return this["@list"] as string[];
+    }
 }
 
 /**
@@ -285,6 +464,17 @@ export class ModelToken extends ModelFieldValue {
         this["@list"] = list;
     }
     "@list": string[];
+
+    /**
+     * Get the value of the token.
+     * 
+     * トークンの値を取得します。
+     * 
+     * @returns The value of the token.
+     */
+    value(): string[] {
+        return this["@list"] as string[];
+    }
 }
 
 /**
@@ -300,6 +490,20 @@ export class ModelGeoValue extends ModelFieldValue {
     }
     "@latitude": number;
     "@longitude": number;
+
+    /**
+     * Get the value of the geo value.
+     * 
+     * 地理値の値を取得します。
+     * 
+     * @returns The value of the geo value.
+     */
+    value(): { latitude: number, longitude: number } {
+        return {
+            latitude: this["@latitude"] as number,
+            longitude: this["@longitude"] as number
+        };
+    }
 }
 
 /**
@@ -313,6 +517,17 @@ export class ModelVectorValue extends ModelFieldValue {
         this["@vector"] = vector;
     }
     "@vector": number[];
+
+    /**
+     * Get the value of the vector value.
+     * 
+     * ベクトル値の値を取得します。
+     * 
+     * @returns The value of the vector value.
+     */
+    value(): number[] {
+        return this["@vector"] as number[];
+    }
 }
 
 /**
@@ -326,4 +541,15 @@ export class ModelRefBase extends ModelFieldValue {
         this["@ref"] = ref;
     }
     "@ref": string;
+
+    /**
+     * Get the value of the ref.
+     * 
+     * リファレンスの値を取得します。
+     * 
+     * @returns The value of the ref.
+     */
+    value(): string {
+        return this["@ref"] as string;
+    }
 }
