@@ -17,7 +17,6 @@
 
 import * as admin from "firebase-admin";
 import * as path from "path";
-import { execSync } from "child_process";
 
 // Service account path
 const serviceAccountPath = path.resolve(__dirname, "../test/mathru-net-39425d37638c.json");
@@ -160,7 +159,7 @@ async function deleteOrphanedTestSubcollections(
 }
 
 /**
- * Delete test files from Storage.
+ * Delete test files from Storage (reports).
  */
 async function deleteTestStorageFiles(bucket: any): Promise<number> {
     let deletedCount = 0;
@@ -174,11 +173,11 @@ async function deleteTestStorageFiles(bucket: any): Promise<number> {
         });
 
         if (testFiles.length === 0) {
-            console.log("  No test files found in Storage");
+            console.log("  No test files found in Storage (reports)");
             return 0;
         }
 
-        console.log(`  Found ${testFiles.length} test files in Storage`);
+        console.log(`  Found ${testFiles.length} test files in Storage (reports)`);
 
         for (const file of testFiles) {
             await file.delete();
@@ -187,6 +186,41 @@ async function deleteTestStorageFiles(bucket: any): Promise<number> {
         }
     } catch (error: any) {
         console.warn(`  Warning: Could not delete Storage files: ${error.message}`);
+    }
+
+    return deletedCount;
+}
+
+/**
+ * Delete test GitHub analysis files from Storage.
+ * Path format: assets/{projectId}/github_analysis.json
+ */
+async function deleteTestGitHubAnalysisFiles(bucket: any): Promise<number> {
+    let deletedCount = 0;
+
+    try {
+        const [files] = await bucket.getFiles({ prefix: "assets/" });
+
+        const testFiles = files.filter((file: any) => {
+            const parts = file.name.split("/");
+            // Path format: assets/{projectId}/github_analysis.json
+            return parts.length >= 2 && parts[1].startsWith("test-");
+        });
+
+        if (testFiles.length === 0) {
+            console.log("  No test files found in Storage (assets)");
+            return 0;
+        }
+
+        console.log(`  Found ${testFiles.length} test files in Storage (assets)`);
+
+        for (const file of testFiles) {
+            await file.delete();
+            console.log(`    Deleted: ${file.name}`);
+            deletedCount++;
+        }
+    } catch (error: any) {
+        console.warn(`  Warning: Could not delete GitHub analysis files: ${error.message}`);
     }
 
     return deletedCount;
@@ -242,11 +276,17 @@ async function main(): Promise<void> {
     console.log(`  Total deleted: ${orphanedUsageDeleted}\n`);
     totalDeleted += orphanedUsageDeleted;
 
-    // Clean up Storage test files
-    console.log("Cleaning up Storage test files...");
+    // Clean up Storage test files (reports)
+    console.log("Cleaning up Storage test files (reports)...");
     const storageDeleted = await deleteTestStorageFiles(storage);
     console.log(`  Total deleted: ${storageDeleted}\n`);
     totalDeleted += storageDeleted;
+
+    // Clean up Storage test files (GitHub analysis)
+    console.log("Cleaning up Storage test files (assets)...");
+    const githubAnalysisDeleted = await deleteTestGitHubAnalysisFiles(storage);
+    console.log(`  Total deleted: ${githubAnalysisDeleted}\n`);
+    totalDeleted += githubAnalysisDeleted;
 
     console.log("========================================");
     console.log(`Cleanup Complete! Total deleted: ${totalDeleted} items`);

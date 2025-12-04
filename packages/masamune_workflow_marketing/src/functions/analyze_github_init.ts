@@ -6,7 +6,7 @@
  * 2. Detects framework
  * 3. Creates file list for processing
  * 4. Dynamically updates task.actions
- * 5. Saves initial state to Firestore
+ * 5. Saves initial state to Firebase Storage (as JSON)
  */
 
 import { HttpFunctionsOptions } from "@mathrunet/masamune";
@@ -23,12 +23,12 @@ import {
     GitHubAnalysisState,
     GitHubAnalysisActionCommand,
     FrameworkInfo,
+    FolderBatch,
 } from "../models";
-
-/**
- * Default batch size (files per action).
- */
-const DEFAULT_BATCH_SIZE = 100;
+import {
+    createInitialData,
+    writeAnalysisData,
+} from "../utils/github_analysis_storage";
 
 /**
  * A function for initializing GitHub repository analysis.
@@ -83,7 +83,6 @@ export class AnalyzeGitHubInit extends WorkflowProcessFunctionBase {
         if (admin.apps.length === 0) {
             admin.initializeApp();
         }
-        const firestore = admin.firestore();
 
         const projectDoc = await projectRef.get();
         const projectData = projectDoc.data() as Project | undefined;
@@ -118,18 +117,20 @@ export class AnalyzeGitHubInit extends WorkflowProcessFunctionBase {
             const filePaths = await githubClient.getFilteredFileList(githubRepositoryPath);
             console.log(`AnalyzeGitHubInit: Found ${filePaths.length} files to analyze`);
 
-            // 6. Get folder paths
+            // 6. Get folder paths (sorted by depth, deepest first)
             const folderPaths = githubClient.getFolderPaths(filePaths);
             console.log(`AnalyzeGitHubInit: Found ${folderPaths.length} folders`);
 
-            // 7. Calculate batch count
-            const batchSize = DEFAULT_BATCH_SIZE;
-            const batchCount = Math.ceil(filePaths.length / batchSize);
-            console.log(`AnalyzeGitHubInit: Will create ${batchCount} batches`);
+            // 7. Group files by folder for batch processing
+            const folderBatches = this.groupFilesByFolder(filePaths, folderPaths);
+            console.log(`AnalyzeGitHubInit: Created ${folderBatches.length} folder batches`);
 
-            // 8. Save state to Firestore
+            // 8. Calculate batch count (one batch per folder group)
+            const batchCount = folderBatches.length;
+            console.log(`AnalyzeGitHubInit: Will create ${batchCount} process actions`);
+
+            // 9. Save state to Firebase Storage
             const projectId = projectRef.id;
-            const stateRef = firestore.doc(`plugins/workflow/github_analysis/${projectId}/state/current`);
 
             const state: GitHubAnalysisState = {
                 phase: "processing",
@@ -140,13 +141,15 @@ export class AnalyzeGitHubInit extends WorkflowProcessFunctionBase {
                 processedFiles: 0,
                 filePaths: filePaths,
                 folderPaths: folderPaths,
+                folderBatches: folderBatches,
                 currentBatchIndex: 0,
-                batchSize: batchSize,
+                batchSize: 0, // Not used in folder-based batching
                 updatedAt: new Date(),
             };
 
-            await stateRef.set(state);
-            console.log(`AnalyzeGitHubInit: State saved to Firestore`);
+            const analysisData = createInitialData(state);
+            await writeAnalysisData(projectId, analysisData);
+            console.log(`AnalyzeGitHubInit: State saved to Storage`);
 
             // 9. Update task.actions dynamically
             const taskRef = action.task;
@@ -168,7 +171,7 @@ export class AnalyzeGitHubInit extends WorkflowProcessFunctionBase {
                 console.log(`AnalyzeGitHubInit: Verified actions count =`, updatedActions.length);
             }
 
-            // 10. Return success
+            // 11. Return success
             return {
                 ...action,
                 results: {
@@ -180,7 +183,6 @@ export class AnalyzeGitHubInit extends WorkflowProcessFunctionBase {
                         totalFiles: filePaths.length,
                         totalFolders: folderPaths.length,
                         batchCount: batchCount,
-                        batchSize: batchSize,
                     },
                 },
             };
@@ -249,6 +251,69 @@ export class AnalyzeGitHubInit extends WorkflowProcessFunctionBase {
         await taskRef.update({
             actions: newActions,
         });
+    }
+
+    /**
+     * Group files by folder for batch processing.
+     * Each folder becomes one batch (one AI call).
+     * Multiple small folders may be grouped together.
+     */
+    private groupFilesByFolder(
+        filePaths: string[],
+        folderPaths: string[]
+    ): FolderBatch[] {
+        // Create a map of folder -> files
+        const folderFileMap = new Map<string, string[]>();
+
+        // Initialize with all folder paths
+        for (const folderPath of folderPaths) {
+            folderFileMap.set(folderPath, []);
+        }
+
+        // Also handle root-level files
+        folderFileMap.set("", []);
+
+        // Assign each file to its direct parent folder
+        for (const filePath of filePaths) {
+            const lastSlash = filePath.lastIndexOf("/");
+            const folderPath = lastSlash === -1 ? "" : filePath.substring(0, lastSlash);
+
+            if (folderFileMap.has(folderPath)) {
+                folderFileMap.get(folderPath)!.push(filePath);
+            } else {
+                // Find the closest parent folder
+                let parent = folderPath;
+                while (parent && !folderFileMap.has(parent)) {
+                    const parentSlash = parent.lastIndexOf("/");
+                    parent = parentSlash === -1 ? "" : parent.substring(0, parentSlash);
+                }
+                folderFileMap.get(parent)!.push(filePath);
+            }
+        }
+
+        // Convert to FolderBatch array, filtering out empty folders
+        const batches: FolderBatch[] = [];
+
+        // Sort folders by depth (shallowest first for better grouping)
+        const sortedFolders = Array.from(folderFileMap.entries())
+            .filter(([, files]) => files.length > 0)
+            .sort((a, b) => {
+                const depthA = a[0] === "" ? 0 : a[0].split("/").length;
+                const depthB = b[0] === "" ? 0 : b[0].split("/").length;
+                return depthA - depthB;
+            });
+
+        for (const [folderPath, files] of sortedFolders) {
+            // Each folder is its own batch for simplicity
+            // (can be optimized later to group small folders)
+            batches.push({
+                folderPath,
+                files,
+            });
+        }
+
+        console.log(`AnalyzeGitHubInit: Grouped into ${batches.length} folder batches`);
+        return batches;
     }
 }
 

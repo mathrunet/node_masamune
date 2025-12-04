@@ -9,7 +9,7 @@ import * as admin from "firebase-admin";
 import * as path from "path";
 
 // Service account path for authentication
-// Note: __dirname in Jest global_teardown refers to test/ directory
+// Note: __dirname in Jest globalTeardown refers to test/ directory
 const serviceAccountPath = path.resolve(__dirname, "mathru-net-39425d37638c.json");
 
 /**
@@ -148,7 +148,7 @@ async function deleteOrphanedTestSubcollections(
 }
 
 /**
- * Delete test files from Storage.
+ * Delete test files from Storage (reports).
  */
 async function deleteTestStorageFiles(bucket: any): Promise<number> {
     let deletedCount = 0;
@@ -168,7 +168,7 @@ async function deleteTestStorageFiles(bucket: any): Promise<number> {
             return 0;
         }
 
-        console.log(`  Found ${testFiles.length} test files in Storage`);
+        console.log(`  Found ${testFiles.length} test files in Storage (reports)`);
 
         for (const file of testFiles) {
             await file.delete();
@@ -183,9 +183,45 @@ async function deleteTestStorageFiles(bucket: any): Promise<number> {
 }
 
 /**
+ * Delete test GitHub analysis files from Storage.
+ * Path format: assets/{projectId}/github_analysis.json
+ */
+async function deleteTestGitHubAnalysisFiles(bucket: any): Promise<number> {
+    let deletedCount = 0;
+
+    try {
+        // List all files under assets/ prefix
+        const [files] = await bucket.getFiles({ prefix: "assets/" });
+
+        // Filter files that are in test project folders (test-*)
+        const testFiles = files.filter((file: any) => {
+            const parts = file.name.split("/");
+            // Path format: assets/{projectId}/github_analysis.json
+            return parts.length >= 2 && parts[1].startsWith("test-");
+        });
+
+        if (testFiles.length === 0) {
+            return 0;
+        }
+
+        console.log(`  Found ${testFiles.length} test files in Storage (assets)`);
+
+        for (const file of testFiles) {
+            await file.delete();
+            deletedCount++;
+            console.log(`    Deleted: ${file.name}`);
+        }
+    } catch (error: any) {
+        console.warn(`  Warning: Could not delete GitHub analysis files: ${error.message}`);
+    }
+
+    return deletedCount;
+}
+
+/**
  * Main teardown function.
  */
-export default async function global_teardown(): Promise<void> {
+export default async function globalTeardown(): Promise<void> {
     console.log("\n========================================");
     console.log("Global Teardown: Cleaning up test data...");
     console.log("========================================\n");
@@ -234,10 +270,15 @@ export default async function global_teardown(): Promise<void> {
     }
     totalDeleted += orphanedUsageDeleted;
 
-    // Clean up Storage test files
-    console.log("\nCleaning up Storage test files...");
+    // Clean up Storage test files (reports)
+    console.log("\nCleaning up Storage test files (reports)...");
     const storageDeleted = await deleteTestStorageFiles(storage);
     totalDeleted += storageDeleted;
+
+    // Clean up Storage test files (GitHub analysis)
+    console.log("\nCleaning up Storage test files (assets)...");
+    const githubAnalysisDeleted = await deleteTestGitHubAnalysisFiles(storage);
+    totalDeleted += githubAnalysisDeleted;
 
     console.log("\n========================================");
     console.log(`Global Teardown: Total deleted: ${totalDeleted} items`);

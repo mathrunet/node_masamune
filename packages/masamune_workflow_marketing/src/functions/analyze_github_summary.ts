@@ -2,10 +2,9 @@
  * GitHub Analysis Summary Function
  *
  * Generates final repository analysis:
- * 1. Loads all folder summaries from Firestore
+ * 1. Loads all folder summaries from Storage JSON
  * 2. Generates comprehensive analysis using AI
  * 3. Returns final JSON to action.results.githubRepository
- * 4. Optionally cleans up cached data
  */
 
 import { HttpFunctionsOptions } from "@mathrunet/masamune";
@@ -17,11 +16,15 @@ import {
 import * as admin from "firebase-admin";
 import { GitHubAnalysisService } from "../services/github_analysis_service";
 import {
-    GitHubAnalysisState,
-    GitHubFolderCacheEntry,
     FolderSummary,
     FrameworkInfo,
+    FileSummary,
 } from "../models";
+import {
+    GitHubAnalysisData,
+    readAnalysisData,
+    writeAnalysisData,
+} from "../utils/github_analysis_storage";
 
 /**
  * Extended action command for summary.
@@ -84,20 +87,18 @@ export class AnalyzeGitHubSummary extends WorkflowProcessFunctionBase {
         if (admin.apps.length === 0) {
             admin.initializeApp();
         }
-        const firestore = admin.firestore();
 
         const projectId = projectRef.id;
 
         try {
-            // 1. Load state from Firestore
-            const stateRef = firestore.doc(`plugins/workflow/github_analysis/${projectId}/state/current`);
-            const stateDoc = await stateRef.get();
+            // 1. Load analysis data from Storage
+            const analysisData = await readAnalysisData(projectId);
 
-            if (!stateDoc.exists) {
-                throw new Error("Analysis state not found");
+            if (!analysisData) {
+                throw new Error("Analysis data not found");
             }
 
-            const state = stateDoc.data() as GitHubAnalysisState;
+            const state = analysisData.state;
 
             // 2. Initialize analysis service
             const gcpProjectId = process.env.GCLOUD_PROJECT || process.env.GOOGLE_CLOUD_PROJECT;
@@ -109,17 +110,15 @@ export class AnalyzeGitHubSummary extends WorkflowProcessFunctionBase {
                 projectId: gcpProjectId,
             });
 
-            // 3. Load all folder summaries
+            // 3. Load all folder summaries from memory
             console.log("AnalyzeGitHubSummary: Loading folder summaries...");
             const folderSummaries: FolderSummary[] = [];
 
             // First, ensure root-level summary exists
-            const rootFiles = state.filePaths.filter(fp => !fp.includes("/"));
+            const rootFiles = state.filePaths.filter((fp: string) => !fp.includes("/"));
             if (rootFiles.length > 0) {
                 const rootSummary = await this.getOrCreateRootSummary(
-                    firestore,
-                    projectId,
-                    state,
+                    analysisData,
                     analysisService
                 );
                 if (rootSummary) {
@@ -127,20 +126,18 @@ export class AnalyzeGitHubSummary extends WorkflowProcessFunctionBase {
                 }
             }
 
-            // Load folder summaries
+            // Load folder summaries from memory
             for (const folderPath of state.folderPaths) {
-                const encodedPath = encodeURIComponent(folderPath || "_root");
-                const cacheRef = firestore.doc(`plugins/workflow/github_analysis/${projectId}/folders/${encodedPath}`);
-                const cacheDoc = await cacheRef.get();
+                const folderKey = folderPath || "_root";
+                const cached = analysisData.folders[folderKey];
 
-                if (cacheDoc.exists) {
-                    const cached = cacheDoc.data() as GitHubFolderCacheEntry;
+                if (cached) {
                     folderSummaries.push({
                         path: cached.path,
                         summary: cached.summary,
                         features: cached.features,
                         fileCount: cached.fileCount,
-                        analyzedAt: cached.analyzedAt,
+                        analyzedAt: new Date(cached.analyzedAt),
                     });
                 }
             }
@@ -161,11 +158,9 @@ export class AnalyzeGitHubSummary extends WorkflowProcessFunctionBase {
                 githubRepositoryPath
             );
 
-            // 5. Update state to completed
-            await stateRef.update({
-                phase: "completed",
-                updatedAt: new Date(),
-            });
+            // 5. Update state to completed and save
+            analysisData.state.phase = "completed";
+            await writeAnalysisData(projectId, analysisData);
 
             // 6. Calculate cost
             const cost = analysisService.calculateCost(result.inputTokens, result.outputTokens);
@@ -186,12 +181,12 @@ export class AnalyzeGitHubSummary extends WorkflowProcessFunctionBase {
 
             // Update state to failed
             try {
-                const stateRef = firestore.doc(`plugins/workflow/github_analysis/${projectId}/state/current`);
-                await stateRef.update({
-                    phase: "failed",
-                    error: error.message,
-                    updatedAt: new Date(),
-                });
+                const analysisData = await readAnalysisData(projectId);
+                if (analysisData) {
+                    analysisData.state.phase = "failed";
+                    analysisData.state.error = error.message;
+                    await writeAnalysisData(projectId, analysisData);
+                }
             } catch {
                 // Ignore
             }
@@ -211,72 +206,58 @@ export class AnalyzeGitHubSummary extends WorkflowProcessFunctionBase {
      * Get or create root-level summary for files not in any folder.
      */
     private async getOrCreateRootSummary(
-        firestore: admin.firestore.Firestore,
-        projectId: string,
-        state: GitHubAnalysisState,
+        analysisData: GitHubAnalysisData,
         analysisService: GitHubAnalysisService
     ): Promise<FolderSummary | null> {
-        const encodedPath = encodeURIComponent("_root");
-        const cacheRef = firestore.doc(`plugins/workflow/github_analysis/${projectId}/folders/${encodedPath}`);
-        const cacheDoc = await cacheRef.get();
+        const state = analysisData.state;
 
-        if (cacheDoc.exists) {
-            const cached = cacheDoc.data() as GitHubFolderCacheEntry;
+        // Check if root summary already exists
+        if (analysisData.folders["_root"]) {
+            const cached = analysisData.folders["_root"];
             return {
                 path: "",
                 summary: cached.summary,
                 features: cached.features,
                 fileCount: cached.fileCount,
-                analyzedAt: cached.analyzedAt,
+                analyzedAt: new Date(cached.analyzedAt),
             };
         }
 
         // Get root-level file summaries
-        const rootFiles = state.filePaths.filter(fp => !fp.includes("/"));
+        const rootFiles = state.filePaths.filter((fp: string) => !fp.includes("/"));
         if (rootFiles.length === 0) {
             return null;
         }
 
-        const fileSummaries: FolderSummary[] = [];
+        const fileSummaries: FileSummary[] = [];
         for (const filePath of rootFiles) {
-            const encodedFilePath = encodeURIComponent(filePath);
-            const fileRef = firestore.doc(`plugins/workflow/github_analysis/${projectId}/files/${encodedFilePath}`);
-            const fileDoc = await fileRef.get();
+            const cached = analysisData.files[filePath];
 
-            if (fileDoc.exists) {
-                const cached = fileDoc.data();
+            if (cached) {
                 fileSummaries.push({
-                    path: cached?.path || filePath,
-                    summary: cached?.summary || "",
-                    features: cached?.features || [],
-                    fileCount: 1,
-                    analyzedAt: cached?.analyzedAt || new Date(),
+                    path: cached.path,
+                    summary: cached.summary,
+                    features: cached.features,
+                    analyzedAt: new Date(cached.analyzedAt),
                 });
             }
         }
 
         // Generate root summary
         const result = await analysisService.summarizeFolder(
-            fileSummaries.map(f => ({
-                path: f.path,
-                summary: f.summary,
-                features: f.features,
-                analyzedAt: f.analyzedAt,
-            })),
+            fileSummaries,
             "",
             state.framework?.framework || "unknown"
         );
 
-        // Cache it
-        const folderEntry: GitHubFolderCacheEntry = {
+        // Save to memory
+        analysisData.folders["_root"] = {
             path: "",
-            type: "folder",
             summary: result.data.summary,
             features: result.data.features,
             fileCount: result.data.fileCount,
-            analyzedAt: result.data.analyzedAt,
+            analyzedAt: result.data.analyzedAt.toISOString(),
         };
-        await cacheRef.set(folderEntry);
 
         return result.data;
     }
@@ -314,7 +295,7 @@ export class AnalyzeGitHubSummary extends WorkflowProcessFunctionBase {
 module.exports = (
     regions: string[],
     options: HttpFunctionsOptions,
-    data: { [key: string]: any }
+    _data: { [key: string]: any }
 ) => new AnalyzeGitHubSummary(options).build(regions);
 
 // Export class for testing

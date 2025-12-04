@@ -14,6 +14,15 @@
 import { GitHubContentClient } from "../../src/clients/github_content_client";
 import { GitHubAnalysisService } from "../../src/services/github_analysis_service";
 import { FileSummary, FolderSummary } from "../../src/models";
+import {
+    readAnalysisData,
+    writeAnalysisData,
+    createInitialData,
+    deleteAnalysisData,
+    getStoragePath,
+} from "../../src/utils/github_analysis_storage";
+import * as admin from "firebase-admin";
+import * as path from "path";
 
 // Skip tests if environment variables are not set
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
@@ -418,4 +427,121 @@ describeE2E("End-to-End GitHub Analysis", () => {
 
         console.log("\n=== E2E Analysis Complete ===");
     }, 300000); // 5 minute timeout
+});
+
+// Storage integration test
+describe("GitHub Analysis Storage Integration", () => {
+    const testProjectId = `test-github-storage-${Date.now()}`;
+    const serviceAccountPath = path.resolve(__dirname, "../mathru-net-39425d37638c.json");
+
+    beforeAll(() => {
+        // Initialize Firebase Admin if not already initialized
+        if (admin.apps.length === 0) {
+            admin.initializeApp({
+                credential: admin.credential.cert(serviceAccountPath),
+                projectId: "mathru-net",
+                storageBucket: "mathru-net.appspot.com",
+            });
+        }
+    });
+
+    afterAll(async () => {
+        // Cleanup test data
+        try {
+            await deleteAnalysisData(testProjectId);
+        } catch (e) {
+            // Ignore cleanup errors
+        }
+    });
+
+    it("should create, read, update, and delete analysis data in Storage", async () => {
+        // 1. Create initial data
+        console.log("=== Step 1: Create Initial Data ===");
+        const initialState = {
+            phase: "processing" as const,
+            repository: "test/repo",
+            repositoryPath: "",
+            framework: { framework: "Flutter", platforms: ["iOS", "Android"] },
+            totalFiles: 10,
+            processedFiles: 0,
+            filePaths: ["lib/main.dart", "lib/app.dart", "lib/utils/helper.dart"],
+            folderPaths: ["lib", "lib/utils"],
+            currentBatchIndex: 0,
+            batchSize: 100,
+            updatedAt: new Date(),
+        };
+
+        const analysisData = createInitialData(initialState);
+        await writeAnalysisData(testProjectId, analysisData);
+        console.log(`Created analysis data at: ${getStoragePath(testProjectId)}`);
+
+        // 2. Read data
+        console.log("\n=== Step 2: Read Data ===");
+        const readData = await readAnalysisData(testProjectId);
+        expect(readData).not.toBeNull();
+        expect(readData!.state.repository).toBe("test/repo");
+        expect(readData!.state.totalFiles).toBe(10);
+        console.log("Read state:", JSON.stringify(readData!.state, null, 2));
+
+        // 3. Update data (add file summaries)
+        console.log("\n=== Step 3: Update Data ===");
+        readData!.files["lib/main.dart"] = {
+            path: "lib/main.dart",
+            language: "Dart",
+            summary: "Main entry point of the Flutter application",
+            features: ["App initialization", "Root widget"],
+            analyzedAt: new Date().toISOString(),
+        };
+        readData!.files["lib/app.dart"] = {
+            path: "lib/app.dart",
+            language: "Dart",
+            summary: "App widget with theme and routing configuration",
+            features: ["Theme setup", "Routing"],
+            analyzedAt: new Date().toISOString(),
+        };
+        readData!.state.processedFiles = 2;
+        readData!.state.currentBatchIndex = 1;
+
+        await writeAnalysisData(testProjectId, readData!);
+        console.log("Updated with 2 file summaries");
+
+        // 4. Read updated data
+        console.log("\n=== Step 4: Verify Update ===");
+        const updatedData = await readAnalysisData(testProjectId);
+        expect(updatedData!.state.processedFiles).toBe(2);
+        expect(Object.keys(updatedData!.files)).toHaveLength(2);
+        expect(updatedData!.files["lib/main.dart"]).toBeDefined();
+        console.log("Files in storage:", Object.keys(updatedData!.files));
+
+        // 5. Add folder summary
+        console.log("\n=== Step 5: Add Folder Summary ===");
+        updatedData!.folders["lib"] = {
+            path: "lib",
+            summary: "Main source directory containing Flutter app code",
+            features: ["App structure", "Core widgets"],
+            fileCount: 2,
+            analyzedAt: new Date().toISOString(),
+        };
+        updatedData!.state.phase = "completed";
+
+        await writeAnalysisData(testProjectId, updatedData!);
+        console.log("Added folder summary and marked as completed");
+
+        // 6. Final verification
+        console.log("\n=== Step 6: Final Verification ===");
+        const finalData = await readAnalysisData(testProjectId);
+        expect(finalData!.state.phase).toBe("completed");
+        expect(Object.keys(finalData!.folders)).toHaveLength(1);
+        console.log("Final state:", JSON.stringify(finalData!.state, null, 2));
+        console.log("Folders:", Object.keys(finalData!.folders));
+
+        // 7. Delete data
+        console.log("\n=== Step 7: Delete Data ===");
+        await deleteAnalysisData(testProjectId);
+        const deletedData = await readAnalysisData(testProjectId);
+        expect(deletedData).toBeNull();
+        console.log("Data deleted successfully");
+
+        console.log("\n=== Storage Integration Test Complete ===");
+    }, 60000); // 1 minute timeout
 });

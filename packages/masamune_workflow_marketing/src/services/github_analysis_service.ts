@@ -160,6 +160,172 @@ Respond in Japanese.`;
     }
 
     /**
+     * Analyze all files in a folder in a single AI call.
+     * Returns both individual file summaries and folder summary.
+     */
+    async analyzeFolderBatch(
+        files: Array<{ path: string; content: string }>,
+        folderPath: string,
+        framework: string
+    ): Promise<GenerationResult<{ files: FileSummary[]; folder: FolderSummary }>> {
+        if (files.length === 0) {
+            return {
+                data: {
+                    files: [],
+                    folder: {
+                        path: folderPath,
+                        summary: "Empty folder",
+                        features: [],
+                        fileCount: 0,
+                        analyzedAt: new Date(),
+                    },
+                },
+                inputTokens: 0,
+                outputTokens: 0,
+            };
+        }
+
+        // Build file contents section
+        const fileContentsSection = files.map(f => {
+            const language = this.getLanguageFromPath(f.path);
+            // Truncate very long files
+            const maxLength = 30000; // Reduced for batch processing
+            const truncatedContent = f.content.length > maxLength
+                ? f.content.substring(0, maxLength) + "\n... (truncated)"
+                : f.content;
+
+            return `---
+### File: ${f.path}
+Language: ${language || "Unknown"}
+\`\`\`${language?.toLowerCase() || ""}
+${truncatedContent}
+\`\`\``;
+        }).join("\n\n");
+
+        const prompt = `You are analyzing a folder in a ${framework} project.
+
+## Folder: ${folderPath || "(root)"}
+
+## Files in this folder (${files.length} files):
+
+${fileContentsSection}
+
+## Instructions
+For each file above, provide:
+1. A brief summary (1-2 sentences) of what the file does
+2. Key features or functionality it provides
+
+Then, provide an overall folder summary:
+1. A brief summary (2-3 sentences) of what this folder/module does
+2. Key features the folder provides as a whole
+
+Respond in Japanese.`;
+
+        try {
+            const response = await this.genai.models.generateContent({
+                model: this.modelName,
+                contents: prompt,
+                config: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: Type.OBJECT,
+                        properties: {
+                            files: {
+                                type: Type.ARRAY,
+                                items: {
+                                    type: Type.OBJECT,
+                                    properties: {
+                                        path: { type: Type.STRING },
+                                        summary: { type: Type.STRING },
+                                        features: {
+                                            type: Type.ARRAY,
+                                            items: { type: Type.STRING },
+                                        },
+                                    },
+                                    required: ["path", "summary"],
+                                },
+                            },
+                            folder: {
+                                type: Type.OBJECT,
+                                properties: {
+                                    summary: { type: Type.STRING },
+                                    features: {
+                                        type: Type.ARRAY,
+                                        items: { type: Type.STRING },
+                                    },
+                                },
+                                required: ["summary", "features"],
+                            },
+                        },
+                        required: ["files", "folder"],
+                    },
+                },
+            });
+
+            const text = response.text;
+            if (!text) {
+                throw new Error("No response from AI model");
+            }
+
+            const parsed = JSON.parse(text);
+            const inputTokens = response.usageMetadata?.promptTokenCount ?? 0;
+            const outputTokens = response.usageMetadata?.candidatesTokenCount ?? 0;
+
+            // Map file results
+            const fileSummaries: FileSummary[] = files.map(f => {
+                const fileResult = (parsed.files || []).find((pf: any) => pf.path === f.path);
+                return {
+                    path: f.path,
+                    language: this.getLanguageFromPath(f.path),
+                    summary: fileResult?.summary || "Analysis not available",
+                    features: fileResult?.features || [],
+                    analyzedAt: new Date(),
+                };
+            });
+
+            return {
+                data: {
+                    files: fileSummaries,
+                    folder: {
+                        path: folderPath,
+                        summary: parsed.folder?.summary || "",
+                        features: parsed.folder?.features || [],
+                        fileCount: files.length,
+                        analyzedAt: new Date(),
+                    },
+                },
+                inputTokens,
+                outputTokens,
+            };
+        } catch (err: any) {
+            console.error(`Failed to analyze folder batch ${folderPath}:`, err.message);
+
+            // Return error results for all files
+            const fileSummaries: FileSummary[] = files.map(f => ({
+                path: f.path,
+                language: this.getLanguageFromPath(f.path),
+                summary: `Error analyzing file: ${err.message}`,
+                analyzedAt: new Date(),
+            }));
+
+            return {
+                data: {
+                    files: fileSummaries,
+                    folder: {
+                        path: folderPath,
+                        summary: `Error analyzing folder: ${err.message}`,
+                        features: [],
+                        fileCount: files.length,
+                        analyzedAt: new Date(),
+                    },
+                },
+                inputTokens: 0,
+                outputTokens: 0,
+            };
+        }
+    }
+
+    /**
      * Summarize a folder from its file summaries.
      */
     async summarizeFolder(

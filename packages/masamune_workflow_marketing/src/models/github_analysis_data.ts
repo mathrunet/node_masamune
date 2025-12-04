@@ -142,6 +142,18 @@ export interface GitHubRepositoryAnalysis {
 }
 
 /**
+ * Folder batch for processing.
+ *
+ * 処理用のフォルダバッチ。
+ */
+export interface FolderBatch {
+    /** Folder path */
+    folderPath: string;
+    /** Files in this folder */
+    files: string[];
+}
+
+/**
  * Processing state stored in Firestore.
  *
  * Firestoreに保存される処理状態。
@@ -163,9 +175,11 @@ export interface GitHubAnalysisState {
     filePaths: string[];
     /** List of folder paths */
     folderPaths: string[];
+    /** Folder batches for processing (one batch = one AI call) */
+    folderBatches?: FolderBatch[];
     /** Current batch index (for tracking progress) */
     currentBatchIndex: number;
-    /** Files per batch */
+    /** Files per batch (legacy, not used in folder-based batching) */
     batchSize: number;
     /** Error message if failed */
     error?: string;

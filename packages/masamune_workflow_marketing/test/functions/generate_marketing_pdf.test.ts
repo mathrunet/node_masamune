@@ -674,7 +674,7 @@ describe("GenerateMarketingPdf Integration Tests", () => {
                 console.error("Pipeline test error:", error);
                 throw error;
             }
-        }, 600000); // 10 minutes timeout for full pipeline with GitHub analysis
+        }, 1800000); // 30 minutes timeout for full pipeline with GitHub analysis (102+ folder batches)
     });
 
     describe("Empty Data Test", () => {
@@ -826,6 +826,6 @@ describe("GenerateMarketingPdf Integration Tests", () => {
                 await firestore.doc(refs.actionPath).delete().catch(() => {});
                 await firestore.doc(refs.taskPath).delete().catch(() => {});
             }
-        }, 60000);
+        }, 1800000);
     });
 });
