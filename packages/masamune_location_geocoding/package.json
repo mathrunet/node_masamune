@@ -1,6 +1,6 @@
 {
   "name": "@mathrunet/masamune_location_geocoding",
-  "version": "3.8.0",
+  "version": "3.8.1",
   "description": "Masamune framework package plugin for geocoding location data.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -39,7 +39,7 @@
   },
   "homepage": "https://github.com/mathrunet/node_masamune#readme",
   "dependencies": {
-    "@mathrunet/masamune": "^3.8.4",
+    "@mathrunet/masamune": "^3.8.9",
     "firebase-admin": "^13.1.0",
     "firebase-functions": "^6.3.2",
     "typescript": "^5.9.2"

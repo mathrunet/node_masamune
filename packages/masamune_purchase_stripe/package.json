@@ -1,6 +1,6 @@
 {
   "name": "@mathrunet/masamune_purchase_stripe",
-  "version": "3.8.0",
+  "version": "3.8.1",
   "description": "This is a Masamune framework plugin package that executes Stripe's backend validation and other related processes.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -39,9 +39,9 @@
   },
   "homepage": "https://github.com/mathrunet/node_masamune#readme",
   "dependencies": {
-    "@mathrunet/masamune": "^3.8.4",
-    "@mathrunet/masamune_mail_gmail": "^3.7.0",
-    "@mathrunet/masamune_mail_sendgrid": "^3.7.0",
+    "@mathrunet/masamune": "^3.8.9",
+    "@mathrunet/masamune_mail_gmail": "^3.8.0",
+    "@mathrunet/masamune_mail_sendgrid": "^3.8.0",
     "firebase-admin": "^13.1.0",
     "firebase-functions": "^6.3.2",
     "typescript": "^5.9.2",

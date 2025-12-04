@@ -1,6 +1,6 @@
 {
   "name": "@mathrunet/masamune_workflow_marketing",
-  "version": "3.7.0",
+  "version": "3.7.1",
   "description": "Masamune framework package plugin that manages marketing tools for Masamune Workflow.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -37,11 +37,11 @@
   },
   "homepage": "https://github.com/mathrunet/node_masamune#readme",
   "dependencies": {
-    "@google-analytics/data": "^4.9.0",
-    "@google/genai": "^1.30.0",
-    "@mathrunet/masamune": "^3.8.4",
+    "@mathrunet/masamune": "^3.8.9",
     "firebase-admin": "^13.1.0",
     "firebase-functions": "^6.3.2",
+    "@google-analytics/data": "^4.9.0",
+    "@google/genai": "^1.30.0",
     "googleapis": "^140.0.0",
     "jsonwebtoken": "^9.0.2",
     "typescript": "^5.9.2",
