@@ -368,23 +368,11 @@ declare module "@google-cloud/firestore" {
         }),
         firestoreInstance: firestoreInstance,
     });
-    return await this.set(converted as firestore.WithFieldValue<AppModelType>);
-};
-
-/**
- * Convert to ModelRefBase.
- * 
- * ModelRefBaseに変換します。
- * 
- * @returns {ModelRefBase}
- * ModelRefBase.
- * 
- * ModelRefBase。
- */
-(firestore.DocumentReference.prototype as any).toModelRefBase = function<AppModelType extends { [field: string]: any }, DbModelType extends firestore.DocumentData>(
-    this: firestore.DocumentReference<AppModelType, DbModelType>
-): ModelRefBase {
-    return new ModelRefBase(this.path.replace(/\/+$/, ""));
+    return await this.set({
+        ...converted as firestore.WithFieldValue<AppModelType>,
+        "@uid": this.id,
+        "@time": new Date(),
+    });
 };
 
 /**
@@ -415,7 +403,11 @@ declare module "@google-cloud/firestore" {
         }),
         firestoreInstance: firestoreInstance,
     });
-    return await this.set(converted as firestore.PartialWithFieldValue<AppModelType>, options);
+    return await this.set({
+        ...converted as firestore.PartialWithFieldValue<AppModelType>,
+        "@uid": this.id,
+        "@time": new Date(),
+    }, options);
 };
 
 /**
@@ -452,6 +444,22 @@ declare module "@google-cloud/firestore" {
         changes.push(new DocumentChangeModel(doc, new QueryDocumentModel(doc.doc, converted as AppModelType)));
     }
     return new CollectionModel(result,  docs, changes);
+};
+
+/**
+ * Convert to ModelRefBase.
+ * 
+ * ModelRefBaseに変換します。
+ * 
+ * @returns {ModelRefBase}
+ * ModelRefBase.
+ * 
+ * ModelRefBase。
+ */
+(firestore.DocumentReference.prototype as any).toModelRefBase = function<AppModelType extends { [field: string]: any }, DbModelType extends firestore.DocumentData>(
+    this: firestore.DocumentReference<AppModelType, DbModelType>
+): ModelRefBase {
+    return new ModelRefBase(this.path.replace(/\/+$/, ""));
 };
 
 /**
