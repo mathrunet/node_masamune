@@ -1,6 +1,7 @@
 import * as functions from "firebase-functions/v2";
 import * as stripe from "stripe";
 import { HttpFunctionsOptions, firestoreLoader } from "@mathrunet/masamune";
+import "@mathrunet/masamune";
 
 /**
  * Receive and process webhooks for Stripe Connect.

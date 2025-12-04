@@ -1,5 +1,5 @@
 import * as admin from "firebase-admin";
-import { utils } from "@mathrunet/masamune";
+import "@mathrunet/masamune";
 
 const config = require("firebase-functions-test")({
     storageBucket: "development-for-mathrunet.appspot.com",
@@ -27,6 +27,8 @@ describe("Firestore Test", () => {
             },
             params: {},
         });
+        delete res["@time"];
+        delete res["@uid"];
         expect(res).toStrictEqual(testData);
     });
     test("Delete document test", async () => {

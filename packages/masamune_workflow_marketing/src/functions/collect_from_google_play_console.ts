@@ -5,6 +5,7 @@ import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 import { GooglePlayClient } from "../clients/google_play_client";
+import "@mathrunet/masamune";
 
 /**
  * A function for collecting data from Google Play Console.

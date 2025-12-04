@@ -1,5 +1,6 @@
 import * as path from "path";
 import * as admin from "firebase-admin";
+import "@mathrunet/masamune";
 
 /**
  * The amount of money in the in-app wallet is added to the in-app wallet due to in-app purchases. In-app wallet information is stored in a form that overwrites user data.

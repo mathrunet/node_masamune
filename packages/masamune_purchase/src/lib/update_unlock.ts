@@ -1,5 +1,5 @@
 import * as path from "path";
-import * as admin from "firebase-admin";
+import "@mathrunet/masamune";
 
 /**
  * Unlock function. Unlock information is stored in the form of an overwrite of the user data.

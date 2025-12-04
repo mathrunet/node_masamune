@@ -1,4 +1,5 @@
 import * as admin from "firebase-admin";
+import "@mathrunet/masamune";
 
 /**
  * Processes scheduler commands for document copying.

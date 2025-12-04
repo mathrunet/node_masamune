@@ -1,6 +1,7 @@
 
 import * as admin from "firebase-admin";
 import { utils, firestore } from "@mathrunet/katana";
+import "@mathrunet/masamune";
 
 /**
  * Loads related collections and deletes data matching the criteria.

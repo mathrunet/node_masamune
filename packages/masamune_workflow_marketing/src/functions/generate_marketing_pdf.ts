@@ -3,6 +3,7 @@ import { Action, WorkflowProcessFunctionBase, WorkflowContext } from "@mathrunet
 import * as admin from "firebase-admin";
 import { ChartService, ChartInputData } from "../services/chart_service";
 import { PDFService, PDFInputData } from "../services/pdf_service";
+import "@mathrunet/masamune";
 
 /**
  * A function for generating marketing analytics PDF report.

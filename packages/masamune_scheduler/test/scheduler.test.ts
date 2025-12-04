@@ -1,5 +1,6 @@
 import * as admin from "firebase-admin";
-import { utils } from "@mathrunet/masamune";
+import { ModelServerCommandBase, ModelToken, utils } from "@mathrunet/masamune";
+import "@mathrunet/masamune";
 
 const config = require("firebase-functions-test")({
     storageBucket: "development-for-mathrunet.appspot.com",
@@ -28,10 +29,10 @@ describe("Firestore Test", () => {
                 uid: userUid,
                 name: `user${i}`,
                 text: `usertext${i}`,
-                token: [
+                token: new ModelToken([
                     utils.uuid(),
                     utils.uuid(),
-                ],
+                ]),
                 number: i,
                 enable: i % 2 === 0,
             });
@@ -46,6 +47,7 @@ describe("Firestore Test", () => {
             await firestoreInstance.doc(`${userCollectionPath}/${userData.uid}`).save(userData);
         }
         for (const sourceUserData of sourceUserDatas) {
+            console.log(`${sourceCollectionPath}/${sourceData.uid}/user/${sourceUserData.uid}`);
             await firestoreInstance.doc(`${sourceCollectionPath}/${sourceData.uid}/user/${sourceUserData.uid}`).save(sourceUserData);
         }
         const func = require("@mathrunet/masamune_notification/src/functions/send_notification");
@@ -70,13 +72,14 @@ describe("Firestore Test", () => {
         for (let userDatas of splittedUserDatas) {
             const tokens: string[] = [];
             for (let userData of userDatas) {
-                const sourceTokens = userData["token"] as string[];
-                for (let t of sourceTokens) {
+                const sourceTokens = userData["token"] as ModelToken;
+                for (let t of sourceTokens.value()) {
                     tokens.push(t);
                 }
             }
             expecedData.push(utils.splitArray([...new Set(tokens)], 500));
         }
+        console.log(res.results);
         expect(res.results).toStrictEqual(expecedData);
 
         wrapped = config.wrap(func([], {}, {}));
@@ -120,8 +123,8 @@ describe("Firestore Test", () => {
                 if (userData["number"] <= 5 || userData["enable"] === false) {
                     continue;
                 }
-                const sourceTokens = userData["token"] as string[];
-                for (let t of sourceTokens) {
+                const sourceTokens = userData["token"] as ModelToken;
+                for (let t of sourceTokens.value()) {
                     tokens.push(t);
                 }
             }
@@ -134,37 +137,36 @@ describe("Firestore Test", () => {
         const schedulerCollectionPath = "unit/test/schedule";
         const firestoreInstance = admin.firestore();
         let uid = "notificationTestUid";
-        let command = {
-            "@command": "notification",
-            "@private": {
+        let command = new ModelServerCommandBase({
+            "command": "notification",
+            "privateParameters": {
                 title: "title",
                 text: "text",
                 channelId: "channelId",
-                targetToken: [utils.uuid(), utils.uuid()],
+                targetToken: new ModelToken([utils.uuid(), utils.uuid()]),
                 responseTokenList: true,
+                showLog: true,
             },
-            "@public": {
+            "publicParameters": {
                 "_done": false,
                 "_time": now.getTime(),
             },
-            "@target": "command",
-            "@type": "ModelServerCommandBase",
-        };
+        });
         let doc = firestoreInstance.doc(`${schedulerCollectionPath}/${uid}`);
         await doc.save({
-            "#command": command,
+            "command": command,
             "uid": uid,
             "_done": false,
             "_time": now.getTime(),
-            "command": "notification",
         });
         const func = require("../src/functions/scheduler");
         let wrapped = config.wrap(func([], {}, { path: schedulerCollectionPath }));
         await wrapped({});
         let res = await doc.load();
         let data = res.data();
+        console.log(data);
         expect(data!["_done"]).toBe(true);
-        expect(data!["results"]).toEqual(JSON.stringify([command["@private"]["targetToken"]]));
+        expect(data!["results"]).toEqual(JSON.stringify([command["@private"]["targetToken"]["@list"]]));
     }, 50000);
     test("Copy document scheduler test", async () => {
         const now = new Date();
@@ -172,22 +174,19 @@ describe("Firestore Test", () => {
         const schedulerCollectionPath = "unit/test/schedule";
         const firestoreInstance = admin.firestore();
         let uid = "notificationTestUid";
-        let command = {
-            "@command": "copy_document",
-            "@private": {
-                path: targetPath,
-            },
-            "@public": {
+        let command = new ModelServerCommandBase({
+            command: "copy_document",
+            publicParameters: {
                 "_done": false,
                 "_time": now.getTime(),
             },
-            "@target": "command",
-            "@type": "ModelServerCommandBase",
-        };
+            privateParameters: {
+                path: targetPath,
+            },
+        });
         let doc = firestoreInstance.doc(`${schedulerCollectionPath}/${uid}`);
         await doc.save({
-            "#command": command,
-            "command": "copy_document",
+            "command": command,
             "uid": uid,
             "_done": false,
             "_time": now.getTime(),
@@ -230,9 +229,9 @@ describe("Firestore Test", () => {
         }
         const schedulerCollectionPath = "unit/test/schedule";
         let uid = "notificationTestUid";
-        let command = {
-            "@command": "delete_documents",
-            "@private": {
+        let command = new ModelServerCommandBase({
+            "command": "delete_documents",
+            "privateParameters": {
                 collectionPath: sourceCollection,
                 wheres: [
                     {
@@ -242,17 +241,14 @@ describe("Firestore Test", () => {
                     }
                 ],
             },
-            "@public": {
+            "publicParameters": {
                 "_done": false,
                 "_time": now.getTime(),
             },
-            "@target": "command",
-            "@type": "ModelServerCommandBase",
-        };
+        });
         let doc = firestoreInstance.doc(`${schedulerCollectionPath}/${uid}`);
         await doc.save({
-            "#command": command,
-            "command": "delete_documents",
+            "command": command,
             "uid": uid,
             "_done": false,
             "_time": now.getTime(),

@@ -28,7 +28,18 @@ export class ModelFieldValue {
  * katana_modelの`ModelServerCommandBase`用のインターフェース。
  */
 export class ModelServerCommandBase extends ModelFieldValue {
-    constructor(command: string, publicParameters: { [field: string]: any }, privateParameters: { [field: string]: any }, source?: ModelFieldValueSource) {
+    constructor(
+        {
+            command,
+            publicParameters,
+            privateParameters,
+            source
+        }: {
+            command: string,
+            publicParameters: { [field: string]: any },
+            privateParameters: { [field: string]: any },
+            source?: ModelFieldValueSource
+        }) {
         super("ModelServerCommandBase", source);
         this["@command"] = command;
         this["@public"] = publicParameters;
@@ -289,7 +300,7 @@ export class ModelLocale extends ModelFieldValue {
      * @returns The value of the locale.
      */
     value(): string {
-        if(this["@country"]) {
+        if (this["@country"]) {
             return `${this["@language"]}_${this["@country"]}`;
         }
         return this["@language"];
@@ -344,10 +355,10 @@ export class ModelLocalizedLocaleVaue {
             country,
             value
         }: {
-                language: string,
-                country?: string,
-                value: string | number | boolean | { [field: string]: any } | string[] | number[] | boolean[]
-        }) {        
+            language: string,
+            country?: string,
+            value: string | number | boolean | { [field: string]: any } | string[] | number[] | boolean[]
+        }) {
         this.language = language;
         this.country = country;
         this.value = value;
@@ -536,11 +547,13 @@ export class ModelVectorValue extends ModelFieldValue {
  * katana_modelの`ModelRefBase`用のインターフェース。
  */
 export class ModelRefBase extends ModelFieldValue {
-    constructor(ref: string, source?: ModelFieldValueSource) {
+    constructor(ref: string, doc?: firestore.DocumentReference | undefined, source?: ModelFieldValueSource) {
         super("ModelRefBase", source);
         this["@ref"] = ref;
+        this["@doc"] = doc;
     }
     "@ref": string;
+    "@doc": firestore.DocumentReference | undefined;
 
     /**
      * Get the value of the ref.

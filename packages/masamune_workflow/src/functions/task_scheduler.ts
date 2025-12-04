@@ -4,6 +4,7 @@ import { Task } from "../lib/interfaces";
 import * as admin from "firebase-admin";
 import * as adminFunctions from "firebase-admin/functions";
 import * as crypto from "crypto";
+import "@mathrunet/masamune";
 
 const _kCollectionLimit = 100;
 

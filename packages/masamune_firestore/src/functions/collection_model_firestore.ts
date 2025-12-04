@@ -1,6 +1,7 @@
 import * as functions from "firebase-functions/v2";
 import { HttpFunctionsOptions, FirestoreModelFieldValueConverterUtils } from "@mathrunet/katana";
 import { Firestore } from "@google-cloud/firestore";
+import "@mathrunet/masamune";
 
 /**
  * A function to enable the use of external Firestore Collection Models.

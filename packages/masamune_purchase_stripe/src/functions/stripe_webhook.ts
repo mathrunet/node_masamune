@@ -1,6 +1,7 @@
 import * as functions from "firebase-functions/v2";
 import * as stripe from "stripe";
 import * as admin from "firebase-admin";
+import "@mathrunet/masamune";
 import { HttpFunctionsOptions, firestoreLoader } from "@mathrunet/masamune";
 
 

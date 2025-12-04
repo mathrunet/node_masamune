@@ -1,4 +1,4 @@
-import { lib } from "@mathrunet/masamune_notification";
+import { lib, ModelToken } from "@mathrunet/masamune_notification";
 import * as admin from "firebase-admin";
 
 /**
@@ -41,7 +41,7 @@ export async function notification({
     const data = params["data"] as { [key: string]: any } | undefined;
     const badgeCount = params["badgeCount"] as number | undefined | null;
     const sound = params["sound"] as string | undefined | null;
-    const targetToken = params["targetToken"] as string | string[] | undefined | null;
+    const targetToken = params["targetToken"] as string | ModelToken | string[] | undefined | null;
     const targetTopic = params["targetTopic"] as string | undefined | null;
     const targetCollectionPath = params["targetCollectionPath"] as string | undefined | null;
     const targetDocumentPath = params["targetDocumentPath"] as string | undefined | null;

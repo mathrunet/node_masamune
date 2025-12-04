@@ -7,6 +7,7 @@
 
 import * as admin from "firebase-admin";
 import * as path from "path";
+import "@mathrunet/masamune";
 
 // Service account path for authentication
 // Note: __dirname in Jest globalTeardown refers to test/ directory

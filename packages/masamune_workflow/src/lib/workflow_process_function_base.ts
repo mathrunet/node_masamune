@@ -3,6 +3,7 @@ import { FunctionsBase, HttpFunctionsOptions, ModelFieldValue, ModelTimestamp } 
 import * as admin from "firebase-admin";
 import { Action, Task, Usage, Plan, Subscription, Campaign } from "./interfaces";
 import { GoogleGenAI } from "@google/genai";
+import "@mathrunet/masamune";
 
 const _kDefaultCpuPrice = 0.000025 * 4.0; // 4CPU秒
 const _kDefaultMemoryPrice = 0.0000025 * 1.0; // 1GB秒

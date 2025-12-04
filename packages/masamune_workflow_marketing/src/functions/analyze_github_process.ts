@@ -22,6 +22,7 @@ import {
     readAnalysisData,
     writeAnalysisData,
 } from "../utils/github_analysis_storage";
+import "@mathrunet/masamune";
 
 /**
  * Extended action command with batch index.

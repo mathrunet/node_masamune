@@ -29,6 +29,7 @@ import {
     createInitialData,
     writeAnalysisData,
 } from "../utils/github_analysis_storage";
+import "@mathrunet/masamune";
 
 /**
  * A function for initializing GitHub repository analysis.

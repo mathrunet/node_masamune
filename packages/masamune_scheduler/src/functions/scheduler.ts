@@ -3,6 +3,7 @@ import { notification } from "../schedulers/notification";
 import { copyDocument } from "../schedulers/copy_document";
 import { deleteDocuments } from "../schedulers/delete_documents";
 import { SchedulerFunctionsOptions, firestoreLoader } from "@mathrunet/masamune";
+import "@mathrunet/masamune";
 
 /**
  * Define a process for notifications while scaling to monitor the DB and register future PUSH notifications and data.
@@ -41,7 +42,7 @@ module.exports = (
                     const collection = await firestoreInstance.collection(collectionPath).where("_done", "==", false).where("_time", "<=", Date.now()).orderBy("_time", "asc").load();
                     console.log(`Length: ${collection.size}`);
                     for (var doc of collection.docs) {
-                        console.log(`Doc: ${doc.id} ${doc.data()}`);
+                        console.log(`Doc: ${doc.id} ${JSON.stringify(doc.data())}`);
                         let res: { [key: string]: any } = {};
                         const command = (doc.get("#command") as { [key: string]: any })["@command"];
                         const priParams = (doc.get("#command") as { [key: string]: any })["@private"] as { [key: string]: any };

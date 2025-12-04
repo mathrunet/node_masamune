@@ -1,4 +1,5 @@
 import * as admin from "firebase-admin";
+import { ModelRefBase } from "../model_field_value/model_field_value";
 
 /**
  * Create a filter for loading Firestore collections.
@@ -24,9 +25,9 @@ export function where({
     query,
     wheres,
 }: {
-        query: admin.firestore.Query<admin.firestore.DocumentData, admin.firestore.DocumentData>,
-        wheres: { [key: string]: any }[] | undefined,
-}) : admin.firestore.Query<admin.firestore.DocumentData, admin.firestore.DocumentData> {
+    query: admin.firestore.Query<admin.firestore.DocumentData, admin.firestore.DocumentData>,
+    wheres: { [key: string]: any }[] | undefined,
+}): admin.firestore.Query<admin.firestore.DocumentData, admin.firestore.DocumentData> {
     if (!wheres) {
         return query;
     }
@@ -43,7 +44,7 @@ export function where({
                 break;
             case "notEqualTo":
                 query = query.where(key, "!=", value);
-                break;            
+                break;
             case "lessThan":
                 query = query.where(key, "<", value);
                 break;
@@ -109,9 +110,9 @@ export async function hasMatch({
     data,
     conditions,
 }: {
-        data: { [key: string]: any },
-        conditions: { [key: string]: any }[] | undefined,
-    }): Promise<boolean> {
+    data: { [key: string]: any },
+    conditions: { [key: string]: any }[] | undefined,
+}): Promise<boolean> {
     if (!conditions) {
         return true;
     }
@@ -140,6 +141,25 @@ export async function hasMatch({
                 }
                 continue;
             }
+        } else if (source instanceof ModelRefBase) {
+            const doc = await source["@doc"]?.get();
+            if (doc) {
+                const data = doc.data() as { [key: string]: any };
+                console.log(`Reference data ${JSON.stringify(data)}`);
+                if (Array.isArray(value)) {
+                    const res = await hasMatch({ data, conditions: value });
+                    if (!res) {
+                        return false;
+                    }
+                    continue;
+                } else if (_isObject(value)) {
+                    const res = await hasMatch({ data, conditions: [value as { [key: string]: any }] });
+                    if (!res) {
+                        return false;
+                    }
+                    continue;
+                }
+            }
         }
         if (type === undefined || type === null) {
             continue;
@@ -160,7 +180,7 @@ export async function hasMatch({
                 if (source === value) {
                     return false;
                 }
-                break;            
+                break;
             case "lessThan":
                 if (value === undefined || value === null || typeof source !== "number" || typeof value !== "number") {
                     continue;
@@ -268,7 +288,7 @@ export async function get({
 }: {
     data: { [key: string]: any },
     field: { [key: string]: any } | string,
-    }): Promise<any> {
+}): Promise<any> {
     if (typeof field === "string") {
         return data[field];
     }
@@ -278,6 +298,12 @@ export async function get({
         const doc = await source.get();
         const data = doc.data() as { [key: string]: any };
         return get({ data, field: field["value"] });
+    } else if (source instanceof ModelRefBase) {
+        const doc = await source["@doc"]?.get();
+        if (doc) {
+            const data = doc.data() as { [key: string]: any };
+            return get({ data, field: field["value"] });
+        }
     }
     return source;
 }
@@ -309,10 +335,10 @@ export function cursor({
     limit,
     cursor,
 }: {
-        query: admin.firestore.Query<admin.firestore.DocumentData, admin.firestore.DocumentData>,
+    query: admin.firestore.Query<admin.firestore.DocumentData, admin.firestore.DocumentData>,
     limit: number,
     cursor: FirebaseFirestore.QueryDocumentSnapshot | undefined | null,
-    }): admin.firestore.Query<admin.firestore.DocumentData, admin.firestore.DocumentData> {
+}): admin.firestore.Query<admin.firestore.DocumentData, admin.firestore.DocumentData> {
     if (!cursor) {
         return query.limit(limit);
     }

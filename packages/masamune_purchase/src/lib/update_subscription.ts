@@ -1,5 +1,6 @@
 import * as path from "path";
 import { utils } from "@mathrunet/masamune";
+import "@mathrunet/masamune";
 
 /**
  * Processes subscription updates.

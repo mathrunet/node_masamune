@@ -7,6 +7,7 @@
 
 import * as admin from "firebase-admin";
 import * as path from "path";
+import "@mathrunet/masamune";
 
 const serviceAccountPath = path.resolve(__dirname, "../test/mathru-net-39425d37638c.json");
 

@@ -1,6 +1,7 @@
 import * as functions from "firebase-functions/v2";
 import { HttpFunctionsOptions, firestoreLoader, storageLoader } from "@mathrunet/masamune";
 import { Asset } from "../lib/interfaces";
+import "@mathrunet/masamune";
 
 /**
  * Get asset data and return signed URL if necessary.

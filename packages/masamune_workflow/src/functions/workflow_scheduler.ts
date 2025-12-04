@@ -1,7 +1,8 @@
 import * as functions from "firebase-functions/v2";
-import { SchedulerFunctionsOptions, firestoreLoader, ModelFieldValue, utils, ModelTimestamp } from "@mathrunet/masamune";
-import { Task, Workflow, WorkflowRepeatList } from "../lib/interfaces";
+import { SchedulerFunctionsOptions, firestoreLoader, utils, ModelTimestamp } from "@mathrunet/masamune";
+import { Workflow } from "../lib/interfaces";
 import * as admin from "firebase-admin";
+import "@mathrunet/masamune";
 
 const _kCollectionLimit = 100;
 

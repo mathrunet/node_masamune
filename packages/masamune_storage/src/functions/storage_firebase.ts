@@ -1,6 +1,7 @@
 import * as functions from "firebase-functions/v2";
 import { HttpFunctionsOptions } from "@mathrunet/masamune";
 import { Storage } from "@google-cloud/storage";
+import "@mathrunet/masamune";
 
 /**
  * A function to enable the use of external Firebase Storage.

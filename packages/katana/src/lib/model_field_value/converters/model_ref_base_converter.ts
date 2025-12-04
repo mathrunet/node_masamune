@@ -26,8 +26,9 @@ export class ModelRefBaseConverter extends ModelFieldValueConverter {
   ): { [field: string]: any } | null {
     if (value !== null && typeof value === "object" && "@type" in value && value["@type"] === this.type) {
       const ref = value["@ref"] as string | null | undefined ?? "";
+      const doc = value["@doc"] as DocumentReference | undefined ?? undefined;
       return {
-        [key]: new ModelRefBase(ref, "server"),
+        [key]: new ModelRefBase(ref, doc, "server"),
       };
     }
     return null;
@@ -43,6 +44,7 @@ export class ModelRefBaseConverter extends ModelFieldValueConverter {
         [key]: {
           "@type": this.type,
           "@ref": value["@ref"],
+          "@doc": value["@doc"],
           "@source": value["@source"],
         },
       };
@@ -75,19 +77,23 @@ export class FirestoreModelRefBaseConverter extends FirestoreModelFieldValueConv
     firestoreInstance: FirebaseFirestore.Firestore
   ): { [field: string]: any } | null {
     if (value instanceof DocumentReference) {
+      const path = value.path.replace(/\/+$/, '');
       return {
         [key]: {
           "@type": "ModelRefBase",
-          "@ref": value.path.replace(/\/+$/, ''), // Remove trailing slashes
+          "@ref": path, // Remove trailing slashes
+          "@doc": firestoreInstance.doc(path),
         },
       };
     } else if (Array.isArray(value)) {
-        const res: { [field: string]: any }[] = [];
+      const res: { [field: string]: any }[] = [];
       for (const tmp of value) {
         if (tmp instanceof DocumentReference) {
+          const path = tmp.path.replace(/\/+$/, '');
           res.push({
             "@type": "ModelRefBase",
-            "@ref": tmp.path.replace(/\/+$/, ''), // Remove trailing slashes
+            "@ref": path, // Remove trailing slashes
+            "@doc": firestoreInstance.doc(path),
           });
         }
       }
@@ -103,9 +109,11 @@ export class FirestoreModelRefBaseConverter extends FirestoreModelFieldValueConv
       for (const k in value) {
         const val = value[k];
         if (val instanceof DocumentReference) {
+          const path = val.path.replace(/\/+$/, '');
           res[k] = {
             "@type": "ModelRefBase",
-            "@ref": val.path.replace(/\/+$/, ''), // Remove trailing slashes
+            "@ref": path, // Remove trailing slashes
+            "@doc": firestoreInstance.doc(path),
           };
         }
       }
@@ -123,7 +131,7 @@ export class FirestoreModelRefBaseConverter extends FirestoreModelFieldValueConv
     value: any,
     _original: { [field: string]: any },
     firestoreInstance: FirebaseFirestore.Firestore
-  ): { [field: string]: any } | null {    
+  ): { [field: string]: any } | null {
     if (value != null && typeof value === "object" && "@type" in value) {
       const type = value["@type"] as string | null | undefined ?? "";
       if (type.startsWith(this.type)) {

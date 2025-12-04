@@ -1,5 +1,6 @@
 import { FirestoreModelFieldValueConverter, ModelFieldValueConverter } from "../model_field_value_converter";
 import { ModelServerCommandBase } from "../model_field_value";
+import { ModelFieldValueConverterUtils } from "../default_model_field_value_converter";
 
 /**
  * ModelServerCommandBase ModelFieldValueConverter.
@@ -26,8 +27,15 @@ export class ModelServerCommandBaseConverter extends ModelFieldValueConverter {
       const command = value["@command"] as string | null | undefined ?? "";
       const publicParameters = value["@public"] as { [field: string]: any } | null | undefined ?? {};
       const privateParameters = value["@private"] as { [field: string]: any } | null | undefined ?? {};
+      const publicConverted = ModelFieldValueConverterUtils.convertFrom({ data: publicParameters });
+      const privateConverted = ModelFieldValueConverterUtils.convertFrom({ data: privateParameters });
       return {
-        [key]: new ModelServerCommandBase(command, publicParameters, privateParameters, "server"),
+        [key]: new ModelServerCommandBase({
+          command: command,
+          publicParameters: publicConverted,
+          privateParameters: privateConverted,
+          source: "server",
+        }),
       };
     }
     return null;
@@ -39,12 +47,14 @@ export class ModelServerCommandBaseConverter extends ModelFieldValueConverter {
     original: { [field: string]: any },
   ): { [field: string]: any } | null {
     if (value instanceof ModelServerCommandBase) {
+      const publicParameters = ModelFieldValueConverterUtils.convertTo({ data: value["@public"] as { [field: string]: any } });
+      const privateParameters = ModelFieldValueConverterUtils.convertTo({ data: value["@private"] as { [field: string]: any } });
       return {
         [key]: {
           "@type": this.type,
           "@command": value["@command"],
-          "@public": value["@public"] as { [field: string]: any },
-          "@private": value["@private"] as { [field: string]: any },
+          "@public": publicParameters,
+          "@private": privateParameters,
           "@source": value["@source"],
         },
       };
@@ -79,8 +89,8 @@ export class FirestoreModelServerCommandBaseConverter extends FirestoreModelFiel
     if (typeof value === "string") {
       const targetKey = `#${key}`;
       const targetMap = original[targetKey] as { [field: string]: any } | null | undefined ?? {};
-      const publicParameters = original["@public"] as { [field: string]: any } | null | undefined ?? {};
-      const privateParameters = original["@private"] as { [field: string]: any } | null | undefined ?? {};
+      const publicParameters = targetMap["@public"] as { [field: string]: any } | null | undefined ?? {};
+      const privateParameters = targetMap["@private"] as { [field: string]: any } | null | undefined ?? {};
       const type = targetMap["@type"] as string | null | undefined ?? "";
       if (type == this.type) {
         return {
@@ -89,7 +99,8 @@ export class FirestoreModelServerCommandBaseConverter extends FirestoreModelFiel
             "@public": publicParameters,
             "@private": privateParameters,
             ...this.header(),
-          }
+          },
+          [targetKey]: null,
         };
       }
     }

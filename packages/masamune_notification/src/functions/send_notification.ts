@@ -1,6 +1,6 @@
 import * as functions from "firebase-functions/v2";
 import { sendNotification } from "../lib/send_notification";
-import { HttpFunctionsOptions, firestoreLoader } from "@mathrunet/masamune";
+import { HttpFunctionsOptions, ModelToken, firestoreLoader } from "@mathrunet/masamune";
 
 /**
  * Define the process for PUSH notification.
@@ -97,13 +97,14 @@ module.exports = (
             const data = query.data.data as { [key: string]: any } | undefined;
             const sound = query.data.sound as string | undefined | null;
             const badgeCount = query.data.badgeCount as number | undefined | null;
-            const targetToken = query.data.targetToken as string | string[] | undefined | null;
+            const targetToken = query.data.targetToken as string | string[] | ModelToken | undefined | null;
             const targetTopic = query.data.targetTopic as string | undefined | null;
             const targetCollectionPath = query.data.targetCollectionPath as string | undefined | null;
             const targetTokenField = query.data.targetTokenField as string | { [key: string]: any } | undefined | null;
             const targetWheres = query.data.targetWheres as { [key: string]: any }[] | undefined;
             const targetConditions = query.data.targetConditions as { [key: string]: any }[] | undefined;
             const responseTokenList = query.data.responseTokenList as boolean | undefined;
+            const showLog = query.data.showLog as boolean | undefined;
             if (!title || !body) {
                 throw new functions.https.HttpsError("invalid-argument", "Query parameter is invalid.");
             }
@@ -127,6 +128,7 @@ module.exports = (
                         targetConditions: targetConditions,
                         responseTokenList: responseTokenList,
                         firestoreInstance: firestoreInstance,
+                        showLog: showLog ?? false,
                     });
                     if (resItem.results) {
                         // 配列かどうかを確認してから反復処理

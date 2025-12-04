@@ -253,7 +253,7 @@ declare module "firebase-admin/firestore" {
          * 
          * 書き込み結果。
          */
-        save(data: firestore.WithFieldValue<AppModelType>): Promise<firestore.WriteResult>;        
+        save(data: firestore.WithFieldValue<AppModelType>): Promise<firestore.WriteResult>;
         /**
          * Convert to ModelRefBase.
          * 
@@ -327,7 +327,7 @@ declare module "@google-cloud/firestore" {
  * 
  * ドキュメントを読み込みます。
  */
-(firestore.DocumentReference.prototype as any).load = async function<AppModelType extends { [field: string]: any }, DbModelType extends firestore.DocumentData>(
+(firestore.DocumentReference.prototype as any).load = async function <AppModelType extends { [field: string]: any }, DbModelType extends firestore.DocumentData>(
     this: firestore.DocumentReference<AppModelType, DbModelType>
 ): Promise<DocumentModel<AppModelType, DbModelType>> {
     const result = await this.get();
@@ -356,7 +356,7 @@ declare module "@google-cloud/firestore" {
  * 
  * 保存オプション。
  */
-(firestore.DocumentReference.prototype as any).save = async function<AppModelType extends { [field: string]: any }, DbModelType extends firestore.DocumentData>(
+(firestore.DocumentReference.prototype as any).save = async function <AppModelType extends { [field: string]: any }, DbModelType extends firestore.DocumentData>(
     this: firestore.DocumentReference<AppModelType, DbModelType>,
     data: firestore.WithFieldValue<AppModelType>
 ): Promise<firestore.WriteResult> {
@@ -390,7 +390,7 @@ declare module "@google-cloud/firestore" {
  * 
  * 保存オプション。
  */
-(firestore.DocumentReference.prototype as any).save = async function<AppModelType extends { [field: string]: any }, DbModelType extends firestore.DocumentData>(
+(firestore.DocumentReference.prototype as any).save = async function <AppModelType extends { [field: string]: any }, DbModelType extends firestore.DocumentData>(
     this: firestore.DocumentReference<AppModelType, DbModelType>,
     data: firestore.PartialWithFieldValue<AppModelType>,
     options: firestore.SetOptions
@@ -415,7 +415,7 @@ declare module "@google-cloud/firestore" {
  * 
  * コレクションを読み込みます。
  */
-(firestore.Query.prototype as any).load = async function<AppModelType extends { [field: string]: any }, DbModelType extends firestore.DocumentData>(
+(firestore.Query.prototype as any).load = async function <AppModelType extends { [field: string]: any }, DbModelType extends firestore.DocumentData>(
     this: firestore.Query<AppModelType, DbModelType>
 ): Promise<CollectionModel<AppModelType, DbModelType>> {
     const result = await this.get();
@@ -443,7 +443,7 @@ declare module "@google-cloud/firestore" {
         });
         changes.push(new DocumentChangeModel(doc, new QueryDocumentModel(doc.doc, converted as AppModelType)));
     }
-    return new CollectionModel(result,  docs, changes);
+    return new CollectionModel(result, docs, changes);
 };
 
 /**
@@ -456,10 +456,11 @@ declare module "@google-cloud/firestore" {
  * 
  * ModelRefBase。
  */
-(firestore.DocumentReference.prototype as any).toModelRefBase = function<AppModelType extends { [field: string]: any }, DbModelType extends firestore.DocumentData>(
+(firestore.DocumentReference.prototype as any).toModelRefBase = function <AppModelType extends { [field: string]: any }, DbModelType extends firestore.DocumentData>(
     this: firestore.DocumentReference<AppModelType, DbModelType>
 ): ModelRefBase {
-    return new ModelRefBase(this.path.replace(/\/+$/, ""));
+    const path = this.path.replace(/\/+$/, "");
+    return new ModelRefBase(path, this.firestore.doc(path));
 };
 
 /**
@@ -472,7 +473,7 @@ declare module "@google-cloud/firestore" {
  * 
  * ModelTimestamp。
  */
-(firestore.Timestamp.prototype as any).toModelTimestamp = function(): ModelTimestamp {
+(firestore.Timestamp.prototype as any).toModelTimestamp = function (): ModelTimestamp {
     return new ModelTimestamp(this.toDate());
 };
 
@@ -486,7 +487,7 @@ declare module "@google-cloud/firestore" {
  * 
  * ModelGeoValue。
  */
-(firestore.GeoPoint.prototype as any).toModelGeoValue = function(): ModelGeoValue {
+(firestore.GeoPoint.prototype as any).toModelGeoValue = function (): ModelGeoValue {
     return new ModelGeoValue(this.latitude, this.longitude);
 };
 
@@ -500,6 +501,6 @@ declare module "@google-cloud/firestore" {
  * 
  * ModelVectorValue。
  */
-(VectorValue.prototype as any).toModelVectorValue = function(): ModelVectorValue {
+(VectorValue.prototype as any).toModelVectorValue = function (): ModelVectorValue {
     return new ModelVectorValue(this.toArray());
 };

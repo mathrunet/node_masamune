@@ -1,6 +1,7 @@
 import { FirestoreModelFieldValueConverter, ModelFieldValueConverter } from "../model_field_value_converter";
-import { FieldValue } from "@google-cloud/firestore";
+import { DocumentReference, FieldValue, Timestamp, GeoPoint } from "@google-cloud/firestore";
 import { isDynamicMap } from "../../utils";
+import { VectorValue } from "@google-cloud/firestore";
 
 /**
  * Null ModelFieldValueConverter.
@@ -67,6 +68,9 @@ export class FirestoreNullConverter extends FirestoreModelFieldValueConverter {
     original: { [field: string]: any },
     firestoreInstance: FirebaseFirestore.Firestore
   ): { [field: string]: any } | null {
+    if (value instanceof DocumentReference || value instanceof Timestamp || value instanceof GeoPoint || value instanceof VectorValue) {
+      return null;
+    }
     if (isDynamicMap(value) && original[key] !== undefined) {
       const originalMap = original[key];
       if (isDynamicMap(originalMap)) {

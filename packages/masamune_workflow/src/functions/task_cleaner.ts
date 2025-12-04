@@ -2,6 +2,7 @@ import * as functions from "firebase-functions/v2";
 import { SchedulerFunctionsOptions, firestoreLoader, ModelFieldValue, ModelTimestamp } from "@mathrunet/masamune";
 import { Task, Action } from "../lib/interfaces";
 import * as admin from "firebase-admin";
+import "@mathrunet/masamune";
 
 const _kCollectionLimit = 100;
 

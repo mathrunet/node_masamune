@@ -1,6 +1,7 @@
 import * as functions from "firebase-functions/v2";
 import * as admin from "firebase-admin";
-import { utils, firestore } from "@mathrunet/masamune";
+import { utils, firestore, ModelToken } from "@mathrunet/masamune";
+import "@mathrunet/masamune";
 
 /**
  * Define the process for PUSH notification.
@@ -108,7 +109,7 @@ export async function sendNotification({
     data?: { [key: string]: any } | undefined,
     badgeCount?: number | undefined | null,
     sound?: string | undefined | null,
-    targetToken?: string | string[] | undefined | null,
+    targetToken?: string | string[] | ModelToken | undefined | null,
     targetTopic?: string | undefined | null,
     targetCollectionPath?: string | undefined | null,
     targetDocumentPath?: string | undefined | null,
@@ -136,8 +137,15 @@ export async function sendNotification({
             if (showLog) {
                 console.log(`Notification target token: ${targetToken}`);
             }
+            console.log(`targetToken: ${JSON.stringify(targetToken)}`);
             if (typeof targetToken === "string") {
                 targetToken = [targetToken];
+            }
+            if (targetToken instanceof ModelToken) {
+                targetToken = targetToken.value();
+            }
+            if (targetToken != null && typeof targetToken === "object" && "@type" in targetToken && targetToken["@type"] === "ModelToken") {
+                targetToken = (targetToken as { [key: string]: any })["@list"] as string[] | undefined | null ?? [];
             }
             const tokenList = utils.splitArray([...new Set(targetToken)], 500);
             if (responseTokenList) {
@@ -293,6 +301,8 @@ export async function sendNotification({
                     const token = await firestore.get({ data: docData, field: targetTokenField });
                     if (typeof token === "string") {
                         tokens.push(token);
+                    } else if (token instanceof ModelToken) {
+                        tokens.push(...token.value());
                     } else if (Array.isArray(token)) {
                         tokens.push(...token);
                     }
@@ -307,6 +317,7 @@ export async function sendNotification({
                     responseTokenList: responseTokenList,
                     targetToken: tokens,
                     firestoreInstance: firestoreInstance,
+                    showLog: showLog,
                 });
                 results.push(res.results ?? []);
                 if (collection.docs.length < 500) {
@@ -338,6 +349,8 @@ export async function sendNotification({
                     const tokens: string[] = [];
                     if (typeof token === "string") {
                         tokens.push(token);
+                    } else if (token instanceof ModelToken) {
+                        tokens.push(...token.value());
                     } else if (Array.isArray(token)) {
                         tokens.push(...token);
                     }
@@ -351,6 +364,7 @@ export async function sendNotification({
                         responseTokenList: responseTokenList,
                         targetToken: tokens,
                         firestoreInstance: firestoreInstance,
+                        showLog: showLog,
                     });
                     results.push(res.results ?? []);
                 }

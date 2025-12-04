@@ -93,7 +93,7 @@ export class ModelFieldValueConverterUtils {
      * Data converted to [ModelFieldValue].
      * 
      * [ModelFieldValue]に変換されたデータ。
-     */ 
+     */
     static convertFrom({ data }: { data: { [field: string]: any } }): { [field: string]: any } {
         const update: { [field: string]: any } = {};
         var replaced: { [field: string]: any } | null = null;
@@ -117,11 +117,11 @@ export class ModelFieldValueConverterUtils {
             } else {
                 if (key.startsWith("#") && !val) {
                     continue;
-                }            
+                }
                 update[key] = val;
             }
         }
-        
+
         return update;
     }
 

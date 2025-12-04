@@ -4,6 +4,7 @@ import * as admin from "firebase-admin";
 import { HttpFunctionsOptions, firestoreLoader } from "@mathrunet/masamune";
 import { lib as sendgrid } from "@mathrunet/masamune_mail_sendgrid";
 import { lib as gmail } from "@mathrunet/masamune_mail_gmail";
+import "@mathrunet/masamune";
 
 
 /**
