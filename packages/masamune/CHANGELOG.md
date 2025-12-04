@@ -1,4 +1,4 @@
-## [3.8.8](https://github.com/mathrunet/node_masamune/compare/v3.7.0...v3.8.8) (2025-12-04)
+## [3.8.9](https://github.com/mathrunet/node_masamune/compare/v3.7.0...v3.8.9) (2025-12-04)
 
 
 ### chore
@@ -51,6 +51,7 @@
 
 * Add ModelFieldValue interface. ([0ff33aa](https://github.com/mathrunet/node_masamune/commit/0ff33aa6f1331569658a3fd629b1329eafef8c50))
 * Audio-related fixes ([9e2440b](https://github.com/mathrunet/node_masamune/commit/9e2440b9e78c15ecc9d495da5ed0f173250bf88c))
+* Bug fix. ([14d3ba4](https://github.com/mathrunet/node_masamune/commit/14d3ba4df05b723eb95768dc90a683f38fb8baa3))
 * Bug fixes. ([8cd7f92](https://github.com/mathrunet/node_masamune/commit/8cd7f92aaaea9da295fa232262e8df896c87e1d5))
 * Change error object handling ([d49aed4](https://github.com/mathrunet/node_masamune/commit/d49aed435c381c6b537a6a23accdf73125b4aa61))
 * Change GitHub analysis method ([abc2336](https://github.com/mathrunet/node_masamune/commit/abc233693cad2070a57db4d0472a16781d00c0c9))
