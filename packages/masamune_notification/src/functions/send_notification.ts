@@ -69,8 +69,13 @@ import { HttpFunctionsOptions, ModelToken, firestoreLoader } from "@mathrunet/ma
  * 
  * @param responseTokenList
  * Specifies whether to return the token list for debugging.
- * 
+ *
  * デバッグ用にトークンリストを返すかどうかを指定します。
+ *
+ * @param dryRun
+ * If true, the message will be validated but not sent.
+ *
+ * trueの場合、メッセージは検証されますが送信されません。
  */
 module.exports = (
     regions: string[],
@@ -105,6 +110,7 @@ module.exports = (
             const targetConditions = query.data.targetConditions as { [key: string]: any }[] | undefined;
             const responseTokenList = query.data.responseTokenList as boolean | undefined;
             const showLog = query.data.showLog as boolean | undefined;
+            const dryRun = query.data.dryRun as boolean | undefined;
             if (!title || !body) {
                 throw new functions.https.HttpsError("invalid-argument", "Query parameter is invalid.");
             }
@@ -129,6 +135,7 @@ module.exports = (
                         responseTokenList: responseTokenList,
                         firestoreInstance: firestoreInstance,
                         showLog: showLog ?? false,
+                        dryRun: dryRun ?? false,
                     });
                     if (resItem.results) {
                         // 配列かどうかを確認してから反復処理

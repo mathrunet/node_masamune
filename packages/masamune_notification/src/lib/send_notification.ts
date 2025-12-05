@@ -80,8 +80,13 @@ import "@mathrunet/masamune";
  * 
  * @param responseTokenList
  * Specifies whether to return the token list for debugging.
- * 
+ *
  * デバッグ用にトークンリストを返すかどうかを指定します。
+ *
+ * @param dryRun
+ * If true, the message will be validated but not sent.
+ *
+ * trueの場合、メッセージは検証されますが送信されません。
  */
 export async function sendNotification({
     title,
@@ -101,6 +106,7 @@ export async function sendNotification({
     responseTokenList,
     firestoreInstance,
     showLog,
+    dryRun,
 }: {
     title: string,
     body: string,
@@ -119,6 +125,7 @@ export async function sendNotification({
     responseTokenList?: boolean | undefined | null,
     firestoreInstance: FirebaseFirestore.Firestore,
     showLog?: boolean | undefined | null,
+    dryRun?: boolean | undefined | null,
 }): Promise<{ [key: string]: any }> {
     const res: { [key: string]: any } = {};
     try {
@@ -182,7 +189,8 @@ export async function sendNotification({
                             },
                             data: data,
                             tokens: tokenList[t],
-                        }
+                        },
+                        dryRun ?? false
                     );
                     res[t] = messageId;
                 } catch (e) {
@@ -248,7 +256,8 @@ export async function sendNotification({
                         },
                         data: data,
                         topic: targetTopic,
-                    }
+                    },
+                    dryRun ?? false
                 );
                 res[targetTopic] = messageId;
             } catch (e) {
@@ -318,6 +327,7 @@ export async function sendNotification({
                     targetToken: tokens,
                     firestoreInstance: firestoreInstance,
                     showLog: showLog,
+                    dryRun: dryRun,
                 });
                 results.push(res.results ?? []);
                 if (collection.docs.length < 500) {
@@ -365,6 +375,7 @@ export async function sendNotification({
                         targetToken: tokens,
                         firestoreInstance: firestoreInstance,
                         showLog: showLog,
+                        dryRun: dryRun,
                     });
                     results.push(res.results ?? []);
                 }
