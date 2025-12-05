@@ -152,3 +152,4 @@ test/*.json
 # Temporary video files for testing
 tmp/
 test/tmp/
+test/*.mp4

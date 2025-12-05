@@ -1,71 +1,130 @@
 import * as admin from "firebase-admin";
 import "@mathrunet/masamune";
+import * as fs from "fs";
+import * as path from "path";
 
 const config = require("firebase-functions-test")({
     storageBucket: "development-for-mathrunet.appspot.com",
     projectId: "development-for-mathrunet",
 }, "test/development-for-mathrunet-e2c2c84b2167.json");
 
-describe("Firestore Test", () => {
+// テスト用にサービスアカウント環境変数を設定
+const serviceAccountPath = path.resolve(__dirname, "development-for-mathrunet-e2c2c84b2167.json");
+const serviceAccountJson = fs.readFileSync(serviceAccountPath, "utf-8");
+process.env.GOOGLE_SERVICE_ACCOUNT = serviceAccountJson;
+
+describe("google_token Function", () => {
+    let testUserId: string | null = null;
+
     beforeAll(() => {
-        admin.initializeApp();
+        if (admin.apps.length === 0) {
+            admin.initializeApp();
+        }
     });
-    test("Test for test", async () => {
-        const testPath = "unit/test/user/aaa";
-        const testData = {
-            name: "aaa",
-            text: "bbb",
-            number: 100,
-        };
-        const firestoreInstance = admin.firestore();
-        await firestoreInstance.doc(testPath).save(testData);
-        const func = require("@mathrunet/masamune/src/functions/test");
+
+    afterAll(async () => {
+        // クリーンアップ: テストユーザーを削除
+        if (testUserId) {
+            try {
+                await admin.auth().deleteUser(testUserId);
+                console.log(`Deleted test user: ${testUserId}`);
+            } catch (e) {
+                // 既に削除済みの場合は無視
+            }
+        }
+    });
+
+    test("正常系: トークン取得成功", async () => {
+        // テストユーザーを作成
+        const testEmail = `test-token-${Date.now()}@example.com`;
+        const userRecord = await admin.auth().createUser({
+            email: testEmail,
+            password: "testPassword123",
+        });
+        testUserId = userRecord.uid;
+        console.log(`Created test user: ${testUserId}`);
+
+        // google_token関数を呼び出し
+        const func = require("../src/functions/google_token");
         const wrapped = config.wrap(func([], {}, {}));
         const res = await wrapped({
             data: {
-                path: testPath,
+                duration: 3600,
+            },
+            auth: {
+                uid: testUserId,
             },
             params: {},
         });
-        delete res["@time"];
-        delete res["@uid"];
-        expect(res).toStrictEqual(testData);
-    });
-    test("Delete document test", async () => {
-        const firestoreInstance = admin.firestore();
-        const sourceCollection = "unit/test/delete";
-        const watchCollection = "unit/test/watch";
-        const sourceDatas: { [key: string]: any }[] = [];
-        for (let i = 0; i < 10; i++) {
-            const sourceUid = `deleteTestUid${i}`;
-            const sourceData = {
-                uid: sourceUid,
-                name: `event${i}`,
-                text: `eventtext${i}`,
-                number: i,
-            };
-            sourceDatas.push(sourceData);
+
+        expect(res.accessToken).toBeDefined();
+        expect(typeof res.accessToken).toBe("string");
+        expect(res.accessToken.length).toBeGreaterThan(0);
+        expect(res.expiresAt).toBeDefined();
+        expect(typeof res.expiresAt).toBe("number");
+        expect(res.expiresAt).toBeGreaterThan(Date.now());
+        console.log(`Token obtained, expires at: ${new Date(res.expiresAt).toISOString()}`);
+    }, 50000);
+
+    test("正常系: duration未指定でもデフォルト値で動作", async () => {
+        // 前のテストで作成したユーザーを再利用
+        if (!testUserId) {
+            const testEmail = `test-token-default-${Date.now()}@example.com`;
+            const userRecord = await admin.auth().createUser({
+                email: testEmail,
+                password: "testPassword123",
+            });
+            testUserId = userRecord.uid;
         }
-        for (const sourceData of sourceDatas) {
-            await firestoreInstance.doc(`${sourceCollection}/${sourceData.uid}`).save(sourceData);
-        }
-        let col = await firestoreInstance.collection(sourceCollection).load();
-        let d = col.docs.find((e) => e.id === "deleteTestUid4");
-        expect(d).not.toBeUndefined();
-        d = col.docs.find((e) => e.id === "deleteTestUid8");
-        expect(d).not.toBeUndefined();
-        const func = require("../src/functions/delete_documents");
-        let wrapped = config.wrap(func([], { path: watchCollection, relation: (path: string) => sourceCollection }, {}));
-        const beforeSnap = config.firestore.makeDocumentSnapshot({ name: "test" }, `${watchCollection}/watchTestUuid`);
-        const afterSnap = config.firestore.makeDocumentSnapshot(null, `${watchCollection}/watchTestUuid`);
-        await wrapped({
-            afterSnap: afterSnap,
-            beforeSnap: beforeSnap,
+
+        const func = require("../src/functions/google_token");
+        const wrapped = config.wrap(func([], {}, {}));
+        const res = await wrapped({
+            data: {},
+            auth: {
+                uid: testUserId,
+            },
+            params: {},
         });
-        col = await firestoreInstance.collection(sourceCollection).load();
-        d = col.docs.find((e) => e.id === "deleteTestUid4");
-        expect(d).toBeUndefined();
-        d = col.docs.find((e) => e.id === "deleteTestUid8");
-        expect(d).toBeUndefined();
+
+        expect(res.accessToken).toBeDefined();
+        expect(res.expiresAt).toBeDefined();
+    }, 50000);
+
+    test("エラー: 認証なし (auth未指定)", async () => {
+        const func = require("../src/functions/google_token");
+        const wrapped = config.wrap(func([], {}, {}));
+        await expect(wrapped({
+            data: {},
+            params: {},
+        })).rejects.toThrow();
+    }, 50000);
+
+    test("エラー: サービスアカウント環境変数未設定", async () => {
+        // 環境変数を一時的に削除
+        const originalEnv = process.env.GOOGLE_SERVICE_ACCOUNT;
+        delete process.env.GOOGLE_SERVICE_ACCOUNT;
+
+        try {
+            // 新しいモジュールインスタンスを取得するためキャッシュをクリア
+            jest.resetModules();
+            const func = require("../src/functions/google_token");
+            const configNew = require("firebase-functions-test")({
+                storageBucket: "development-for-mathrunet.appspot.com",
+                projectId: "development-for-mathrunet",
+            }, "test/development-for-mathrunet-e2c2c84b2167.json");
+            const wrapped = configNew.wrap(func([], {}, {}));
+
+            await expect(wrapped({
+                data: {},
+                auth: {
+                    uid: "test-user",
+                },
+                params: {},
+            })).rejects.toThrow();
+        } finally {
+            // 環境変数を復元
+            process.env.GOOGLE_SERVICE_ACCOUNT = originalEnv;
+        }
     }, 50000);
 });
