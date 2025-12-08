@@ -1,6 +1,6 @@
 import * as functions from "firebase-functions/v2";
 import { SchedulerFunctionsOptions, firestoreLoader, ModelFieldValue, utils, ModelTimestamp } from "@mathrunet/masamune";
-import { Task } from "../lib/interfaces";
+import { Action, Task } from "../lib/interfaces";
 import * as admin from "firebase-admin";
 import * as adminFunctions from "firebase-admin/functions";
 import * as crypto from "crypto";
@@ -55,11 +55,11 @@ module.exports = (
                         const actionId = utils.uuid();
                         const actionDoc = actionsCollection.doc(actionId);
                         const token = crypto.randomBytes(64).toString("hex");
-                        const updatedActionData: any = {
+                        const updatedActionData: Action = {
                             "@uid": actionId,
                             "@time": now,
                             "command": nextAction,
-                            "task": task.ref,
+                            "task": task.ref.toModelRefBase(),
                             "workflow": data.workflow,
                             "organization": organization,
                             "project": project,
@@ -68,7 +68,7 @@ module.exports = (
                             "materials": data.materials,
                             "usage": 0,
                             "token": token,
-                            "tokenExpiredTime": new Date(now.getTime() + 1000 * 60 * 60 * 1),
+                            "tokenExpiredTime": new ModelTimestamp(new Date(now.getTime() + 1000 * 60 * 60 * 1)),
                             "startTime": new ModelTimestamp(now),
                             "createdTime": new ModelTimestamp(now),
                             "updatedTime": new ModelTimestamp(now),

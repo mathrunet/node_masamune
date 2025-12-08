@@ -94,9 +94,8 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                     const plan = subscription?.productId ? (await firestore.doc(`plugins/workflow/plan/${subscription?.productId}`).load()).data() as Plan | undefined | null : null;
                     try {
                         const expiredTime = actionData.tokenExpiredTime;
-                        // Handle both Date, Firestore Timestamp, and ModelTimestamp
                         const expiredTimeMs = expiredTime
-                            ? expiredTime.value().getTime()
+                            ? (expiredTime.value()?.getTime?.() ?? 0)
                             : 0;
                         if (!expiredTime || startedTime.getTime() > expiredTimeMs) {
                             throw new Error("token-expired");
@@ -514,8 +513,9 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                 } else {
                     totalUsage = data.usage || 0;
                     bucketBalance = data.bucketBalance ?? (planLimit * burstCapacity);
-                    // Handle both Firestore Timestamp and ModelTimestamp
-                    lastCheckTimeMillis = data.lastCheckTime?.value()?.getTime() ?? nowMillis;
+                    // Handle ModelTimestamp @time (milliseconds) or Firestore Timestamp
+                    // Note: Prioritize @time since ModelTimestamp.value() method divides by 1000 again
+                    lastCheckTimeMillis = (data.lastCheckTime?.value().getTime?.() ?? 0) || nowMillis;
                 }
             }
 
