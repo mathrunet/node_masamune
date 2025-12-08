@@ -1,4 +1,4 @@
-## [3.9.2](https://github.com/mathrunet/node_masamune/compare/v3.7.0...v3.9.2) (2025-12-08)
+## [3.9.3](https://github.com/mathrunet/node_masamune/compare/v3.7.0...v3.9.3) (2025-12-08)
 
 
 ### chore
