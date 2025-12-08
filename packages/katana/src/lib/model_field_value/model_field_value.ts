@@ -1,4 +1,5 @@
 import * as firestore from "firebase-admin/firestore";
+import { DocumentModel } from "../exntensions/firestore.extension";
 
 /**
  * The source of ModelFieldValue.
@@ -565,4 +566,59 @@ export class ModelRefBase extends ModelFieldValue {
     value(): string {
         return this["@ref"] as string;
     }
+
+    /**
+     * Load the document.
+     * 
+     * ドキュメントを読み込みます。
+     * 
+     * @returns The value of the ref.
+     */
+    async load(): Promise<DocumentModel<firestore.DocumentData, firestore.DocumentData>> {
+        const res = await this["@doc"]?.load();
+        if (!res) {
+            throw new Error("Failed to load document");
+        }
+        return res;
+    }
+
+    /**
+     * Save the document.
+     * 
+     * ドキュメントを保存します。
+     * 
+     * @param data The data to save.
+     * @param options The options to save.
+     * @returns The value of the ref.
+     */
+    async save(data: firestore.PartialWithFieldValue<firestore.DocumentData>, options: firestore.SetOptions): Promise<void> {
+        await this["@doc"]?.save(data, options);
+    }
+
+    /**
+     * Delete the document.
+     * 
+     * ドキュメントを削除します。
+     * 
+     * @returns The value of the ref.
+     */
+    async delete(): Promise<void> {
+        await this["@doc"]?.delete();
+    }
+
+    /**
+     * Get the id of the ref.
+     * 
+     * リファレンスのIDを取得します。
+     * 
+     * @returns The id of the ref.
+     */
+    get id(): string {
+        const doc = this["@doc"];
+        if (!doc) {
+            return this["@ref"]?.split("/").pop() ?? "";
+        }
+        return doc.id;
+    }
+
 }
