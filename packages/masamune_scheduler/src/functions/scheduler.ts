@@ -3,7 +3,10 @@ import { notification } from "../schedulers/notification";
 import { copyDocument } from "../schedulers/copy_document";
 import { deleteDocuments } from "../schedulers/delete_documents";
 import { SchedulerFunctionsOptions, firestoreLoader } from "@mathrunet/masamune";
+import { SendNotificationRequest } from "@mathrunet/masamune_notification";
 import "@mathrunet/masamune";
+import { SchedulerCopyDocumentRequest, SchedulerData } from "../lib/interface";
+import { FirestoreDeleteDocumentsRequest } from "@mathrunet/masamune_firestore";
 
 /**
  * Define a process for notifications while scaling to monitor the DB and register future PUSH notifications and data.
@@ -42,15 +45,18 @@ module.exports = (
                     const collection = await firestoreInstance.collection(collectionPath).where("_done", "==", false).where("_time", "<=", Date.now()).orderBy("_time", "asc").load();
                     console.log(`Length: ${collection.size}`);
                     for (var doc of collection.docs) {
+                        const data = doc.data() as SchedulerData;
                         console.log(`Doc: ${doc.id} ${JSON.stringify(doc.data())}`);
                         let res: { [key: string]: any } = {};
-                        const command = (doc.get("#command") as { [key: string]: any })["@command"];
-                        const priParams = (doc.get("#command") as { [key: string]: any })["@private"] as { [key: string]: any };
+                        // Support both #command (Firestore converted) and command (ModelServerCommandBase) formats
+                        const commandData = data["#command"] ?? data["command"];
+                        const command = commandData?.["@command"];
+                        const priParams = commandData?.["@private"];
                         console.log(`Command: ${command}`);
                         switch (command) {
                             case "notification": {
                                 res = await notification({
-                                    params: priParams,
+                                    params: priParams as SendNotificationRequest,
                                     firestoreInstance: firestoreInstance,
                                     doc: doc,
                                 });
@@ -58,7 +64,7 @@ module.exports = (
                             }
                             case "copy_document": {
                                 res = await copyDocument({
-                                    params: priParams,
+                                    params: priParams as SchedulerCopyDocumentRequest,
                                     firestoreInstance: firestoreInstance,
                                     doc: doc,
                                 });
@@ -66,7 +72,7 @@ module.exports = (
                             }
                             case "delete_documents":
                                 res = await deleteDocuments({
-                                    params: priParams,
+                                    params: priParams as FirestoreDeleteDocumentsRequest,
                                     firestoreInstance: firestoreInstance,
                                     doc: doc,
                                 });

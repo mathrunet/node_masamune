@@ -1,5 +1,5 @@
-import * as admin from "firebase-admin";
 import { lib } from "@mathrunet/masamune_firestore";
+import { SchedulerDeleteDocumentsRequest } from "../lib/interface";
 
 /**
  * Processes scheduler commands for document deletion.
@@ -26,23 +26,10 @@ import { lib } from "@mathrunet/masamune_firestore";
  * 
  * レスポンス。データがすべてドキュメントに上書きされます。
  */
-export async function deleteDocuments({
-    doc,
-    firestoreInstance,
-    params,
-}: {
-    doc: admin.firestore.QueryDocumentSnapshot<admin.firestore.DocumentData, admin.firestore.DocumentData>,
-    firestoreInstance: admin.firestore.Firestore,
-    params: { [key: string]: any },
-}): Promise<{ [key: string]: any }> {
-    const collectionPath = params["collectionPath"] as string;
-    const wheres = params["wheres"] as { [key: string]: any }[] | undefined;
-    const conditions = params["conditions"] as { [key: string]: any }[] | undefined;
+export async function deleteDocuments(request: SchedulerDeleteDocumentsRequest): Promise<{ [key: string]: any }> {
     await lib.deleteDocuments({
-        collectionPath: collectionPath,
-        wheres: wheres,
-        conditions: conditions,
-        firestoreInstance: firestoreInstance,
+        ...request.params,
+        firestoreInstance: request.firestoreInstance,
     });
     return {};
 }

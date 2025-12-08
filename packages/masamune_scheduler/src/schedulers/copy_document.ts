@@ -1,5 +1,6 @@
 import * as admin from "firebase-admin";
 import "@mathrunet/masamune";
+import { SchedulerCopyDocumentRequest, SchedulerCopyDocumentResponse } from "../lib/interface";
 
 /**
  * Processes scheduler commands for document copying.
@@ -26,19 +27,14 @@ import "@mathrunet/masamune";
  * 
  * レスポンス。データがすべてドキュメントに上書きされます。
  */
-export async function copyDocument({
-    doc,
-    firestoreInstance,
-    params,
-}: {
-    doc: admin.firestore.QueryDocumentSnapshot<admin.firestore.DocumentData, admin.firestore.DocumentData>,
-    firestoreInstance: admin.firestore.Firestore,
-    params: { [key: string]: any },
-}): Promise<{ [key: string]: any }> {
-    const path = params["path"] as string;
+export async function copyDocument(request: SchedulerCopyDocumentRequest): Promise<{ [key: string]: any }> {
+    const path = request.params.path;
+    if (!path) {
+        throw new Error("Path is required.");
+    }
     const paths = path.split("/");
     const id = paths[paths.length - 1];
-    const docData = doc.data();
+    const docData = request.doc.data();
     const docKeys = Object.keys(docData);
     const update: { [key: string]: any } = {};
     for (const key of docKeys) {
@@ -47,9 +43,12 @@ export async function copyDocument({
         }
         update[key] = docData[key];
     }
-    update["@uid"] = id;
-    await firestoreInstance.doc(path).save(
-        update, { merge: true }
+    const data: SchedulerCopyDocumentResponse = {
+        ...update,
+        "@uid": id,
+    };
+    await request.firestoreInstance.doc(path).save(
+        data, { merge: true }
     );
     return {};
 }
