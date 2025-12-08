@@ -1,7 +1,5 @@
 import * as admin from "firebase-admin";
-import * as firestore from "firebase-admin/firestore";
-import "@mathrunet/katana";  // 副作用インポートでfirestore拡張を有効化
-import { ModelCounter, ModelDate, ModelDateRange, ModelFieldValue, ModelGeoValue, ModelImageUri, ModelLocale, ModelLocalizedLocaleVaue, ModelLocalizedValue, ModelRefBase, ModelSearch, ModelTime, ModelTimeRange, ModelTimestamp, ModelTimestampRange, ModelToken, ModelUri, ModelVectorValue, ModelVideoUri } from "@mathrunet/katana";
+import { ModelCounter, ModelDate, ModelDateRange, ModelFieldValue, ModelGeoValue, ModelImageUri, ModelLocale, ModelLocalizedLocaleVaue, ModelLocalizedValue, ModelRefBase, ModelSearch, ModelTime, ModelTimeRange, ModelTimestamp, ModelTimestampRange, ModelToken, ModelUri, ModelVectorValue, ModelVideoUri } from "@mathrunet/masamune";
 
 const config = require("firebase-functions-test")({
     storageBucket: "development-for-mathrunet.appspot.com",
