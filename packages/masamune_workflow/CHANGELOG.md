@@ -1,9 +1,12 @@
-## [3.8.2](https://github.com/mathrunet/node_masamune/compare/v3.7.0...v3.8.2) (2025-12-04)
+## [3.8.3](https://github.com/mathrunet/node_masamune/compare/v3.7.0...v3.8.3) (2025-12-08)
 
 
 ### chore
 
 * Add Node.js 20 engine requirement to all package.json files ([1e60d25](https://github.com/mathrunet/node_masamune/commit/1e60d25b2c44e1efd398a6a1229d2ba3f46da1f5))
+* Create test files. ([357849a](https://github.com/mathrunet/node_masamune/commit/357849a6244c8a6167a0188945cc40a7c282c703))
+* Package update. ([4a3e6e7](https://github.com/mathrunet/node_masamune/commit/4a3e6e725e1e61777be17b09e14d7ec2a015b2e6))
+* Package update. ([71bf417](https://github.com/mathrunet/node_masamune/commit/71bf41769e3b292e6288dbb6bb813f5f18b8a474))
 * Package update. ([27b1b6b](https://github.com/mathrunet/node_masamune/commit/27b1b6b84478989844c655695323c849c684dd51))
 * Package update. ([203fee8](https://github.com/mathrunet/node_masamune/commit/203fee8cabfc6bea866ef4fce949d3c170f0be8d))
 * Update @mathrunet/katana to version 3.9.1 ([d8e32a1](https://github.com/mathrunet/node_masamune/commit/d8e32a1f238ed3b29003bd83799fde57a054c063))
@@ -49,6 +52,7 @@
 
 ### fix
 
+* Add methods such as load and save to ModelRefBase. ([cbf9eb2](https://github.com/mathrunet/node_masamune/commit/cbf9eb29d802990dcffe0c3322b3d41365b8a9a4))
 * Add ModelFieldValue interface. ([0ff33aa](https://github.com/mathrunet/node_masamune/commit/0ff33aa6f1331569658a3fd629b1329eafef8c50))
 * Audio-related fixes ([9e2440b](https://github.com/mathrunet/node_masamune/commit/9e2440b9e78c15ecc9d495da5ed0f173250bf88c))
 * Bug fix. ([14d3ba4](https://github.com/mathrunet/node_masamune/commit/14d3ba4df05b723eb95768dc90a683f38fb8baa3))
@@ -80,6 +84,9 @@
 
 ### test
 
+* Add tests ([52c8ad3](https://github.com/mathrunet/node_masamune/commit/52c8ad3952b375c72338b0b22c3e89ddfd0e3789))
+* Complete AndroidToken test. ([3064805](https://github.com/mathrunet/node_masamune/commit/3064805ab63ee58d06d3e9ddb872d136166679eb))
+* Creating tests. ([2a91c82](https://github.com/mathrunet/node_masamune/commit/2a91c824c4cf584fac10f9ac61d9bf4f103c5196))
 * Extend the timeout for the short video generation test. ([9e46c82](https://github.com/mathrunet/node_masamune/commit/9e46c828c791d933b32344842e63830782aa0fa5))
 
 
