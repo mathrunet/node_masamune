@@ -1,6 +1,6 @@
 {
   "name": "@mathrunet/masamune",
-  "version": "3.8.9",
+  "version": "3.8.10",
   "description": "Manages packages for the server portion (NodeJS) of the Masamune framework.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -39,7 +39,7 @@
   },
   "homepage": "https://github.com/mathrunet/node_masamune#readme",
   "dependencies": {
-    "@mathrunet/katana": "^3.10.4",
+    "@mathrunet/katana": "^3.10.5",
     "firebase-admin": "^13.1.0",
     "firebase-functions": "^6.3.2",
     "typescript": "^5.9.2"
