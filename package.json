@@ -10,7 +10,6 @@
     "packages/masamune_auth",
     "packages/masamune_firestore",
     "packages/masamune_location_geocoding",
-    "packages/masamune_mail_gmail",
     "packages/masamune_mail_sendgrid",
     "packages/masamune_media",
     "packages/masamune_notification",
