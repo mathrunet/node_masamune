@@ -1,10 +1,19 @@
-## [3.9.3](https://github.com/mathrunet/node_masamune/compare/v3.7.0...v3.9.3) (2025-12-08)
+## [3.9.4](https://github.com/mathrunet/node_masamune/compare/v3.7.0...v3.9.4) (2025-12-08)
 
 
 ### chore
 
 * Add Node.js 20 engine requirement to all package.json files ([1e60d25](https://github.com/mathrunet/node_masamune/commit/1e60d25b2c44e1efd398a6a1229d2ba3f46da1f5))
 * Create test files. ([357849a](https://github.com/mathrunet/node_masamune/commit/357849a6244c8a6167a0188945cc40a7c282c703))
+* Definition of interface. ([b7a94f1](https://github.com/mathrunet/node_masamune/commit/b7a94f1c925099f79914e9629417566a6a1df393))
+* Definition of interface. ([5503b76](https://github.com/mathrunet/node_masamune/commit/5503b76e104eb92609c070f8c698e958d62c845e))
+* Definition of interface. ([e7a3b5f](https://github.com/mathrunet/node_masamune/commit/e7a3b5f2b491d533d7432a68ead0494732064670))
+* Definition of interface. ([ceebea8](https://github.com/mathrunet/node_masamune/commit/ceebea8e58b3a75b80f0bb4756f8ccbe0a57cb96))
+* Definition of interface. ([a573eba](https://github.com/mathrunet/node_masamune/commit/a573ebafae1630f211057d4c1bfd19b651382936))
+* Definition of interface. ([1868f42](https://github.com/mathrunet/node_masamune/commit/1868f42f4fe61e3d34413a5913ffdd7ba1ddb6f9))
+* Definition of interface. ([7fe670b](https://github.com/mathrunet/node_masamune/commit/7fe670b4466999f45a260f4fa31f7430ad297203))
+* Definition of interface. ([b305bbd](https://github.com/mathrunet/node_masamune/commit/b305bbdc965c9e0b06b7a13d5c5c39a24d2125cb))
+* Deleted because a katana remained. ([845a8d9](https://github.com/mathrunet/node_masamune/commit/845a8d932962689919db12d8b67baf757bf49f59))
 * Package update. ([e00d076](https://github.com/mathrunet/node_masamune/commit/e00d0766cc62d7fa7073dac9cf7c2c80ddb0d89f))
 * Package update. ([8891b4e](https://github.com/mathrunet/node_masamune/commit/8891b4e1995dd931d3055d329fdd0513d3eae23a))
 * Package update. ([440dbe9](https://github.com/mathrunet/node_masamune/commit/440dbe90ed555f4d7e260a204ef4463e14e6623c))
@@ -61,6 +70,7 @@
 ### fix
 
 * Add methods such as load and save to ModelRefBase. ([cbf9eb2](https://github.com/mathrunet/node_masamune/commit/cbf9eb29d802990dcffe0c3322b3d41365b8a9a4))
+* Add missing packages. ([389630b](https://github.com/mathrunet/node_masamune/commit/389630b2baec8ee634e105690343a7ff5edc30bb))
 * Add ModelFieldValue interface. ([0ff33aa](https://github.com/mathrunet/node_masamune/commit/0ff33aa6f1331569658a3fd629b1329eafef8c50))
 * Audio-related fixes ([9e2440b](https://github.com/mathrunet/node_masamune/commit/9e2440b9e78c15ecc9d495da5ed0f173250bf88c))
 * Bug fix. ([14d3ba4](https://github.com/mathrunet/node_masamune/commit/14d3ba4df05b723eb95768dc90a683f38fb8baa3))
