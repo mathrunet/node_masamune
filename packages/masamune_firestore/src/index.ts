@@ -11,3 +11,4 @@
 export * from "@mathrunet/masamune";
 export * from "./functions";
 export * as lib from "./lib/delete_documents";
+export * from "./lib/interface";

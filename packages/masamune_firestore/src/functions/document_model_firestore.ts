@@ -1,7 +1,8 @@
 import * as functions from "firebase-functions/v2";
-import { HttpFunctionsOptions, FirestoreModelFieldValueConverterUtils } from "@mathrunet/katana";
+import { HttpFunctionsOptions, FirestoreModelFieldValueConverterUtils } from "@mathrunet/masamune";
 import { Firestore } from "@google-cloud/firestore";
 import "@mathrunet/masamune";
+import { FirestoreModelResponse } from "../lib/interface";
 
 /**
  * A function to enable the use of external Firestore Document Models.
@@ -140,10 +141,12 @@ module.exports = (
                         const doc = await firestoreInstance.doc(path).load();
                         const converted = FirestoreModelFieldValueConverterUtils.convertFrom({ data: doc.data() ?? {}, firestoreInstance });
                         console.log(`Document exists: ${doc.exists}`);
-                        return {
+                        // Jsonにパースした値でないとFunctionsのパースがうまく行かないため、JSON.stringifyを使用
+                        const response: FirestoreModelResponse = {
                             status: 200,
                             data: JSON.stringify(converted),
                         };
+                        return response;
                     } catch (error: any) {
                         console.error(`Error getting document at ${path}:`, error);
                         throw new functions.https.HttpsError(
@@ -174,9 +177,10 @@ module.exports = (
                             { merge: true }
                         );
                         console.log(`Successfully set document at ${path}`);
-                        return {
+                        const response: FirestoreModelResponse = {
                             status: 200,
                         };
+                        return response;
                     } catch (error: any) {
                         console.error(`Error setting document at ${path}:`, error);
                         throw new functions.https.HttpsError(
@@ -190,9 +194,10 @@ module.exports = (
                     try {
                         await firestoreInstance.doc(path).delete();
                         console.log(`Successfully deleted document at ${path}`);
-                        return {
+                        const response: FirestoreModelResponse = {
                             status: 200,
                         };
+                        return response;
                     } catch (error: any) {
                         console.error(`Error deleting document at ${path}:`, error);
                         throw new functions.https.HttpsError(

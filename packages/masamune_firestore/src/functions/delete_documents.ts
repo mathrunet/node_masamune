@@ -1,6 +1,7 @@
 import * as functions from "firebase-functions/v2";
-import { RelationPathFunctionsOptions, firestoreLoader } from "@mathrunet/katana";
+import { RelationPathFunctionsOptions, firestoreLoader } from "@mathrunet/masamune";
 import * as delete_documents from "../lib/delete_documents";
+import { FirestoreDeleteDocumentsRequest } from "../lib/interface";
 
 /**
  * When a document is deleted, the related collections should be deleted together.
@@ -37,10 +38,11 @@ module.exports = (
             if (!collectionPath) {
                 return;
             }
-            await delete_documents.deleteDocuments({
+            const request: FirestoreDeleteDocumentsRequest = {
                 collectionPath: collectionPath,
                 firestoreInstance: firestoreInstance,
-            });
+            };
+            await delete_documents.deleteDocuments(request);
         } catch (err) {
             console.log(err);
             throw err;

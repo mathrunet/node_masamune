@@ -1,7 +1,8 @@
 import * as functions from "firebase-functions/v2";
-import { HttpFunctionsOptions } from "@mathrunet/katana";
+import { HttpFunctionsOptions } from "@mathrunet/masamune";
 import { Firestore } from "@google-cloud/firestore";
 import { AggregateField } from "firebase-admin/firestore";
+import { FirestoreModelResponse } from "../lib/interface";
 
 /**
  * Functions for enabling external Firestore Aggregate methods.
@@ -65,7 +66,7 @@ module.exports = (
                     );
                 }
                 serviceAccount = JSON.parse(serviceAccountJson);
-                
+
                 // サービスアカウントの必須フィールドを検証
                 if (!serviceAccount.project_id) {
                     throw new functions.https.HttpsError(
@@ -85,7 +86,7 @@ module.exports = (
                         "Service account JSON is missing 'private_key' field"
                     );
                 }
-                
+
                 console.log(`Using service account for project: ${serviceAccount.project_id}`);
             } catch (error) {
                 if (error instanceof functions.https.HttpsError) {
@@ -100,9 +101,9 @@ module.exports = (
             // Firestoreインスタンスを作成
             // データベースIDが指定されていない場合は "(default)" を使用
             const finalDatabaseId = databaseId || "(default)";
-            
+
             console.log(`Creating Firestore instance with projectId: ${serviceAccount.project_id}, databaseId: ${finalDatabaseId}`);
-            
+
             const firestoreInstance = new Firestore({
                 projectId: serviceAccount.project_id,
                 databaseId: finalDatabaseId,
@@ -111,18 +112,18 @@ module.exports = (
                     private_key: serviceAccount.private_key,
                 },
             });
-            
+
             // クエリパラメータから必要な情報を取得
             let path = query.data.path as string | undefined | null;
             const method = query.data.method as string | undefined | null;
-            
+
             if (!method) {
                 throw new functions.https.HttpsError("invalid-argument", "No method specified.");
             }
             if (!path) {
                 throw new functions.https.HttpsError("invalid-argument", "No path specified.");
-            }          
-            
+            }
+
             // メソッドに応じて処理を実行
             switch (method) {
                 case "count": {
@@ -133,10 +134,12 @@ module.exports = (
                             value: aggregation.data().count,
                         };
                         console.log(`Successfully retrieved count aggregation at path: ${path}`);
-                        return {
+                        // Jsonにパースした値でないとFunctionsのパースがうまく行かないため、JSON.stringifyを使用
+                        const response: FirestoreModelResponse = {
                             status: 200,
                             data: JSON.stringify(data),
                         };
+                        return response;
                     } catch (error: any) {
                         console.error(`Error getting count aggregation at ${path}:`, error);
                         throw new functions.https.HttpsError(
@@ -147,7 +150,7 @@ module.exports = (
                 }
                 case "sum": {
                     const field = path?.split("/").pop();
-                    path = path?.split("/").slice(0, -1).join("/");  
+                    path = path?.split("/").slice(0, -1).join("/");
                     if (!field) {
                         throw new functions.https.HttpsError("invalid-argument", "No field specified.");
                     }
@@ -160,10 +163,12 @@ module.exports = (
                             value: aggregation.data()["@sum"],
                         };
                         console.log(`Successfully retrieved sum aggregation at path: ${path}/${field}`);
-                        return {
+                        // Jsonにパースした値でないとFunctionsのパースがうまく行かないため、JSON.stringifyを使用
+                        const response: FirestoreModelResponse = {
                             status: 200,
-                            data:  JSON.stringify(data),
+                            data: JSON.stringify(data),
                         };
+                        return response;
                     } catch (error: any) {
                         console.error(`Error getting sum aggregation at ${path}/${field}:`, error);
                         throw new functions.https.HttpsError(
@@ -174,7 +179,7 @@ module.exports = (
                 }
                 case "average": {
                     const field = path?.split("/").pop();
-                    path = path?.split("/").slice(0, -1).join("/");  
+                    path = path?.split("/").slice(0, -1).join("/");
                     if (!field) {
                         throw new functions.https.HttpsError("invalid-argument", "No field specified.");
                     }
@@ -187,10 +192,12 @@ module.exports = (
                             value: aggregation.data()["@average"],
                         };
                         console.log(`Successfully retrieved average aggregation at path: ${path}/${field}`);
-                        return {
+                        // Jsonにパースした値でないとFunctionsのパースがうまく行かないため、JSON.stringifyを使用
+                        const response: FirestoreModelResponse = {
                             status: 200,
                             data: JSON.stringify(data),
                         };
+                        return response;
                     } catch (error: any) {
                         console.error(`Error getting average aggregation at ${path}/${field}:`, error);
                         throw new functions.https.HttpsError(

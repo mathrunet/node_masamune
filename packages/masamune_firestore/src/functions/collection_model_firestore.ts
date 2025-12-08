@@ -1,7 +1,8 @@
 import * as functions from "firebase-functions/v2";
-import { HttpFunctionsOptions, FirestoreModelFieldValueConverterUtils } from "@mathrunet/katana";
+import { HttpFunctionsOptions, FirestoreModelFieldValueConverterUtils } from "@mathrunet/masamune";
 import { Firestore } from "@google-cloud/firestore";
 import "@mathrunet/masamune";
+import { FirestoreModelResponse } from "../lib/interface";
 
 /**
  * A function to enable the use of external Firestore Collection Models.
@@ -137,10 +138,12 @@ module.exports = (
                             }
                         }
                         console.log(`Successfully retrieved ${col.size} documents from ${path}`);
-                        return {
+                        // Jsonにパースした値でないとFunctionsのパースがうまく行かないため、JSON.stringifyを使用
+                        const response: FirestoreModelResponse = {
                             status: 200,
                             data: JSON.stringify(data),
                         };
+                        return response;
                     } catch (error: any) {
                         console.error(`Error getting collection at ${path}:`, error);
                         throw new functions.https.HttpsError(
@@ -173,9 +176,10 @@ module.exports = (
                             );
                         }
                         console.log(`Successfully set ${Object.keys(collectionData).length} documents in ${path}`);
-                        return {
+                        const response: FirestoreModelResponse = {
                             status: 200,
                         };
+                        return response;
                     } catch (error: any) {
                         console.error(`Error setting documents in ${path}:`, error);
                         throw new functions.https.HttpsError(
@@ -192,9 +196,10 @@ module.exports = (
                             await doc.ref.delete();
                         }
                         console.log(`Successfully deleted ${col.size} documents from ${path}`);
-                        return {
+                        const response: FirestoreModelResponse = {
                             status: 200,
                         };
+                        return response;
                     } catch (error: any) {
                         console.error(`Error deleting collection at ${path}:`, error);
                         throw new functions.https.HttpsError(

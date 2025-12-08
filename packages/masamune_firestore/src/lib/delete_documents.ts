@@ -1,7 +1,8 @@
 
 import * as admin from "firebase-admin";
-import { utils, firestore } from "@mathrunet/katana";
+import { utils, firestore } from "@mathrunet/masamune";
 import "@mathrunet/masamune";
+import { FirestoreDeleteDocumentsRequest } from "./interface";
 
 /**
  * Loads related collections and deletes data matching the criteria.
@@ -23,38 +24,31 @@ import "@mathrunet/masamune";
  * 
  * データを削除対象とする条件を指定します。
  */
-export async function deleteDocuments({
-    collectionPath,
-    wheres,
-    conditions,
-    firestoreInstance,
-}: {
-    collectionPath: string,
-    wheres?: { [key: string]: any }[] | undefined,
-    conditions?: { [key: string]: any }[] | undefined,
-    firestoreInstance: FirebaseFirestore.Firestore,
-}): Promise<{ [key: string]: any }> {
+export async function deleteDocuments(request: FirestoreDeleteDocumentsRequest): Promise<{ [key: string]: any }> {
     const res: { [key: string]: any } = {};
     try {
         const collectionRef = firestore.where({
-            query: firestoreInstance.collection(collectionPath),
-            wheres: wheres
+            query: request.firestoreInstance.collection(request.collectionPath),
+            wheres: request.wheres
         });
         let cursor: FirebaseFirestore.QueryDocumentSnapshot | null = null;
         let collection: FirebaseFirestore.QuerySnapshot<FirebaseFirestore.DocumentData, FirebaseFirestore.DocumentData> | null = null;
         do {
             collection = await firestore.cursor({ query: collectionRef, limit: 500, cursor: cursor }).load();
+            if (!collection) {
+                break;
+            }
             const deleteList: admin.firestore.DocumentReference<admin.firestore.DocumentData, admin.firestore.DocumentData>[] = [];
             for (let doc of collection.docs) {
                 const data = doc.data() as { [key: string]: any };
-                if (!await firestore.hasMatch({ data: data, conditions: conditions })) {
+                if (!await firestore.hasMatch({ data: data, conditions: request.conditions })) {
                     continue;
                 }
                 deleteList.push(doc.ref);
             }
             const splitted = utils.splitArray(deleteList, 500);
             for (let list of splitted) {
-                const batch = firestoreInstance.batch();
+                const batch = request.firestoreInstance.batch();
                 for (let doc of list) {
                     batch.delete(doc);
                 }
