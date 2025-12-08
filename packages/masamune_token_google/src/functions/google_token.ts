@@ -1,6 +1,7 @@
 import * as functions from "firebase-functions/v2";
 import { HttpFunctionsOptions } from "@mathrunet/masamune";
 import { GoogleAuth } from "google-auth-library";
+import { GoogleTokenResponse } from "../lib/interface";
 
 /**
  * A function to get a Google Cloud Platform authentication token.
@@ -52,10 +53,11 @@ module.exports = (
             const token = await client.getAccessToken();
             const expiresIn = token.res?.data?.expires_in;
 
-            return {
+            const response: GoogleTokenResponse = {
                 accessToken: token.token,
                 expiresAt: expiresIn ? Date.now() + (Number(expiresIn) * 1000) : Date.now() + 3600 * 1000,
             };
+            return response;
         } catch (err) {
             console.error(err);
             if (err instanceof functions.https.HttpsError) {
