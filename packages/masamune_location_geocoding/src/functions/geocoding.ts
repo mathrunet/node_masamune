@@ -1,5 +1,6 @@
 import * as functions from "firebase-functions/v2";
 import { Api, HttpFunctionsOptions } from "@mathrunet/masamune";
+import { GeocodingResponse } from "../lib/interface";
 
 /**
  * Get latitude and longitude with GeocodingAPI.
@@ -44,10 +45,11 @@ module.exports = (
             );
             const json = (await res.json()) as { [key: string]: any };
             console.log(json);
-            return {
+            const response: GeocodingResponse = {
                 success: true,
                 ...json,
             };
+            return response;
         } catch (err) {
             console.error(err);
             throw err;
