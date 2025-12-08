@@ -2,7 +2,7 @@ import * as functions from "firebase-functions/v2";
 import { HttpFunctionsOptions } from "@mathrunet/masamune";
 import { Storage } from "@google-cloud/storage";
 import "@mathrunet/masamune";
-import { StorageFirebaseResponse } from "../lib/interface";
+import { StorageFirebaseOptions, StorageFirebaseResponse } from "../lib/interface";
 
 /**
  * A function to enable the use of external Firebase Storage.
@@ -206,7 +206,7 @@ module.exports = (
                         console.log(`Converting base64 data to buffer, size: ${buffer.length} bytes`);
 
                         // メタデータの設定
-                        const options: any = {};
+                        const options: StorageFirebaseOptions = {};
                         if (meta) {
                             // contentTypeの設定
                             if (meta.contentType) {

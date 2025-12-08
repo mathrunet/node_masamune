@@ -1,3 +1,9 @@
+
+/**
+ * Response for storage_firebase function.
+ * 
+ * storage_firebase関数のレスポンス。
+ */
 export interface StorageFirebaseResponse {
     status: number;
     binary?: string;
@@ -11,4 +17,14 @@ export interface StorageFirebaseResponse {
         publicUri?: string;
         [key: string]: any;
     };
+}
+
+/**
+ * Options for storage_firebase function.
+ * 
+ * storage_firebase関数のオプション。
+ */
+export interface StorageFirebaseOptions {
+    contentType?: string;
+    metadata?: { [key: string]: any };
 }
