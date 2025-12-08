@@ -3,7 +3,6 @@ import * as stripe from "stripe";
 import * as admin from "firebase-admin";
 import { HttpFunctionsOptions, firestoreLoader } from "@mathrunet/masamune";
 import { lib as sendgrid } from "@mathrunet/masamune_mail_sendgrid";
-import { lib as gmail } from "@mathrunet/masamune_mail_gmail";
 import "@mathrunet/masamune";
 
 
@@ -41,8 +40,8 @@ import "@mathrunet/masamune";
  * [process.env.PURCHASE_STRIPE_USERPATH]の下に配置する購入情報用パス。
  *
  * @param {string} process.env.PURCHASE_STRIPE_EMAILPROVIDER
- * Mail provider when sending mail. (gmail | sendgrid)
- * メールを送信する際のメールプロバイダー。（gmail | sendgrid）
+ * Mail provider when sending mail. (sendgrid)
+ * メールを送信する際のメールプロバイダー。（sendgrid）
  *
  * @param {string} mode
  * [required]
@@ -201,7 +200,7 @@ module.exports = (
           const stripeUserPath = process.env.PURCHASE_STRIPE_USERPATH ?? "plugins/stripe/user";
           const stripePurchasePath = process.env.PURCHASE_STRIPE_PURCHASEPATH ?? "purchase";
           const stripePaymentPath = process.env.PURCHASE_STRIPE_PAYMENTPATH ?? "payment";
-          const stripeEmailProvider = process.env.PURCHASE_STRIPE_EMAILPROVIDER ?? "gmail";
+          const stripeEmailProvider = process.env.PURCHASE_STRIPE_EMAILPROVIDER ?? "sendgrid";
           const firestoreInstance = firestoreLoader(databaseId);
           const stripeClient = new stripe.Stripe(apiKey, {
             apiVersion: "2025-02-24.acacia",
@@ -555,15 +554,6 @@ module.exports = (
               if (nextActionUrl && !online) {
                 if (emailFrom && email && emailTitle && emailContent) {
                   switch (stripeEmailProvider) {
-                    case "gmail": {
-                      await gmail.send({
-                        from: emailFrom,
-                        to: email,
-                        title: emailTitle,
-                        content: emailContent.replace("{url}", nextActionUrl),
-                      });
-                      break;
-                    }
                     case "sendgrid": {
                       await sendgrid.send({
                         from: emailFrom,
@@ -825,15 +815,6 @@ module.exports = (
                     if (!online) {
                       if (data["emailFrom"] && data["emailTo"] && data["emailTitle"] && data["emailContent"]) {
                         switch (stripeEmailProvider) {
-                          case "gmail": {
-                            await gmail.send({
-                              from: data["emailFrom"],
-                              to: data["emailTo"],
-                              title: data["emailTitle"],
-                              content: data["emailContent"].replace("{url}", nextActionUrl),
-                            });
-                            break;
-                          }
                           case "sendgrid": {
                             await sendgrid.send({
                               from: data["emailFrom"],
@@ -895,15 +876,6 @@ module.exports = (
                   if (nextActionUrl && !online) {
                     if (data["emailFrom"] && data["emailTo"] && data["emailTitle"] && data["emailContent"]) {
                       switch (stripeEmailProvider) {
-                        case "gmail": {
-                          await gmail.send({
-                            from: data["emailFrom"],
-                            to: data["emailTo"],
-                            title: data["emailTitle"],
-                            content: data["emailContent"].replace("{url}", nextActionUrl),
-                          });
-                          break;
-                        }
                         case "sendgrid": {
                           await sendgrid.send({
                             from: data["emailFrom"],
