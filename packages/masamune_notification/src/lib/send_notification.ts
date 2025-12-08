@@ -2,6 +2,7 @@ import * as functions from "firebase-functions/v2";
 import * as admin from "firebase-admin";
 import { utils, firestore, ModelToken } from "@mathrunet/masamune";
 import "@mathrunet/masamune";
+import { SendNotificationRequest, SendNotificationResponse } from "./interface";
 
 /**
  * Define the process for PUSH notification.
@@ -88,210 +89,176 @@ import "@mathrunet/masamune";
  *
  * trueの場合、メッセージは検証されますが送信されません。
  */
-export async function sendNotification({
-    title,
-    body,
-    data,
-    link,
-    channelId,
-    badgeCount,
-    sound,
-    targetToken,
-    targetTopic,
-    targetCollectionPath,
-    targetDocumentPath,
-    targetTokenField,
-    targetWheres,
-    targetConditions,
-    responseTokenList,
-    firestoreInstance,
-    showLog,
-    dryRun,
-}: {
-    title: string,
-    body: string,
-    link?: string | undefined | null,
-    channelId?: string | undefined | null,
-    data?: { [key: string]: any } | undefined,
-    badgeCount?: number | undefined | null,
-    sound?: string | undefined | null,
-    targetToken?: string | string[] | ModelToken | undefined | null,
-    targetTopic?: string | undefined | null,
-    targetCollectionPath?: string | undefined | null,
-    targetDocumentPath?: string | undefined | null,
-    targetTokenField?: string | { [key: string]: any } | undefined | null,
-    targetWheres?: { [key: string]: any }[] | undefined,
-    targetConditions?: { [key: string]: any }[] | undefined,
-    responseTokenList?: boolean | undefined | null,
-    firestoreInstance: FirebaseFirestore.Firestore,
-    showLog?: boolean | undefined | null,
-    dryRun?: boolean | undefined | null,
-}): Promise<{ [key: string]: any }> {
+export async function sendNotification(request: SendNotificationRequest): Promise<SendNotificationResponse> {
     const res: { [key: string]: any } = {};
     try {
-        if ((targetToken === undefined || targetToken === null) && (targetTopic === undefined || targetTopic === null) && (targetCollectionPath === undefined || targetCollectionPath === null) && (targetDocumentPath === undefined || targetDocumentPath === null)) {
+        if ((request.targetToken === undefined || request.targetToken === null) && (request.targetTopic === undefined || request.targetTopic === null) && (request.targetCollectionPath === undefined || request.targetCollectionPath === null) && (request.targetDocumentPath === undefined || request.targetDocumentPath === null)) {
             throw new functions.https.HttpsError("invalid-argument", "Either [token] or [topic], [targetCollectionPath], [targetDocumentPath] must be specified.");
         }
         // Linkがあればdataに追加
-        if (link) {
-            data = {
-                ...data ?? {},
-                "@link": link,
+        if (request.link) {
+            request.data = {
+                ...request.data ?? {},
+                "@link": request.link,
             };
         }
         // トークンによる通知
-        if (targetToken !== undefined && targetToken !== null) {
-            if (showLog) {
-                console.log(`Notification target token: ${targetToken}`);
+        if (request.targetToken !== undefined && request.targetToken !== null) {
+            if (request.showLog) {
+                console.log(`Notification target token: ${request.targetToken}`);
             }
-            console.log(`targetToken: ${JSON.stringify(targetToken)}`);
-            if (typeof targetToken === "string") {
-                targetToken = [targetToken];
+            console.log(`targetToken: ${JSON.stringify(request.targetToken)}`);
+            if (typeof request.targetToken === "string") {
+                request.targetToken = [request.targetToken];
             }
-            if (targetToken instanceof ModelToken) {
-                targetToken = targetToken.value();
+            if (request.targetToken instanceof ModelToken) {
+                request.targetToken = request.targetToken.value();
             }
-            if (targetToken != null && typeof targetToken === "object" && "@type" in targetToken && targetToken["@type"] === "ModelToken") {
-                targetToken = (targetToken as { [key: string]: any })["@list"] as string[] | undefined | null ?? [];
+            if (request.targetToken != null && typeof request.targetToken === "object" && "@type" in request.targetToken && request.targetToken["@type"] === "ModelToken") {
+                request.targetToken = (request.targetToken as { [key: string]: any })["@list"] as string[] | undefined | null ?? [];
             }
-            const tokenList = utils.splitArray([...new Set(targetToken)], 500);
-            if (responseTokenList) {
-                return {
+            const tokenList = utils.splitArray([...new Set(request.targetToken)], 500);
+            if (request.responseTokenList) {
+                const response: SendNotificationResponse = {
                     success: true,
                     results: tokenList,
                 };
+                return response;
             }
             for (let t in tokenList) {
                 try {
                     const messageId = await admin.messaging().sendEachForMulticast(
                         {
                             notification: {
-                                title: title,
-                                body: body,
+                                title: request.title,
+                                body: request.body,
                             },
                             android: {
                                 priority: "high",
                                 notification: {
-                                    title: title,
-                                    body: body,
+                                    title: request.title,
+                                    body: request.body,
                                     clickAction: "FLUTTER_NOTIFICATION_CLICK",
-                                    channelId: channelId ?? undefined,
-                                    sound: sound ?? undefined,
+                                    channelId: request.channelId ?? undefined,
+                                    sound: request.sound ?? undefined,
                                 },
                             },
                             apns: {
                                 payload: {
                                     aps: {
-                                        sound: sound ?? undefined,
-                                        badge: badgeCount ?? undefined,
+                                        sound: request.sound ?? undefined,
+                                        badge: request.badgeCount ?? undefined,
                                     },
                                 }
                             },
-                            data: data,
+                            data: request.data,
                             tokens: tokenList[t],
                         },
-                        dryRun ?? false
+                        request.dryRun ?? false
                     );
                     res[t] = messageId;
                 } catch (e) {
                     console.log(e);
                     console.log({
                         notification: {
-                            title: title,
-                            body: body,
+                            title: request.title,
+                            body: request.body,
                         },
                         android: {
                             priority: "high",
                             notification: {
-                                title: title,
-                                body: body,
+                                title: request.title,
+                                body: request.body,
                                 clickAction: "FLUTTER_NOTIFICATION_CLICK",
-                                channelId: channelId ?? undefined,
-                                sound: sound ?? undefined,
+                                channelId: request.channelId ?? undefined,
+                                sound: request.sound ?? undefined,
                             },
                         },
                         apns: {
                             payload: {
                                 aps: {
-                                    sound: sound ?? undefined,
-                                    badge: badgeCount ?? undefined,
+                                    sound: request.sound ?? undefined,
+                                    badge: request.badgeCount ?? undefined,
                                 },
                             }
                         },
-                        data: data,
+                        data: request.data,
                         tokens: tokenList[t],
                     });
                 }
             }
-            return {
+            const response: SendNotificationResponse = {
                 success: true,
                 results: res,
             };
+            return response;
             // トピックによる通知
-        } else if (targetTopic !== undefined && targetTopic !== null) {
-            if (showLog) {
-                console.log(`Notification target topic: ${targetTopic}`);
+        } else if (request.targetTopic !== undefined && request.targetTopic !== null) {
+            if (request.showLog) {
+                console.log(`Notification target topic: ${request.targetTopic}`);
             }
-            if (responseTokenList) {
-                return {
+            if (request.responseTokenList) {
+                const response: SendNotificationResponse = {
                     success: true,
-                    results: targetTopic,
+                    results: request.targetTopic,
                 };
+                return response;
             }
             try {
                 const messageId = await admin.messaging().send(
                     {
                         notification: {
-                            title: title,
-                            body: body,
+                            title: request.title,
+                            body: request.body,
                         },
                         android: {
                             priority: "high",
                             notification: {
-                                title: title,
-                                body: body,
+                                title: request.title,
+                                body: request.body,
                                 clickAction: "FLUTTER_NOTIFICATION_CLICK",
-                                channelId: channelId ?? undefined,
+                                channelId: request.channelId ?? undefined,
                             },
                         },
-                        data: data,
-                        topic: targetTopic,
+                        data: request.data,
+                        topic: request.targetTopic,
                     },
-                    dryRun ?? false
+                    request.dryRun ?? false
                 );
-                res[targetTopic] = messageId;
+                res[request.targetTopic] = messageId;
             } catch (e) {
                 console.log(e);
                 console.log({
                     notification: {
-                        title: title,
-                        body: body,
+                        title: request.title,
+                        body: request.body,
                     },
                     android: {
                         priority: "high",
                         notification: {
-                            title: title,
-                            body: body,
+                            title: request.title,
+                            body: request.body,
                             clickAction: "FLUTTER_NOTIFICATION_CLICK",
-                            channelId: channelId ?? undefined,
+                            channelId: request.channelId ?? undefined,
                         },
                     },
-                    data: data,
-                    topic: targetTopic,
+                    data: request.data,
+                    topic: request.targetTopic,
                 });
             }
-            return {
+            const response: SendNotificationResponse = {
                 success: true,
                 results: res,
             };
+            return response;
             // コレクションパスによる通知
-        } else if (targetCollectionPath !== undefined && targetCollectionPath !== null && targetTokenField != undefined && targetTokenField !== null) {
-            if (showLog) {
-                console.log(`Notification target collection path: ${targetCollectionPath} wheres: ${JSON.stringify(targetWheres)} conditions: ${JSON.stringify(targetConditions)}`);
+        } else if (request.targetCollectionPath !== undefined && request.targetCollectionPath !== null && request.targetTokenField != undefined && request.targetTokenField !== null) {
+            if (request.showLog) {
+                console.log(`Notification target collection path: ${request.targetCollectionPath} wheres: ${JSON.stringify(request.targetWheres)} conditions: ${JSON.stringify(request.targetConditions)}`);
             }
             const collectionRef = firestore.where({
-                query: firestoreInstance.collection(targetCollectionPath),
-                wheres: targetWheres,
+                query: request.firestoreInstance.collection(request.targetCollectionPath),
+                wheres: request.targetWheres,
             });
             const results: any[] = [];
             const tokens: string[] = [];
@@ -301,13 +268,13 @@ export async function sendNotification({
                 collection = await firestore.cursor({ query: collectionRef, limit: 500, cursor: cursor }).load();
                 for (let doc of collection.docs) {
                     const docData = doc.data();
-                    if (showLog) {
+                    if (request.showLog) {
                         console.log(`Document: ${JSON.stringify(docData)}`);
                     }
-                    if (!await firestore.hasMatch({ data: docData, conditions: targetConditions })) {
+                    if (!await firestore.hasMatch({ data: docData, conditions: request.targetConditions })) {
                         continue;
                     }
-                    const token = await firestore.get({ data: docData, field: targetTokenField });
+                    const token = await firestore.get({ data: docData, field: request.targetTokenField });
                     if (typeof token === "string") {
                         tokens.push(token);
                     } else if (token instanceof ModelToken) {
@@ -317,17 +284,17 @@ export async function sendNotification({
                     }
                 }
                 const res = await sendNotification({
-                    title: title,
-                    body: body,
-                    data: data,
-                    channelId: channelId,
-                    badgeCount: badgeCount,
-                    sound: sound,
-                    responseTokenList: responseTokenList,
+                    title: request.title,
+                    body: request.body,
+                    data: request.data,
+                    channelId: request.channelId,
+                    badgeCount: request.badgeCount,
+                    sound: request.sound,
+                    responseTokenList: request.responseTokenList,
                     targetToken: tokens,
-                    firestoreInstance: firestoreInstance,
-                    showLog: showLog,
-                    dryRun: dryRun,
+                    firestoreInstance: request.firestoreInstance,
+                    showLog: request.showLog,
+                    dryRun: request.dryRun,
                 });
                 results.push(res.results ?? []);
                 if (collection.docs.length < 500) {
@@ -335,27 +302,28 @@ export async function sendNotification({
                 }
                 cursor = collection.docs[collection.docs.length - 1];
             } while (collection.docs.length >= 500);
-            if (responseTokenList) {
-                return {
+            if (request.responseTokenList) {
+                const response: SendNotificationResponse = {
                     success: true,
                     results: results,
                 };
+                return response;
             }
             // ドキュメントパスによる通知
-        } else if (targetDocumentPath !== undefined && targetDocumentPath !== null && targetTokenField != undefined && targetTokenField !== null) {
-            if (showLog) {
-                console.log(`Notification target document path: ${targetDocumentPath} conditions: ${JSON.stringify(targetConditions)}`);
+        } else if (request.targetDocumentPath !== undefined && request.targetDocumentPath !== null && request.targetTokenField != undefined && request.targetTokenField !== null) {
+            if (request.showLog) {
+                console.log(`Notification target document path: ${request.targetDocumentPath} conditions: ${JSON.stringify(request.targetConditions)}`);
             }
-            const documentRef = firestoreInstance.doc(targetDocumentPath);
+            const documentRef = request.firestoreInstance.doc(request.targetDocumentPath);
             const results: any[] = [];
             const doc = await documentRef.load();
             const docData = doc.data();
             if (docData) {
-                if (showLog) {
+                if (request.showLog) {
                     console.log(`Document: ${JSON.stringify(docData)}`);
                 }
-                if (await firestore.hasMatch({ data: docData, conditions: targetConditions })) {
-                    const token = await firestore.get({ data: docData, field: targetTokenField });
+                if (await firestore.hasMatch({ data: docData, conditions: request.targetConditions })) {
+                    const token = await firestore.get({ data: docData, field: request.targetTokenField });
                     const tokens: string[] = [];
                     if (typeof token === "string") {
                         tokens.push(token);
@@ -365,33 +333,35 @@ export async function sendNotification({
                         tokens.push(...token);
                     }
                     const res = await sendNotification({
-                        title: title,
-                        body: body,
-                        data: data,
-                        channelId: channelId,
-                        badgeCount: badgeCount,
-                        sound: sound,
-                        responseTokenList: responseTokenList,
+                        title: request.title,
+                        body: request.body,
+                        data: request.data,
+                        channelId: request.channelId,
+                        badgeCount: request.badgeCount,
+                        sound: request.sound,
+                        responseTokenList: request.responseTokenList,
                         targetToken: tokens,
-                        firestoreInstance: firestoreInstance,
-                        showLog: showLog,
-                        dryRun: dryRun,
+                        firestoreInstance: request.firestoreInstance,
+                        showLog: request.showLog,
+                        dryRun: request.dryRun,
                     });
                     results.push(res.results ?? []);
                 }
             }
-            if (responseTokenList) {
-                return {
+            if (request.responseTokenList) {
+                const response: SendNotificationResponse = {
                     success: true,
                     results: results,
                 };
+                return response;
             }
         }
     } catch (err) {
         throw err;
     }
-    return {
+    const response: SendNotificationResponse = {
         success: true,
         results: res,
     };
+    return response;
 }
