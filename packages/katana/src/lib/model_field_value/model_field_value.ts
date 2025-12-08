@@ -621,4 +621,15 @@ export class ModelRefBase extends ModelFieldValue {
         return doc.id;
     }
 
+    /**
+     * Get the ref of the document.
+     * 
+     * ドキュメントのリファレンスを取得します。
+     * 
+     * @returns The ref of the document.
+     */
+    get ref(): firestore.DocumentReference | undefined {
+        return this["@doc"];
+    }
+
 }

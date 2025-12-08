@@ -1,6 +1,6 @@
 {
   "name": "@mathrunet/katana",
-  "version": "3.10.3",
+  "version": "3.10.4",
   "description": "Base library that stores the base classes and similar components of the server-side Masamune framework.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
