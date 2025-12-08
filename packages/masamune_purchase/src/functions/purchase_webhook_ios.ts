@@ -1,6 +1,7 @@
 import * as functions from "firebase-functions/v2";
 import "@mathrunet/masamune";
 import { HttpFunctionsOptions, firestoreLoader, utils } from "@mathrunet/masamune";
+import { IOSTransactionInfo } from "../lib/interface";
 
 /**
  * Webhook endpoint for IOS, which allows you to receive notifications by setting the endpoint in AppStoreConnect's [App]->[App Information]->[App Store Server Notification].
@@ -48,7 +49,7 @@ module.exports = (
                     } = data;
 
                     const signedTransactionInfoBody = signedTransactionInfo.replace(/-/g, "+").replace(/_/g, "/").split(".")[1];
-                    const transactionInfo = JSON.parse(Buffer.from(signedTransactionInfoBody, "base64").toString());
+                    const transactionInfo = JSON.parse(Buffer.from(signedTransactionInfoBody, "base64").toString()) as IOSTransactionInfo;
 
                     let error: any | null = null;
                     const firestoreDatabaseIds = options.firestoreDatabaseIds ?? [""];
@@ -78,9 +79,9 @@ module.exports = (
                                             }
                                             data[key] = utils.parse(transactionInfo[key]);
                                         }
-                                        data["expiredTime"] = parseInt(transactionInfo["expiresDate"]);
-                                        data["productId"] = data["product_id"] = transactionInfo["productId"];
-                                        data["orderId"] = transactionInfo["transactionId"];
+                                        data["expiredTime"] = parseInt(transactionInfo.expiresDate);
+                                        data["productId"] = data["product_id"] = transactionInfo.productId;
+                                        data["orderId"] = transactionInfo.transactionId;
                                         await firestoreInstance.doc(path).save(
                                             data, { merge: true }
                                         );
@@ -100,9 +101,9 @@ module.exports = (
                                         }
                                         data["expired"] = false;
                                         data["paused"] = false;
-                                        data["expiredTime"] = parseInt(transactionInfo["expiresDate"]);
-                                        data["productId"] = data["product_id"] = transactionInfo["productId"];
-                                        data["orderId"] = transactionInfo["transactionId"];
+                                        data["expiredTime"] = parseInt(transactionInfo.expiresDate);
+                                        data["productId"] = data["product_id"] = transactionInfo.productId;
+                                        data["orderId"] = transactionInfo.transactionId;
                                         await firestoreInstance.doc(path).save(
                                             data, { merge: true }
                                         );
@@ -121,8 +122,8 @@ module.exports = (
                                         }
                                         data["expired"] = true;
                                         data["paused"] = false;
-                                        data["productId"] = data["product_id"] = transactionInfo["productId"];
-                                        data["orderId"] = transactionInfo["transactionId"];
+                                        data["productId"] = data["product_id"] = transactionInfo.productId;
+                                        data["orderId"] = transactionInfo.transactionId;
                                         await firestoreInstance.doc(path).save(
                                             data, { merge: true }
                                         );

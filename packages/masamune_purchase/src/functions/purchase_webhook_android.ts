@@ -123,8 +123,8 @@ module.exports = (
                                     }
                                     data["expired"] = false;
                                     data["paused"] = false;
-                                    data["expiredTime"] = parseInt(res["expiryTimeMillis"]);
-                                    data["orderId"] = res["orderId"];
+                                    data["expiredTime"] = parseInt(res.expiryTimeMillis ?? "0");
+                                    data["orderId"] = res.orderId ?? "";
                                     data["@time"] = new Date();
                                     await firestoreInstance.doc(path).save(
                                         data, { merge: true }
@@ -141,8 +141,8 @@ module.exports = (
                                         }
                                         data[key] = utils.parse(res[key]);
                                     }
-                                    data["expiredTime"] = parseInt(res["expiryTimeMillis"]);
-                                    data["orderId"] = res["orderId"];
+                                    data["expiredTime"] = parseInt(res.expiryTimeMillis ?? "0");
+                                    data["orderId"] = res.orderId ?? "";
                                     data["@time"] = new Date();
                                     await firestoreInstance.doc(path).save(
                                         data, { merge: true }
@@ -158,8 +158,8 @@ module.exports = (
                                         data[key] = utils.parse(res[key]);
                                     }
                                     const time = new Date().getTime();
-                                    const expiryTimeMillis = data["expiredTime"] = parseInt(res["expiryTimeMillis"]);
-                                    data["orderId"] = res["orderId"];
+                                    const expiryTimeMillis = data["expiredTime"] = parseInt(res.expiryTimeMillis ?? "0");
+                                    data["orderId"] = res.orderId ?? "";
                                     data["@time"] = new Date();
                                     if (expiryTimeMillis <= time) {
                                         data["expired"] = true;
@@ -207,8 +207,8 @@ module.exports = (
                                 default:
                                     break;
                             }
-                            if (res["linkedPurchaseToken"]) {
-                                const linkedPurchaseToken = res["linkedPurchaseToken"];
+                            if (res.linkedPurchaseToken) {
+                                const linkedPurchaseToken = res.linkedPurchaseToken;
                                 const search = await firestoreInstance.collection(targetPath).where("token", "==", linkedPurchaseToken).load();
                                 if (search.empty) {
                                     return;

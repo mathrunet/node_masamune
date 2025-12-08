@@ -104,8 +104,8 @@ module.exports = (
                 purchaseToken: query.data.purchaseToken,
             });
             const time = new Date().getTime();
-            const startTimeMillis = parseInt(res["startTimeMillis"]);
-            const expiryTimeMillis = parseInt(res["expiryTimeMillis"]);
+            const startTimeMillis = parseInt(res.startTimeMillis ?? "0");
+            const expiryTimeMillis = parseInt(res.expiryTimeMillis ?? "0");
             if (res === null || isNaN(startTimeMillis) || isNaN(expiryTimeMillis) || startTimeMillis <= 0) {
                 throw new functions.https.HttpsError("not-found", "Illegal receipt.");
             }
@@ -126,7 +126,7 @@ module.exports = (
                         additionalData: query.data,
                         userId: query.data.userId,
                         platform: "Android",
-                        orderId: res["orderId"],
+                        orderId: res.orderId ?? "",
                         productId: query.data.productId,
                         purchaseId: query.data.purchaseId,
                         packageName: query.data.packageName,

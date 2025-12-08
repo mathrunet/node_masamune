@@ -1,6 +1,7 @@
 import * as functions from "firebase-functions/v2";
 import { Api } from "@mathrunet/masamune";
 import * as jwt from "jsonwebtoken";
+import { VerifyIOSRequest, VerifyIOSResponse, VerifyIOSStoreKit2Request } from "./interface";
 
 /**
  * Perform IOS receipt verification.
@@ -34,26 +35,16 @@ import * as jwt from "jsonwebtoken";
  * 
  * アイテムの受領情報。
  */
-export async function verifyIOS({
-    receiptData,
-    password,
-    storeKitVersion = 1,
-    transactionId
-}: {
-    receiptData: string,
-    password?: string | null | undefined,
-    storeKitVersion?: number,
-    transactionId?: string | null | undefined
-}) {
-    if (storeKitVersion === 2) {
-        console.log(`StoreKitVersion2: ${receiptData} ${transactionId}`);
-        if (!transactionId) {
+export async function verifyIOS(request: VerifyIOSRequest): Promise<VerifyIOSResponse> {
+    if (request.storeKitVersion === 2) {
+        console.log(`StoreKitVersion2: ${request.receiptData} ${request.transactionId}`);
+        if (!request.transactionId) {
             throw new functions.https.HttpsError("invalid-argument", "Transaction ID is required for StoreKit2 verification.");
         }
-        return await verifyIOSStoreKit2({ jwtToken: receiptData, transactionId });
+        return await verifyIOSStoreKit2({ jwtToken: request.receiptData, transactionId: request.transactionId });
     }
-    console.log(`StoreKitVersion1: ${receiptData}`);
-    if (!password) {
+    console.log(`StoreKitVersion1: ${request.receiptData}`);
+    if (!request.password) {
         throw new functions.https.HttpsError("invalid-argument", "Password is required for StoreKit1 verification.");
     }
     let res = await Api.post("https://buy.itunes.apple.com/verifyReceipt", {
@@ -63,8 +54,8 @@ export async function verifyIOS({
             "Accept": "application/json",
         },
         data: JSON.stringify({
-            "receipt-data": receiptData,
-            "password": password,
+            "receipt-data": request.receiptData,
+            "password": request.password,
             "exclude-old-transactions": true,
         }),
     });
@@ -81,8 +72,8 @@ export async function verifyIOS({
                 "Accept": "application/json",
             },
             data: JSON.stringify({
-                "receipt-data": receiptData,
-                "password": password,
+                "receipt-data": request.receiptData,
+                "password": request.password,
                 "exclude-old-transactions": true,
             }),
         });
@@ -99,7 +90,7 @@ export async function verifyIOS({
             throw new functions.https.HttpsError("not-found", "Illegal receipt.");
         }
     }
-    return json;
+    return json as VerifyIOSResponse;
 }
 
 /**
@@ -118,19 +109,13 @@ export async function verifyIOS({
  * 
  * トランザクション情報。
  */
-async function verifyIOSStoreKit2({
-    jwtToken,
-    transactionId
-}: {
-    jwtToken: string,
-    transactionId?: string
-}) {
-    if (!jwtToken) {
+async function verifyIOSStoreKit2(request: VerifyIOSStoreKit2Request): Promise<VerifyIOSResponse> {
+    if (!request.jwtToken) {
         throw new functions.https.HttpsError("invalid-argument", "JWT token is required for StoreKit2 verification.");
     }
 
     try {
-        const decodedHeader = jwt.decode(jwtToken, { complete: true });
+        const decodedHeader = jwt.decode(request.jwtToken, { complete: true });
         if (!decodedHeader) {
             throw new functions.https.HttpsError("invalid-argument", "Invalid JWT token.");
         }
@@ -145,15 +130,15 @@ async function verifyIOSStoreKit2({
 
         const certificate = `-----BEGIN CERTIFICATE-----\n${x5c[0]}\n-----END CERTIFICATE-----`;
 
-        const verifiedPayload = jwt.verify(jwtToken, certificate, {
+        const verifiedPayload = jwt.verify(request.jwtToken, certificate, {
             algorithms: [algorithm as jwt.Algorithm]
-        }) as any;
+        }) as jwt.JwtPayload;
 
-        if (transactionId && verifiedPayload.transactionId !== transactionId) {
+        if (request.transactionId && verifiedPayload.transactionId !== request.transactionId) {
             throw new functions.https.HttpsError("permission-denied", "Transaction ID mismatch.");
         }
 
-        const result = {
+        const result: VerifyIOSResponse = {
             status: 0,
             environment: verifiedPayload.environment || "Production",
             receipt: {

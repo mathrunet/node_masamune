@@ -1,6 +1,7 @@
 import * as path from "path";
 import * as admin from "firebase-admin";
 import "@mathrunet/masamune";
+import { UpdateWalletData, UpdateWalletRequest } from "./interface";
 
 /**
  * The amount of money in the in-app wallet is added to the in-app wallet due to in-app purchases. In-app wallet information is stored in a form that overwrites user data.
@@ -27,31 +28,22 @@ import "@mathrunet/masamune";
  * 
  * 更新するログデータ。
  */
-export async function updateWallet({
-    targetDocumentFieldPath,
-    value,
-    transactionId,
-    transactionData,
-    firestoreInstance,
-}: {
-    targetDocumentFieldPath: string,
-    value: number,
-    transactionId: string,
-    transactionData: { [key: string]: any },
-    firestoreInstance: FirebaseFirestore.Firestore,
-}) {
+export async function updateWallet(request: UpdateWalletRequest): Promise<void> {
     const update: { [key: string]: any } = {};
-    const key = path.basename( targetDocumentFieldPath );
-    const parent = targetDocumentFieldPath.replace( `/${key}`, "" );
+    const key = path.basename(request.targetDocumentFieldPath);
+    const parent = request.targetDocumentFieldPath.replace(`/${key}`, "");
     const uid = path.basename(parent);
     const FieldValue = admin.firestore.FieldValue;
-    update[key] = FieldValue.increment(value);
-    update["@uid"] = uid;
-    update["@time"] = new Date();
-    await firestoreInstance.doc(parent).save(
-        update, { merge: true }
+    const data: UpdateWalletData = {
+        ...update,
+        [key]: FieldValue.increment(request.value),
+        "@uid": uid,
+        "@time": new Date(),
+    };
+    await request.firestoreInstance.doc(parent).save(
+        data, { merge: true }
     );
-    await firestoreInstance.doc(`${parent}/transaction/${transactionId}`).save(
-        transactionData, { merge: true }
+    await request.firestoreInstance.doc(`${parent}/transaction/${request.transactionId}`).save(
+        request.transactionData, { merge: true }
     );
 }

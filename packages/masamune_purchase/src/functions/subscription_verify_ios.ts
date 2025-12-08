@@ -76,11 +76,14 @@ module.exports = (
                 throw new functions.https.HttpsError("not-found", "Illegal receipt.");
             }
             const time = new Date().getTime();
-            const info = res["latest_receipt_info"];
-            const pending = res["pending_renewal_info"];
-            const startTimeMillis = parseInt(info[info.length - 1]["purchase_date_ms"]);
-            const expiryTimeMillis = parseInt(info[info.length - 1]["expires_date_ms"]);
-            const currentProductId = info[info.length - 1]["product_id"];
+            const info = res.latest_receipt_info;
+            if (!info) {
+                throw new functions.https.HttpsError("not-found", "Illegal receipt.");
+            }
+            const pending = res.pending_renewal_info;
+            const startTimeMillis = parseInt(info[info.length - 1].purchase_date_ms ?? "0");
+            const expiryTimeMillis = parseInt(info[info.length - 1].expires_date_ms ?? "0");
+            const currentProductId = info?.[info.length - 1].product_id;
             if (res === null || isNaN(startTimeMillis) || isNaN(expiryTimeMillis) || startTimeMillis <= 0) {
                 throw new functions.https.HttpsError("not-found", "Illegal receipt.");
             }
@@ -96,15 +99,15 @@ module.exports = (
                     const firestoreInstance = firestoreLoader(databaseId);
                     await subscription.updateSubscription({
                         targetCollectionPath: query.data.path ?? process.env.PURCHASE_SUBSCRIPTIONPATH,
-                        targetDocumentId: info[info.length - 1]["original_transaction_id"],
+                        targetDocumentId: info[info.length - 1].original_transaction_id ?? "",
                         data: info[info.length - 1],
                         additionalData: query.data,
                         userId: query.data.userId,
                         platform: "IOS",
-                        orderId: info[info.length - 1]["original_transaction_id"],
-                        productId: currentProductId,
+                        orderId: info[info.length - 1].original_transaction_id ?? "",
+                        productId: currentProductId ?? "",
                         purchaseId: query.data.purchaseId,
-                        packageName: res["receipt"]["bundle_id"],
+                        packageName: res.receipt?.bundle_id ?? "",
                         token: query.data.receiptData,
                         expiryDate: expiryTimeMillis,
                         firestoreInstance: firestoreInstance,

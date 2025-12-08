@@ -1,5 +1,6 @@
 import * as functions from "firebase-functions/v2";
 import { google } from "googleapis";
+import { VerifyAndroidRequest, VerifyAndroidResponse } from "./interface";
 
 /**
  * Perform Android receipt verification.
@@ -41,25 +42,11 @@ import { google } from "googleapis";
  * 
  * アイテムの受領情報。
  */
-export async function verifyAndroid({
-    type,
-    serviceAccountEmail,
-    serviceAccountPrivateKey,
-    packageName,
-    productId,
-    purchaseToken,
-}: {
-    type: "products" | "subscriptions",
-    serviceAccountEmail: string,
-    serviceAccountPrivateKey: string,
-    packageName: string,
-    productId: string,
-    purchaseToken: string,
-}): Promise<{ [key: string]: any; }> {
+export async function verifyAndroid(request: VerifyAndroidRequest): Promise<VerifyAndroidResponse> {
     try {
         const authClient = new google.auth.JWT({
-            email: serviceAccountEmail,
-            key: serviceAccountPrivateKey.replace(/\\n/g, "\n"),
+            email: request.serviceAccountEmail,
+            key: request.serviceAccountPrivateKey.replace(/\\n/g, "\n"),
             scopes: ["https://www.googleapis.com/auth/androidpublisher"]
         });
         const playDeveloperApiClient = google.androidpublisher({
@@ -67,26 +54,35 @@ export async function verifyAndroid({
             auth: authClient,
         });
         await authClient.authorize();
-        if (type === "products") {
+        if (request.type === "products") {
             const res = await playDeveloperApiClient.purchases.products.get({
-                packageName: packageName,
-                productId: productId,
-                token: purchaseToken,
+                packageName: request.packageName,
+                productId: request.productId,
+                token: request.purchaseToken,
             });
             if (res.status !== 200) {
                 throw new functions.https.HttpsError("not-found", "The validation data is empty.");
             }
-            return res.data;
-        } else if (type === "subscriptions") {
+            const response: VerifyAndroidResponse = {
+                orderId: res.data.orderId,
+                purchaseState: res.data.purchaseState,
+            };
+            return response;
+        } else if (request.type === "subscriptions") {
             const res = await playDeveloperApiClient.purchases.subscriptions.get({
-                packageName: packageName,
-                subscriptionId: productId,
-                token: purchaseToken,
+                packageName: request.packageName,
+                subscriptionId: request.productId,
+                token: request.purchaseToken,
             });
             if (res.status !== 200) {
                 throw new functions.https.HttpsError("not-found", "The validation data is empty.");
             }
-            return res.data;
+            const response: VerifyAndroidResponse = {
+                orderId: res.data.orderId,
+                startTimeMillis: res.data.startTimeMillis ?? undefined,
+                expiryTimeMillis: res.data.expiryTimeMillis ?? undefined,
+            };
+            return response;
         }
     } catch (error) {
         console.log(error);

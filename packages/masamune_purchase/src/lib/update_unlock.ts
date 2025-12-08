@@ -1,5 +1,6 @@
 import * as path from "path";
 import "@mathrunet/masamune";
+import { UpdateUnlockData, UpdateUnlockRequest } from "./interface";
 
 /**
  * Unlock function. Unlock information is stored in the form of an overwrite of the user data.
@@ -21,28 +22,21 @@ import "@mathrunet/masamune";
  * 
  * 更新するログデータ。
  */
-export async function updateUnlock({
-    targetDocumentFieldPath,
-    transactionId,
-    transactionData,
-    firestoreInstance,
-}: {
-    targetDocumentFieldPath: string,
-    transactionId: string,
-    transactionData: { [key: string]: any },
-    firestoreInstance: FirebaseFirestore.Firestore,
-}) {
+export async function updateUnlock(request: UpdateUnlockRequest): Promise<void> {
     const update: { [key: string]: any } = {};
-    const key = path.basename(targetDocumentFieldPath);
-    const parent = targetDocumentFieldPath.replace(`/${key}`, "");
+    const key = path.basename(request.targetDocumentFieldPath);
+    const parent = request.targetDocumentFieldPath.replace(`/${key}`, "");
     const uid = path.basename(parent);
-    update[key] = true;
-    update["@uid"] = uid;
-    update["@time"] = new Date();
-    await firestoreInstance.doc(parent).save(
-        update, { merge: true }
+    const data: UpdateUnlockData = {
+        ...update,
+        "@time": new Date(),
+        "@uid": uid,
+        [key]: true,
+    };
+    await request.firestoreInstance.doc(parent).save(
+        data, { merge: true }
     );
-    await firestoreInstance.doc(`${parent}/transaction/${transactionId}`).save(
-        transactionData, { merge: true }
+    await request.firestoreInstance.doc(`${parent}/transaction/${request.transactionId}`).save(
+        request.transactionData, { merge: true }
     );
 }

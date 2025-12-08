@@ -1,6 +1,7 @@
 import * as path from "path";
 import { utils } from "@mathrunet/masamune";
 import "@mathrunet/masamune";
+import { UpdateSubscriptionData, UpdateSubscriptionRequest } from "./interface";
 
 /**
  * Processes subscription updates.
@@ -67,66 +68,42 @@ import "@mathrunet/masamune";
  * 
  * サブスクリプションの有効期限。
  */
-export async function updateSubscription({
-    targetCollectionPath,
-    targetDocumentId,
-    data,
-    additionalData,
-    userId,
-    platform,
-    orderId,
-    productId,
-    purchaseId,
-    packageName,
-    token,
-    expiryDate,
-    firestoreInstance,
-}: {
-    targetCollectionPath: string,
-    targetDocumentId: string,
-    data: { [key: string]: any },
-    additionalData: { [key: string]: any },
-    userId: string,
-    platform: string,
-    orderId: string,
-    productId: string,
-    purchaseId: string,
-    packageName: string,
-    token: string,
-    expiryDate: number,
-    firestoreInstance: FirebaseFirestore.Firestore,
-}) {
+export async function updateSubscription(request: UpdateSubscriptionRequest): Promise<void> {
     const update: { [key: string]: any } = {};
-    for (const key in data) {
-        if (!data[key]) {
+    for (const key in request.data) {
+        if (!request.data[key]) {
             continue;
         }
-        update[key] = utils.parse(data[key]);
+        update[key] = utils.parse(request.data[key]);
     }
-    if (additionalData) {
-        for (const key in additionalData) {
-            if (!additionalData[key]) {
+    if (request.additionalData) {
+        for (const key in request.additionalData) {
+            if (!request.additionalData[key]) {
                 continue;
             }
-            update[key] = utils.parse(additionalData[key]);
+            update[key] = utils.parse(request.additionalData[key]);
         }
     }
-    targetCollectionPath = `${targetCollectionPath}/${targetDocumentId}`;
-    update["expired"] = false;
-    update["paused"] = false;
-    update["token"] = token;
-    update["platform"] = platform;
-    update["productId"] = productId;
-    update["purchaseId"] = purchaseId;
-    update["packageName"] = packageName;
-    update["expiredTime"] = expiryDate;
-    update["orderId"] = orderId;
-    if (userId) {
-        update["userId"] = userId;
+    const targetCollectionPath = `${request.targetCollectionPath}/${request.targetDocumentId}`;
+    const data: UpdateSubscriptionData = {
+        ...update,
+        expired: false,
+        paused: false,
+        token: request.token,
+        platform: request.platform,
+        productId: request.productId,
+        purchaseId: request.purchaseId,
+        packageName: request.packageName,
+        expiredTime: request.expiryDate,
+        orderId: request.orderId,
+        userId: request.userId ? request.userId : undefined,
+        "@time": new Date(),
+        "@uid": path.basename(targetCollectionPath),
+    };
+    if (!data.userId) {
+        delete data["userId"];
     }
-    update["@time"] = new Date();
-    update["@uid"] = path.basename(targetCollectionPath);
-    await firestoreInstance.doc(targetCollectionPath).save(
-        update, { merge: true }
+    await request.firestoreInstance.doc(targetCollectionPath).save(
+        data, { merge: true }
     );
 }

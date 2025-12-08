@@ -90,7 +90,7 @@ module.exports = (
                 productId: query.data.productId,
                 purchaseToken: query.data.purchaseToken,
             });
-            if (res["purchaseState"] !== 0) {
+            if (res.purchaseState !== 0) {
                 throw new functions.https.HttpsError("unauthenticated", "Illegal receipt.");
             }
             /* ==== ここまでAndroid検証 ==== */
