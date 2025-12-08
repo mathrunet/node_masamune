@@ -1,6 +1,7 @@
 import * as functions from "firebase-functions/v2";
 import * as sendgrid from "../lib/send_grid";
 import { HttpFunctionsOptions } from "@mathrunet/masamune";
+import { SendGridRequest, SendGridResponse } from "../lib/interface";
 
 /**
  * Send mail through SendGrid.
@@ -54,15 +55,17 @@ module.exports = (
             if (!from || !to || !title || !content) {
                 throw new functions.https.HttpsError("invalid-argument", "Query parameter is invalid.");
             }
-            await sendgrid.send({
+            const request: SendGridRequest = {
                 from: from,
                 to: to,
-                title: title,
-                content: content,
-            });
-            return {
+                subject: title,
+                text: content,
+            };
+            await sendgrid.send(request);
+            const response: SendGridResponse = {
                 success: true,
             };
+            return response;
         } catch (err) {
             console.error(err);
             throw err;

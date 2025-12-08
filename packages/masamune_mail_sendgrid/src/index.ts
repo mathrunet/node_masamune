@@ -11,3 +11,4 @@
 export * from "@mathrunet/masamune";
 export * from "./functions";
 export * as lib from "./lib/send_grid";
+export * from "./lib/interface";

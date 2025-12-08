@@ -1,4 +1,5 @@
 import sendgrid from "@sendgrid/mail";
+import { SendGridRequest } from "./interface";
 
 /**
  * Send mail through SendGrid.
@@ -27,23 +28,8 @@ import sendgrid from "@sendgrid/mail";
  * Email content.
  * メール本文。
  */
-export async function send({
-  from,
-  to,
-  title,
-  content,
-}: {
-  from: string,
-  to: string,
-  title: string,
-  content: string,
-}) {
+export async function send(content: SendGridRequest) {
   sendgrid.setApiKey(process.env.MAIL_SENDGRID_APIKEY ?? "");
-  const msg = {
-    to: to,
-    from: from,
-    subject: title,
-    text: content,
-  };
-  await sendgrid.send(msg);
+  const result = await sendgrid.send(content);
+  return result;
 }
