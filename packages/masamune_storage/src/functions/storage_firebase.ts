@@ -2,6 +2,7 @@ import * as functions from "firebase-functions/v2";
 import { HttpFunctionsOptions } from "@mathrunet/masamune";
 import { Storage } from "@google-cloud/storage";
 import "@mathrunet/masamune";
+import { StorageFirebaseResponse } from "../lib/interface";
 
 /**
  * A function to enable the use of external Firebase Storage.
@@ -169,7 +170,7 @@ module.exports = (
 
                         console.log(`Successfully downloaded file: ${bucketName}/${filePath}, size: ${metadata.size} bytes`);
 
-                        return {
+                        const response: StorageFirebaseResponse = {
                             status: 200,
                             binary: base64Data,
                             meta: {
@@ -182,6 +183,7 @@ module.exports = (
                                 publicUri: publicUrl
                             }
                         };
+                        return response;
                     } catch (error: any) {
                         console.error(`Error downloading file ${bucketName}/${filePath}:`, error);
                         throw new functions.https.HttpsError(
@@ -244,7 +246,7 @@ module.exports = (
 
                         console.log(`Successfully uploaded file: ${bucketName}/${filePath}, final size: ${uploadedMetadata.size} bytes`);
 
-                        return {
+                        const response: StorageFirebaseResponse = {
                             status: 200,
                             message: "File uploaded successfully",
                             meta: {
@@ -253,6 +255,7 @@ module.exports = (
                                 publicUri: publicUrl
                             }
                         };
+                        return response;
                     } catch (error: any) {
                         console.error(`Error uploading file ${bucketName}/${filePath}:`, error);
                         throw new functions.https.HttpsError(
@@ -279,10 +282,11 @@ module.exports = (
                         await file.delete();
                         console.log(`Successfully deleted file: ${bucketName}/${filePath}`);
 
-                        return {
+                        const response: StorageFirebaseResponse = {
                             status: 200,
                             message: "File deleted successfully"
                         };
+                        return response;
                     } catch (error: any) {
                         console.error(`Error deleting file ${bucketName}/${filePath}:`, error);
                         throw new functions.https.HttpsError(
