@@ -558,8 +558,8 @@ module.exports = (
                       await sendgrid.send({
                         from: emailFrom,
                         to: email,
-                        title: emailTitle,
-                        content: emailContent.replace("{url}", nextActionUrl),
+                        subject: emailTitle,
+                        text: emailContent.replace("{url}", nextActionUrl),
                       });
                       break;
                     }
@@ -819,8 +819,8 @@ module.exports = (
                             await sendgrid.send({
                               from: data["emailFrom"],
                               to: data["emailTo"],
-                              title: data["emailTitle"],
-                              content: data["emailContent"].replace("{url}", nextActionUrl),
+                              subject: data["emailTitle"],
+                              text: data["emailContent"].replace("{url}", nextActionUrl),
                             });
                             break;
                           }
@@ -880,8 +880,8 @@ module.exports = (
                           await sendgrid.send({
                             from: data["emailFrom"],
                             to: data["emailTo"],
-                            title: data["emailTitle"],
-                            content: data["emailContent"].replace("{url}", nextActionUrl),
+                            subject: data["emailTitle"],
+                            text: data["emailContent"].replace("{url}", nextActionUrl),
                           });
                           break;
                         }
