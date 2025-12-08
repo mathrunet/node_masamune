@@ -38,7 +38,7 @@
   "dependencies": {
     "@cfworker/json-schema": "^4.1.1",
     "@google/genai": "^1.30.0",
-    "@mathrunet/masamune": "^3.8.10",
+    "@mathrunet/masamune": "^3.8.11",
     "@modelcontextprotocol/sdk": "^1.23.0",
     "firebase-admin": "^13.1.0",
     "firebase-functions": "^6.3.2",

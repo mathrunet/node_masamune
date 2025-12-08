@@ -94,11 +94,9 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                     const plan = subscription?.productId ? (await firestore.doc(`plugins/workflow/plan/${subscription?.productId}`).load()).data() as Plan | undefined | null : null;
                     try {
                         const expiredTime = actionData.tokenExpiredTime;
-                        // Handle both Date and Firestore Timestamp
+                        // Handle both Date, Firestore Timestamp, and ModelTimestamp
                         const expiredTimeMs = expiredTime
-                            ? (expiredTime instanceof admin.firestore.Timestamp
-                                ? expiredTime.toDate().getTime()
-                                : expiredTime.value().getTime())
+                            ? expiredTime.value().getTime()
                             : 0;
                         if (!expiredTime || startedTime.getTime() > expiredTimeMs) {
                             throw new Error("token-expired");
@@ -133,7 +131,6 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                         if (taskData.status === "canceled") {
                             const updatedActionData: Action = {
                                 ...actionData,
-                                "@time": finishedTime,
                                 status: "canceled",
                                 usage: actionData.usage + usage,
                                 "updatedTime": new ModelTimestamp(finishedTime),
@@ -144,7 +141,6 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                             );
                             const updatedTaskData: Task = {
                                 ...taskData,
-                                "@time": finishedTime,
                                 currentAction: admin.firestore.FieldValue.delete(),
                                 nextAction: command,
                                 usage: taskData.usage + usage,
@@ -192,7 +188,6 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                                 const updatedActionData: Action = {
                                     ...actionData,
                                     ...result,
-                                    "@time": finishedTime,
                                     status: "completed",
                                     usage: actionData.usage + result.usage + usage,
                                     "finishedTime": new ModelTimestamp(finishedTime),
@@ -204,7 +199,6 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                                 );
                                 const updatedTaskData: Task = {
                                     ...taskData,
-                                    "@time": finishedTime,
                                     currentAction: admin.firestore.FieldValue.delete(),
                                     nextAction: admin.firestore.FieldValue.delete(),
                                     usage: taskData.usage + result.usage + usage,
@@ -253,7 +247,6 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                                 const updatedActionData: Action = {
                                     ...actionData,
                                     ...result,
-                                    "@time": finishedTime,
                                     status: "completed",
                                     usage: actionData.usage + result.usage + usage,
                                     "finishedTime": new ModelTimestamp(finishedTime),
@@ -265,7 +258,6 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                                 );
                                 const updatedTaskData: Task = {
                                     ...taskData,
-                                    "@time": finishedTime,
                                     currentAction: admin.firestore.FieldValue.delete(),
                                     nextAction: nextCommand,
                                     usage: taskData.usage + result.usage + usage,
@@ -339,7 +331,6 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                             }
                             const updatedTaskData: Task = {
                                 ...taskData,
-                                "@time": finishedTime,
                                 currentAction: admin.firestore.FieldValue.delete(),
                                 nextAction: command,
                                 usage: taskData.usage + usage,
@@ -357,7 +348,6 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                         try {
                             const updatedActionData: Action = {
                                 ...actionData,
-                                "@time": finishedTime,
                                 status: "failed",
                                 error: error,
                                 usage: actionData.usage + usage,
@@ -373,7 +363,6 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                         try {
                             const updatedActionData: Action = {
                                 ...actionData,
-                                "@time": finishedTime,
                                 status: "failed",
                                 error: error,
                                 usage: actionData.usage + usage,
@@ -454,16 +443,18 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
         let campaignLimit: number | undefined | null = campaignData?.limit;
         const campaignExpiredTime = campaignData?.expiredTime;
 
-        if(campaignExpiredTime && campaignExpiredTime.value().getTime() > now.toDate().getTime()){
+        // Handle both Firestore Timestamp and ModelTimestamp
+        const campaignExpiredTimeMs = campaignExpiredTime?.value?.().getTime?.() ?? 0;
+        if (campaignExpiredTime && campaignExpiredTimeMs > now.toDate().getTime()) {
             campaignLimit = null;
         }
-        if(campaignLimit && campaignLimit < 0){
+        if (campaignLimit && campaignLimit < 0) {
             return;
         }
         if (usageDoc.exists) {
             const data = usageDoc.data() as Usage;
             const currentMonthStr = new Date().toISOString().slice(0, 7);
-            
+
             // 月が変わっている場合はチェックしない（updateUsageでリセットされるため）
             if (data.currentMonth === currentMonthStr) {
                 const totalUsage = data.usage ?? 0.0;
@@ -475,10 +466,10 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                 if (totalUsage >= planLimit) {
                     throw "limit-usage";
                 }
-                
+
                 // バースト容量が0以下かつなら制限
                 if (bucketBalance <= 0 && latestPlan === plan?.["@uid"]) {
-                     throw "limit-usage";
+                    throw "limit-usage";
                 }
             }
         }
@@ -523,7 +514,8 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                 } else {
                     totalUsage = data.usage || 0;
                     bucketBalance = data.bucketBalance ?? (planLimit * burstCapacity);
-                    lastCheckTimeMillis = data.lastCheckTime?.toMillis() ?? nowMillis;
+                    // Handle both Firestore Timestamp and ModelTimestamp
+                    lastCheckTimeMillis = data.lastCheckTime?.value()?.getTime() ?? nowMillis;
                 }
             }
 
@@ -534,7 +526,7 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
             endOfMonth.setHours(23, 59, 59, 999);
 
             let timeLeftMillis = endOfMonth.getTime() - nowMillis;
-            if (timeLeftMillis <= 0){
+            if (timeLeftMillis <= 0) {
                 timeLeftMillis = 1;
             }
 
@@ -542,38 +534,36 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
             const recoveryRate = remainingBudget / timeLeftMillis;
             const timeDelta = nowMillis - lastCheckTimeMillis;
             const tokensToAdd = timeDelta * recoveryRate;
-            
+
             let newBucketBalance = Math.min(planLimit * burstCapacity, bucketBalance + tokensToAdd);
 
             // 消費
             newBucketBalance -= usage;
             totalUsage += usage;
 
-            if(doc.exists){
-                const updateData: any = {
-                    ...doc.data(),
+            if (doc.exists) {
+                const data = doc.data() as Usage;
+                const updateData: Usage = {
+                    ...data,
                     usage: totalUsage,
                     bucketBalance: newBucketBalance,
                     currentMonth: currentMonthStr,
-                    "@time": finishedTime,
                     "latestPlan": planId ? planId : admin.firestore.FieldValue.delete(),
                     "lastCheckTime": new ModelTimestamp(finishedTime),
                     "updatedTime": new ModelTimestamp(finishedTime),
                 };
                 await usageRef.save(updateData, { merge: true });
             } else {
-                const updateData: any = {
-                    "@uid": dateId,
+                const updateData: Usage = {
                     usage: totalUsage,
                     bucketBalance: newBucketBalance,
                     currentMonth: currentMonthStr,
-                    "@time": finishedTime,
                     "lastCheckTime": new ModelTimestamp(finishedTime),
                     "createdTime": new ModelTimestamp(finishedTime),
                     "updatedTime": new ModelTimestamp(finishedTime),
                 };
                 await usageRef.save(updateData, { merge: true });
-            }            
+            }
         } catch (err) {
             console.error(err);
         }

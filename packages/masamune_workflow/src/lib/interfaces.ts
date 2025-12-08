@@ -1,4 +1,4 @@
-import { ModelTimestamp } from "@mathrunet/masamune";
+import { ModelRefBase, ModelTimestamp } from "@mathrunet/masamune";
 import * as admin from "firebase-admin";
 
 /**
@@ -45,17 +45,25 @@ export const WorkflowRoleList = ["admin", "editor", "viewer"] as const;
 export type WorkflowRole = (typeof WorkflowRoleList)[number];
 
 /**
+ * Model interface.
+ * 
+ * モデルのインターフェース。
+ */
+export interface Model {
+    "@uid"?: string;
+    "@time"?: Date;
+}
+
+/**
  * Organization interface.
  * 
  * 組織のインターフェース。
  */
-export interface Organization {
-    "@uid": string;
-    "@time": Date;
+export interface Organization extends Model {
     "name"?: string;
     "description"?: string;
     "icon"?: string;
-    "owner"?: admin.firestore.DocumentReference;
+    "owner"?: ModelRefBase;
     "createdTime": ModelTimestamp;
     "updatedTime": ModelTimestamp;
 }
@@ -65,11 +73,9 @@ export interface Organization {
  * 
  * メンバーのインターフェース。
  */
-export interface Member {
-    "@uid": string;
-    "@time": Date;
-    "organization"?: admin.firestore.DocumentReference;
-    "user"?: admin.firestore.DocumentReference;
+export interface Member extends Model {
+    "organization"?: ModelRefBase;
+    "user"?: ModelRefBase;
     "role": WorkflowRole;
     "createdTime": ModelTimestamp;
     "updatedTime": ModelTimestamp;
@@ -80,20 +86,18 @@ export interface Member {
  * 
  * プロジェクトのインターフェース。
  */
-export interface Project {
-    "@uid": string;
-    "@time": Date;
-	"name"?: string;
-	"description"?: string;
-	"organization"?: admin.firestore.DocumentReference;
-	"icon"?: string;
-	"google_access_token"?: string;
-	"google_refresh_token"?: string;
-	"google_service_account"?: string;
-	"github_personal_access_token"?: string;
-	"appstore_issuer_id"?: string;
-	"appstore_auth_key_id"?: string;
-	"appstore_auth_key"?: string;
+export interface Project extends Model {
+    "name"?: string;
+    "description"?: string;
+    "organization"?: ModelRefBase;
+    "icon"?: string;
+    "google_access_token"?: string;
+    "google_refresh_token"?: string;
+    "google_service_account"?: string;
+    "github_personal_access_token"?: string;
+    "appstore_issuer_id"?: string;
+    "appstore_auth_key_id"?: string;
+    "appstore_auth_key"?: string;
     "createdTime": ModelTimestamp;
     "updatedTime": ModelTimestamp;
 }
@@ -103,16 +107,14 @@ export interface Project {
  * 
  * ワークフローのインターフェース。
  */
-export interface Workflow {
-	"@uid": string;
-	"@time": Date;
-	"name"?: string;
-	"project"?: admin.firestore.DocumentReference;
-	"organization"?: admin.firestore.DocumentReference;
+export interface Workflow extends Model {
+    "name"?: string;
+    "project"?: ModelRefBase;
+    "organization"?: ModelRefBase;
     "repeat": WorkflowRepeat;
-	"actions": ActionCommand[];
-	"prompt"?: string;
-	"materials"?: {[key: string]: any};
+    "actions": ActionCommand[];
+    "prompt"?: string;
+    "materials"?: { [key: string]: any };
     "nextTime"?: ModelTimestamp | admin.firestore.FieldValue;
     "startTime"?: ModelTimestamp;
     "createdTime": ModelTimestamp;
@@ -124,24 +126,22 @@ export interface Workflow {
  * 
  * タスクのインターフェース。
  */
-export interface Task {
-	"@uid": string;
-	"@time": Date;
-	"workflow"?: admin.firestore.DocumentReference;
-	"organization"?: admin.firestore.DocumentReference;
-	"project"?: admin.firestore.DocumentReference;
-	"status": WorkflowTaskStatus;
-	"actions": ActionCommand[];
-	"currentAction"?: admin.firestore.DocumentReference | admin.firestore.FieldValue;
-	"nextAction"?: ActionCommand | admin.firestore.FieldValue;
-	"error"?:  {[key: string]: any};
-	"prompt"?: string;
-	"materials"?: {[key: string]: any};
-	"results"?: {[key: string]: any};
-	"assets"?: {[key: string]: any};
+export interface Task extends Model {
+    "workflow"?: ModelRefBase;
+    "organization"?: ModelRefBase;
+    "project"?: ModelRefBase;
+    "status": WorkflowTaskStatus;
+    "actions": ActionCommand[];
+    "currentAction"?: ModelRefBase | admin.firestore.FieldValue;
+    "nextAction"?: ActionCommand | admin.firestore.FieldValue;
+    "error"?: { [key: string]: any };
+    "prompt"?: string;
+    "materials"?: { [key: string]: any };
+    "results"?: { [key: string]: any };
+    "assets"?: { [key: string]: any };
     "search"?: string | admin.firestore.FieldValue;
-	"@search"?: admin.firestore.FieldValue;
-	"usage": number;
+    "@search"?: admin.firestore.FieldValue;
+    "usage": number;
     "startTime"?: ModelTimestamp;
     "finishedTime"?: ModelTimestamp;
     "createdTime": ModelTimestamp;
@@ -153,23 +153,21 @@ export interface Task {
  * 
  * アクションのインターフェース。
  */
-export interface Action {
-	"@uid": string;
-	"@time": Date;
-	"command": ActionCommand;
-	"task"?: admin.firestore.DocumentReference;
-	"workflow"?: admin.firestore.DocumentReference;
-	"organization"?: admin.firestore.DocumentReference;
-	"project"?: admin.firestore.DocumentReference;
-	"status": WorkflowTaskStatus;
-	"error"?: {[key: string]: any};
-	"prompt"?: string;
-	"materials"?: {[key: string]: any};
-	"results"?: {[key: string]: any};
-	"assets"?: {[key: string]: any};
-	"usage": number;
+export interface Action extends Model {
+    "command": ActionCommand;
+    "task"?: ModelRefBase;
+    "workflow"?: ModelRefBase;
+    "organization"?: ModelRefBase;
+    "project"?: ModelRefBase;
+    "status": WorkflowTaskStatus;
+    "error"?: { [key: string]: any };
+    "prompt"?: string;
+    "materials"?: { [key: string]: any };
+    "results"?: { [key: string]: any };
+    "assets"?: { [key: string]: any };
+    "usage": number;
     "search"?: string;
-	"token"?: string;
+    "token"?: string;
     "tokenExpiredTime"?: ModelTimestamp;
     "startTime"?: ModelTimestamp;
     "finishedTime"?: ModelTimestamp;
@@ -184,8 +182,8 @@ export interface Action {
  */
 export interface ActionCommand {
     "command": string;
-    "index": number;   
-    [key: string]: any; 
+    "index": number;
+    [key: string]: any;
 }
 
 /**
@@ -193,14 +191,12 @@ export interface ActionCommand {
  * 
  * アセットのインターフェース。
  */
-export interface Asset {
-	"@uid": string;
-	"@time": Date;
-	"organization"?: admin.firestore.DocumentReference;
-	"source"?: string;
-	"content"?: string;
-	"path"?: string;
-	"mimtType"?: string;
+export interface Asset extends Model {
+    "organization"?: ModelRefBase;
+    "source"?: string;
+    "content"?: string;
+    "path"?: string;
+    "mimtType"?: string;
     "createdTime": ModelTimestamp;
     "updatedTime": ModelTimestamp;
 }
@@ -210,13 +206,11 @@ export interface Asset {
  * 
  * ページのインターフェース。
  */
-export interface Page {
-    "@uid": string;
-	"@time": Date;
-	"organization"?: admin.firestore.DocumentReference;
-	"project"?: admin.firestore.DocumentReference;
-	"content"?: string;
-	"path"?: string;
+export interface Page extends Model {
+    "organization"?: ModelRefBase;
+    "project"?: ModelRefBase;
+    "content"?: string;
+    "path"?: string;
     "createdTime": ModelTimestamp;
     "updatedTime": ModelTimestamp;
 }
@@ -226,14 +220,12 @@ export interface Page {
  * 
  * 利用量のインターフェース。
  */
-export interface Usage {
-    "@uid": string;
-	"@time": Date;
-	"organization"?: admin.firestore.DocumentReference;
-	"usage": number;
-    "latestPlan"?: string;
+export interface Usage extends Model {
+    "organization"?: ModelRefBase;
+    "usage": number;
+    "latestPlan"?: string | admin.firestore.FieldValue;
     "bucketBalance"?: number;
-    "lastCheckTime"?: admin.firestore.Timestamp;
+    "lastCheckTime"?: ModelTimestamp;
     "currentMonth"?: string;
     "createdTime": ModelTimestamp;
     "updatedTime": ModelTimestamp;
@@ -244,9 +236,7 @@ export interface Usage {
  * 
  * プランのインターフェース。
  */
-export interface Plan {
-    "@uid": string;
-	"@time": Date;
+export interface Plan extends Model {
     "limit": number;
     "burst": number;
 }
@@ -256,10 +246,8 @@ export interface Plan {
  * 
  * キャンペーンのインターフェース。
  */
-export interface Campaign {
-    "@uid": string;
-    "@time": Date;
-    "organization"?: admin.firestore.DocumentReference;
+export interface Campaign extends Model {
+    "organization"?: ModelRefBase;
     "limit"?: number;
     "expiredTime"?: ModelTimestamp;
     "createdTime": ModelTimestamp;
@@ -271,12 +259,10 @@ export interface Campaign {
  * 
  * 証明書のインターフェース。
  */
-export interface Certificate {
-    "@uid": string;
-    "@time": Date;
-	"organization"?: admin.firestore.DocumentReference;
-	"token"?: string;
-	"scope"?: string[];
+export interface Certificate extends Model {
+    "organization"?: ModelRefBase;
+    "token"?: string;
+    "scope"?: string[];
     "expiredTime"?: ModelTimestamp;
     "createdTime": ModelTimestamp;
     "updatedTime": ModelTimestamp;
@@ -287,7 +273,7 @@ export interface Certificate {
  * 
  * サブスクリプションのインターフェース。
  */
-export interface Subscription {
+export interface Subscription extends Model {
     "userId": string;
     "expired": boolean;
     "expiredTime": number;
