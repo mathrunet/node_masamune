@@ -1,4 +1,4 @@
-# [3.9.0](https://github.com/mathrunet/node_masamune/compare/v3.7.0...v3.9.0) (2025-12-08)
+## [3.9.1](https://github.com/mathrunet/node_masamune/compare/v3.7.0...v3.9.1) (2025-12-08)
 
 
 ### chore
@@ -40,6 +40,7 @@
 * Added AppStore, FirebaseAnalytics. ([43475b9](https://github.com/mathrunet/node_masamune/commit/43475b967224ad1921607eb769b5ab50095a2f49))
 * Added charts, storage, and PDF generation services to the marketing pipeline, improved video effects, and introduced bug list documentation. ([5ac0fd5](https://github.com/mathrunet/node_masamune/commit/5ac0fd5d6e0d1cfeaeae0b422e2d099f7c863bc4))
 * Create a market pipeline. ([7ce61fe](https://github.com/mathrunet/node_masamune/commit/7ce61feae9829bd7e8d969ef967f39f3f9ba0cfe))
+* Delete the Katana package. ([9c0d166](https://github.com/mathrunet/node_masamune/commit/9c0d1660ca60cbc72c7b7f742138352470a6e54c))
 * Develop an AI analysis service ([0a3d8c7](https://github.com/mathrunet/node_masamune/commit/0a3d8c7cbff6e23b524ca78b8bcbc674b2045bcf))
 * Enhance detailed research to guide content creation, determine asset type, and add new documentation files. ([bf6125a](https://github.com/mathrunet/node_masamune/commit/bf6125a2e35f7b52f9a84468770901a98ef226be))
 * GitHub integration test implementation ([f1ffead](https://github.com/mathrunet/node_masamune/commit/f1ffead3e4f4f761fd7416789c050afe4d3e29a8))
@@ -74,6 +75,7 @@
 * Fixed missing export. ([f8948be](https://github.com/mathrunet/node_masamune/commit/f8948bee2d089c6df7a1b2e34bab844413f42e87))
 * I made it output. ([6d17645](https://github.com/mathrunet/node_masamune/commit/6d1764546c2c68b3af61148eac9ca1635e9fddf7))
 * implement AI-driven music prompt improvement for Lyria BGM generation failures and add marketing pipeline requirements. ([81cfd3b](https://github.com/mathrunet/node_masamune/commit/81cfd3bd114669360c0bef465f81f5b4fad8804d))
+* Import bug fix. ([daefec0](https://github.com/mathrunet/node_masamune/commit/daefec055ad6bd1727d1df561cad25ce793f91c2))
 * Initialize Firebase Admin SDK if not already initialized when loading Firestore or Storage. ([678c1bd](https://github.com/mathrunet/node_masamune/commit/678c1bd1896ddd3fe0e541e9eeea29797b63e300))
 * Interface adjustment. ([82d64f3](https://github.com/mathrunet/node_masamune/commit/82d64f3420f98b57a3dc66300c70b8cd646c8e98))
 * Move `@types/node-fetch` from devDependencies to dependencies. ([d5bc8be](https://github.com/mathrunet/node_masamune/commit/d5bc8be021d25469d9fb58d6b73f8471883969c8))
