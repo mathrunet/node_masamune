@@ -1,10 +1,12 @@
-## [3.10.4](https://github.com/mathrunet/node_masamune/compare/v3.7.0...v3.10.4) (2025-12-08)
+## [3.10.5](https://github.com/mathrunet/node_masamune/compare/v3.7.0...v3.10.5) (2025-12-08)
 
 
 ### chore
 
 * Add Node.js 20 engine requirement to all package.json files ([1e60d25](https://github.com/mathrunet/node_masamune/commit/1e60d25b2c44e1efd398a6a1229d2ba3f46da1f5))
 * Create test files. ([357849a](https://github.com/mathrunet/node_masamune/commit/357849a6244c8a6167a0188945cc40a7c282c703))
+* Package update. ([440dbe9](https://github.com/mathrunet/node_masamune/commit/440dbe90ed555f4d7e260a204ef4463e14e6623c))
+* Package update. ([4a3e6e7](https://github.com/mathrunet/node_masamune/commit/4a3e6e725e1e61777be17b09e14d7ec2a015b2e6))
 * Package update. ([71bf417](https://github.com/mathrunet/node_masamune/commit/71bf41769e3b292e6288dbb6bb813f5f18b8a474))
 * Package update. ([27b1b6b](https://github.com/mathrunet/node_masamune/commit/27b1b6b84478989844c655695323c849c684dd51))
 * Package update. ([203fee8](https://github.com/mathrunet/node_masamune/commit/203fee8cabfc6bea866ef4fce949d3c170f0be8d))
@@ -73,6 +75,7 @@
 * Package update. ([9acad0a](https://github.com/mathrunet/node_masamune/commit/9acad0a058338a75e700e53b0a94e4bc0fcf3c3e))
 * remove debug logs from Firebase loaders and bump package version. ([36e721e](https://github.com/mathrunet/node_masamune/commit/36e721ec6cc597aced1fc91105f9a04625cde0d2))
 * Save metadata on save. ([4cd3404](https://github.com/mathrunet/node_masamune/commit/4cd340499f47c1da850b9dfd77abac84c6ca8230))
+* Set the value of Ref. ([0a196cf](https://github.com/mathrunet/node_masamune/commit/0a196cf66bf4a08d694715c2b6a2694768d1ae69))
 * Update dependency versions for `@mathrunet/katana` ([d4a9aea](https://github.com/mathrunet/node_masamune/commit/d4a9aeadb6541d808618098c5a4b2eaf72bf7d50))
 * Video bug fix. ([0fa5f9f](https://github.com/mathrunet/node_masamune/commit/0fa5f9f8ef2cda5420a54db9445f72e9b1f4d6e6))
 
