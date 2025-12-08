@@ -1,6 +1,7 @@
 import * as functions from "firebase-functions/v2";
 import { HttpFunctionsOptions } from "@mathrunet/masamune";
 import * as admin from "firebase-admin";
+import { DeleteUserResponse } from "../lib/interface";
 
 /**
  * Make sure to delete the FirebaseAuthentication user.
@@ -36,9 +37,10 @@ module.exports = (
             }
             const authInstance = admin.auth();
             await authInstance.deleteUser(userId);
-            return {
+            const response: DeleteUserResponse = {
                 success: true,
             };
+            return response;
         } catch (err) {
             console.log(err);
             throw err;

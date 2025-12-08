@@ -1,4 +1,4 @@
-import * as katana from "@mathrunet/katana";
+import * as masamune from "@mathrunet/masamune";
 
 /**
  * Define a list of applicable Functions for FirebaseFunctions.
@@ -11,5 +11,5 @@ export const Functions = {
    * 
    * FirebaseAuthenticationのユーザーを削除するようにします。
    */
-  deleteUser: (options: katana.HttpFunctionsOptions = {}) => new katana.FunctionsData({ id: "delete_user", func: require("./functions/delete_user"), options: options }),
+  deleteUser: (options: masamune.HttpFunctionsOptions = {}) => new masamune.FunctionsData({ id: "delete_user", func: require("./functions/delete_user"), options: options }),
 } as const;
