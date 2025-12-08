@@ -10,3 +10,4 @@
  */
 export * from "@mathrunet/masamune";
 export * from "./functions";
+export * from "./lib/interface";
