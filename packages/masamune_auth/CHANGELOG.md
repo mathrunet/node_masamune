@@ -1,4 +1,4 @@
-## [3.8.2](https://github.com/mathrunet/node_masamune/compare/v3.7.0...v3.8.2) (2025-12-08)
+## [3.8.3](https://github.com/mathrunet/node_masamune/compare/v3.7.0...v3.8.3) (2025-12-08)
 
 
 ### chore
@@ -70,6 +70,7 @@
 ### fix
 
 * Add methods such as load and save to ModelRefBase. ([cbf9eb2](https://github.com/mathrunet/node_masamune/commit/cbf9eb29d802990dcffe0c3322b3d41365b8a9a4))
+* Add missing packages. ([389630b](https://github.com/mathrunet/node_masamune/commit/389630b2baec8ee634e105690343a7ff5edc30bb))
 * Add ModelFieldValue interface. ([0ff33aa](https://github.com/mathrunet/node_masamune/commit/0ff33aa6f1331569658a3fd629b1329eafef8c50))
 * Audio-related fixes ([9e2440b](https://github.com/mathrunet/node_masamune/commit/9e2440b9e78c15ecc9d495da5ed0f173250bf88c))
 * Bug fix. ([14d3ba4](https://github.com/mathrunet/node_masamune/commit/14d3ba4df05b723eb95768dc90a683f38fb8baa3))
