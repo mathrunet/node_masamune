@@ -9,6 +9,34 @@ import { DocumentModel } from "../exntensions/firestore.extension";
 export type ModelFieldValueSource = "user" | "server";
 
 /**
+ * DynamicMap interface.
+ * 
+ * DynamicMapのインターフェース。
+ */
+export type DynamicMap = { [key: string]: any };
+
+/**
+ * DynamicList interface.
+ * 
+ * DynamicListのインターフェース。
+ */
+export type DynamicList = any[];
+
+/**
+ * ModelWhere interface.
+ * 
+ * ModelWhereのインターフェース。
+ */
+export type ModelFieldValueWhere = { [field: string]: any } | undefined;
+
+/**
+ * ModelCondition interface.
+ * 
+ * ModelConditionのインターフェース。
+ */
+export type ModelFieldValueCondition = { [field: string]: any } | undefined;
+
+/**
  * Class for generating values for `ModelFieldValue` in katana_model.
  * 
  * katana_modelの`ModelFieldValue`用の値を生成するためのクラス。
