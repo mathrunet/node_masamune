@@ -1,5 +1,6 @@
 import * as functions from "firebase-functions/v2";
 import { Api, HttpFunctionsOptions } from "@mathrunet/masamune";
+import { ApiHeader, OpenAIRequest, OpenAIResponse } from "../lib/interface";
 
 /**
  * The text is generated using Open AI's GPT.
@@ -55,19 +56,21 @@ module.exports = (
             if (message.length <= 0) {
                 throw new functions.https.HttpsError("invalid-argument", "No content specified in `message`.");
             }
+            const headers: ApiHeader = {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${apiKey}`,
+            };
+            const request: OpenAIRequest = {
+                model: model,
+                messages: message,
+                temperature: temperature,
+            };
             const res = await Api.post("https://api.openai.com/v1/chat/completions", {
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${apiKey}`,
-                },
-                data: JSON.stringify({
-                    "model": model,
-                    "messages": message,
-                    "temperature": temperature,
-                }),
+                headers: headers,
+                data: JSON.stringify(request),
             });
 
-            return (await res.json()) as { [key: string]: any };
+            return (await res.json()) as OpenAIResponse;
         } catch (err) {
             console.log(err);
             throw err;
