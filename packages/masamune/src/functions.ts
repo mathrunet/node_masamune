@@ -1,4 +1,5 @@
-import * as katana from "@mathrunet/katana";
+import { HttpFunctionsOptions } from "./lib/src/functions_base";
+import { FunctionsData } from "./lib/src/functions_data";
 
 /**
  * Define a list of applicable Functions for FirebaseFunctions.
@@ -10,5 +11,5 @@ export const Functions = {  /**
    * 
    * テストを行うためのエンドポイントです。
    */
-  test: (options: katana.HttpFunctionsOptions = {}) => new katana.FunctionsData({ id: "test", func: require("./functions/test"), options: options }),
+  test: (options: HttpFunctionsOptions = {}) => new FunctionsData({ id: "test", func: require("./functions/test"), options: options }),
 } as const;

@@ -1,5 +1,6 @@
 import * as functions from "firebase-functions/v2";
-import { HttpFunctionsOptions, firestoreLoader } from "@mathrunet/katana";
+import { HttpFunctionsOptions } from "../lib/src/functions_base";
+import { firestoreLoader } from "../lib/src/firebase_loader";
 
 /**
  * Endpoints for testing.
