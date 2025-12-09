@@ -7,6 +7,7 @@
   "scripts": {
     "build": "tsc",
     "prepare": "npm run build",
+    "prepublish": "npm install && npm run build && npm run test",
     "test": "NODE_OPTIONS='--experimental-vm-modules' jest",
     "postversion": "npm run changelog",
     "changelog": "conventional-changelog -p eslint -i CHANGELOG.md -s -r 0 && git add CHANGELOG.md && git commit -m 'chore(release): publish package'",
@@ -39,7 +40,7 @@
   },
   "homepage": "https://github.com/mathrunet/node_masamune#readme",
   "dependencies": {
-    "@mathrunet/masamune": "^3.8.9",
+    "@mathrunet/masamune": "^3.9.4",
     "firebase-admin": "^13.1.0",
     "firebase-functions": "^6.3.2",
     "typescript": "^5.9.2",
@@ -47,8 +48,10 @@
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",
+    "dotenv": "^16.4.5",
     "jest": "^30.1.3",
     "ts-jest": "^29.1.2",
-    "firebase-functions-test": "^3.4.0"
+    "firebase-functions-test": "^3.4.0",
+    "conventional-changelog-cli": "^5.0.0"
   }
 }
