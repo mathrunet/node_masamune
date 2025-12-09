@@ -25,6 +25,10 @@ export class ModelTimestampConverter extends ModelFieldValueConverter {
     value: any,
     original: { [field: string]: any },
   ): { [field: string]: any } | null {
+    // Skip if already a ModelTimestamp instance (e.g., from FirestoreConverter)
+    if (value instanceof ModelTimestamp) {
+      return { [key]: value };
+    }
     if (value !== null && typeof value === "object" && "@type" in value && value["@type"] === this.type) {
       const time = value["@time"] as number | null | undefined ?? 0;
       return {
@@ -40,13 +44,8 @@ export class ModelTimestampConverter extends ModelFieldValueConverter {
     original: { [field: string]: any },
   ): { [field: string]: any } | null {
     if (value instanceof ModelTimestamp) {
-      return {
-        [key]: {
-          "@type": this.type,
-          "@time": value["@time"] * 1000,
-          "@source": value["@source"],
-        },
-      };
+      // Pass through ModelTimestamp instance as-is; FirestoreConverter will handle it
+      return { [key]: value };
     }
     return null;
   }
@@ -123,14 +122,13 @@ export class FirestoreModelTimestampConverter extends FirestoreModelFieldValueCo
       const targetKey = `#${key}`;
       const targetMap = original[targetKey] as { [field: string]: any } | null | undefined ?? {};
       const type = targetMap["@type"] as string | null | undefined ?? "";
-      if (type == this.type) {
+      // Convert Timestamp to ModelTimestamp even without metadata (type === "")
+      if (type == this.type || type === "") {
+        // Return a proper ModelTimestamp instance so .value() works
+        const instance = new ModelTimestamp(undefined, "server");
+        instance["@time"] = value.toMillis() * 1000; // Store microseconds for .value() to work correctly
         return {
-          [key]: {
-            "@type": this.type,
-            "@time": value.toMillis() * 1000, // Convert milliseconds to microseconds
-            "@now": false,
-            "@source": "server"
-          },
+          [key]: instance,
           [targetKey]: null,
         };
       }

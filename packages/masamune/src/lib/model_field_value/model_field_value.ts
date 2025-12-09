@@ -124,7 +124,8 @@ export class ModelCounter extends ModelFieldValue {
 export class ModelTimestamp extends ModelFieldValue {
     constructor(time?: Date, source?: ModelFieldValueSource) {
         super("ModelTimestamp", source);
-        this["@time"] = time?.getTime() ?? Date.now();
+        // Store in microseconds for consistency with value() and Firestore converters
+        this["@time"] = (time?.getTime() ?? Date.now()) * 1000;
     }
     "@time": number;
 
