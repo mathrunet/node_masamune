@@ -40,7 +40,7 @@
   },
   "homepage": "https://github.com/mathrunet/node_masamune#readme",
   "dependencies": {
-    "@mathrunet/masamune": "^3.9.4",
+    "@mathrunet/masamune": "^3.9.5",
     "firebase-admin": "^13.1.0",
     "firebase-functions": "^6.3.2",
     "typescript": "^5.9.2"

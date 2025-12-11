@@ -18,7 +18,9 @@
     "packages/masamune_scheduler",
     "packages/masamune_storage",
     "packages/masamune_token_android",
-    "packages/masamune_token_google"
+    "packages/masamune_token_google",
+    "packages/masamune_workflow",
+    "packages/masamune_workflow_marketing"
   ],
   "description": "Manages packages for the server portion (NodeJS) of the Masamune framework.",
   "scripts": {

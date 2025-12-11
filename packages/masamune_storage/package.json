@@ -1,6 +1,6 @@
 {
   "name": "@mathrunet/masamune_storage",
-  "version": "3.8.2",
+  "version": "3.8.3",
   "description": "Cloud Storage for Firebase Masamune framework package plugin.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -40,7 +40,7 @@
   },
   "homepage": "https://github.com/mathrunet/node_masamune#readme",
   "dependencies": {
-    "@mathrunet/masamune": "^3.9.4",
+    "@mathrunet/masamune": "^3.9.5",
     "firebase-admin": "^13.1.0",
     "firebase-functions": "^6.3.2",
     "typescript": "^5.9.2"

@@ -1,6 +1,6 @@
 {
   "name": "@mathrunet/masamune_auth",
-  "version": "3.8.1",
+  "version": "3.8.3",
   "description": "Masamune framework package plugin for Firebase Authentication support.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -40,7 +40,7 @@
   },
   "homepage": "https://github.com/mathrunet/node_masamune#readme",
   "dependencies": {
-    "@mathrunet/masamune": "^3.9.3",
+    "@mathrunet/masamune": "^3.9.5",
     "firebase-admin": "^13.1.0",
     "firebase-functions": "^6.3.2",
     "typescript": "^5.9.2"
