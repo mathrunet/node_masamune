@@ -382,6 +382,47 @@ describe("Full Pipeline Integration", () => {
             }
         }
 
+        // Sentiment chart
+        if (aiAnalysis?.reviewAnalysis?.sentiment) {
+            try {
+                charts.sentiment = await chartService.generateSentimentChart(aiAnalysis.reviewAnalysis.sentiment);
+                fs.writeFileSync(path.join(tmpDir, "chart_sentiment.png"), charts.sentiment);
+                console.log("  ✓ Sentiment chart");
+            } catch (error) {
+                console.log(`  ✗ Sentiment chart: ${(error as Error).message}`);
+            }
+        }
+
+        // Retention ratio chart
+        if (combinedData.firebaseAnalytics?.dau && combinedData.firebaseAnalytics?.mau) {
+            try {
+                charts.retentionRatio = await chartService.generateRetentionRatioChart(
+                    combinedData.firebaseAnalytics.dau,
+                    combinedData.firebaseAnalytics.mau
+                );
+                fs.writeFileSync(path.join(tmpDir, "chart_retention_ratio.png"), charts.retentionRatio);
+                console.log("  ✓ Retention ratio chart");
+            } catch (error) {
+                console.log(`  ✗ Retention chart: ${(error as Error).message}`);
+            }
+        }
+
+        // GitHub activity chart
+        if (combinedData.github) {
+            try {
+                charts.githubActivity = await chartService.generateGitHubActivityChart({
+                    openIssues: combinedData.github.openIssues || 0,
+                    closedIssues: combinedData.github.closedIssuesInPeriod || 0,
+                    openPRs: combinedData.github.openPRs || 0,
+                    mergedPRs: combinedData.github.mergedPRsInPeriod || 0,
+                });
+                fs.writeFileSync(path.join(tmpDir, "chart_github_activity.png"), charts.githubActivity);
+                console.log("  ✓ GitHub activity chart");
+            } catch (error) {
+                console.log(`  ✗ GitHub chart: ${(error as Error).message}`);
+            }
+        }
+
         console.log();
 
         // ======================================
