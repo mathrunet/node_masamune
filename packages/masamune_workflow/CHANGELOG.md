@@ -1,10 +1,11 @@
-## [3.8.7](https://github.com/mathrunet/node_masamune/compare/v3.7.0...v3.8.7) (2025-12-08)
+# [3.9.0](https://github.com/mathrunet/node_masamune/compare/v3.7.0...v3.9.0) (2025-12-11)
 
 
 ### chore
 
 * Add Node.js 20 engine requirement to all package.json files ([1e60d25](https://github.com/mathrunet/node_masamune/commit/1e60d25b2c44e1efd398a6a1229d2ba3f46da1f5))
 * Create test files. ([357849a](https://github.com/mathrunet/node_masamune/commit/357849a6244c8a6167a0188945cc40a7c282c703))
+* Definition of interface. ([2ac14be](https://github.com/mathrunet/node_masamune/commit/2ac14bec10077e90c25562a70d2cf32a61ae6fd0))
 * Definition of interface. ([c5dcba7](https://github.com/mathrunet/node_masamune/commit/c5dcba7e17e38aa3ec1b159d9f3715c273182e64))
 * Definition of interface. ([f19bfa6](https://github.com/mathrunet/node_masamune/commit/f19bfa64cf54474c93423a11175c259a4751db4a))
 * Definition of interface. ([0caf4d0](https://github.com/mathrunet/node_masamune/commit/0caf4d0e78f785d49e6ae820f90322dd7b182458))
@@ -18,6 +19,7 @@
 * Definition of interface. ([7fe670b](https://github.com/mathrunet/node_masamune/commit/7fe670b4466999f45a260f4fa31f7430ad297203))
 * Definition of interface. ([b305bbd](https://github.com/mathrunet/node_masamune/commit/b305bbdc965c9e0b06b7a13d5c5c39a24d2125cb))
 * Deleted because a katana remained. ([845a8d9](https://github.com/mathrunet/node_masamune/commit/845a8d932962689919db12d8b67baf757bf49f59))
+* Package update. ([4d16cf5](https://github.com/mathrunet/node_masamune/commit/4d16cf5ab3b82ca65af20b38a3f471a54c9b87e2))
 * Package update. ([e00d076](https://github.com/mathrunet/node_masamune/commit/e00d0766cc62d7fa7073dac9cf7c2c80ddb0d89f))
 * Package update. ([8891b4e](https://github.com/mathrunet/node_masamune/commit/8891b4e1995dd931d3055d329fdd0513d3eae23a))
 * Package update. ([440dbe9](https://github.com/mathrunet/node_masamune/commit/440dbe90ed555f4d7e260a204ef4463e14e6623c))
@@ -44,6 +46,9 @@
 * Add an asset method. ([5136f81](https://github.com/mathrunet/node_masamune/commit/5136f81f2acf5d2b71f0cdc42a3a953f8c62c959))
 * Add an interface and methods for repository analysis to the GitHub client, and create document files for bug lists and tasks. ([f7cf613](https://github.com/mathrunet/node_masamune/commit/f7cf6137b95b9040ea55f1b6fb6d029e188926ef))
 * Add Github summary function. ([3320b2e](https://github.com/mathrunet/node_masamune/commit/3320b2e894b7f85e61a5f891b2d3095bf53d79bd))
+* Add JobRunner ([e78dffd](https://github.com/mathrunet/node_masamune/commit/e78dffd214f9fc7e92309eb43e3aaf8450f3bd38))
+* Add JobRunner. ([3eb5a6a](https://github.com/mathrunet/node_masamune/commit/3eb5a6a06afb7e12c6a39cbce5a2328c70eb74d5))
+* Add logging concept. ([fe5f4ed](https://github.com/mathrunet/node_masamune/commit/fe5f4ed24272ea045a33a237730629c610ff53b4))
 * Add Lyria background music generation, Google Cloud Text-to-Speech integration, updated test configuration, and new development documentation. ([d234b83](https://github.com/mathrunet/node_masamune/commit/d234b83b0ab706bfa3c93f2f887755aa022baa48))
 * add marketing pipeline for data collection and scheduling, and update short video generation tests to include narration and BGM. ([4020466](https://github.com/mathrunet/node_masamune/commit/402046616c18ae3c65fe0eb43e1a103a95f1cc04))
 * Add PDF creation function. ([de349b3](https://github.com/mathrunet/node_masamune/commit/de349b382bacd325929b2c6fa8330dbe7fe12b98))
@@ -85,6 +90,7 @@
 * Create E2E tests. ([e33ed27](https://github.com/mathrunet/node_masamune/commit/e33ed2702cc6d2771036fd3bc8e5c4de811229e7))
 * Explicitly pass the Firebase Admin app during Firestore and Storage initialization, and update the version. ([9169415](https://github.com/mathrunet/node_masamune/commit/9169415adb873a0ce1534a5762158d84ca477212))
 * Firestore interface change. ([027e464](https://github.com/mathrunet/node_masamune/commit/027e4647febaac184123ad5d8d7dc0ea452e3df7))
+* Fixed a bug where tests were failing. ([cdab6ca](https://github.com/mathrunet/node_masamune/commit/cdab6ca41aa5d39987dc484819a802fa9b2aa732))
 * Fixed an issue where usage was not being added. ([ae0a9ee](https://github.com/mathrunet/node_masamune/commit/ae0a9ee1224d7bdc019140bd5889cbcab5e8bdd2))
 * Fixed missing export. ([f8948be](https://github.com/mathrunet/node_masamune/commit/f8948bee2d089c6df7a1b2e34bab844413f42e87))
 * I made it output. ([6d17645](https://github.com/mathrunet/node_masamune/commit/6d1764546c2c68b3af61148eac9ca1635e9fddf7))
@@ -92,6 +98,7 @@
 * Import bug fix. ([daefec0](https://github.com/mathrunet/node_masamune/commit/daefec055ad6bd1727d1df561cad25ce793f91c2))
 * Initialize Firebase Admin SDK if not already initialized when loading Firestore or Storage. ([678c1bd](https://github.com/mathrunet/node_masamune/commit/678c1bd1896ddd3fe0e541e9eeea29797b63e300))
 * Interface adjustment. ([82d64f3](https://github.com/mathrunet/node_masamune/commit/82d64f3420f98b57a3dc66300c70b8cd646c8e98))
+* ModelTimestamp bug fix. ([1852f4e](https://github.com/mathrunet/node_masamune/commit/1852f4e40ad26e4ddf5ba9042b23f5edca8f7f0b))
 * Move `@types/node-fetch` from devDependencies to dependencies. ([d5bc8be](https://github.com/mathrunet/node_masamune/commit/d5bc8be021d25469d9fb58d6b73f8471883969c8))
 * Option Interfacing ([9fede77](https://github.com/mathrunet/node_masamune/commit/9fede77e87e9f4313445951c9b23a23472c0fa92))
 * Package update ([038b6c5](https://github.com/mathrunet/node_masamune/commit/038b6c51885e6e59bc469e9728e790e2021f6e05))
@@ -113,9 +120,11 @@
 * Add tests ([52c8ad3](https://github.com/mathrunet/node_masamune/commit/52c8ad3952b375c72338b0b22c3e89ddfd0e3789))
 * Complete AndroidToken test. ([3064805](https://github.com/mathrunet/node_masamune/commit/3064805ab63ee58d06d3e9ddb872d136166679eb))
 * Create a test. ([335d957](https://github.com/mathrunet/node_masamune/commit/335d957c3f2ef10c56f5c588eb288cb2f2c88490))
+* Create tests. ([aa57c66](https://github.com/mathrunet/node_masamune/commit/aa57c665a0ebca77173c7beb778a8e5305f53fd1))
 * Creating a test. ([b7daa4e](https://github.com/mathrunet/node_masamune/commit/b7daa4ec115c742c4b5e4a5221d8a493aa0f114c))
 * Creating tests. ([2a91c82](https://github.com/mathrunet/node_masamune/commit/2a91c824c4cf584fac10f9ac61d9bf4f103c5196))
 * Extend the timeout for the short video generation test. ([9e46c82](https://github.com/mathrunet/node_masamune/commit/9e46c828c791d933b32344842e63830782aa0fa5))
+* Fixes to pass tests. ([a656689](https://github.com/mathrunet/node_masamune/commit/a6566898613d76cd1027a319cda4f605044db151))
 
 
 
