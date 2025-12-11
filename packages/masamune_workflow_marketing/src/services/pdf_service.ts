@@ -108,6 +108,13 @@ export class PDFService {
                 if (options.data.marketingAnalytics?.overallAnalysis) {
                     doc.addPage();
                     this.addSummaryPage(doc, options);
+
+                    // Highlights & Concerns page (separate page to avoid overflow)
+                    const analysis = options.data.marketingAnalytics.overallAnalysis;
+                    if ((analysis.highlights?.length || 0) > 0 || (analysis.concerns?.length || 0) > 0) {
+                        doc.addPage();
+                        this.addHighlightsConcernsPage(doc, options);
+                    }
                 }
 
                 // User Analytics page
@@ -307,63 +314,87 @@ export class PDFService {
         }
 
         doc.fillColor("#000000");
+    }
 
-        // Highlights and Concerns
-        if ((analysis?.highlights?.length || 0) > 0 || (analysis?.concerns?.length || 0) > 0) {
-            // Check if we need a new page
-            if (y > this.pageHeight - 200) {
-                doc.addPage();
-                y = this.margin;
+    /**
+     * Add highlights and concerns page.
+     * This page displays highlights and concerns in a 2-column layout.
+     * Limited to 5 items each to fit on a single page.
+     */
+    private addHighlightsConcernsPage(
+        doc: PDFKit.PDFDocument,
+        options: PDFGenerationOptions
+    ): void {
+        let y = this.margin;
+        const analysis = options.data.marketingAnalytics?.overallAnalysis;
+
+        // Page title
+        doc.fontSize(20).font(this.getFont(true));
+        doc.text("Highlights & Concerns", this.margin, y);
+        y += 40;
+
+        const halfWidth = this.contentWidth / 2 - 15;
+        const maxItemsPerList = 5;
+        const itemHeight = 60; // Fixed height per item to prevent overflow
+
+        // Get limited items
+        const highlights = (analysis?.highlights || []).slice(0, maxItemsPerList);
+        const concerns = (analysis?.concerns || []).slice(0, maxItemsPerList);
+        const remainingHighlights = Math.max(0, (analysis?.highlights?.length || 0) - maxItemsPerList);
+        const remainingConcerns = Math.max(0, (analysis?.concerns?.length || 0) - maxItemsPerList);
+
+        // Headers
+        doc.fontSize(14).font(this.getFont(true));
+        doc.fillColor("#1b5e20");
+        doc.text("Highlights", this.margin, y);
+        doc.fillColor("#b71c1c");
+        doc.text("Concerns", this.margin + halfWidth + 30, y);
+        y += 25;
+
+        // Draw highlights and concerns side by side
+        const maxItems = Math.max(highlights.length, concerns.length);
+
+        for (let i = 0; i < maxItems; i++) {
+            // Highlight item
+            if (i < highlights.length) {
+                doc.fillColor("#e8f5e9");
+                doc.roundedRect(this.margin, y, halfWidth, itemHeight - 5, 4).fill();
+                doc.fillColor("#1b5e20");
+                doc.fontSize(10).font(this.getFont());
+                doc.text(highlights[i], this.margin + 8, y + 8, {
+                    width: halfWidth - 16,
+                    height: itemHeight - 20,
+                    ellipsis: true,
+                });
             }
 
-            const halfWidth = this.contentWidth / 2 - 15;
+            // Concern item
+            if (i < concerns.length) {
+                doc.fillColor("#ffebee");
+                doc.roundedRect(this.margin + halfWidth + 30, y, halfWidth, itemHeight - 5, 4).fill();
+                doc.fillColor("#b71c1c");
+                doc.fontSize(10).font(this.getFont());
+                doc.text(concerns[i], this.margin + halfWidth + 38, y + 8, {
+                    width: halfWidth - 16,
+                    height: itemHeight - 20,
+                    ellipsis: true,
+                });
+            }
 
-            // Highlights header
-            doc.fontSize(14).font(this.getFont(true));
-            doc.fillColor("#000000");
-            doc.text("Highlights", this.margin, y);
-            doc.text("Concerns", this.margin + halfWidth + 30, y);
-            y += 22;
+            y += itemHeight;
+        }
 
-            // Draw highlights and concerns side by side
-            const maxItems = Math.max(
-                analysis?.highlights?.length || 0,
-                analysis?.concerns?.length || 0
-            );
+        // Show remaining count if there are more items
+        if (remainingHighlights > 0 || remainingConcerns > 0) {
+            y += 10;
+            doc.fontSize(9).font(this.getFont());
+            doc.fillColor("#757575");
 
-            for (let i = 0; i < maxItems; i++) {
-                if (y > this.pageHeight - 80) {
-                    doc.addPage();
-                    y = this.margin;
-                    doc.fontSize(14).font(this.getFont(true));
-                    doc.text("Highlights (continued)", this.margin, y);
-                    doc.text("Concerns (continued)", this.margin + halfWidth + 30, y);
-                    y += 22;
-                }
-
-                // Highlight item
-                if (analysis?.highlights && i < analysis.highlights.length) {
-                    doc.fillColor("#e8f5e9");
-                    doc.roundedRect(this.margin, y, halfWidth, 35, 4).fill();
-                    doc.fillColor("#1b5e20");
-                    doc.fontSize(10).font(this.getFont());
-                    doc.text(analysis.highlights[i], this.margin + 8, y + 8, {
-                        width: halfWidth - 16,
-                    });
-                }
-
-                // Concern item
-                if (analysis?.concerns && i < analysis.concerns.length) {
-                    doc.fillColor("#ffebee");
-                    doc.roundedRect(this.margin + halfWidth + 30, y, halfWidth, 35, 4).fill();
-                    doc.fillColor("#b71c1c");
-                    doc.fontSize(10).font(this.getFont());
-                    doc.text(analysis.concerns[i], this.margin + halfWidth + 38, y + 8, {
-                        width: halfWidth - 16,
-                    });
-                }
-
-                y += 40;
+            if (remainingHighlights > 0) {
+                doc.text(`+ ${remainingHighlights} more highlights`, this.margin, y);
+            }
+            if (remainingConcerns > 0) {
+                doc.text(`+ ${remainingConcerns} more concerns`, this.margin + halfWidth + 30, y);
             }
         }
 

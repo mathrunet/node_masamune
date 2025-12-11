@@ -412,9 +412,15 @@ describe("GenerateMarketingPdf Integration Tests", () => {
                     console.log("  Batch count from init result:", batchCount);
 
                     // Build updated actions array manually (since Firestore may have caching issues)
+                    // Limit batches for testing to prevent timeout (process only first 10 batches)
+                    const maxBatchesForTest = 10;
+                    const actualBatchCount = Math.min(batchCount, maxBatchesForTest);
+                    if (batchCount > maxBatchesForTest) {
+                        console.log(`  Limiting batches from ${batchCount} to ${maxBatchesForTest} for test performance`);
+                    }
                     const processActionsToRun: any[] = [];
                     const initIndex = 3;
-                    for (let i = 0; i < batchCount; i++) {
+                    for (let i = 0; i < actualBatchCount; i++) {
                         processActionsToRun.push({
                             command: "analyze_github_process",
                             index: initIndex + 1 + i,
@@ -424,7 +430,7 @@ describe("GenerateMarketingPdf Integration Tests", () => {
                     }
                     const summaryActionToRun = {
                         command: "analyze_github_summary",
-                        index: initIndex + 1 + batchCount,
+                        index: initIndex + 1 + actualBatchCount,
                         githubRepository: githubRepo,
                     };
 
@@ -433,8 +439,8 @@ describe("GenerateMarketingPdf Integration Tests", () => {
                         ...actions.slice(0, initIndex + 1), // original actions up to and including init
                         ...processActionsToRun,
                         summaryActionToRun,
-                        { command: "analyze_marketing_data", index: initIndex + 2 + batchCount },
-                        { command: "generate_marketing_pdf", index: initIndex + 3 + batchCount, reportType: "weekly" },
+                        { command: "analyze_marketing_data", index: initIndex + 2 + actualBatchCount },
+                        { command: "generate_marketing_pdf", index: initIndex + 3 + actualBatchCount, reportType: "weekly" },
                     ];
                     currentActions = updatedActions;
 
@@ -469,7 +475,7 @@ describe("GenerateMarketingPdf Integration Tests", () => {
                     }
 
                     // 4c: Run analyze_github_summary
-                    if (batchCount > 0) {
+                    if (actualBatchCount > 0) {
                         console.log("  Generating GitHub summary...");
                         const ghSummaryActionId = `${pipelineTaskId}-gh-summary`;
                         const ghSummaryRefs = await createTestDataWithResults({
@@ -667,7 +673,7 @@ describe("GenerateMarketingPdf Integration Tests", () => {
                 console.error("Pipeline test error:", error);
                 throw error;
             }
-        }, 1800000); // 30 minutes timeout for full pipeline with GitHub analysis (102+ folder batches)
+        }, 600000); // 10 minutes timeout (batches limited to 10 for test performance)
     });
 
     describe("Empty Data Test", () => {

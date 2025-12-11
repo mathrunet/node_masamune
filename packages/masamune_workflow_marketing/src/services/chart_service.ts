@@ -444,13 +444,32 @@ export class ChartService {
             }
         }
 
-        // Country distribution chart
+        // Country distribution chart (top 5 only)
         if (data.firebaseAnalytics?.demographics?.countryDistribution) {
             const countryDist = data.firebaseAnalytics.demographics.countryDistribution;
-            const countryData: CountryDistributionData = {
-                labels: Object.keys(countryDist),
-                values: Object.values(countryDist),
-            };
+
+            // Sort by value and take top 5
+            const sortedEntries = Object.entries(countryDist)
+                .sort((a, b) => (b[1] as number) - (a[1] as number));
+            const top5Entries = sortedEntries.slice(0, 5);
+
+            // If there are more than 5, add "Others" category
+            let countryData: CountryDistributionData;
+            if (sortedEntries.length > 5) {
+                const othersValue = sortedEntries
+                    .slice(5)
+                    .reduce((sum, entry) => sum + (entry[1] as number), 0);
+                countryData = {
+                    labels: [...top5Entries.map(e => e[0]), "Others"],
+                    values: [...top5Entries.map(e => e[1] as number), othersValue],
+                };
+            } else {
+                countryData = {
+                    labels: top5Entries.map(e => e[0]),
+                    values: top5Entries.map(e => e[1] as number),
+                };
+            }
+
             if (countryData.labels.length > 0) {
                 promises.push(
                     this.generateCountryDistributionChart(countryData).then((buffer) => {
