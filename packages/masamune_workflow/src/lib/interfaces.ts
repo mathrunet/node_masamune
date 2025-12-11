@@ -97,6 +97,10 @@ export interface Member extends Model {
 export interface Project extends Model {
     "name"?: string;
     "description"?: string;
+    "concept"?: string;
+    "goal"?: string;
+    "target"?: string;
+    "kpi"?: { [key: string]: any };
     "organization"?: ModelRefBase;
     "icon"?: string;
     "google_access_token"?: string;
