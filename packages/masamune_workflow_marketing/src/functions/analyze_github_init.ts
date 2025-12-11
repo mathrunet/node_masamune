@@ -153,7 +153,7 @@ export class AnalyzeGitHubInit extends WorkflowProcessFunctionBase {
             console.log(`AnalyzeGitHubInit: State saved to Storage`);
 
             // 9. Update task.actions dynamically
-            const taskRef = action.task;
+            const taskRef = action.task?.ref;;
             console.log(`AnalyzeGitHubInit: action.task =`, taskRef ? taskRef.path : "undefined");
             console.log(`AnalyzeGitHubInit: task.actions length =`, task.actions?.length);
             if (taskRef) {

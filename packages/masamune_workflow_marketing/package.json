@@ -7,6 +7,7 @@
   "scripts": {
     "build": "tsc",
     "prepare": "npm run build",
+    "prepublish": "npm install && npm run build && npm run test",
     "test": "NODE_OPTIONS='--experimental-vm-modules' jest",
     "cleanup": "npx ts-node scripts/cleanup_test_data.ts",
     "postversion": "npm run changelog",
@@ -37,21 +38,21 @@
   },
   "homepage": "https://github.com/mathrunet/node_masamune#readme",
   "dependencies": {
-    "@mathrunet/masamune": "^3.8.9",
-    "firebase-admin": "^13.1.0",
-    "firebase-functions": "^6.3.2",
     "@google-analytics/data": "^4.9.0",
     "@google/genai": "^1.30.0",
+    "@mathrunet/masamune": "^3.9.5",
+    "@mathrunet/masamune_workflow": "^3.8.6",
+    "firebase-admin": "^13.1.0",
+    "firebase-functions": "^6.3.2",
     "googleapis": "^140.0.0",
     "jsonwebtoken": "^9.0.2",
-    "typescript": "^5.9.2",
-    "@mathrunet/masamune_workflow": "^3.8.1",
-    "pdfkit": "^0.15.0"
+    "pdfkit": "^0.15.0",
+    "typescript": "^5.9.2"
   },
   "devDependencies": {
-    "@types/pdfkit": "^0.13.8",
     "@types/jest": "^29.5.12",
     "@types/jsonwebtoken": "^9.0.9",
+    "@types/pdfkit": "^0.13.8",
     "conventional-changelog-cli": "^5.0.0",
     "dotenv": "^16.4.5",
     "firebase-functions-test": "^3.4.0",

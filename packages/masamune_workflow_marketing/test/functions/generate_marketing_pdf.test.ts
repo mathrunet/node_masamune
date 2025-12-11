@@ -22,6 +22,7 @@ import * as path from "path";
 import * as fs from "fs";
 import { ModelTimestamp } from "@mathrunet/masamune";
 import "@mathrunet/masamune";
+import { Action } from "@mathrunet/masamune_workflow";
 
 // Load test environment variables
 dotenv.config({ path: path.join(__dirname, "../.env") });
@@ -208,7 +209,7 @@ describe("GenerateMarketingPdf Integration Tests", () => {
 
         // Get the task to retrieve accumulated results
         const actionDoc = await firestore.doc(actionPath).load();
-        const actionData = actionDoc.data();
+        const actionData = actionDoc.data() as Action;
         const taskDoc = await actionData?.task?.load();
         const taskData = taskDoc?.data();
 
@@ -321,7 +322,7 @@ describe("GenerateMarketingPdf Integration Tests", () => {
                 );
                 console.log("Google Play Console data collected:", Object.keys(accumulatedResults));
 
-                await firestore.doc(gpRefs.actionPath).delete().catch(() => {});
+                await firestore.doc(gpRefs.actionPath).delete().catch(() => { });
 
                 // Step 2: Collect from App Store
                 console.log("Step 2: Collecting from App Store...");
@@ -347,7 +348,7 @@ describe("GenerateMarketingPdf Integration Tests", () => {
                 );
                 console.log("App Store data collected:", Object.keys(accumulatedResults));
 
-                await firestore.doc(asRefs.actionPath).delete().catch(() => {});
+                await firestore.doc(asRefs.actionPath).delete().catch(() => { });
 
                 // Step 3: Collect from Firebase Analytics
                 console.log("Step 3: Collecting from Firebase Analytics...");
@@ -373,7 +374,7 @@ describe("GenerateMarketingPdf Integration Tests", () => {
                 );
                 console.log("Firebase Analytics data collected:", Object.keys(accumulatedResults));
 
-                await firestore.doc(faRefs.actionPath).delete().catch(() => {});
+                await firestore.doc(faRefs.actionPath).delete().catch(() => { });
 
                 // Step 4: Analyze GitHub Repository
                 let currentActions = actions;
@@ -402,7 +403,7 @@ describe("GenerateMarketingPdf Integration Tests", () => {
                         token
                     );
                     console.log("  GitHub Init completed:", Object.keys(accumulatedResults));
-                    await firestore.doc(ghInitRefs.actionPath).delete().catch(() => {});
+                    await firestore.doc(ghInitRefs.actionPath).delete().catch(() => { });
 
                     // 4b: Run analyze_github_process for each batch
                     // Use batchCount from init result to build process actions
@@ -464,7 +465,7 @@ describe("GenerateMarketingPdf Integration Tests", () => {
                             ghProcessRefs.actionPath,
                             token
                         );
-                        await firestore.doc(ghProcessRefs.actionPath).delete().catch(() => {});
+                        await firestore.doc(ghProcessRefs.actionPath).delete().catch(() => { });
                     }
 
                     // 4c: Run analyze_github_summary
@@ -491,7 +492,7 @@ describe("GenerateMarketingPdf Integration Tests", () => {
                             token
                         );
                         console.log("  GitHub Analysis completed:", Object.keys(accumulatedResults));
-                        await firestore.doc(ghSummaryRefs.actionPath).delete().catch(() => {});
+                        await firestore.doc(ghSummaryRefs.actionPath).delete().catch(() => { });
                     }
                 } else {
                     console.warn("Step 4: Skipping GitHub analysis - No GITHUB_TOKEN");
@@ -528,7 +529,7 @@ describe("GenerateMarketingPdf Integration Tests", () => {
                 );
                 console.log("AI Analysis completed:", Object.keys(accumulatedResults));
 
-                await firestore.doc(analyzeRefs.actionPath).delete().catch(() => {});
+                await firestore.doc(analyzeRefs.actionPath).delete().catch(() => { });
 
                 // Step 6: Generate Marketing PDF
                 console.log("Step 6: Generating marketing PDF...");
@@ -652,8 +653,8 @@ describe("GenerateMarketingPdf Integration Tests", () => {
                 }
 
                 // Clean up
-                await firestore.doc(pdfRefs.actionPath).delete().catch(() => {});
-                await firestore.doc(pdfRefs.taskPath).delete().catch(() => {});
+                await firestore.doc(pdfRefs.actionPath).delete().catch(() => { });
+                await firestore.doc(pdfRefs.taskPath).delete().catch(() => { });
 
                 // Optionally clean up the uploaded PDF from Storage
                 // (Comment out if you want to keep it for manual inspection)
@@ -714,8 +715,8 @@ describe("GenerateMarketingPdf Integration Tests", () => {
                 console.log("Empty data test completed successfully!");
                 console.log("marketingAnalyticsPdf:", actionData?.assets?.marketingAnalyticsPdf);
             } finally {
-                await firestore.doc(refs.actionPath).delete().catch(() => {});
-                await firestore.doc(refs.taskPath).delete().catch(() => {});
+                await firestore.doc(refs.actionPath).delete().catch(() => { });
+                await firestore.doc(refs.taskPath).delete().catch(() => { });
             }
         }, 60000);
     });
@@ -764,8 +765,8 @@ describe("GenerateMarketingPdf Integration Tests", () => {
 
                 console.log("Token expired test completed successfully!");
             } finally {
-                await firestore.doc(refs.actionPath).delete().catch(() => {});
-                await firestore.doc(refs.taskPath).delete().catch(() => {});
+                await firestore.doc(refs.actionPath).delete().catch(() => { });
+                await firestore.doc(refs.taskPath).delete().catch(() => { });
             }
         }, 60000);
     });
@@ -815,8 +816,8 @@ describe("GenerateMarketingPdf Integration Tests", () => {
 
                 console.log("Invalid token test completed successfully!");
             } finally {
-                await firestore.doc(refs.actionPath).delete().catch(() => {});
-                await firestore.doc(refs.taskPath).delete().catch(() => {});
+                await firestore.doc(refs.actionPath).delete().catch(() => { });
+                await firestore.doc(refs.taskPath).delete().catch(() => { });
             }
         }, 1800000);
     });
