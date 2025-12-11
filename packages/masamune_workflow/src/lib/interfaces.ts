@@ -1,5 +1,7 @@
 import { ModelRefBase, ModelTimestamp } from "@mathrunet/masamune";
 import * as admin from "firebase-admin";
+import { WorkflowContext } from "./workflow_process_function_base";
+import { Firestore } from "firebase-admin/firestore";
 
 /**
  * Workflow repeat type.
@@ -29,6 +31,12 @@ export const WorkflowTaskStatusList = ["waiting", "running", "failed", "complete
  */
 export type WorkflowTaskStatus = (typeof WorkflowTaskStatusList)[number];
 
+/**
+ * Task log phase type.
+ * 
+ * タスクログのフェーズタイプ。
+ */
+export type TaskLogPhase = "start" | "end" | "error" | "warning" | "info";
 
 /**
  * Workflow role type.
@@ -135,6 +143,7 @@ export interface Task extends Model {
     "currentAction"?: ModelRefBase | admin.firestore.FieldValue;
     "nextAction"?: ActionCommand | admin.firestore.FieldValue;
     "error"?: { [key: string]: any };
+    "log"?: TaskLog[];
     "prompt"?: string;
     "materials"?: { [key: string]: any };
     "results"?: { [key: string]: any };
@@ -146,6 +155,19 @@ export interface Task extends Model {
     "finishedTime"?: ModelTimestamp;
     "createdTime": ModelTimestamp;
     "updatedTime": ModelTimestamp;
+}
+
+/**
+ * Task log interface.
+ * 
+ * タスクログのインターフェース。
+ */
+export interface TaskLog {
+    "time": number;
+    "message"?: string;
+    "action": ActionCommand;
+    "phase": TaskLogPhase;
+    "data"?: { [key: string]: any };
 }
 
 /**
@@ -162,6 +184,7 @@ export interface Action extends Model {
     "status": WorkflowTaskStatus;
     "error"?: { [key: string]: any };
     "prompt"?: string;
+    "log"?: TaskLog[];
     "materials"?: { [key: string]: any };
     "results"?: { [key: string]: any };
     "assets"?: { [key: string]: any };

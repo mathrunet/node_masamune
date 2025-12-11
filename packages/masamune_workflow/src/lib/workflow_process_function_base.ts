@@ -1,7 +1,7 @@
 import * as functions from "firebase-functions/v2";
-import { FunctionsBase, HttpFunctionsOptions, ModelFieldValue, ModelTimestamp } from "@mathrunet/masamune";
+import { firestoreLoader, FunctionsBase, HttpFunctionsOptions, ModelTimestamp } from "@mathrunet/masamune";
 import * as admin from "firebase-admin";
-import { Action, Task, Usage, Plan, Subscription, Campaign } from "./interfaces";
+import { Action, Task, Usage, Plan, Subscription, Campaign, TaskLog } from "./interfaces";
 import { GoogleGenAI } from "@google/genai";
 import "@mathrunet/masamune";
 
@@ -50,6 +50,7 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
     data: { [key: string]: any } = {};
     build(regions: string[]): Function {
         const options = this.options as HttpFunctionsOptions | undefined | null;
+        const defaultDatabaseId = options?.firestoreDatabaseIds?.[0] ?? null;
         return functions.tasks.onTaskDispatched(
             {
                 timeoutSeconds: options?.timeoutSeconds,
@@ -77,7 +78,7 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                     if (admin.apps.length === 0) {
                         admin.initializeApp();
                     }
-                    const firestore = admin.firestore();
+                    const firestore = firestoreLoader(defaultDatabaseId);
                     const action = await firestore.doc(path).load();
                     if (!action.exists) {
                         throw new Error("action-not-found");
@@ -122,7 +123,20 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                             action: actionData,
                             task: taskData,
                         };
+                        const startLog: TaskLog = {
+                            time: new Date().getTime(),
+                            phase: "start",
+                            action: actionData.command,
+                        };
+                        await task.ref.save({
+                            log: [
+                                ...taskData.log ?? [],
+                                startLog,
+                            ],
+                        }, { merge: true });
                         const result = await this.process(context);
+                        const logs = result.log ?? [];
+                        delete result.log;
                         const finishedTime = new Date();
                         const duration = (finishedTime.getTime() - startedTime.getTime()) / 1000.0;
                         let usage = _kDefaultLoadPrice + _kDefaultSavePrice + _kDefaultRequetPrice + duration * _kDefaultCpuPrice + duration * _kDefaultMemoryPrice;
@@ -196,12 +210,23 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                                     updatedActionData,
                                     { merge: true }
                                 );
+                                const finishLog: TaskLog = {
+                                    time: new Date().getTime(),
+                                    phase: "end",
+                                    action: actionData.command,
+                                };
                                 const updatedTaskData: Task = {
                                     ...taskData,
                                     currentAction: admin.firestore.FieldValue.delete(),
                                     nextAction: admin.firestore.FieldValue.delete(),
                                     usage: taskData.usage + result.usage + usage,
                                     status: "completed",
+                                    log: [
+                                        ...taskData.log ?? [],
+                                        startLog,
+                                        ...logs,
+                                        finishLog,
+                                    ],
                                     results: {
                                         ...result.results,
                                         ...taskData.results,
@@ -255,12 +280,23 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                                     updatedActionData,
                                     { merge: true }
                                 );
+                                const finishLog: TaskLog = {
+                                    time: new Date().getTime(),
+                                    phase: "end",
+                                    action: actionData.command,
+                                };
                                 const updatedTaskData: Task = {
                                     ...taskData,
                                     currentAction: admin.firestore.FieldValue.delete(),
                                     nextAction: nextCommand,
                                     usage: taskData.usage + result.usage + usage,
                                     status: "waiting",
+                                    log: [
+                                        ...taskData.log ?? [],
+                                        startLog,
+                                        ...logs,
+                                        finishLog,
+                                    ],
                                     results: {
                                         ...result.results,
                                         ...taskData.results,
@@ -328,10 +364,21 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                             if (!taskData) {
                                 throw new Error("task-not-found");
                             }
+                            const errorLog: TaskLog = {
+                                time: new Date().getTime(),
+                                phase: "error",
+                                action: actionData.command,
+                                message: errorMessage,
+                                data: error,
+                            };
                             const updatedTaskData: Task = {
                                 ...taskData,
                                 currentAction: admin.firestore.FieldValue.delete(),
                                 nextAction: command,
+                                log: [
+                                    ...taskData.log ?? [],
+                                    errorLog,
+                                ],
                                 usage: taskData.usage + usage,
                                 status: "failed",
                                 error: error,
