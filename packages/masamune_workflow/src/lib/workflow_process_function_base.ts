@@ -46,8 +46,25 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
      */
     abstract process(context: WorkflowContext): Promise<Action>;
 
+    /**
+     * Name of the Function.
+     * 
+     * Functionの名前。
+     */
     abstract id: string;
+
+    /**
+     * Data of the Function.
+     * 
+     * Functionのデータ。
+     */
     data: { [key: string]: any } = {};
+
+    /**
+     * Build the Function.
+     * 
+     * Functionを生成します。
+     */
     build(regions: string[]): Function {
         const options = this.options as HttpFunctionsOptions | undefined | null;
         const defaultDatabaseId = options?.firestoreDatabaseIds?.[0] ?? null;
