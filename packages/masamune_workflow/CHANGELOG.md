@@ -1,4 +1,4 @@
-# [3.9.0](https://github.com/mathrunet/node_masamune/compare/v3.7.0...v3.9.0) (2025-12-11)
+## [3.9.1](https://github.com/mathrunet/node_masamune/compare/v3.7.0...v3.9.1) (2025-12-12)
 
 
 ### chore
@@ -48,8 +48,11 @@
 * Add Github summary function. ([3320b2e](https://github.com/mathrunet/node_masamune/commit/3320b2e894b7f85e61a5f891b2d3095bf53d79bd))
 * Add JobRunner ([e78dffd](https://github.com/mathrunet/node_masamune/commit/e78dffd214f9fc7e92309eb43e3aaf8450f3bd38))
 * Add JobRunner. ([3eb5a6a](https://github.com/mathrunet/node_masamune/commit/3eb5a6a06afb7e12c6a39cbce5a2328c70eb74d5))
+* Add locale information. ([146b89c](https://github.com/mathrunet/node_masamune/commit/146b89c353a743f00c80078f84f8063632d4cc21))
 * Add logging concept. ([fe5f4ed](https://github.com/mathrunet/node_masamune/commit/fe5f4ed24272ea045a33a237730629c610ff53b4))
 * Add Lyria background music generation, Google Cloud Text-to-Speech integration, updated test configuration, and new development documentation. ([d234b83](https://github.com/mathrunet/node_masamune/commit/d234b83b0ab706bfa3c93f2f887755aa022baa48))
+* Add Markdown Report ([38506ac](https://github.com/mathrunet/node_masamune/commit/38506ac023a481163fed0154a6b90f372a4d9539))
+* Add Market Research Action ([a41d85b](https://github.com/mathrunet/node_masamune/commit/a41d85bee88fe9d23952f281b3ca8d5390bbb15c))
 * add marketing pipeline for data collection and scheduling, and update short video generation tests to include narration and BGM. ([4020466](https://github.com/mathrunet/node_masamune/commit/402046616c18ae3c65fe0eb43e1a103a95f1cc04))
 * Add PDF creation function. ([de349b3](https://github.com/mathrunet/node_masamune/commit/de349b382bacd325929b2c6fa8330dbe7fe12b98))
 * Add required type. ([d92208c](https://github.com/mathrunet/node_masamune/commit/d92208cdb1e7340d2b9258a6a090123f581bf5d9))
@@ -78,6 +81,7 @@
 
 ### fix
 
+* Add a new value to the Project. ([4f934e5](https://github.com/mathrunet/node_masamune/commit/4f934e5f6517bffc8b4e5f6d04f9e09add2e943c))
 * Add methods such as load and save to ModelRefBase. ([cbf9eb2](https://github.com/mathrunet/node_masamune/commit/cbf9eb29d802990dcffe0c3322b3d41365b8a9a4))
 * Add missing packages. ([389630b](https://github.com/mathrunet/node_masamune/commit/389630b2baec8ee634e105690343a7ff5edc30bb))
 * Add ModelFieldValue interface. ([0ff33aa](https://github.com/mathrunet/node_masamune/commit/0ff33aa6f1331569658a3fd629b1329eafef8c50))
@@ -87,6 +91,7 @@
 * Change error object handling ([d49aed4](https://github.com/mathrunet/node_masamune/commit/d49aed435c381c6b537a6a23accdf73125b4aa61))
 * Change GitHub analysis method ([abc2336](https://github.com/mathrunet/node_masamune/commit/abc233693cad2070a57db4d0472a16781d00c0c9))
 * Change process arguments. ([17fca7b](https://github.com/mathrunet/node_masamune/commit/17fca7b72ccc8ecf7576e5a0772b2d05f197940d))
+* Correction of PDF report. ([56bc89e](https://github.com/mathrunet/node_masamune/commit/56bc89ed74cdd1a76691717591ae3f75f043b40e))
 * Create E2E tests. ([e33ed27](https://github.com/mathrunet/node_masamune/commit/e33ed2702cc6d2771036fd3bc8e5c4de811229e7))
 * Explicitly pass the Firebase Admin app during Firestore and Storage initialization, and update the version. ([9169415](https://github.com/mathrunet/node_masamune/commit/9169415adb873a0ce1534a5762158d84ca477212))
 * Firestore interface change. ([027e464](https://github.com/mathrunet/node_masamune/commit/027e4647febaac184123ad5d8d7dc0ea452e3df7))
