@@ -1,4 +1,4 @@
-import { ModelRefBase, ModelTimestamp } from "@mathrunet/masamune";
+import { ModelLocale, ModelRefBase, ModelTimestamp } from "@mathrunet/masamune";
 import * as admin from "firebase-admin";
 import { WorkflowContext } from "./workflow_process_function_base";
 import { Firestore } from "firebase-admin/firestore";
@@ -100,6 +100,7 @@ export interface Project extends Model {
     "concept"?: string;
     "goal"?: string;
     "target"?: string;
+    "locale"?: ModelLocale | string;
     "kpi"?: { [key: string]: any };
     "organization"?: ModelRefBase;
     "icon"?: string;
@@ -122,6 +123,7 @@ export interface Project extends Model {
 export interface Workflow extends Model {
     "name"?: string;
     "project"?: ModelRefBase;
+    "locale"?: ModelLocale | string;
     "organization"?: ModelRefBase;
     "repeat": WorkflowRepeat;
     "actions": ActionCommand[];
@@ -142,6 +144,7 @@ export interface Task extends Model {
     "workflow"?: ModelRefBase;
     "organization"?: ModelRefBase;
     "project"?: ModelRefBase;
+    "locale"?: ModelLocale | string;
     "status": WorkflowTaskStatus;
     "actions": ActionCommand[];
     "currentAction"?: ModelRefBase | admin.firestore.FieldValue;
@@ -186,6 +189,7 @@ export interface Action extends Model {
     "organization"?: ModelRefBase;
     "project"?: ModelRefBase;
     "status": WorkflowTaskStatus;
+    "locale"?: ModelLocale | string;
     "error"?: { [key: string]: any };
     "prompt"?: string;
     "log"?: TaskLog[];
@@ -224,6 +228,7 @@ export interface Asset extends Model {
     "content"?: string;
     "path"?: string;
     "mimtType"?: string;
+    "locale"?: ModelLocale | string;
     "createdTime": ModelTimestamp;
     "updatedTime": ModelTimestamp;
 }
@@ -238,6 +243,7 @@ export interface Page extends Model {
     "project"?: ModelRefBase;
     "content"?: string;
     "path"?: string;
+    "locale"?: ModelLocale | string;
     "createdTime": ModelTimestamp;
     "updatedTime": ModelTimestamp;
 }

@@ -65,7 +65,7 @@ module.exports = (
             const file = storageInstance.file(path);
             const signedUrl = await file.getSignedUrl({
                 version: "v4",
-                action: 'read',
+                action: "read",
                 expires: Date.now() + 1000 * 60 * 60 * 1,
             });
             return {

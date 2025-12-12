@@ -59,6 +59,7 @@ module.exports = (
                             "@uid": actionId,
                             "@time": now,
                             "command": nextAction,
+                            "locale": data.locale,
                             "task": task.ref.toModelRefBase(),
                             "workflow": data.workflow,
                             "organization": organization,

@@ -66,6 +66,7 @@ module.exports = (
                                     "@uid": taskId,
                                     "@time": now,
                                     "workflow": doc.ref,
+                                    "locale": data.locale,
                                     "organization": organization,
                                     "project": project,
                                     "status": "waiting",
