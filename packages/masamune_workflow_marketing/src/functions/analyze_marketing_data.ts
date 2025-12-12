@@ -9,6 +9,10 @@ import {
     Review,
     GitHubRepositoryAnalysis,
     GitHubImprovementsAnalysis,
+    MarketResearchData,
+    MarketResearch,
+    CompetitivePositioningAnalysis,
+    MarketOpportunityPriorityAnalysis,
 } from "../models";
 
 /**
@@ -28,6 +32,8 @@ interface CombinedData {
     appStore?: { [key: string]: any };
     firebaseAnalytics?: { [key: string]: any };
     githubRepository?: GitHubRepositoryAnalysis;
+    marketResearchData?: MarketResearchData;
+    marketResearch?: MarketResearch;
 }
 
 /**
@@ -61,6 +67,14 @@ export class AnalyzeMarketingData extends WorkflowProcessFunctionBase {
         const appStore = task.results?.appStore as { [key: string]: any } | undefined;
         const firebaseAnalytics = task.results?.firebaseAnalytics as { [key: string]: any } | undefined;
         const githubRepository = task.results?.githubRepository as GitHubRepositoryAnalysis | undefined;
+
+        // 市場調査データを取得（あれば）
+        const marketResearchData = task.results?.marketResearchData as MarketResearchData | undefined;
+        const marketResearch = task.results?.marketResearch as MarketResearch | undefined;
+
+        // 市場調査データが有効かどうかをチェック
+        const hasValidMarketResearchData = marketResearchData && !("error" in marketResearchData);
+        const hasValidMarketResearch = marketResearch && !("error" in marketResearch);
 
         // 2. いずれのデータも無ければ空データを返却
         if (!googlePlayConsole && !appStore && !firebaseAnalytics) {
@@ -105,7 +119,12 @@ export class AnalyzeMarketingData extends WorkflowProcessFunctionBase {
                 appStore,
                 firebaseAnalytics,
                 githubRepository,
+                marketResearchData: hasValidMarketResearchData ? marketResearchData : undefined,
+                marketResearch: hasValidMarketResearch ? marketResearch : undefined,
             };
+
+            // 市場調査データが統合されるかどうかのフラグ（Firestoreはundefinedを許可しないため、必ずbooleanにする）
+            const marketDataIntegrated = !!(hasValidMarketResearchData || hasValidMarketResearch);
 
             // レビューデータを抽出
             const reviews: Review[] = [
@@ -118,8 +137,15 @@ export class AnalyzeMarketingData extends WorkflowProcessFunctionBase {
             const outputPriceNum = Number(outputPrice);
 
             // 5. 各解析を並列実行
-            const [overallResult, suggestionsResult, trendResult, reviewResult, githubImprovementsResult] =
-                await Promise.all([
+            const [
+                overallResult,
+                suggestionsResult,
+                trendResult,
+                reviewResult,
+                githubImprovementsResult,
+                competitivePositioningResult,
+                marketOpportunityResult,
+            ] = await Promise.all([
                     this.generateOverallAnalysis(genai, combinedData, modelName),
                     this.generateImprovementSuggestions(genai, combinedData, modelName),
                     this.generateTrendAnalysis(genai, combinedData, modelName),
@@ -138,6 +164,14 @@ export class AnalyzeMarketingData extends WorkflowProcessFunctionBase {
                     githubRepository && !("error" in githubRepository)
                         ? this.generateGitHubImprovements(genai, combinedData, modelName)
                         : Promise.resolve(null),
+                    // 競合ポジショニング分析（市場調査データがある場合のみ）
+                    marketDataIntegrated
+                        ? this.generateCompetitivePositioning(genai, combinedData, modelName)
+                        : Promise.resolve(null),
+                    // 市場機会優先度分析（市場調査データがある場合のみ）
+                    marketDataIntegrated
+                        ? this.generateMarketOpportunityPriority(genai, combinedData, modelName)
+                        : Promise.resolve(null),
                 ]);
 
             // 6. トークン使用量を集計してコストを計算
@@ -146,14 +180,18 @@ export class AnalyzeMarketingData extends WorkflowProcessFunctionBase {
                 suggestionsResult.inputTokens +
                 trendResult.inputTokens +
                 reviewResult.inputTokens +
-                (githubImprovementsResult?.inputTokens ?? 0);
+                (githubImprovementsResult?.inputTokens ?? 0) +
+                (competitivePositioningResult?.inputTokens ?? 0) +
+                (marketOpportunityResult?.inputTokens ?? 0);
 
             const totalOutputTokens =
                 overallResult.outputTokens +
                 suggestionsResult.outputTokens +
                 trendResult.outputTokens +
                 reviewResult.outputTokens +
-                (githubImprovementsResult?.outputTokens ?? 0);
+                (githubImprovementsResult?.outputTokens ?? 0) +
+                (competitivePositioningResult?.outputTokens ?? 0) +
+                (marketOpportunityResult?.outputTokens ?? 0);
 
             // コスト計算（1トークンあたりのドル × トークン数）
             const aiCost = totalInputTokens * inputPriceNum + totalOutputTokens * outputPriceNum;
@@ -168,6 +206,10 @@ export class AnalyzeMarketingData extends WorkflowProcessFunctionBase {
                         improvementSuggestions: suggestionsResult.data,
                         trendAnalysis: trendResult.data,
                         reviewAnalysis: reviewResult.data,
+                        // 市場調査データがある場合のみ追加
+                        ...(competitivePositioningResult?.data ? { competitivePositioning: competitivePositioningResult.data } : {}),
+                        ...(marketOpportunityResult?.data ? { marketOpportunityPriority: marketOpportunityResult.data } : {}),
+                        marketDataIntegrated,
                         generatedAt: new Date().toISOString(),
                     },
                     // GitHub改善提案（GitHubデータがある場合のみ）
@@ -444,6 +486,28 @@ export class AnalyzeMarketingData extends WorkflowProcessFunctionBase {
      * Build prompt for overall analysis.
      */
     private buildOverallAnalysisPrompt(data: CombinedData): string {
+        // 市場調査データのセクションを構築
+        let marketResearchSection = "";
+        if (data.marketResearchData || data.marketResearch) {
+            marketResearchSection = `
+## 市場調査データ
+${data.marketResearchData ? `
+### 市場ポテンシャル
+${JSON.stringify(data.marketResearchData.marketPotential, null, 2)}
+
+### 競合分析
+${JSON.stringify(data.marketResearchData.competitorAnalysis, null, 2)}
+` : ""}
+${data.marketResearch ? `
+### 需要予測
+${JSON.stringify(data.marketResearch.demandForecast, null, 2)}
+
+### キーインサイト
+${JSON.stringify(data.marketResearch.keyInsights, null, 2)}
+` : ""}
+`;
+        }
+
         return `You are an expert app marketing analyst. Analyze the following marketing data and provide a comprehensive overview.
 
 ## Marketing Data
@@ -456,12 +520,13 @@ ${data.appStore ? JSON.stringify(data.appStore, null, 2) : "Not available"}
 
 ### Firebase Analytics Data
 ${data.firebaseAnalytics ? JSON.stringify(data.firebaseAnalytics, null, 2) : "Not available"}
-
+${marketResearchSection}
 ## Instructions
 1. Write a concise summary (2-3 paragraphs) analyzing the overall app performance
 2. List 3-5 key highlights (positive points)
 3. List 2-4 concerns or areas needing attention
 4. Identify 4-6 key metrics with their values and trends (up/down/stable)
+${data.marketResearchData || data.marketResearch ? "5. Integrate market research insights into your analysis, considering market potential and competitive landscape" : ""}
 
 Respond in Japanese.`;
     }
@@ -470,6 +535,31 @@ Respond in Japanese.`;
      * Build prompt for improvement suggestions.
      */
     private buildImprovementSuggestionsPrompt(data: CombinedData): string {
+        // 市場調査データのセクションを構築
+        let marketResearchSection = "";
+        if (data.marketResearchData || data.marketResearch) {
+            marketResearchSection = `
+## 市場調査データ
+${data.marketResearchData ? `
+### ビジネス機会
+${JSON.stringify(data.marketResearchData.businessOpportunities, null, 2)}
+
+### 差別化機会
+${JSON.stringify(data.marketResearchData.competitorAnalysis.differentiationOpportunities, null, 2)}
+
+### 市場ギャップ
+${JSON.stringify(data.marketResearchData.competitorAnalysis.marketGaps, null, 2)}
+` : ""}
+${data.marketResearch ? `
+### 収益向上施策（市場調査ベース）
+${JSON.stringify(data.marketResearch.revenueStrategies, null, 2)}
+
+### 流入向上施策（市場調査ベース）
+${JSON.stringify(data.marketResearch.trafficStrategies, null, 2)}
+` : ""}
+`;
+        }
+
         return `You are an expert app marketing strategist. Based on the following marketing data, provide actionable improvement suggestions.
 
 ## Marketing Data
@@ -482,7 +572,7 @@ ${data.appStore ? JSON.stringify(data.appStore, null, 2) : "Not available"}
 
 ### Firebase Analytics Data
 ${data.firebaseAnalytics ? JSON.stringify(data.firebaseAnalytics, null, 2) : "Not available"}
-
+${marketResearchSection}
 ## Instructions
 Provide 5-8 specific, actionable improvement suggestions. For each suggestion:
 1. title: Brief title (under 50 characters)
@@ -490,7 +580,12 @@ Provide 5-8 specific, actionable improvement suggestions. For each suggestion:
 3. priority: "high", "medium", or "low"
 4. category: One of "user_acquisition", "retention", "engagement", "monetization", "quality", "development"
 5. expectedImpact: Expected outcome if implemented
-
+${data.marketResearchData || data.marketResearch ? `
+Important: Consider the market research data when making recommendations:
+- Prioritize suggestions that address identified market gaps
+- Leverage business opportunities and differentiation points
+- Align with revenue and traffic strategies from market research
+` : ""}
 Focus on data-driven recommendations. Respond in Japanese.`;
     }
 
@@ -498,6 +593,28 @@ Focus on data-driven recommendations. Respond in Japanese.`;
      * Build prompt for trend analysis.
      */
     private buildTrendAnalysisPrompt(data: CombinedData): string {
+        // 市場調査データのセクションを構築
+        let marketResearchSection = "";
+        if (data.marketResearchData || data.marketResearch) {
+            marketResearchSection = `
+## 市場調査データ
+${data.marketResearch ? `
+### 需要予測
+${JSON.stringify(data.marketResearch.demandForecast, null, 2)}
+
+### 市場全体トレンド
+${data.marketResearch.demandForecast.overallTrend}
+` : ""}
+${data.marketResearchData ? `
+### 市場ドライバー
+${JSON.stringify(data.marketResearchData.marketPotential.marketDrivers, null, 2)}
+
+### 市場ポテンシャル概要
+${data.marketResearchData.marketPotential.summary}
+` : ""}
+`;
+        }
+
         return `You are an expert data analyst specializing in mobile app trends. Analyze the following marketing data and provide trend insights.
 
 ## Marketing Data
@@ -510,13 +627,14 @@ ${data.appStore ? JSON.stringify(data.appStore, null, 2) : "Not available"}
 
 ### Firebase Analytics Data
 ${data.firebaseAnalytics ? JSON.stringify(data.firebaseAnalytics, null, 2) : "Not available"}
-
+${marketResearchSection}
 ## Instructions
 Analyze trends and provide:
 1. userGrowthTrend: Analysis of user acquisition and growth patterns (2-3 sentences)
 2. engagementTrend: Analysis of user engagement metrics (2-3 sentences)
 3. ratingTrend: Analysis of app ratings and user satisfaction (2-3 sentences)
 4. predictions: 3-5 predictions for the next period based on current trends
+${data.marketResearchData || data.marketResearch ? "5. Consider market demand forecasts and market drivers when making predictions" : ""}
 
 Respond in Japanese.`;
     }
@@ -709,6 +827,274 @@ ${data.firebaseAnalytics ? JSON.stringify(data.firebaseAnalytics, null, 2) : "�
 - codeReferencesのfilePathは必ず「利用可能なファイルパス」リストから選択してください
 - マーケティング指標（ユーザー獲得、リテンション、エンゲージメント、収益化）を改善するコード変更に焦点を当ててください
 - 各改善提案は具体的で実行可能なものにしてください
+
+日本語で回答してください。`;
+    }
+
+    /**
+     * Generate competitive positioning analysis.
+     *
+     * 競合ポジショニング分析を生成。
+     */
+    private async generateCompetitivePositioning(
+        genai: GoogleGenAI,
+        data: CombinedData,
+        modelName: string
+    ): Promise<GenerationResult<CompetitivePositioningAnalysis>> {
+        try {
+            const prompt = this.buildCompetitivePositioningPrompt(data);
+            const response = await genai.models.generateContent({
+                model: modelName,
+                contents: prompt,
+                config: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: Type.OBJECT,
+                        properties: {
+                            marketPosition: { type: Type.STRING },
+                            competitorComparison: {
+                                type: Type.ARRAY,
+                                items: {
+                                    type: Type.OBJECT,
+                                    properties: {
+                                        competitor: { type: Type.STRING },
+                                        ourStrengths: {
+                                            type: Type.ARRAY,
+                                            items: { type: Type.STRING },
+                                        },
+                                        ourWeaknesses: {
+                                            type: Type.ARRAY,
+                                            items: { type: Type.STRING },
+                                        },
+                                        battleStrategy: { type: Type.STRING },
+                                    },
+                                    required: ["competitor", "ourStrengths", "ourWeaknesses", "battleStrategy"],
+                                },
+                            },
+                            differentiationStrategy: { type: Type.STRING },
+                            quickWins: {
+                                type: Type.ARRAY,
+                                items: { type: Type.STRING },
+                            },
+                        },
+                        required: ["marketPosition", "competitorComparison", "differentiationStrategy", "quickWins"],
+                    },
+                },
+            });
+
+            const text = response.text;
+            if (!text) {
+                throw new Error("No response from AI model");
+            }
+
+            const inputTokens = response.usageMetadata?.promptTokenCount ?? 0;
+            const outputTokens = response.usageMetadata?.candidatesTokenCount ?? 0;
+
+            return {
+                data: JSON.parse(text) as CompetitivePositioningAnalysis,
+                inputTokens,
+                outputTokens,
+            };
+        } catch (err: any) {
+            console.error("Failed to generate competitive positioning:", err.message);
+            return {
+                data: {
+                    marketPosition: "",
+                    competitorComparison: [],
+                    differentiationStrategy: "",
+                    quickWins: [],
+                },
+                inputTokens: 0,
+                outputTokens: 0,
+            };
+        }
+    }
+
+    /**
+     * Build prompt for competitive positioning analysis.
+     *
+     * 競合ポジショニング分析用のプロンプトを生成。
+     */
+    private buildCompetitivePositioningPrompt(data: CombinedData): string {
+        const competitors = data.marketResearchData?.competitorAnalysis.competitors || [];
+        const competitorsList = competitors
+            .map((c) => `- ${c.name}: ${c.description}\n  強み: ${c.strengths.join(", ")}\n  弱み: ${c.weaknesses.join(", ")}`)
+            .join("\n");
+
+        return `あなたは競合分析の専門家です。以下のアプリパフォーマンスデータと市場調査の競合データに基づいて、競合ポジショニング分析を行ってください。
+
+## 当アプリのパフォーマンスデータ
+
+### Google Play Console
+${data.googlePlayConsole ? JSON.stringify(data.googlePlayConsole, null, 2) : "データなし"}
+
+### App Store
+${data.appStore ? JSON.stringify(data.appStore, null, 2) : "データなし"}
+
+### Firebase Analytics
+${data.firebaseAnalytics ? JSON.stringify(data.firebaseAnalytics, null, 2) : "データなし"}
+
+## 市場調査：競合情報
+${competitorsList || "競合データなし"}
+
+## 市場ランドスケープ
+${data.marketResearchData?.competitorAnalysis.marketLandscape || "情報なし"}
+
+## 差別化機会
+${JSON.stringify(data.marketResearchData?.competitorAnalysis.differentiationOpportunities || [], null, 2)}
+
+## 分析指示
+以下の観点で分析してください：
+
+1. **marketPosition**: 現在の市場での位置づけ（2-3文）
+   - 市場シェアの推定
+   - 競合との相対的な強さ
+
+2. **competitorComparison**: 各競合との比較（3-5社）
+   - **competitor**: 競合名
+   - **ourStrengths**: 当アプリの優位点（2-4点）
+   - **ourWeaknesses**: 当アプリの劣位点（2-4点）
+   - **battleStrategy**: この競合に対する具体的な対抗戦略（1-2文）
+
+3. **differentiationStrategy**: 総合的な差別化戦略（3-4文）
+   - 複数の競合に対して有効な差別化ポイント
+
+4. **quickWins**: すぐに実行可能な差別化施策（3-5点）
+   - 1-2週間で実行可能なもの
+
+日本語で回答してください。`;
+    }
+
+    /**
+     * Generate market opportunity priority analysis.
+     *
+     * 市場機会優先度分析を生成。
+     */
+    private async generateMarketOpportunityPriority(
+        genai: GoogleGenAI,
+        data: CombinedData,
+        modelName: string
+    ): Promise<GenerationResult<MarketOpportunityPriorityAnalysis>> {
+        try {
+            const prompt = this.buildMarketOpportunityPriorityPrompt(data);
+            const response = await genai.models.generateContent({
+                model: modelName,
+                contents: prompt,
+                config: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: Type.OBJECT,
+                        properties: {
+                            prioritizedOpportunities: {
+                                type: Type.ARRAY,
+                                items: {
+                                    type: Type.OBJECT,
+                                    properties: {
+                                        opportunity: { type: Type.STRING },
+                                        fitScore: {
+                                            type: Type.STRING,
+                                            enum: ["excellent", "good", "moderate", "poor"],
+                                        },
+                                        fitReason: { type: Type.STRING },
+                                        requiredChanges: {
+                                            type: Type.ARRAY,
+                                            items: { type: Type.STRING },
+                                        },
+                                        estimatedEffort: {
+                                            type: Type.STRING,
+                                            enum: ["low", "medium", "high"],
+                                        },
+                                        recommendedAction: { type: Type.STRING },
+                                    },
+                                    required: ["opportunity", "fitScore", "fitReason", "requiredChanges", "estimatedEffort", "recommendedAction"],
+                                },
+                            },
+                            strategicRecommendation: { type: Type.STRING },
+                        },
+                        required: ["prioritizedOpportunities", "strategicRecommendation"],
+                    },
+                },
+            });
+
+            const text = response.text;
+            if (!text) {
+                throw new Error("No response from AI model");
+            }
+
+            const inputTokens = response.usageMetadata?.promptTokenCount ?? 0;
+            const outputTokens = response.usageMetadata?.candidatesTokenCount ?? 0;
+
+            return {
+                data: JSON.parse(text) as MarketOpportunityPriorityAnalysis,
+                inputTokens,
+                outputTokens,
+            };
+        } catch (err: any) {
+            console.error("Failed to generate market opportunity priority:", err.message);
+            return {
+                data: {
+                    prioritizedOpportunities: [],
+                    strategicRecommendation: "",
+                },
+                inputTokens: 0,
+                outputTokens: 0,
+            };
+        }
+    }
+
+    /**
+     * Build prompt for market opportunity priority analysis.
+     *
+     * 市場機会優先度分析用のプロンプトを生成。
+     */
+    private buildMarketOpportunityPriorityPrompt(data: CombinedData): string {
+        const opportunities = data.marketResearchData?.businessOpportunities || [];
+        const opportunitiesList = opportunities
+            .map((o) => `- **${o.title}** (${o.type}, インパクト: ${o.potentialImpact}, 時間枠: ${o.timeframe})\n  ${o.description}\n  要件: ${o.requirements.join(", ")}\n  リスク: ${o.risks.join(", ")}`)
+            .join("\n\n");
+
+        const marketGaps = data.marketResearchData?.competitorAnalysis.marketGaps || [];
+
+        return `あなたは戦略コンサルタントです。以下のアプリパフォーマンスデータと市場機会データに基づいて、機会の優先順位付けを行ってください。
+
+## 当アプリのパフォーマンスデータ
+
+### Google Play Console
+${data.googlePlayConsole ? JSON.stringify(data.googlePlayConsole, null, 2) : "データなし"}
+
+### App Store
+${data.appStore ? JSON.stringify(data.appStore, null, 2) : "データなし"}
+
+### Firebase Analytics
+${data.firebaseAnalytics ? JSON.stringify(data.firebaseAnalytics, null, 2) : "データなし"}
+
+## 市場調査：ビジネス機会
+${opportunitiesList || "機会データなし"}
+
+## 市場調査：市場ギャップ
+${JSON.stringify(marketGaps, null, 2)}
+
+## 需要予測サマリー
+${data.marketResearch?.demandForecast.summary || "情報なし"}
+
+## 分析指示
+各ビジネス機会と市場ギャップを、当アプリの現状と照らし合わせて優先順位付けしてください。
+
+1. **prioritizedOpportunities**: 優先順位付けされた機会リスト（5-8件）
+   - **opportunity**: 機会名（市場調査データから）
+   - **fitScore**: 当アプリとの適合度
+     - "excellent": 既存機能・リソースで即座に対応可能
+     - "good": 小規模な追加開発で対応可能
+     - "moderate": 中規模の開発・投資が必要
+     - "poor": 大規模な方向転換が必要
+   - **fitReason**: 適合度の理由（1-2文）
+   - **requiredChanges**: 必要な変更・施策（2-4点）
+   - **estimatedEffort**: 実装工数の見積もり（low/medium/high）
+   - **recommendedAction**: 推奨アクション（1文）
+
+2. **strategicRecommendation**: 戦略的推奨事項（3-4文）
+   - 優先的に取り組むべき機会
+   - リソース配分の提案
 
 日本語で回答してください。`;
     }

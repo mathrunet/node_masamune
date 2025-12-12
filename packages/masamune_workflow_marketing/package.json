@@ -42,7 +42,7 @@
     "@google-cloud/vertexai": "^1.10.0",
     "@google/genai": "^1.30.0",
     "@mathrunet/masamune": "^3.9.5",
-    "@mathrunet/masamune_workflow": "^3.8.6",
+    "@mathrunet/masamune_workflow": "^3.9.1",
     "firebase-admin": "^13.1.0",
     "firebase-functions": "^6.3.2",
     "googleapis": "^140.0.0",

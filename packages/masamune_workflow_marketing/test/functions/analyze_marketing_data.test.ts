@@ -372,6 +372,9 @@ describe("AnalyzeMarketingData Integration Tests", () => {
 
                 const analytics = taskData?.results?.marketingAnalytics;
                 console.log("\n=== Marketing Analytics Results ===");
+                console.log("\n--- Full JSON Output ---");
+                console.log(JSON.stringify(analytics, null, 2));
+                console.log("\n--- Summary ---");
                 console.log("Generated at:", analytics?.generatedAt);
 
                 if (analytics?.overallAnalysis) {
@@ -667,5 +670,406 @@ describe("AnalyzeMarketingData Integration Tests", () => {
                 await firestore.doc(refs.taskPath).delete().catch(() => {});
             }
         }, 60000);
+    });
+
+    describe("Market Research Data Integration Test", () => {
+        /**
+         * Mock market research data for testing
+         */
+        const mockMarketResearchData = {
+            marketPotential: {
+                summary: "モバイルアプリ市場は急成長中で、特に生産性向上ツールの需要が高まっています。",
+                tam: "500億円",
+                sam: "100億円",
+                som: "10億円",
+                marketDrivers: [
+                    "リモートワークの普及",
+                    "デジタルトランスフォーメーションの加速",
+                    "スマートフォン普及率の向上",
+                ],
+                marketBarriers: [
+                    "競合他社の多さ",
+                    "ユーザー獲得コストの上昇",
+                ],
+                targetSegments: [
+                    "20-40代のビジネスパーソン",
+                    "フリーランス・個人事業主",
+                ],
+            },
+            competitorAnalysis: {
+                competitors: [
+                    {
+                        name: "競合A社",
+                        description: "市場シェアトップの大手サービス",
+                        marketShare: "35%",
+                        strengths: ["ブランド認知度", "機能の豊富さ"],
+                        weaknesses: ["価格が高い", "UIが複雑"],
+                        pricing: "月額1,500円〜",
+                        targetAudience: "大企業向け",
+                    },
+                    {
+                        name: "競合B社",
+                        description: "急成長中のスタートアップ",
+                        marketShare: "15%",
+                        strengths: ["シンプルなUI", "低価格"],
+                        weaknesses: ["機能が限定的", "サポートが弱い"],
+                        pricing: "月額500円〜",
+                        targetAudience: "中小企業・個人向け",
+                    },
+                ],
+                marketLandscape: "市場は成熟期に入りつつあるが、差別化されたニッチサービスには成長余地がある。",
+                competitiveAdvantages: [
+                    "独自のAI機能",
+                    "日本市場に特化したローカライゼーション",
+                ],
+                differentiationOpportunities: [
+                    "オフライン機能の強化",
+                    "他サービスとの連携強化",
+                ],
+                marketGaps: [
+                    "中小企業向けの手頃な価格帯",
+                    "多言語サポート",
+                ],
+            },
+            businessOpportunities: [
+                {
+                    title: "サブスクリプションモデルの導入",
+                    description: "月額課金モデルを導入し、安定的な収益基盤を構築",
+                    type: "monetization" as const,
+                    potentialImpact: "high" as const,
+                    timeframe: "short_term" as const,
+                    requirements: ["決済システムの実装", "料金プランの設計"],
+                    risks: ["既存ユーザーの離脱", "価格設定の難しさ"],
+                },
+                {
+                    title: "企業向け機能の拡充",
+                    description: "チーム管理機能やAPI連携を追加し、B2B市場を開拓",
+                    type: "market_gap" as const,
+                    potentialImpact: "high" as const,
+                    timeframe: "medium_term" as const,
+                    requirements: ["管理機能の開発", "セキュリティ強化"],
+                    risks: ["開発コスト", "営業体制の構築"],
+                },
+            ],
+            dataSources: [
+                "https://example.com/market-report-2024",
+                "https://example.com/competitor-analysis",
+            ],
+            generatedAt: new Date().toISOString(),
+        };
+
+        const mockMarketResearch = {
+            summary: "市場調査の結果、当アプリは成長市場において良好なポジションにあり、戦略的な投資により大きな成長が見込めます。",
+            demandForecast: {
+                currentDemand: {
+                    period: "現在",
+                    demandLevel: "medium" as const,
+                    estimatedMarketSize: "50億円",
+                    growthRate: "15%",
+                    keyFactors: ["リモートワーク需要", "デジタル化推進"],
+                    confidence: "high" as const,
+                },
+                threeMonthForecast: {
+                    period: "3ヶ月後",
+                    demandLevel: "high" as const,
+                    estimatedMarketSize: "55億円",
+                    growthRate: "18%",
+                    keyFactors: ["新年度開始", "企業のIT投資増加"],
+                    confidence: "high" as const,
+                },
+                oneYearForecast: {
+                    period: "1年後",
+                    demandLevel: "high" as const,
+                    estimatedMarketSize: "70億円",
+                    growthRate: "20%",
+                    keyFactors: ["市場成熟", "新規参入増加"],
+                    confidence: "medium" as const,
+                },
+                threeYearForecast: {
+                    period: "3年後",
+                    demandLevel: "very_high" as const,
+                    estimatedMarketSize: "120億円",
+                    growthRate: "25%",
+                    keyFactors: ["AI技術の進化", "ワークスタイル変革"],
+                    confidence: "medium" as const,
+                },
+                fiveYearForecast: {
+                    period: "5年後",
+                    demandLevel: "very_high" as const,
+                    estimatedMarketSize: "200億円",
+                    growthRate: "20%",
+                    keyFactors: ["市場飽和", "次世代技術"],
+                    confidence: "low" as const,
+                },
+                overallTrend: "growing" as const,
+                summary: "市場は今後5年間で約4倍に成長する見込み。特に企業向けソリューションの需要が高まる。",
+            },
+            revenueStrategies: [
+                {
+                    name: "プレミアムプランの導入",
+                    description: "高度な機能を含むプレミアムプランを新設",
+                    type: "monetization" as const,
+                    priority: "high" as const,
+                    expectedImpact: "月間収益20%増加",
+                    implementationSteps: ["機能設計", "価格設定", "マーケティング"],
+                    kpiMetrics: ["有料転換率", "ARPU", "解約率"],
+                    timeline: "3ヶ月",
+                },
+            ],
+            trafficStrategies: [
+                {
+                    name: "コンテンツマーケティング強化",
+                    description: "ブログ・SNSでの情報発信を強化",
+                    channel: "content_marketing" as const,
+                    priority: "high" as const,
+                    expectedImpact: "オーガニック流入50%増加",
+                    implementationSteps: ["コンテンツ計画策定", "記事作成", "SEO最適化"],
+                    estimatedCost: "月額30万円",
+                    timeline: "6ヶ月",
+                },
+            ],
+            keyInsights: [
+                "市場は成長期にあり、早期参入のメリットが大きい",
+                "競合との差別化にはAI機能の強化が有効",
+                "B2B市場への展開が収益拡大の鍵",
+            ],
+            researchData: mockMarketResearchData,
+            generatedAt: new Date().toISOString(),
+        };
+
+        it("should include competitive positioning and market opportunity analysis when market research data is present", async () => {
+            const marketTestTaskId = `test-market-${Date.now()}`;
+            const marketTestActionId = `test-action-market-${Date.now()}`;
+            const token = `test-token-market-${Date.now()}`;
+            const tokenExpiredTime = new Date(Date.now() + 60 * 60 * 1000);
+
+            const actions = [{
+                command: "analyze_marketing_data",
+                index: 0,
+            }];
+
+            // Create accumulated results with market research data and some app data
+            const accumulatedResults = {
+                firebaseAnalytics: {
+                    dau: 1500,
+                    mau: 15000,
+                    retention: {
+                        day1: 0.45,
+                        day7: 0.25,
+                        day30: 0.12,
+                    },
+                    sessions: 25000,
+                    avgSessionDuration: 320,
+                },
+                marketResearchData: mockMarketResearchData,
+                marketResearch: mockMarketResearch,
+            };
+
+            const refs = await createTestDataWithResults({
+                taskId: marketTestTaskId,
+                actionId: marketTestActionId,
+                actions,
+                token,
+                tokenExpiredTime,
+                accumulatedResults,
+                actionIndex: 0,
+            });
+
+            try {
+                const func = require("../../src/functions/analyze_marketing_data");
+                const wrapped = config.wrap(func([], {}, {}));
+
+                await wrapped({
+                    data: {
+                        path: refs.actionPath,
+                        token: token,
+                    },
+                    params: {},
+                });
+
+                // Verify results
+                const taskDoc = await firestore.doc(refs.taskPath).load();
+                const taskData = taskDoc.data();
+
+                expect(taskData).toBeDefined();
+                expect(taskData?.status).toBe("completed");
+                expect(taskData?.results?.marketingAnalytics).toBeDefined();
+
+                const analytics = taskData?.results?.marketingAnalytics;
+
+                // Verify market data integration flag
+                expect(analytics?.marketDataIntegrated).toBe(true);
+
+                // Verify competitive positioning analysis
+                expect(analytics?.competitivePositioning).toBeDefined();
+                expect(analytics?.competitivePositioning?.marketPosition).toBeDefined();
+                expect(analytics?.competitivePositioning?.competitorComparison).toBeInstanceOf(Array);
+                expect(analytics?.competitivePositioning?.differentiationStrategy).toBeDefined();
+                expect(analytics?.competitivePositioning?.quickWins).toBeInstanceOf(Array);
+
+                // Verify market opportunity priority analysis
+                expect(analytics?.marketOpportunityPriority).toBeDefined();
+                expect(analytics?.marketOpportunityPriority?.prioritizedOpportunities).toBeInstanceOf(Array);
+                expect(analytics?.marketOpportunityPriority?.strategicRecommendation).toBeDefined();
+
+                console.log("\n=== Market Research Integration Test Results ===");
+                console.log("Market Data Integrated:", analytics?.marketDataIntegrated);
+
+                if (analytics?.competitivePositioning) {
+                    console.log("\n--- Competitive Positioning ---");
+                    console.log("Market Position:", analytics.competitivePositioning.marketPosition?.substring(0, 150) + "...");
+                    console.log("Competitor Comparisons:", analytics.competitivePositioning.competitorComparison?.length || 0, "items");
+                    analytics.competitivePositioning.competitorComparison?.slice(0, 2).forEach((c: any, i: number) => {
+                        console.log(`  ${i + 1}. ${c.competitor}`);
+                        console.log(`     Strengths: ${c.ourStrengths?.slice(0, 2).join(", ")}`);
+                        console.log(`     Weaknesses: ${c.ourWeaknesses?.slice(0, 2).join(", ")}`);
+                    });
+                    console.log("Quick Wins:", analytics.competitivePositioning.quickWins?.length || 0, "items");
+                }
+
+                if (analytics?.marketOpportunityPriority) {
+                    console.log("\n--- Market Opportunity Priority ---");
+                    console.log("Prioritized Opportunities:", analytics.marketOpportunityPriority.prioritizedOpportunities?.length || 0, "items");
+                    analytics.marketOpportunityPriority.prioritizedOpportunities?.slice(0, 3).forEach((o: any, i: number) => {
+                        console.log(`  ${i + 1}. [${o.fitScore}] ${o.opportunity}`);
+                        console.log(`     Effort: ${o.estimatedEffort}, Action: ${o.recommendedAction?.substring(0, 50)}...`);
+                    });
+                    console.log("Strategic Recommendation:", analytics.marketOpportunityPriority.strategicRecommendation?.substring(0, 200) + "...");
+                }
+
+                console.log("\nMarket research integration test completed successfully!");
+
+            } finally {
+                await firestore.doc(refs.actionPath).delete().catch(() => {});
+                await firestore.doc(refs.taskPath).delete().catch(() => {});
+            }
+        }, 180000); // 3 minutes timeout
+
+        it("should work with only marketResearchData (without marketResearch)", async () => {
+            const partialMarketTaskId = `test-partial-market-${Date.now()}`;
+            const partialMarketActionId = `test-action-partial-market-${Date.now()}`;
+            const token = `test-token-partial-market-${Date.now()}`;
+            const tokenExpiredTime = new Date(Date.now() + 60 * 60 * 1000);
+
+            const actions = [{
+                command: "analyze_marketing_data",
+                index: 0,
+            }];
+
+            // Only marketResearchData, no marketResearch
+            const accumulatedResults = {
+                firebaseAnalytics: {
+                    dau: 1000,
+                    mau: 10000,
+                },
+                marketResearchData: mockMarketResearchData,
+            };
+
+            const refs = await createTestDataWithResults({
+                taskId: partialMarketTaskId,
+                actionId: partialMarketActionId,
+                actions,
+                token,
+                tokenExpiredTime,
+                accumulatedResults,
+                actionIndex: 0,
+            });
+
+            try {
+                const func = require("../../src/functions/analyze_marketing_data");
+                const wrapped = config.wrap(func([], {}, {}));
+
+                await wrapped({
+                    data: {
+                        path: refs.actionPath,
+                        token: token,
+                    },
+                    params: {},
+                });
+
+                const taskDoc = await firestore.doc(refs.taskPath).load();
+                const taskData = taskDoc.data();
+
+                expect(taskData?.status).toBe("completed");
+                expect(taskData?.results?.marketingAnalytics?.marketDataIntegrated).toBe(true);
+                expect(taskData?.results?.marketingAnalytics?.competitivePositioning).toBeDefined();
+                expect(taskData?.results?.marketingAnalytics?.marketOpportunityPriority).toBeDefined();
+
+                console.log("Partial market research data test completed successfully!");
+                console.log("marketDataIntegrated:", taskData?.results?.marketingAnalytics?.marketDataIntegrated);
+
+            } finally {
+                await firestore.doc(refs.actionPath).delete().catch(() => {});
+                await firestore.doc(refs.taskPath).delete().catch(() => {});
+            }
+        }, 180000);
+
+        it("should not include market analysis when market research data has error", async () => {
+            const errorMarketTaskId = `test-error-market-${Date.now()}`;
+            const errorMarketActionId = `test-action-error-market-${Date.now()}`;
+            const token = `test-token-error-market-${Date.now()}`;
+            const tokenExpiredTime = new Date(Date.now() + 60 * 60 * 1000);
+
+            const actions = [{
+                command: "analyze_marketing_data",
+                index: 0,
+            }];
+
+            // Market research data with error
+            const accumulatedResults = {
+                firebaseAnalytics: {
+                    dau: 1000,
+                    mau: 10000,
+                },
+                marketResearchData: {
+                    error: "Failed to fetch market data",
+                    generatedAt: new Date().toISOString(),
+                },
+            };
+
+            const refs = await createTestDataWithResults({
+                taskId: errorMarketTaskId,
+                actionId: errorMarketActionId,
+                actions,
+                token,
+                tokenExpiredTime,
+                accumulatedResults,
+                actionIndex: 0,
+            });
+
+            try {
+                const func = require("../../src/functions/analyze_marketing_data");
+                const wrapped = config.wrap(func([], {}, {}));
+
+                await wrapped({
+                    data: {
+                        path: refs.actionPath,
+                        token: token,
+                    },
+                    params: {},
+                });
+
+                const taskDoc = await firestore.doc(refs.taskPath).load();
+                const taskData = taskDoc.data();
+
+                // デバッグ: タスクのステータスとエラーを確認
+                console.log("Task status:", taskData?.status);
+                if (taskData?.status === "failed") {
+                    console.log("Task error:", JSON.stringify(taskData?.error, null, 2));
+                }
+
+                expect(taskData?.status).toBe("completed");
+                expect(taskData?.results?.marketingAnalytics?.marketDataIntegrated).toBe(false);
+                expect(taskData?.results?.marketingAnalytics?.competitivePositioning).toBeUndefined();
+                expect(taskData?.results?.marketingAnalytics?.marketOpportunityPriority).toBeUndefined();
+
+                console.log("Error market research data test completed successfully!");
+                console.log("marketDataIntegrated:", taskData?.results?.marketingAnalytics?.marketDataIntegrated);
+
+            } finally {
+                await firestore.doc(refs.actionPath).delete().catch(() => {});
+                await firestore.doc(refs.taskPath).delete().catch(() => {});
+            }
+        }, 120000);
     });
 });

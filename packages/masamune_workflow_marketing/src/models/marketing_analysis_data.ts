@@ -84,6 +84,12 @@ export interface MarketingAnalyticsData {
     improvementSuggestions?: ImprovementSuggestion[];
     trendAnalysis?: TrendAnalysis;
     reviewAnalysis?: ReviewAnalysis;
+    /** Competitive positioning analysis (when market research data is available) */
+    competitivePositioning?: CompetitivePositioningAnalysis;
+    /** Market opportunity priority analysis (when market research data is available) */
+    marketOpportunityPriority?: MarketOpportunityPriorityAnalysis;
+    /** Whether market research data was integrated into the analysis */
+    marketDataIntegrated?: boolean;
     generatedAt: string;
 }
 
@@ -141,4 +147,68 @@ export interface GitHubImprovementsAnalysis {
     improvementSummary: string;
     /** When analysis was generated */
     generatedAt: string;
+}
+
+/**
+ * Competitor comparison result.
+ *
+ * 競合比較結果。
+ */
+export interface CompetitorComparison {
+    /** Competitor name */
+    competitor: string;
+    /** Our strengths against this competitor */
+    ourStrengths: string[];
+    /** Our weaknesses against this competitor */
+    ourWeaknesses: string[];
+    /** Recommended strategy to compete */
+    battleStrategy: string;
+}
+
+/**
+ * Competitive positioning analysis result.
+ *
+ * 競合ポジショニング分析結果。
+ */
+export interface CompetitivePositioningAnalysis {
+    /** Current market position assessment */
+    marketPosition: string;
+    /** Comparison with each competitor */
+    competitorComparison: CompetitorComparison[];
+    /** Overall differentiation strategy */
+    differentiationStrategy: string;
+    /** Quick win opportunities */
+    quickWins: string[];
+}
+
+/**
+ * Prioritized opportunity result.
+ *
+ * 優先度付けされた機会の結果。
+ */
+export interface PrioritizedOpportunity {
+    /** Opportunity name/title */
+    opportunity: string;
+    /** Fit score with current app */
+    fitScore: "excellent" | "good" | "moderate" | "poor";
+    /** Reason for the fit score */
+    fitReason: string;
+    /** Required changes to capitalize */
+    requiredChanges: string[];
+    /** Estimated implementation effort */
+    estimatedEffort: "low" | "medium" | "high";
+    /** Recommended action */
+    recommendedAction: string;
+}
+
+/**
+ * Market opportunity priority analysis result.
+ *
+ * 市場機会優先度分析結果。
+ */
+export interface MarketOpportunityPriorityAnalysis {
+    /** List of prioritized opportunities */
+    prioritizedOpportunities: PrioritizedOpportunity[];
+    /** Strategic recommendation summary */
+    strategicRecommendation: string;
 }
