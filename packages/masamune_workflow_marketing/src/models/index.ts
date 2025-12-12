@@ -14,6 +14,7 @@ export * from "./firebase_analytics_data";
 
 // Analysis data types
 export * from "./marketing_analysis_data";
+export * from "./market_research_data";
 
 // GitHub analysis data types
 export * from "./github_analysis_data";

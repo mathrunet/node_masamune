@@ -39,6 +39,7 @@
   "homepage": "https://github.com/mathrunet/node_masamune#readme",
   "dependencies": {
     "@google-analytics/data": "^4.9.0",
+    "@google-cloud/vertexai": "^1.10.0",
     "@google/genai": "^1.30.0",
     "@mathrunet/masamune": "^3.9.5",
     "@mathrunet/masamune_workflow": "^3.8.6",

@@ -94,4 +94,26 @@ export const Functions = {
             func: require("./functions/analyze_github_summary"),
             options: options
         }),
+    /**
+     * A function for conducting market research using Gemini with Google Search.
+     *
+     * Gemini + Google Searchを使用して市場調査を行うためのFunction。
+     */
+    researchMarket: (options: masamune.HttpFunctionsOptions = {}) =>
+        new masamune.FunctionsData({
+            id: "research_market",
+            func: require("./functions/research_market"),
+            options: options
+        }),
+    /**
+     * A function for analyzing market research data.
+     *
+     * 市場調査データを分析するためのFunction。
+     */
+    analyzeMarketResearch: (options: masamune.HttpFunctionsOptions = {}) =>
+        new masamune.FunctionsData({
+            id: "analyze_market_research",
+            func: require("./functions/analyze_market_research"),
+            options: options
+        }),
 } as const;
