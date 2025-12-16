@@ -6,7 +6,15 @@
 
 import { RatingDistribution } from "./common";
 import { GeneratedCharts } from "./chart_data";
-import { OverallAnalysis, ImprovementSuggestion, TrendAnalysis, ReviewAnalysis, GitHubImprovementsAnalysis } from "./marketing_analysis_data";
+import {
+    OverallAnalysis,
+    ImprovementSuggestion,
+    TrendAnalysis,
+    ReviewAnalysis,
+    GitHubImprovementsAnalysis,
+    CompetitivePositioningAnalysis,
+    MarketOpportunityPriorityAnalysis,
+} from "./marketing_analysis_data";
 import { GitHubRepositoryAnalysis } from "./github_analysis_data";
 
 /**
@@ -49,6 +57,12 @@ export interface PDFInputData {
         improvementSuggestions?: ImprovementSuggestion[];
         trendAnalysis?: TrendAnalysis;
         reviewAnalysis?: ReviewAnalysis;
+        /** Competitive positioning analysis (when market research data is available) */
+        competitivePositioning?: CompetitivePositioningAnalysis;
+        /** Market opportunity priority analysis (when market research data is available) */
+        marketOpportunityPriority?: MarketOpportunityPriorityAnalysis;
+        /** Whether market research data was integrated into the analysis */
+        marketDataIntegrated?: boolean;
         generatedAt?: string;
         [key: string]: any;
     };

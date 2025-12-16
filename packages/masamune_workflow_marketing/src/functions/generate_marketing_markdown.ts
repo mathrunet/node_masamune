@@ -70,6 +70,29 @@ interface MarkdownInputData {
             commonThemes?: string[];
             actionableInsights?: string[];
         };
+        competitivePositioning?: {
+            marketPosition?: string;
+            competitorComparison?: Array<{
+                competitor: string;
+                ourStrengths: string[];
+                ourWeaknesses: string[];
+                battleStrategy: string;
+            }>;
+            differentiationStrategy?: string;
+            quickWins?: string[];
+        };
+        marketOpportunityPriority?: {
+            prioritizedOpportunities?: Array<{
+                opportunity: string;
+                fitScore: "excellent" | "good" | "moderate" | "poor";
+                fitReason: string;
+                requiredChanges: string[];
+                estimatedEffort: "low" | "medium" | "high";
+                recommendedAction: string;
+            }>;
+            strategicRecommendation?: string;
+        };
+        marketDataIntegrated?: boolean;
         generatedAt?: string;
         [key: string]: any;
     };
@@ -237,6 +260,21 @@ export class GenerateMarketingMarkdown extends WorkflowProcessFunctionBase {
             sections.push(this.generateRatingsReviews(options));
         }
 
+        // Competitive Positioning (market research data)
+        if (options.data.marketingAnalytics?.competitivePositioning) {
+            sections.push(this.generateCompetitivePositioning(options));
+        }
+
+        // Market Opportunity Priority (market research data)
+        if (options.data.marketingAnalytics?.marketOpportunityPriority) {
+            sections.push(this.generateMarketOpportunityPriority(options));
+        }
+
+        // Trend Analysis
+        if (options.data.marketingAnalytics?.trendAnalysis) {
+            sections.push(this.generateTrendAnalysis(options));
+        }
+
         // Improvement Suggestions
         if (options.data.marketingAnalytics?.improvementSuggestions?.length) {
             sections.push(this.generateImprovements(options));
@@ -245,11 +283,6 @@ export class GenerateMarketingMarkdown extends WorkflowProcessFunctionBase {
         // GitHub Code Improvements
         if (options.data.githubImprovements?.improvements?.length) {
             sections.push(this.generateGitHubImprovements(options));
-        }
-
-        // Trend Analysis
-        if (options.data.marketingAnalytics?.trendAnalysis) {
-            sections.push(this.generateTrendAnalysis(options));
         }
 
         // Footer
@@ -301,7 +334,7 @@ export class GenerateMarketingMarkdown extends WorkflowProcessFunctionBase {
      */
     private generateExecutiveSummary(options: MarkdownGenerationOptions): string {
         const analysis = options.data.marketingAnalytics?.overallAnalysis;
-        const lines: string[] = ["## Executive Summary"];
+        const lines: string[] = ["## エグゼクティブサマリー"];
 
         // Summary text
         if (analysis?.summary) {
@@ -328,7 +361,7 @@ export class GenerateMarketingMarkdown extends WorkflowProcessFunctionBase {
      */
     private generateHighlightsConcerns(options: MarkdownGenerationOptions): string {
         const analysis = options.data.marketingAnalytics?.overallAnalysis;
-        const lines: string[] = ["## Highlights & Concerns"];
+        const lines: string[] = ["## ハイライトと懸念事項"];
 
         // Highlights
         if (analysis?.highlights?.length) {
@@ -354,7 +387,7 @@ export class GenerateMarketingMarkdown extends WorkflowProcessFunctionBase {
      */
     private generateUserAnalytics(options: MarkdownGenerationOptions): string {
         const firebase = options.data.firebaseAnalytics;
-        const lines: string[] = ["## User Analytics"];
+        const lines: string[] = ["## ユーザー分析"];
 
         if (!firebase) {
             return lines.join("\n");
@@ -440,7 +473,7 @@ export class GenerateMarketingMarkdown extends WorkflowProcessFunctionBase {
         const googlePlay = options.data.googlePlayConsole;
         const appStore = options.data.appStore;
         const reviewAnalysis = options.data.marketingAnalytics?.reviewAnalysis;
-        const lines: string[] = ["## Ratings & Reviews"];
+        const lines: string[] = ["## 評価とレビュー"];
 
         // Rating summary
         if (googlePlay?.averageRating || appStore?.averageRating) {
@@ -537,7 +570,7 @@ export class GenerateMarketingMarkdown extends WorkflowProcessFunctionBase {
      */
     private generateImprovements(options: MarkdownGenerationOptions): string {
         const suggestions = options.data.marketingAnalytics?.improvementSuggestions || [];
-        const lines: string[] = ["## Improvement Suggestions"];
+        const lines: string[] = ["## 改善提案"];
 
         for (const suggestion of suggestions) {
             const priorityEmoji = suggestion.priority === "high" ? "🔴" : suggestion.priority === "medium" ? "🟡" : "🟢";
@@ -550,6 +583,143 @@ export class GenerateMarketingMarkdown extends WorkflowProcessFunctionBase {
                 lines.push("");
                 lines.push(`**Expected Impact:** ${suggestion.expectedImpact}`);
             }
+        }
+
+        return lines.join("\n");
+    }
+
+    /**
+     * Generate competitive positioning section.
+     *
+     * 競合ポジショニング分析セクションを生成。
+     */
+    private generateCompetitivePositioning(options: MarkdownGenerationOptions): string {
+        const positioning = options.data.marketingAnalytics?.competitivePositioning;
+        const lines: string[] = ["## 競合ポジショニング分析"];
+
+        // Market Position
+        if (positioning?.marketPosition) {
+            lines.push("", "### 市場での位置づけ");
+            lines.push("", positioning.marketPosition);
+        }
+
+        // Competitor Comparison
+        if (positioning?.competitorComparison?.length) {
+            lines.push("", "### 競合比較");
+
+            for (const comp of positioning.competitorComparison) {
+                lines.push("");
+                lines.push(`#### vs ${comp.competitor}`);
+                lines.push("");
+
+                if (comp.ourStrengths?.length) {
+                    lines.push("**当アプリの優位点:**");
+                    for (const strength of comp.ourStrengths) {
+                        lines.push(`- ✅ ${strength}`);
+                    }
+                }
+
+                if (comp.ourWeaknesses?.length) {
+                    lines.push("");
+                    lines.push("**当アプリの劣位点:**");
+                    for (const weakness of comp.ourWeaknesses) {
+                        lines.push(`- ⚠️ ${weakness}`);
+                    }
+                }
+
+                if (comp.battleStrategy) {
+                    lines.push("");
+                    lines.push(`**対抗戦略:** ${comp.battleStrategy}`);
+                }
+            }
+        }
+
+        // Differentiation Strategy
+        if (positioning?.differentiationStrategy) {
+            lines.push("", "### 差別化戦略");
+            lines.push("", positioning.differentiationStrategy);
+        }
+
+        // Quick Wins
+        if (positioning?.quickWins?.length) {
+            lines.push("", "### すぐに実行可能な施策");
+            for (const quickWin of positioning.quickWins) {
+                lines.push(`- 🚀 ${quickWin}`);
+            }
+        }
+
+        return lines.join("\n");
+    }
+
+    /**
+     * Generate market opportunity priority section.
+     *
+     * 市場機会優先度分析セクションを生成。
+     */
+    private generateMarketOpportunityPriority(options: MarkdownGenerationOptions): string {
+        const priority = options.data.marketingAnalytics?.marketOpportunityPriority;
+        const lines: string[] = ["## 市場機会優先度分析"];
+
+        // Prioritized Opportunities
+        if (priority?.prioritizedOpportunities?.length) {
+            lines.push("", "### 優先順位付けされた機会", "");
+
+            // Summary table
+            lines.push("| 機会 | 適合度 | 工数 |");
+            lines.push("|------|--------|------|");
+
+            const fitScoreEmoji: Record<string, string> = {
+                excellent: "🟢",
+                good: "🔵",
+                moderate: "🟡",
+                poor: "🔴",
+            };
+
+            const effortLabel: Record<string, string> = {
+                low: "低",
+                medium: "中",
+                high: "高",
+            };
+
+            for (const opp of priority.prioritizedOpportunities) {
+                const emoji = fitScoreEmoji[opp.fitScore] || "⚪";
+                const effort = effortLabel[opp.estimatedEffort] || opp.estimatedEffort;
+                lines.push(`| ${opp.opportunity} | ${emoji} ${opp.fitScore} | ${effort} |`);
+            }
+
+            // Detailed view for each opportunity
+            lines.push("");
+            for (const opp of priority.prioritizedOpportunities) {
+                const emoji = fitScoreEmoji[opp.fitScore] || "⚪";
+                lines.push(`#### ${emoji} ${opp.opportunity}`);
+                lines.push("");
+
+                lines.push(`**適合度:** ${opp.fitScore}`);
+                if (opp.fitReason) {
+                    lines.push(`**理由:** ${opp.fitReason}`);
+                }
+
+                if (opp.requiredChanges?.length) {
+                    lines.push("");
+                    lines.push("**必要な変更:**");
+                    for (const change of opp.requiredChanges) {
+                        lines.push(`- ${change}`);
+                    }
+                }
+
+                if (opp.recommendedAction) {
+                    lines.push("");
+                    lines.push(`**推奨アクション:** ${opp.recommendedAction}`);
+                }
+
+                lines.push("");
+            }
+        }
+
+        // Strategic Recommendation
+        if (priority?.strategicRecommendation) {
+            lines.push("### 戦略的推奨事項");
+            lines.push("", priority.strategicRecommendation);
         }
 
         return lines.join("\n");
@@ -632,7 +802,7 @@ export class GenerateMarketingMarkdown extends WorkflowProcessFunctionBase {
      */
     private generateTrendAnalysis(options: MarkdownGenerationOptions): string {
         const trendAnalysis = options.data.marketingAnalytics?.trendAnalysis;
-        const lines: string[] = ["## Trend Analysis & Predictions"];
+        const lines: string[] = ["## トレンド分析と予測"];
 
         if (trendAnalysis?.userGrowthTrend) {
             lines.push("", "### User Growth");

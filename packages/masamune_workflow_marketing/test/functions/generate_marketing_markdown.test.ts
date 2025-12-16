@@ -497,6 +497,116 @@ describe("GenerateMarketingMarkdown Integration Tests", () => {
                     console.warn("Step 4: Skipping GitHub analysis - No GITHUB_TOKEN");
                 }
 
+                // Step 4.5: Add Market Research Data (mock data for Nansuru)
+                console.log("Step 4.5: Adding market research data...");
+                accumulatedResults.marketResearchData = {
+                    marketPotential: {
+                        summary: "日本の家計簿・資産管理アプリ市場は成長を続けており、特に若年層とデジタルネイティブ世代での利用が拡大している。Nansuruは家族での共有機能に強みを持ち、競合との差別化が可能。",
+                        tam: "約500億円（日本の個人向け資産管理ソフトウェア市場）",
+                        sam: "約150億円（スマートフォン向け家計簿アプリ市場）",
+                        som: "約15億円（家族向け家計簿共有アプリセグメント）",
+                        marketDrivers: [
+                            "キャッシュレス決済の普及による支出管理ニーズの増加",
+                            "物価上昇による家計管理意識の高まり",
+                            "共働き世帯の増加による家計共有ニーズ",
+                            "新NISA制度導入による資産運用への関心増加",
+                        ],
+                        marketBarriers: [
+                            "無料アプリとの競争激化",
+                            "銀行公式アプリの機能強化",
+                            "セキュリティ・プライバシー懸念",
+                        ],
+                        targetSegments: [
+                            "20-40代の共働き夫婦",
+                            "子育て世代の家族",
+                            "資産形成に関心のある若年層",
+                        ],
+                    },
+                    competitorAnalysis: {
+                        competitors: [
+                            {
+                                name: "マネーフォワード ME",
+                                description: "日本最大の個人向け資産管理アプリ。銀行口座やクレジットカードとの連携が強み。",
+                                marketShare: "約35%",
+                                strengths: ["豊富な金融機関連携", "ブランド認知度", "法人向けサービスとのシナジー"],
+                                weaknesses: ["プレミアム機能の価格が高い", "UIが複雑"],
+                                pricing: "基本無料、プレミアム月額500円",
+                                targetAudience: "資産管理に関心の高い個人",
+                            },
+                            {
+                                name: "Zaim",
+                                description: "シンプルな操作性を特徴とする家計簿アプリ。レシート読み取り機能が人気。",
+                                marketShare: "約25%",
+                                strengths: ["シンプルなUI", "レシート読み取り精度", "長年の実績"],
+                                weaknesses: ["家族共有機能が弱い", "資産運用機能が限定的"],
+                                pricing: "基本無料、プレミアム月額480円",
+                                targetAudience: "手軽に家計管理したい個人",
+                            },
+                            {
+                                name: "OsidOri",
+                                description: "カップル・家族向けの家計共有アプリ。共同管理機能に特化。",
+                                marketShare: "約5%",
+                                strengths: ["カップル向け機能", "モダンなUI"],
+                                weaknesses: ["ユーザー基盤が小さい", "金融機関連携が少ない"],
+                                pricing: "基本無料、プレミアム月額480円",
+                                targetAudience: "カップル、新婚夫婦",
+                            },
+                        ],
+                        marketLandscape: "日本の家計簿アプリ市場は成熟期に入っており、上位2社（マネーフォワード、Zaim）が市場の大部分を占有。しかし、家族向け・共有機能に特化したニッチ市場には成長余地がある。",
+                        competitiveAdvantages: [
+                            "家族間での柔軟な共有設定",
+                            "子供の金銭教育サポート機能",
+                            "シンプルで直感的なUI",
+                        ],
+                        differentiationOpportunities: [
+                            "家族向け予算管理・貯金目標共有機能の強化",
+                            "子供向け金銭教育コンテンツの追加",
+                            "家族イベント（旅行、大型購入）の共同貯金機能",
+                        ],
+                        marketGaps: [
+                            "家族全員で使えるシンプルな共有機能",
+                            "子供の金銭感覚を育てる教育的要素",
+                            "世代間での資産情報共有（相続対策）",
+                        ],
+                    },
+                    businessOpportunities: [
+                        {
+                            title: "家族向けプレミアムプラン",
+                            description: "家族複数人での利用を前提としたプレミアムプランを導入。世帯単位での課金モデルにより、1人あたりの価格を抑えつつARPUを向上。",
+                            type: "monetization",
+                            potentialImpact: "high",
+                            timeframe: "short_term",
+                            requirements: ["課金システムの改修", "家族プラン専用機能の開発"],
+                            risks: ["既存ユーザーの反発", "競合の追随"],
+                        },
+                        {
+                            title: "金融機関とのAPI連携拡大",
+                            description: "主要銀行・証券会社とのAPI連携を拡大し、自動的な資産状況の更新を実現。ユーザーの手間を削減し、継続利用率を向上。",
+                            type: "product",
+                            potentialImpact: "high",
+                            timeframe: "medium_term",
+                            requirements: ["API連携開発", "セキュリティ認証取得", "金融機関との交渉"],
+                            risks: ["開発コスト", "金融機関の協力獲得の難しさ"],
+                        },
+                        {
+                            title: "子供向け金融教育機能",
+                            description: "子供にお小遣い管理や貯金の概念を教える教育機能を追加。家族利用の促進と差別化を同時に実現。",
+                            type: "market_gap",
+                            potentialImpact: "medium",
+                            timeframe: "short_term",
+                            requirements: ["子供向けUIの開発", "教育コンテンツの作成"],
+                            risks: ["子供のプライバシー保護", "開発リソース"],
+                        },
+                    ],
+                    dataSources: [
+                        "App Annie 2024年日本アプリ市場レポート",
+                        "総務省 家計調査年報",
+                        "日本FP協会 家計管理実態調査",
+                    ],
+                    generatedAt: new Date().toISOString(),
+                };
+                console.log("Market research data added:", Object.keys(accumulatedResults.marketResearchData));
+
                 // Step 5: Analyze Marketing Data
                 console.log("Step 5: Analyzing marketing data with AI...");
 
@@ -761,5 +871,322 @@ describe("GenerateMarketingMarkdown Integration Tests", () => {
                 await firestore.doc(refs.taskPath).delete().catch(() => { });
             }
         }, 1800000);
+    });
+
+    describe("Market Research Data Tests", () => {
+        it("should generate Markdown with competitive positioning section", async () => {
+            const taskId = `test-competitive-md-${Date.now()}`;
+            const actionId = `test-action-competitive-md-${Date.now()}`;
+            const token = `test-token-competitive-md-${Date.now()}`;
+            const tokenExpiredTime = new Date(Date.now() + 60 * 60 * 1000);
+
+            const actions = [{
+                command: "generate_marketing_markdown",
+                index: 0,
+            }];
+
+            // Mock data with competitive positioning
+            const accumulatedResults = {
+                marketingAnalytics: {
+                    overallAnalysis: {
+                        healthScore: 75,
+                        summary: "Test summary for competitive positioning",
+                        keyInsights: ["Insight 1", "Insight 2"],
+                        criticalIssues: ["Issue 1"],
+                    },
+                    competitivePositioning: {
+                        marketPosition: "The app is positioned as a mid-tier solution with strong feature differentiation.",
+                        competitorComparison: [
+                            {
+                                competitor: "Competitor A",
+                                ourStrengths: ["Better UI", "Faster performance"],
+                                ourWeaknesses: ["Less features", "Higher price"],
+                                battleStrategy: "Focus on user experience and speed",
+                            },
+                            {
+                                competitor: "Competitor B",
+                                ourStrengths: ["More integrations", "Better support"],
+                                ourWeaknesses: ["Less brand recognition"],
+                                battleStrategy: "Leverage integrations and customer success stories",
+                            },
+                        ],
+                        differentiationStrategy: "Focus on unique AI-powered features and seamless integrations.",
+                        quickWins: [
+                            "Add comparison page highlighting advantages",
+                            "Create case studies showcasing integration benefits",
+                            "Implement free trial period",
+                        ],
+                    },
+                    marketDataIntegrated: true,
+                    generatedAt: new Date().toISOString(),
+                },
+            };
+
+            const refs = await createTestDataWithResults({
+                taskId,
+                actionId,
+                actions,
+                token,
+                tokenExpiredTime,
+                accumulatedResults,
+                actionIndex: 0,
+            });
+
+            try {
+                const func = require("../../src/functions/generate_marketing_markdown");
+                const wrapped = config.wrap(func([], {}, {}));
+
+                await wrapped({
+                    data: {
+                        path: refs.actionPath,
+                        token: token,
+                    },
+                    params: {},
+                });
+
+                // Verify results
+                const actionDoc = await firestore.doc(refs.actionPath).load();
+                const actionData = actionDoc.data();
+
+                expect(actionData).toBeDefined();
+                const markdownContent = actionData?.results?.marketingAnalyticsMarkdown;
+                expect(markdownContent).toBeDefined();
+                expect(typeof markdownContent).toBe("string");
+
+                // Verify competitive positioning section is present
+                expect(markdownContent).toContain("競合ポジショニング分析");
+                expect(markdownContent).toContain("市場での位置づけ");
+                expect(markdownContent).toContain("競合比較");
+                expect(markdownContent).toContain("Competitor A");
+                expect(markdownContent).toContain("Competitor B");
+                expect(markdownContent).toContain("差別化戦略");
+                expect(markdownContent).toContain("すぐに実行可能な施策");
+
+                console.log("Competitive positioning markdown test completed successfully!");
+                console.log("Markdown length:", markdownContent?.length, "characters");
+
+                // Log preview
+                console.log("\n=== Competitive Positioning Markdown Preview ===");
+                const cpIndex = markdownContent?.indexOf("## 競合ポジショニング分析");
+                if (cpIndex !== -1) {
+                    console.log(markdownContent?.substring(cpIndex, cpIndex + 1500));
+                }
+            } finally {
+                await firestore.doc(refs.actionPath).delete().catch(() => { });
+                await firestore.doc(refs.taskPath).delete().catch(() => { });
+            }
+        }, 60000);
+
+        it("should generate Markdown with market opportunity priority section", async () => {
+            const taskId = `test-opportunity-md-${Date.now()}`;
+            const actionId = `test-action-opportunity-md-${Date.now()}`;
+            const token = `test-token-opportunity-md-${Date.now()}`;
+            const tokenExpiredTime = new Date(Date.now() + 60 * 60 * 1000);
+
+            const actions = [{
+                command: "generate_marketing_markdown",
+                index: 0,
+            }];
+
+            // Mock data with market opportunity priority
+            const accumulatedResults = {
+                marketingAnalytics: {
+                    overallAnalysis: {
+                        healthScore: 80,
+                        summary: "Test summary for market opportunity",
+                        keyInsights: ["Insight 1"],
+                        criticalIssues: [],
+                    },
+                    marketOpportunityPriority: {
+                        prioritizedOpportunities: [
+                            {
+                                opportunity: "Enterprise market expansion",
+                                fitScore: "excellent",
+                                fitReason: "Current features align well with enterprise needs",
+                                estimatedEffort: "medium",
+                                requiredChanges: ["Add SSO support", "Implement audit logs", "Create admin dashboard"],
+                                recommendedAction: "Prioritize SSO implementation and begin enterprise sales outreach",
+                            },
+                            {
+                                opportunity: "API monetization",
+                                fitScore: "good",
+                                fitReason: "Strong API foundation exists but needs documentation",
+                                estimatedEffort: "low",
+                                requiredChanges: ["Improve API documentation", "Add usage metering"],
+                                recommendedAction: "Create developer portal and implement usage-based pricing",
+                            },
+                            {
+                                opportunity: "Mobile-first strategy",
+                                fitScore: "moderate",
+                                fitReason: "Current architecture is desktop-focused",
+                                estimatedEffort: "high",
+                                requiredChanges: ["Redesign responsive layouts", "Optimize for mobile performance"],
+                                recommendedAction: "Consider in next major version planning",
+                            },
+                        ],
+                        strategicRecommendation: "Focus on enterprise market expansion as the primary growth opportunity, followed by API monetization for additional revenue stream.",
+                    },
+                    marketDataIntegrated: true,
+                    generatedAt: new Date().toISOString(),
+                },
+            };
+
+            const refs = await createTestDataWithResults({
+                taskId,
+                actionId,
+                actions,
+                token,
+                tokenExpiredTime,
+                accumulatedResults,
+                actionIndex: 0,
+            });
+
+            try {
+                const func = require("../../src/functions/generate_marketing_markdown");
+                const wrapped = config.wrap(func([], {}, {}));
+
+                await wrapped({
+                    data: {
+                        path: refs.actionPath,
+                        token: token,
+                    },
+                    params: {},
+                });
+
+                // Verify results
+                const actionDoc = await firestore.doc(refs.actionPath).load();
+                const actionData = actionDoc.data();
+
+                expect(actionData).toBeDefined();
+                const markdownContent = actionData?.results?.marketingAnalyticsMarkdown;
+                expect(markdownContent).toBeDefined();
+                expect(typeof markdownContent).toBe("string");
+
+                // Verify market opportunity priority section is present
+                expect(markdownContent).toContain("市場機会優先度分析");
+                expect(markdownContent).toContain("優先順位付けされた機会");
+                expect(markdownContent).toContain("Enterprise market expansion");
+                expect(markdownContent).toContain("API monetization");
+                expect(markdownContent).toContain("戦略的推奨事項");
+
+                console.log("Market opportunity priority markdown test completed successfully!");
+                console.log("Markdown length:", markdownContent?.length, "characters");
+
+                // Log preview
+                console.log("\n=== Market Opportunity Priority Markdown Preview ===");
+                const mopIndex = markdownContent?.indexOf("## 市場機会優先度分析");
+                if (mopIndex !== -1) {
+                    console.log(markdownContent?.substring(mopIndex, mopIndex + 1500));
+                }
+            } finally {
+                await firestore.doc(refs.actionPath).delete().catch(() => { });
+                await firestore.doc(refs.taskPath).delete().catch(() => { });
+            }
+        }, 60000);
+
+        it("should generate Markdown with both competitive positioning and market opportunity sections", async () => {
+            const taskId = `test-both-md-${Date.now()}`;
+            const actionId = `test-action-both-md-${Date.now()}`;
+            const token = `test-token-both-md-${Date.now()}`;
+            const tokenExpiredTime = new Date(Date.now() + 60 * 60 * 1000);
+
+            const actions = [{
+                command: "generate_marketing_markdown",
+                index: 0,
+            }];
+
+            // Mock data with both competitive positioning and market opportunity priority
+            const accumulatedResults = {
+                marketingAnalytics: {
+                    overallAnalysis: {
+                        healthScore: 85,
+                        summary: "Test summary with full market research data",
+                        keyInsights: ["Insight 1", "Insight 2"],
+                        criticalIssues: [],
+                    },
+                    competitivePositioning: {
+                        marketPosition: "Market leader in the niche segment.",
+                        competitorComparison: [
+                            {
+                                competitor: "Main Rival",
+                                ourStrengths: ["Better pricing", "More features"],
+                                ourWeaknesses: ["Smaller community"],
+                                battleStrategy: "Build community and showcase value",
+                            },
+                        ],
+                        differentiationStrategy: "Focus on AI-driven automation.",
+                        quickWins: ["Launch community forum", "Create tutorial videos"],
+                    },
+                    marketOpportunityPriority: {
+                        prioritizedOpportunities: [
+                            {
+                                opportunity: "Global expansion",
+                                fitScore: "excellent",
+                                fitReason: "Product is already localized",
+                                estimatedEffort: "medium",
+                                requiredChanges: ["Add payment gateways", "Local marketing"],
+                                recommendedAction: "Start with APAC region",
+                            },
+                        ],
+                        strategicRecommendation: "Pursue global expansion while maintaining competitive advantage.",
+                    },
+                    marketDataIntegrated: true,
+                    generatedAt: new Date().toISOString(),
+                },
+            };
+
+            const refs = await createTestDataWithResults({
+                taskId,
+                actionId,
+                actions,
+                token,
+                tokenExpiredTime,
+                accumulatedResults,
+                actionIndex: 0,
+            });
+
+            try {
+                const func = require("../../src/functions/generate_marketing_markdown");
+                const wrapped = config.wrap(func([], {}, {}));
+
+                await wrapped({
+                    data: {
+                        path: refs.actionPath,
+                        token: token,
+                    },
+                    params: {},
+                });
+
+                // Verify results
+                const actionDoc = await firestore.doc(refs.actionPath).load();
+                const actionData = actionDoc.data();
+
+                expect(actionData).toBeDefined();
+                const markdownContent = actionData?.results?.marketingAnalyticsMarkdown;
+                expect(markdownContent).toBeDefined();
+                expect(typeof markdownContent).toBe("string");
+
+                // Verify both sections are present
+                expect(markdownContent).toContain("競合ポジショニング分析");
+                expect(markdownContent).toContain("市場機会優先度分析");
+
+                // Verify order (competitive positioning should come before market opportunity)
+                const cpIndex = markdownContent?.indexOf("## 競合ポジショニング分析");
+                const mopIndex = markdownContent?.indexOf("## 市場機会優先度分析");
+                expect(cpIndex).toBeLessThan(mopIndex);
+
+                console.log("Both market research sections markdown test completed successfully!");
+                console.log("Markdown length:", markdownContent?.length, "characters");
+
+                // Save to local for manual inspection
+                // const localPath = saveMarkdownToLocal(markdownContent);
+                // if (localPath) {
+                //     console.log(`\nMarkdown saved to: ${localPath}`);
+                // }
+            } finally {
+                await firestore.doc(refs.actionPath).delete().catch(() => { });
+                await firestore.doc(refs.taskPath).delete().catch(() => { });
+            }
+        }, 60000);
     });
 });

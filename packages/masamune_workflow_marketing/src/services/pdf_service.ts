@@ -129,6 +129,24 @@ export class PDFService {
                     this.addRatingsReviewsPage(doc, options);
                 }
 
+                // Competitive Positioning page (market research data)
+                if (options.data.marketingAnalytics?.competitivePositioning) {
+                    doc.addPage();
+                    this.addCompetitivePositioningPage(doc, options);
+                }
+
+                // Market Opportunity Priority page (market research data)
+                if (options.data.marketingAnalytics?.marketOpportunityPriority) {
+                    doc.addPage();
+                    this.addMarketOpportunityPriorityPage(doc, options);
+                }
+
+                // Trend Analysis page
+                if (options.data.marketingAnalytics?.trendAnalysis) {
+                    doc.addPage();
+                    this.addTrendAnalysisPage(doc, options);
+                }
+
                 // Improvement Suggestions page
                 if (options.data.marketingAnalytics?.improvementSuggestions?.length) {
                     doc.addPage();
@@ -139,12 +157,6 @@ export class PDFService {
                 if (options.data.githubImprovements?.improvements?.length) {
                     doc.addPage();
                     this.addGitHubImprovementsPage(doc, options);
-                }
-
-                // Trend Analysis page
-                if (options.data.marketingAnalytics?.trendAnalysis) {
-                    doc.addPage();
-                    this.addTrendAnalysisPage(doc, options);
                 }
 
                 doc.end();
@@ -240,7 +252,7 @@ export class PDFService {
 
         // Page title
         doc.fontSize(20).font(this.getFont(true));
-        doc.text("Executive Summary", this.margin, y);
+        doc.text("エグゼクティブサマリー", this.margin, y);
         y += 35;
 
         // Summary text
@@ -330,7 +342,7 @@ export class PDFService {
 
         // Page title
         doc.fontSize(20).font(this.getFont(true));
-        doc.text("Highlights & Concerns", this.margin, y);
+        doc.text("ハイライトと懸念事項", this.margin, y);
         y += 40;
 
         const halfWidth = this.contentWidth / 2 - 15;
@@ -413,7 +425,7 @@ export class PDFService {
 
         // Page title
         doc.fontSize(20).font(this.getFont(true));
-        doc.text("User Analytics", this.margin, y);
+        doc.text("ユーザー分析", this.margin, y);
         y += 35;
 
         if (firebase) {
@@ -532,7 +544,7 @@ export class PDFService {
 
         // Page title
         doc.fontSize(20).font(this.getFont(true));
-        doc.text("Ratings & Reviews", this.margin, y);
+        doc.text("評価とレビュー", this.margin, y);
         y += 35;
 
         // Rating summary
@@ -658,7 +670,7 @@ export class PDFService {
 
         // Page title
         doc.fontSize(20).font(this.getFont(true));
-        doc.text("Improvement Suggestions", this.margin, y);
+        doc.text("改善提案", this.margin, y);
         y += 40;
 
         for (const suggestion of suggestions) {
@@ -717,6 +729,310 @@ export class PDFService {
     }
 
     /**
+     * Add competitive positioning page.
+     *
+     * 競合ポジショニング分析ページを追加。
+     */
+    private addCompetitivePositioningPage(
+        doc: PDFKit.PDFDocument,
+        options: PDFGenerationOptions
+    ): void {
+        let y = this.margin;
+        const positioning = options.data.marketingAnalytics?.competitivePositioning;
+
+        // Page title
+        doc.fontSize(20).font(this.getFont(true));
+        doc.text("競合ポジショニング分析", this.margin, y);
+        y += 35;
+
+        // Market Position
+        if (positioning?.marketPosition) {
+            doc.fontSize(14).font(this.getFont(true));
+            doc.fillColor("#1565c0");
+            doc.text("市場での位置づけ", this.margin, y);
+            y += 20;
+
+            doc.fontSize(11).font(this.getFont());
+            doc.fillColor("#000000");
+            doc.text(positioning.marketPosition, this.margin, y, {
+                width: this.contentWidth,
+            });
+            y = doc.y + 25;
+        }
+
+        // Competitor Comparison
+        if (positioning?.competitorComparison?.length) {
+            doc.fontSize(14).font(this.getFont(true));
+            doc.fillColor("#1565c0");
+            doc.text("競合比較", this.margin, y);
+            y += 25;
+
+            for (const comp of positioning.competitorComparison) {
+                // Check if we need a new page
+                if (y > this.pageHeight - 200) {
+                    doc.addPage();
+                    y = this.margin;
+                    doc.fontSize(16).font(this.getFont(true));
+                    doc.fillColor("#000000");
+                    doc.text("競合ポジショニング分析 (続き)", this.margin, y);
+                    y += 30;
+                }
+
+                // Competitor name header
+                doc.fillColor("#ffffff");
+                doc.rect(this.margin, y, this.contentWidth, 22).fill("#37474f");
+                doc.fontSize(12).font(this.getFont(true));
+                doc.fillColor("#ffffff");
+                doc.text(`vs ${comp.competitor}`, this.margin + 10, y + 5);
+                y += 28;
+
+                const halfWidth = this.contentWidth / 2 - 10;
+
+                // Strengths (left side)
+                if (comp.ourStrengths?.length) {
+                    doc.fillColor("#e8f5e9");
+                    const strengthsHeight = Math.max(60, comp.ourStrengths.length * 18 + 25);
+                    doc.rect(this.margin, y, halfWidth, strengthsHeight).fill();
+
+                    doc.fillColor("#1b5e20");
+                    doc.fontSize(10).font(this.getFont(true));
+                    doc.text("当アプリの優位点", this.margin + 8, y + 5);
+
+                    doc.fontSize(9).font(this.getFont());
+                    let sy = y + 22;
+                    for (const strength of comp.ourStrengths.slice(0, 4)) {
+                        doc.text(`✓ ${strength}`, this.margin + 8, sy, { width: halfWidth - 16 });
+                        sy = doc.y + 2;
+                    }
+                }
+
+                // Weaknesses (right side)
+                if (comp.ourWeaknesses?.length) {
+                    doc.fillColor("#ffebee");
+                    const weaknessesHeight = Math.max(60, comp.ourWeaknesses.length * 18 + 25);
+                    doc.rect(this.margin + halfWidth + 20, y, halfWidth, weaknessesHeight).fill();
+
+                    doc.fillColor("#b71c1c");
+                    doc.fontSize(10).font(this.getFont(true));
+                    doc.text("当アプリの劣位点", this.margin + halfWidth + 28, y + 5);
+
+                    doc.fontSize(9).font(this.getFont());
+                    let wy = y + 22;
+                    for (const weakness of comp.ourWeaknesses.slice(0, 4)) {
+                        doc.text(`△ ${weakness}`, this.margin + halfWidth + 28, wy, { width: halfWidth - 16 });
+                        wy = doc.y + 2;
+                    }
+                }
+
+                const maxItems = Math.max(comp.ourStrengths?.length || 0, comp.ourWeaknesses?.length || 0);
+                y += Math.max(60, Math.min(maxItems, 4) * 18 + 25) + 10;
+
+                // Battle Strategy
+                if (comp.battleStrategy) {
+                    doc.fillColor("#e3f2fd");
+                    doc.rect(this.margin, y, this.contentWidth, 35).fill();
+                    doc.fillColor("#1565c0");
+                    doc.fontSize(9).font(this.getFont(true));
+                    doc.text("対抗戦略:", this.margin + 8, y + 5);
+                    doc.fontSize(9).font(this.getFont());
+                    doc.text(comp.battleStrategy, this.margin + 8, y + 18, {
+                        width: this.contentWidth - 16,
+                        height: 15,
+                        ellipsis: true,
+                    });
+                    y += 45;
+                }
+
+                y += 15;
+            }
+        }
+
+        // Check if we need a new page for remaining sections
+        if (y > this.pageHeight - 150) {
+            doc.addPage();
+            y = this.margin;
+        }
+
+        // Differentiation Strategy
+        if (positioning?.differentiationStrategy) {
+            doc.fontSize(14).font(this.getFont(true));
+            doc.fillColor("#1565c0");
+            doc.text("差別化戦略", this.margin, y);
+            y += 20;
+
+            doc.fontSize(10).font(this.getFont());
+            doc.fillColor("#000000");
+            doc.text(positioning.differentiationStrategy, this.margin, y, {
+                width: this.contentWidth,
+            });
+            y = doc.y + 25;
+        }
+
+        // Quick Wins
+        if (positioning?.quickWins?.length) {
+            doc.fontSize(14).font(this.getFont(true));
+            doc.fillColor("#1565c0");
+            doc.text("すぐに実行可能な施策", this.margin, y);
+            y += 20;
+
+            doc.fontSize(10).font(this.getFont());
+            for (const quickWin of positioning.quickWins) {
+                doc.fillColor("#2e7d32");
+                doc.text(`→ ${quickWin}`, this.margin + 10, y, { width: this.contentWidth - 20 });
+                y = doc.y + 5;
+            }
+        }
+
+        doc.fillColor("#000000");
+    }
+
+    /**
+     * Add market opportunity priority page.
+     *
+     * 市場機会優先度分析ページを追加。
+     */
+    private addMarketOpportunityPriorityPage(
+        doc: PDFKit.PDFDocument,
+        options: PDFGenerationOptions
+    ): void {
+        let y = this.margin;
+        const priority = options.data.marketingAnalytics?.marketOpportunityPriority;
+
+        // Page title
+        doc.fontSize(20).font(this.getFont(true));
+        doc.text("市場機会優先度分析", this.margin, y);
+        y += 35;
+
+        // Prioritized Opportunities
+        if (priority?.prioritizedOpportunities?.length) {
+            const fitScoreColors: Record<string, string> = {
+                excellent: "#2e7d32",
+                good: "#1565c0",
+                moderate: "#f57c00",
+                poor: "#c62828",
+            };
+
+            const effortLabels: Record<string, string> = {
+                low: "低",
+                medium: "中",
+                high: "高",
+            };
+
+            for (const opp of priority.prioritizedOpportunities) {
+                // Check if we need a new page
+                if (y > this.pageHeight - 180) {
+                    doc.addPage();
+                    y = this.margin;
+                    doc.fontSize(16).font(this.getFont(true));
+                    doc.fillColor("#000000");
+                    doc.text("市場機会優先度分析 (続き)", this.margin, y);
+                    y += 30;
+                }
+
+                const fitColor = fitScoreColors[opp.fitScore] || "#757575";
+
+                // Opportunity header with fit score badge
+                doc.fillColor(fitColor);
+                doc.rect(this.margin, y, 70, 20).fill();
+                doc.fillColor("#ffffff");
+                doc.fontSize(9).font(this.getFont(true));
+                doc.text(opp.fitScore.toUpperCase(), this.margin + 5, y + 5);
+
+                // Effort badge
+                doc.fillColor("#757575");
+                doc.rect(this.margin + 75, y, 40, 20).fill();
+                doc.fillColor("#ffffff");
+                doc.fontSize(9).font(this.getFont());
+                doc.text(`工数:${effortLabels[opp.estimatedEffort] || opp.estimatedEffort}`, this.margin + 80, y + 5);
+
+                y += 25;
+
+                // Opportunity title
+                doc.fillColor("#000000");
+                doc.fontSize(13).font(this.getFont(true));
+                doc.text(opp.opportunity, this.margin, y);
+                y += 20;
+
+                // Fit reason
+                if (opp.fitReason) {
+                    doc.fontSize(10).font(this.getFont());
+                    doc.fillColor("#757575");
+                    doc.text(`適合理由: ${opp.fitReason}`, this.margin + 10, y, {
+                        width: this.contentWidth - 10,
+                    });
+                    y = doc.y + 10;
+                }
+
+                // Required changes
+                if (opp.requiredChanges?.length) {
+                    doc.fontSize(10).font(this.getFont(true));
+                    doc.fillColor("#000000");
+                    doc.text("必要な変更:", this.margin + 10, y);
+                    y += 15;
+
+                    doc.fontSize(9).font(this.getFont());
+                    for (const change of opp.requiredChanges.slice(0, 3)) {
+                        doc.fillColor("#1565c0");
+                        doc.text(`• ${change}`, this.margin + 20, y, { width: this.contentWidth - 30 });
+                        y = doc.y + 3;
+                    }
+                    if (opp.requiredChanges.length > 3) {
+                        doc.fillColor("#757575");
+                        doc.text(`+ ${opp.requiredChanges.length - 3} more...`, this.margin + 20, y);
+                        y = doc.y + 3;
+                    }
+                    y += 5;
+                }
+
+                // Recommended action
+                if (opp.recommendedAction) {
+                    doc.fillColor("#e8f5e9");
+                    doc.rect(this.margin + 10, y, this.contentWidth - 20, 30).fill();
+                    doc.fillColor("#1b5e20");
+                    doc.fontSize(9).font(this.getFont(true));
+                    doc.text("推奨アクション:", this.margin + 15, y + 5);
+                    doc.fontSize(9).font(this.getFont());
+                    doc.text(opp.recommendedAction, this.margin + 15, y + 17, {
+                        width: this.contentWidth - 30,
+                        height: 12,
+                        ellipsis: true,
+                    });
+                    y += 40;
+                }
+
+                y += 15;
+            }
+        }
+
+        // Check if we need a new page for strategic recommendation
+        if (y > this.pageHeight - 100) {
+            doc.addPage();
+            y = this.margin;
+        }
+
+        // Strategic Recommendation
+        if (priority?.strategicRecommendation) {
+            doc.fontSize(14).font(this.getFont(true));
+            doc.fillColor("#1565c0");
+            doc.text("戦略的推奨事項", this.margin, y);
+            y += 20;
+
+            doc.fillColor("#e3f2fd");
+            doc.rect(this.margin, y, this.contentWidth, 80).fill();
+
+            doc.fontSize(10).font(this.getFont());
+            doc.fillColor("#0d47a1");
+            doc.text(priority.strategicRecommendation, this.margin + 10, y + 10, {
+                width: this.contentWidth - 20,
+                height: 65,
+                ellipsis: true,
+            });
+        }
+
+        doc.fillColor("#000000");
+    }
+
+    /**
      * Add trend analysis page.
      */
     private addTrendAnalysisPage(
@@ -728,7 +1044,7 @@ export class PDFService {
 
         // Page title
         doc.fontSize(20).font(this.getFont(true));
-        doc.text("Trend Analysis & Predictions", this.margin, y);
+        doc.text("トレンド分析と予測", this.margin, y);
         y += 35;
 
         // Trends
