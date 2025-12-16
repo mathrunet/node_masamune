@@ -20,6 +20,8 @@
     "packages/masamune_token_android",
     "packages/masamune_token_google",
     "packages/masamune_workflow",
+    "packages/masamune_workflow_asset",
+    "packages/masamune_workflow_sales",
     "packages/masamune_workflow_marketing"
   ],
   "description": "Manages packages for the server portion (NodeJS) of the Masamune framework.",
