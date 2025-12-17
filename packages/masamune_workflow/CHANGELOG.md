@@ -1,4 +1,4 @@
-## [3.9.1](https://github.com/mathrunet/node_masamune/compare/v3.7.0...v3.9.1) (2025-12-12)
+## [3.9.2](https://github.com/mathrunet/node_masamune/compare/v3.7.0...v3.9.2) (2025-12-17)
 
 
 ### chore
@@ -18,7 +18,9 @@
 * Definition of interface. ([1868f42](https://github.com/mathrunet/node_masamune/commit/1868f42f4fe61e3d34413a5913ffdd7ba1ddb6f9))
 * Definition of interface. ([7fe670b](https://github.com/mathrunet/node_masamune/commit/7fe670b4466999f45a260f4fa31f7430ad297203))
 * Definition of interface. ([b305bbd](https://github.com/mathrunet/node_masamune/commit/b305bbdc965c9e0b06b7a13d5c5c39a24d2125cb))
+* Delete MarketingPipeline. ([0b69d79](https://github.com/mathrunet/node_masamune/commit/0b69d792fcc22319dbc3f0bfe83cc01ec389074b))
 * Deleted because a katana remained. ([845a8d9](https://github.com/mathrunet/node_masamune/commit/845a8d932962689919db12d8b67baf757bf49f59))
+* Initial commit. ([6f97dfe](https://github.com/mathrunet/node_masamune/commit/6f97dfe06413957d19792c7f535e0285045372fe))
 * Package update. ([4d16cf5](https://github.com/mathrunet/node_masamune/commit/4d16cf5ab3b82ca65af20b38a3f471a54c9b87e2))
 * Package update. ([e00d076](https://github.com/mathrunet/node_masamune/commit/e00d0766cc62d7fa7073dac9cf7c2c80ddb0d89f))
 * Package update. ([8891b4e](https://github.com/mathrunet/node_masamune/commit/8891b4e1995dd931d3055d329fdd0513d3eae23a))
@@ -88,12 +90,14 @@
 * Audio-related fixes ([9e2440b](https://github.com/mathrunet/node_masamune/commit/9e2440b9e78c15ecc9d495da5ed0f173250bf88c))
 * Bug fix. ([14d3ba4](https://github.com/mathrunet/node_masamune/commit/14d3ba4df05b723eb95768dc90a683f38fb8baa3))
 * Bug fixes. ([8cd7f92](https://github.com/mathrunet/node_masamune/commit/8cd7f92aaaea9da295fa232262e8df896c87e1d5))
+* Change Display Order ([09448b3](https://github.com/mathrunet/node_masamune/commit/09448b380616a82b1e65053350bcdece4d39b132))
 * Change error object handling ([d49aed4](https://github.com/mathrunet/node_masamune/commit/d49aed435c381c6b537a6a23accdf73125b4aa61))
 * Change GitHub analysis method ([abc2336](https://github.com/mathrunet/node_masamune/commit/abc233693cad2070a57db4d0472a16781d00c0c9))
 * Change process arguments. ([17fca7b](https://github.com/mathrunet/node_masamune/commit/17fca7b72ccc8ecf7576e5a0772b2d05f197940d))
 * Correction of PDF report. ([56bc89e](https://github.com/mathrunet/node_masamune/commit/56bc89ed74cdd1a76691717591ae3f75f043b40e))
 * Create E2E tests. ([e33ed27](https://github.com/mathrunet/node_masamune/commit/e33ed2702cc6d2771036fd3bc8e5c4de811229e7))
 * Explicitly pass the Firebase Admin app during Firestore and Storage initialization, and update the version. ([9169415](https://github.com/mathrunet/node_masamune/commit/9169415adb873a0ce1534a5762158d84ca477212))
+* Field names were inconsistent, so they were corrected. ([1eedb8c](https://github.com/mathrunet/node_masamune/commit/1eedb8c7d0b0cd59eaeeed6833c41dfd8bd94707))
 * Firestore interface change. ([027e464](https://github.com/mathrunet/node_masamune/commit/027e4647febaac184123ad5d8d7dc0ea452e3df7))
 * Fixed a bug where tests were failing. ([cdab6ca](https://github.com/mathrunet/node_masamune/commit/cdab6ca41aa5d39987dc484819a802fa9b2aa732))
 * Fixed an issue where usage was not being added. ([ae0a9ee](https://github.com/mathrunet/node_masamune/commit/ae0a9ee1224d7bdc019140bd5889cbcab5e8bdd2))
@@ -110,6 +114,7 @@
 * Package Update ([2709b18](https://github.com/mathrunet/node_masamune/commit/2709b18899189e6373baf08c141cd10e0b9afa34))
 * Package update. ([9acad0a](https://github.com/mathrunet/node_masamune/commit/9acad0a058338a75e700e53b0a94e4bc0fcf3c3e))
 * remove debug logs from Firebase loaders and bump package version. ([36e721e](https://github.com/mathrunet/node_masamune/commit/36e721ec6cc597aced1fc91105f9a04625cde0d2))
+* Responding to market research. ([3d6206c](https://github.com/mathrunet/node_masamune/commit/3d6206c73612d57b71e026decce1ef45e5983519))
 * Save metadata on save. ([4cd3404](https://github.com/mathrunet/node_masamune/commit/4cd340499f47c1da850b9dfd77abac84c6ca8230))
 * Set the value of Ref. ([0a196cf](https://github.com/mathrunet/node_masamune/commit/0a196cf66bf4a08d694715c2b6a2694768d1ae69))
 * Update dependency versions for `@mathrunet/katana` ([d4a9aea](https://github.com/mathrunet/node_masamune/commit/d4a9aeadb6541d808618098c5a4b2eaf72bf7d50))
