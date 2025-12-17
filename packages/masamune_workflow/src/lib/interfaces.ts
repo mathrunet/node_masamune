@@ -71,7 +71,7 @@ export interface Organization extends Model {
     "name"?: string;
     "description"?: string;
     "icon"?: string;
-    "owner"?: ModelRefBase;
+    "ownerId"?: string;
     "createdTime": ModelTimestamp;
     "updatedTime": ModelTimestamp;
 }
@@ -83,7 +83,7 @@ export interface Organization extends Model {
  */
 export interface Member extends Model {
     "organization"?: ModelRefBase;
-    "user"?: ModelRefBase;
+    "userId"?: string;
     "role": WorkflowRole;
     "createdTime": ModelTimestamp;
     "updatedTime": ModelTimestamp;
@@ -104,13 +104,13 @@ export interface Project extends Model {
     "kpi"?: { [key: string]: any };
     "organization"?: ModelRefBase;
     "icon"?: string;
-    "google_access_token"?: string;
-    "google_refresh_token"?: string;
-    "google_service_account"?: string;
-    "github_personal_access_token"?: string;
-    "appstore_issuer_id"?: string;
-    "appstore_auth_key_id"?: string;
-    "appstore_auth_key"?: string;
+    "googleAccessToken"?: string;
+    "googleRefreshToken"?: string;
+    "googleServiceAccount"?: string;
+    "githubPersonalAccessToken"?: string;
+    "appstoreIssuerId"?: string;
+    "appstoreAuthKeyId"?: string;
+    "appstoreAuthKey"?: string;
     "createdTime": ModelTimestamp;
     "updatedTime": ModelTimestamp;
 }
