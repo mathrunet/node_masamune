@@ -1,4 +1,4 @@
-## [3.9.2](https://github.com/mathrunet/node_masamune/compare/v3.7.0...v3.9.2) (2025-12-17)
+## [3.9.3](https://github.com/mathrunet/node_masamune/compare/v3.7.0...v3.9.3) (2025-12-22)
 
 
 ### chore
@@ -108,6 +108,7 @@
 * Initialize Firebase Admin SDK if not already initialized when loading Firestore or Storage. ([678c1bd](https://github.com/mathrunet/node_masamune/commit/678c1bd1896ddd3fe0e541e9eeea29797b63e300))
 * Interface adjustment. ([82d64f3](https://github.com/mathrunet/node_masamune/commit/82d64f3420f98b57a3dc66300c70b8cd646c8e98))
 * ModelTimestamp bug fix. ([1852f4e](https://github.com/mathrunet/node_masamune/commit/1852f4e40ad26e4ddf5ba9042b23f5edca8f7f0b))
+* Modify the ActionCommand interface. ([84a6543](https://github.com/mathrunet/node_masamune/commit/84a6543224353227f3ae35e2d74c9726bffaeca5))
 * Move `@types/node-fetch` from devDependencies to dependencies. ([d5bc8be](https://github.com/mathrunet/node_masamune/commit/d5bc8be021d25469d9fb58d6b73f8471883969c8))
 * Option Interfacing ([9fede77](https://github.com/mathrunet/node_masamune/commit/9fede77e87e9f4313445951c9b23a23472c0fa92))
 * Package update ([038b6c5](https://github.com/mathrunet/node_masamune/commit/038b6c51885e6e59bc469e9728e790e2021f6e05))
