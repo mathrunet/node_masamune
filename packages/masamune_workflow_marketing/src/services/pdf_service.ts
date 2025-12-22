@@ -378,7 +378,7 @@ export class PDFService {
     /**
      * Add highlights and concerns page.
      * This page displays highlights and concerns in a 2-column layout.
-     * Limited to 5 items each to fit on a single page.
+     * Dynamically calculates item height and adds pages as needed.
      */
     private addHighlightsConcernsPage(
         doc: PDFKit.PDFDocument,
@@ -394,14 +394,12 @@ export class PDFService {
         y += 40;
 
         const halfWidth = this.contentWidth / 2 - 15;
-        const maxItemsPerList = 5;
-        const itemHeight = 60; // Fixed height per item to prevent overflow
+        const boxPadding = 16; // Padding inside boxes
+        const itemSpacing = 10; // Space between items
 
-        // Get limited items
-        const highlights = (analysis?.highlights || []).slice(0, maxItemsPerList);
-        const concerns = (analysis?.concerns || []).slice(0, maxItemsPerList);
-        const remainingHighlights = Math.max(0, (analysis?.highlights?.length || 0) - maxItemsPerList);
-        const remainingConcerns = Math.max(0, (analysis?.concerns?.length || 0) - maxItemsPerList);
+        // Get all items
+        const highlights = analysis?.highlights || [];
+        const concerns = analysis?.concerns || [];
 
         // Headers
         doc.fontSize(14).font(this.getFont(true));
@@ -411,51 +409,67 @@ export class PDFService {
         doc.text(t.concerns, this.margin + halfWidth + 30, y);
         y += 25;
 
-        // Draw highlights and concerns side by side
+        // Calculate heights for each item pair
+        doc.fontSize(10).font(this.getFont());
         const maxItems = Math.max(highlights.length, concerns.length);
 
         for (let i = 0; i < maxItems; i++) {
-            // Highlight item
-            if (i < highlights.length) {
+            const highlightText = i < highlights.length ? highlights[i] : "";
+            const concernText = i < concerns.length ? concerns[i] : "";
+
+            // Calculate actual text heights
+            const highlightHeight = highlightText
+                ? doc.heightOfString(highlightText, { width: halfWidth - boxPadding }) + boxPadding
+                : 0;
+            const concernHeight = concernText
+                ? doc.heightOfString(concernText, { width: halfWidth - boxPadding }) + boxPadding
+                : 0;
+
+            // Use the larger height for this row
+            const rowHeight = Math.max(highlightHeight, concernHeight, 40);
+
+            // Check if we need a new page
+            if (y + rowHeight > this.pageHeight - this.margin) {
+                doc.addPage();
+                y = this.margin;
+
+                // Re-add headers on new page
+                doc.fontSize(16).font(this.getFont(true));
+                doc.fillColor("#000000");
+                doc.text(`${t.highlightsAndConcerns} ${t.continued}`, this.margin, y);
+                y += 30;
+
+                doc.fontSize(14).font(this.getFont(true));
+                doc.fillColor("#1b5e20");
+                doc.text(t.highlights, this.margin, y);
+                doc.fillColor("#b71c1c");
+                doc.text(t.concerns, this.margin + halfWidth + 30, y);
+                y += 25;
+            }
+
+            // Draw highlight item
+            if (highlightText) {
                 doc.fillColor("#e8f5e9");
-                doc.roundedRect(this.margin, y, halfWidth, itemHeight - 5, 4).fill();
+                doc.roundedRect(this.margin, y, halfWidth, rowHeight, 4).fill();
                 doc.fillColor("#1b5e20");
                 doc.fontSize(10).font(this.getFont());
-                doc.text(highlights[i], this.margin + 8, y + 8, {
-                    width: halfWidth - 16,
-                    height: itemHeight - 20,
-                    ellipsis: true,
+                doc.text(highlightText, this.margin + 8, y + 8, {
+                    width: halfWidth - boxPadding,
                 });
             }
 
-            // Concern item
-            if (i < concerns.length) {
+            // Draw concern item
+            if (concernText) {
                 doc.fillColor("#ffebee");
-                doc.roundedRect(this.margin + halfWidth + 30, y, halfWidth, itemHeight - 5, 4).fill();
+                doc.roundedRect(this.margin + halfWidth + 30, y, halfWidth, rowHeight, 4).fill();
                 doc.fillColor("#b71c1c");
                 doc.fontSize(10).font(this.getFont());
-                doc.text(concerns[i], this.margin + halfWidth + 38, y + 8, {
-                    width: halfWidth - 16,
-                    height: itemHeight - 20,
-                    ellipsis: true,
+                doc.text(concernText, this.margin + halfWidth + 38, y + 8, {
+                    width: halfWidth - boxPadding,
                 });
             }
 
-            y += itemHeight;
-        }
-
-        // Show remaining count if there are more items
-        if (remainingHighlights > 0 || remainingConcerns > 0) {
-            y += 10;
-            doc.fontSize(9).font(this.getFont());
-            doc.fillColor("#757575");
-
-            if (remainingHighlights > 0) {
-                doc.text(`+ ${remainingHighlights} more highlights`, this.margin, y);
-            }
-            if (remainingConcerns > 0) {
-                doc.text(`+ ${remainingConcerns} more concerns`, this.margin + halfWidth + 30, y);
-            }
+            y += rowHeight + itemSpacing;
         }
 
         doc.fillColor("#000000");

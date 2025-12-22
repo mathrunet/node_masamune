@@ -33,8 +33,10 @@ import {
 interface SummaryActionCommand {
     command: string;
     index: number;
-    githubRepository: string;
-    githubRepositoryPath?: string;
+    data?: {
+        githubRepository: string;
+        githubRepositoryPath?: string;
+    };
 }
 
 /**
@@ -55,8 +57,8 @@ export class AnalyzeGitHubSummary extends WorkflowProcessFunctionBase {
         const action = context.action;
         const command = action.command as SummaryActionCommand;
 
-        const githubRepository = command.githubRepository;
-        const githubRepositoryPath = command.githubRepositoryPath || "";
+        const githubRepository = command.data?.githubRepository;
+        const githubRepositoryPath = command.data?.githubRepositoryPath || "";
 
         if (!githubRepository) {
             console.error("AnalyzeGitHubSummary: No githubRepository specified");

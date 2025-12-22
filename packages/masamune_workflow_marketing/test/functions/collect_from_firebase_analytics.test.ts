@@ -119,9 +119,11 @@ describe("CollectFromFirebaseAnalytics Integration Tests", () => {
             const actions = [{
                 command: "collect_from_firebase_analytics",
                 index: 0,
-                propertyId: firebaseAnalyticsPropertyId,
-                startDate: dateRange.startDate,
-                endDate: dateRange.endDate,
+                data: {
+                    propertyId: firebaseAnalyticsPropertyId,
+                    startDate: dateRange.startDate,
+                    endDate: dateRange.endDate,
+                },
             }];
 
             const now = new Date();
@@ -256,14 +258,18 @@ describe("CollectFromFirebaseAnalytics Integration Tests", () => {
                 {
                     command: "collect_from_firebase_analytics",
                     index: 0,
-                    propertyId: firebaseAnalyticsPropertyId,
-                    startDate: dateRange.startDate,
-                    endDate: dateRange.endDate,
+                    data: {
+                        propertyId: firebaseAnalyticsPropertyId,
+                        startDate: dateRange.startDate,
+                        endDate: dateRange.endDate,
+                    },
                 },
                 {
                     command: "another_action",
                     index: 1,
-                    someParam: "value",
+                    data: {
+                        someParam: "value",
+                    },
                 },
             ];
 
@@ -387,7 +393,9 @@ describe("CollectFromFirebaseAnalytics Integration Tests", () => {
             const actions = [{
                 command: "collect_from_firebase_analytics",
                 index: 0,
-                propertyId: firebaseAnalyticsPropertyId,
+                data: {
+                    propertyId: firebaseAnalyticsPropertyId,
+                },
             }];
 
             const now = new Date();
@@ -509,7 +517,9 @@ describe("CollectFromFirebaseAnalytics Integration Tests", () => {
             const actions = [{
                 command: "collect_from_firebase_analytics",
                 index: 0,
-                propertyId: firebaseAnalyticsPropertyId,
+                data: {
+                    propertyId: firebaseAnalyticsPropertyId,
+                },
             }];
 
             const now = new Date();

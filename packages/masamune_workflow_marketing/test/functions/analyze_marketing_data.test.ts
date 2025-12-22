@@ -225,24 +225,30 @@ describe("AnalyzeMarketingData Integration Tests", () => {
                 {
                     command: "collect_from_google_play_console",
                     index: 0,
-                    packageName: googlePlayPackageName,
-                    startDate: dateRange.startDate,
-                    endDate: dateRange.endDate,
+                    data: {
+                        packageName: googlePlayPackageName,
+                        startDate: dateRange.startDate,
+                        endDate: dateRange.endDate,
+                    },
                 },
                 {
                     command: "collect_from_app_store",
                     index: 1,
-                    appId: appStoreAppId,
-                    vendorNumber: appStoreVendorNumber,
-                    startDate: dateRange.startDate,
-                    endDate: dateRange.endDate,
+                    data: {
+                        appId: appStoreAppId,
+                        vendorNumber: appStoreVendorNumber,
+                        startDate: dateRange.startDate,
+                        endDate: dateRange.endDate,
+                    },
                 },
                 {
                     command: "collect_from_firebase_analytics",
                     index: 2,
-                    propertyId: firebaseAnalyticsPropertyId,
-                    startDate: dateRange.startDate,
-                    endDate: dateRange.endDate,
+                    data: {
+                        propertyId: firebaseAnalyticsPropertyId,
+                        startDate: dateRange.startDate,
+                        endDate: dateRange.endDate,
+                    },
                 },
                 {
                     command: "analyze_marketing_data",
@@ -486,9 +492,11 @@ describe("AnalyzeMarketingData Integration Tests", () => {
                 {
                     command: "collect_from_firebase_analytics",
                     index: 0,
-                    propertyId: firebaseAnalyticsPropertyId,
-                    startDate: dateRange.startDate,
-                    endDate: dateRange.endDate,
+                    data: {
+                        propertyId: firebaseAnalyticsPropertyId,
+                        startDate: dateRange.startDate,
+                        endDate: dateRange.endDate,
+                    },
                 },
                 {
                     command: "analyze_marketing_data",

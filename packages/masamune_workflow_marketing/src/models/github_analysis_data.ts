@@ -228,6 +228,20 @@ export interface GitHubFolderCacheEntry {
 }
 
 /**
+ * GitHub analysis action command data.
+ *
+ * GitHub解析アクションコマンドのデータ。
+ */
+export interface GitHubAnalysisActionCommandData {
+    /** Repository to analyze (owner/repo format) */
+    githubRepository: string;
+    /** Path within repository for monorepo support */
+    githubRepositoryPath?: string;
+    /** Batch index for processing */
+    batchIndex?: number;
+}
+
+/**
  * GitHub analysis action command.
  *
  * GitHub解析アクションコマンド。
@@ -237,10 +251,8 @@ export interface GitHubAnalysisActionCommand {
     command: "analyze_github_init" | "analyze_github_process" | "analyze_github_summary";
     /** Action index */
     index: number;
-    /** Repository to analyze (owner/repo format) */
-    githubRepository: string;
-    /** Path within repository for monorepo support */
-    githubRepositoryPath?: string;
+    /** Command data */
+    data?: GitHubAnalysisActionCommandData;
 }
 
 /**

@@ -212,15 +212,16 @@ export class GenerateMarketingMarkdown extends WorkflowProcessFunctionBase {
                 "Marketing Report";
 
             // Determine date range from action command or use defaults
-            const command = action.command as { [key: string]: any };
-            const dateRange = command?.startDate && command?.endDate
-                ? { startDate: command.startDate, endDate: command.endDate }
+            const command = action.command as { data?: { [key: string]: any } };
+            const commandData = command?.data;
+            const dateRange = commandData?.startDate && commandData?.endDate
+                ? { startDate: commandData.startDate, endDate: commandData.endDate }
                 : undefined;
 
             const markdownContent = this.generateMarkdownReport({
                 data: inputData,
                 appName,
-                reportType: (command?.reportType as "daily" | "weekly" | "monthly") || "weekly",
+                reportType: (commandData?.reportType as "daily" | "weekly" | "monthly") || "weekly",
                 dateRange,
                 locale: action.locale,
             });

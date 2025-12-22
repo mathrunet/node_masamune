@@ -48,9 +48,9 @@ export class CollectFromFirebaseAnalytics extends WorkflowProcessFunctionBase {
         }
 
         // 3. コマンドからパラメータを取得
-        const propertyId = action.command?.propertyId as string | undefined;
-        const startDate = action.command?.startDate as string | undefined;
-        const endDate = action.command?.endDate as string | undefined;
+        const propertyId = action.command?.data?.propertyId as string | undefined;
+        const startDate = action.command?.data?.startDate as string | undefined;
+        const endDate = action.command?.data?.endDate as string | undefined;
 
         if (!propertyId) {
             console.warn("CollectFromFirebaseAnalytics: No propertyId found in command");

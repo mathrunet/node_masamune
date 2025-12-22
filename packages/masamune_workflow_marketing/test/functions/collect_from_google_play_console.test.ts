@@ -190,9 +190,11 @@ describe("CollectFromGooglePlayConsole Integration Tests", () => {
             const actions = [{
                 command: "collect_from_google_play_console",
                 index: 0,
-                packageName: googlePlayPackageName,
-                startDate: dateRange.startDate,
-                endDate: dateRange.endDate,
+                data: {
+                    packageName: googlePlayPackageName,
+                    startDate: dateRange.startDate,
+                    endDate: dateRange.endDate,
+                },
             }];
 
             await createTestData({ actions, token, tokenExpiredTime });
@@ -267,14 +269,18 @@ describe("CollectFromGooglePlayConsole Integration Tests", () => {
                 {
                     command: "collect_from_google_play_console",
                     index: 0,
-                    packageName: googlePlayPackageName,
-                    startDate: dateRange.startDate,
-                    endDate: dateRange.endDate,
+                    data: {
+                        packageName: googlePlayPackageName,
+                        startDate: dateRange.startDate,
+                        endDate: dateRange.endDate,
+                    },
                 },
                 {
                     command: "another_action",
                     index: 1,
-                    someParam: "value",
+                    data: {
+                        someParam: "value",
+                    },
                 },
             ];
 
@@ -398,7 +404,9 @@ describe("CollectFromGooglePlayConsole Integration Tests", () => {
             const actions = [{
                 command: "collect_from_google_play_console",
                 index: 0,
-                packageName: googlePlayPackageName,
+                data: {
+                    packageName: googlePlayPackageName,
+                },
             }];
 
             const now = new Date();
@@ -520,7 +528,9 @@ describe("CollectFromGooglePlayConsole Integration Tests", () => {
             const actions = [{
                 command: "collect_from_google_play_console",
                 index: 0,
-                packageName: googlePlayPackageName,
+                data: {
+                    packageName: googlePlayPackageName,
+                },
             }];
 
             const now = new Date();

@@ -267,30 +267,38 @@ describe("GenerateMarketingPdf Integration Tests", () => {
                 {
                     command: "collect_from_google_play_console",
                     index: 0,
-                    packageName: googlePlayPackageName,
-                    startDate: dateRange.startDate,
-                    endDate: dateRange.endDate,
+                    data: {
+                        packageName: googlePlayPackageName,
+                        startDate: dateRange.startDate,
+                        endDate: dateRange.endDate,
+                    },
                 },
                 {
                     command: "collect_from_app_store",
                     index: 1,
-                    appId: appStoreAppId,
-                    vendorNumber: appStoreVendorNumber,
-                    startDate: dateRange.startDate,
-                    endDate: dateRange.endDate,
+                    data: {
+                        appId: appStoreAppId,
+                        vendorNumber: appStoreVendorNumber,
+                        startDate: dateRange.startDate,
+                        endDate: dateRange.endDate,
+                    },
                 },
                 {
                     command: "collect_from_firebase_analytics",
                     index: 2,
-                    propertyId: firebaseAnalyticsPropertyId,
-                    startDate: dateRange.startDate,
-                    endDate: dateRange.endDate,
+                    data: {
+                        propertyId: firebaseAnalyticsPropertyId,
+                        startDate: dateRange.startDate,
+                        endDate: dateRange.endDate,
+                    },
                 },
                 // GitHub Analysis (init only - process/summary are dynamically added by init)
                 {
                     command: "analyze_github_init",
                     index: 3,
-                    githubRepository: githubRepo,
+                    data: {
+                        githubRepository: githubRepo,
+                    },
                 },
                 {
                     command: "analyze_marketing_data",
@@ -299,9 +307,11 @@ describe("GenerateMarketingPdf Integration Tests", () => {
                 {
                     command: "generate_marketing_pdf",
                     index: 5,
-                    reportType: "weekly",
-                    startDate: dateRange.startDate,
-                    endDate: dateRange.endDate,
+                    data: {
+                        reportType: "weekly",
+                        startDate: dateRange.startDate,
+                        endDate: dateRange.endDate,
+                    },
                 },
             ];
 
@@ -430,14 +440,18 @@ describe("GenerateMarketingPdf Integration Tests", () => {
                         processActionsToRun.push({
                             command: "analyze_github_process",
                             index: initIndex + 1 + i,
-                            githubRepository: githubRepo,
-                            batchIndex: i,
+                            data: {
+                                githubRepository: githubRepo,
+                                batchIndex: i,
+                            },
                         });
                     }
                     const summaryActionToRun = {
                         command: "analyze_github_summary",
                         index: initIndex + 1 + actualBatchCount,
-                        githubRepository: githubRepo,
+                        data: {
+                            githubRepository: githubRepo,
+                        },
                     };
 
                     // Build full updated actions array
@@ -446,7 +460,7 @@ describe("GenerateMarketingPdf Integration Tests", () => {
                         ...processActionsToRun,
                         summaryActionToRun,
                         { command: "analyze_marketing_data", index: initIndex + 2 + actualBatchCount },
-                        { command: "generate_marketing_pdf", index: initIndex + 3 + actualBatchCount, reportType: "weekly" },
+                        { command: "generate_marketing_pdf", index: initIndex + 3 + actualBatchCount, data: { reportType: "weekly" } },
                     ];
                     currentActions = updatedActions;
 

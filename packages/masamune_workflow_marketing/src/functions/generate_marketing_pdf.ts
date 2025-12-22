@@ -81,16 +81,17 @@ export class GenerateMarketingPdf extends WorkflowProcessFunctionBase {
                 "Marketing Report";
 
             // Determine date range from action command or use defaults
-            const command = action.command as { [key: string]: any };
-            const dateRange = command?.startDate && command?.endDate
-                ? { startDate: command.startDate, endDate: command.endDate }
+            const command = action.command as { data?: { [key: string]: any } };
+            const data = command?.data;
+            const dateRange = data?.startDate && data?.endDate
+                ? { startDate: data.startDate, endDate: data.endDate }
                 : undefined;
 
             const pdfBuffer = await pdfService.generateReport({
                 data: pdfInputData,
                 charts,
                 appName,
-                reportType: (command?.reportType as "daily" | "weekly" | "monthly") || "weekly",
+                reportType: (data?.reportType as "daily" | "weekly" | "monthly") || "weekly",
                 dateRange,
                 locale: action.locale,
             });

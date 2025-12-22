@@ -50,10 +50,10 @@ export class CollectFromAppStore extends WorkflowProcessFunctionBase {
         }
 
         // 3. コマンドからパラメータを取得
-        const appId = action.command?.appId as string | undefined;
-        const vendorNumber = action.command?.vendorNumber as string | undefined;
-        const startDate = action.command?.startDate as string | undefined;
-        const endDate = action.command?.endDate as string | undefined;
+        const appId = action.command?.data?.appId as string | undefined;
+        const vendorNumber = action.command?.data?.vendorNumber as string | undefined;
+        const startDate = action.command?.data?.startDate as string | undefined;
+        const endDate = action.command?.data?.endDate as string | undefined;
 
         if (!appId) {
             console.warn("CollectFromAppStore: No appId found in command");

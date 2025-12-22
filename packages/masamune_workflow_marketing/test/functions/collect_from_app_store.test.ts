@@ -124,10 +124,12 @@ describe("CollectFromAppStore Integration Tests", () => {
             const actions = [{
                 command: "collect_from_app_store",
                 index: 0,
-                appId: appStoreAppId,
-                vendorNumber: appStoreVendorNumber,
-                startDate: dateRange.startDate,
-                endDate: dateRange.endDate,
+                data: {
+                    appId: appStoreAppId,
+                    vendorNumber: appStoreVendorNumber,
+                    startDate: dateRange.startDate,
+                    endDate: dateRange.endDate,
+                },
             }];
 
             const now = new Date();
@@ -260,14 +262,18 @@ describe("CollectFromAppStore Integration Tests", () => {
                 {
                     command: "collect_from_app_store",
                     index: 0,
-                    appId: appStoreAppId,
-                    startDate: dateRange.startDate,
-                    endDate: dateRange.endDate,
+                    data: {
+                        appId: appStoreAppId,
+                        startDate: dateRange.startDate,
+                        endDate: dateRange.endDate,
+                    },
                 },
                 {
                     command: "another_action",
                     index: 1,
-                    someParam: "value",
+                    data: {
+                        someParam: "value",
+                    },
                 },
             ];
 
@@ -393,7 +399,9 @@ describe("CollectFromAppStore Integration Tests", () => {
             const actions = [{
                 command: "collect_from_app_store",
                 index: 0,
-                appId: appStoreAppId,
+                data: {
+                    appId: appStoreAppId,
+                },
             }];
 
             const now = new Date();
@@ -517,7 +525,9 @@ describe("CollectFromAppStore Integration Tests", () => {
             const actions = [{
                 command: "collect_from_app_store",
                 index: 0,
-                appId: appStoreAppId,
+                data: {
+                    appId: appStoreAppId,
+                },
             }];
 
             const now = new Date();

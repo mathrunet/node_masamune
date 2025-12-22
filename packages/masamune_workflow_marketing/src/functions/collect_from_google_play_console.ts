@@ -48,9 +48,9 @@ export class CollectFromGooglePlayConsole extends WorkflowProcessFunctionBase {
         }
 
         // 3. コマンドからパラメータを取得
-        const packageName = action.command?.packageName as string | undefined;
-        const startDate = action.command?.startDate as string | undefined;
-        const endDate = action.command?.endDate as string | undefined;
+        const packageName = action.command?.data?.packageName as string | undefined;
+        const startDate = action.command?.data?.startDate as string | undefined;
+        const endDate = action.command?.data?.endDate as string | undefined;
 
         if (!packageName) {
             console.warn("CollectFromGooglePlayConsole: No packageName found in command");

@@ -30,9 +30,11 @@ import "@mathrunet/masamune";
 interface ProcessActionCommand {
     command: string;
     index: number;
-    githubRepository: string;
-    githubRepositoryPath?: string;
-    batchIndex: number;
+    data?: {
+        githubRepository: string;
+        githubRepositoryPath?: string;
+        batchIndex: number;
+    };
 }
 
 /**
@@ -53,8 +55,8 @@ export class AnalyzeGitHubProcess extends WorkflowProcessFunctionBase {
         const action = context.action;
         const command = action.command as ProcessActionCommand;
 
-        const githubRepository = command.githubRepository;
-        const batchIndex = command.batchIndex;
+        const githubRepository = command.data?.githubRepository;
+        const batchIndex = command.data?.batchIndex;
 
         if (!githubRepository) {
             console.error("AnalyzeGitHubProcess: No githubRepository specified");
@@ -63,6 +65,18 @@ export class AnalyzeGitHubProcess extends WorkflowProcessFunctionBase {
                 results: {
                     githubAnalysisProcess: {
                         error: "No githubRepository specified",
+                    },
+                },
+            };
+        }
+
+        if (batchIndex === undefined) {
+            console.error("AnalyzeGitHubProcess: No batchIndex specified");
+            return {
+                ...action,
+                results: {
+                    githubAnalysisProcess: {
+                        error: "No batchIndex specified",
                     },
                 },
             };

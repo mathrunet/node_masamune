@@ -51,8 +51,8 @@ export class AnalyzeGitHubInit extends WorkflowProcessFunctionBase {
         const command = action.command as GitHubAnalysisActionCommand;
 
         // 1. Validate input
-        const githubRepository = command.githubRepository;
-        const githubRepositoryPath = command.githubRepositoryPath || "";
+        const githubRepository = command.data?.githubRepository;
+        const githubRepositoryPath = command.data?.githubRepositoryPath || "";
 
         if (!githubRepository) {
             console.error("AnalyzeGitHubInit: No githubRepository specified");
@@ -224,9 +224,11 @@ export class AnalyzeGitHubInit extends WorkflowProcessFunctionBase {
             newActions.push({
                 command: "analyze_github_process",
                 index: currentIndex + 1 + i,
-                githubRepository: githubRepository,
-                githubRepositoryPath: githubRepositoryPath,
-                batchIndex: i,
+                data: {
+                    githubRepository: githubRepository,
+                    githubRepositoryPath: githubRepositoryPath,
+                    batchIndex: i,
+                },
             });
         }
 
@@ -234,8 +236,10 @@ export class AnalyzeGitHubInit extends WorkflowProcessFunctionBase {
         newActions.push({
             command: "analyze_github_summary",
             index: currentIndex + 1 + batchCount,
-            githubRepository: githubRepository,
-            githubRepositoryPath: githubRepositoryPath,
+            data: {
+                githubRepository: githubRepository,
+                githubRepositoryPath: githubRepositoryPath,
+            },
         });
 
         // Shift remaining actions
