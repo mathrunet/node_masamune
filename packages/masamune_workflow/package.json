@@ -1,6 +1,6 @@
 {
   "name": "@mathrunet/masamune_workflow",
-  "version": "3.9.1",
+  "version": "3.9.2",
   "description": "Masamune framework package plugin that provides a workflow capable of executing various tasks.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

@@ -214,7 +214,7 @@ export interface Action extends Model {
 export interface ActionCommand {
     "command": string;
     "index": number;
-    [key: string]: any;
+    "data"?: { [key: string]: any };
 }
 
 /**
