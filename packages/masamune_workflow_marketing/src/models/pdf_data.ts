@@ -73,6 +73,13 @@ export interface PDFInputData {
 }
 
 /**
+ * ModelLocale type from masamune_workflow.
+ */
+interface ModelLocale {
+    "@language": string;
+}
+
+/**
  * Options for PDF generation.
  *
  * PDF生成オプション。
@@ -86,4 +93,6 @@ export interface PDFGenerationOptions {
         startDate: string;
         endDate: string;
     };
+    /** Locale for output strings (default: "en") */
+    locale?: ModelLocale | string;
 }

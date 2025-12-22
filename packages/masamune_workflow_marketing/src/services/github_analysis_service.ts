@@ -18,6 +18,7 @@ import {
     GitHubRepositoryAnalysis,
     LANGUAGE_EXTENSIONS,
 } from "../models";
+import { getTranslations, MarketingTranslations } from "../locales";
 
 /**
  * Result of AI generation including token usage.
@@ -38,6 +39,8 @@ export interface GitHubAnalysisServiceConfig {
     region?: string;
     /** Gemini model name */
     modelName?: string;
+    /** Locale for response language */
+    locale?: string;
 }
 
 /**
@@ -46,6 +49,7 @@ export interface GitHubAnalysisServiceConfig {
 export class GitHubAnalysisService {
     private genai: GoogleGenAI;
     private modelName: string;
+    private translations: MarketingTranslations;
 
     constructor(config: GitHubAnalysisServiceConfig) {
         this.genai = new GoogleGenAI({
@@ -54,6 +58,7 @@ export class GitHubAnalysisService {
             location: config.region || "us-central1",
         });
         this.modelName = config.modelName || process.env.GEMINI_MODEL || "gemini-2.5-flash";
+        this.translations = getTranslations(config.locale);
     }
 
     /**
@@ -97,7 +102,7 @@ Analyze this file and provide:
 2. Key features or functionality it provides (if any)
 3. Main exports (classes, functions, etc.) if applicable
 
-Respond in Japanese.`;
+${this.translations.respondInLanguage}`;
 
         try {
             const response = await this.genai.models.generateContent({
@@ -219,7 +224,7 @@ Then, provide an overall folder summary:
 1. A brief summary (2-3 sentences) of what this folder/module does
 2. Key features the folder provides as a whole
 
-Respond in Japanese.`;
+${this.translations.respondInLanguage}`;
 
         try {
             const response = await this.genai.models.generateContent({
@@ -359,7 +364,7 @@ Based on the file summaries above, provide:
 1. A brief summary (2-3 sentences) of what this folder/module does
 2. Key features or functionality this folder provides
 
-Respond in Japanese.`;
+${this.translations.respondInLanguage}`;
 
         try {
             const response = await this.genai.models.generateContent({
@@ -453,7 +458,7 @@ Based on all the information above, provide a comprehensive analysis including:
 4. **dependencies**: List of main dependencies/libraries used
 5. **apiEndpoints**: List of API endpoints if this is a backend service (optional)
 
-Respond in Japanese.`;
+${this.translations.respondInLanguage}`;
 
         try {
             const response = await this.genai.models.generateContent({

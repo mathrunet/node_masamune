@@ -14,6 +14,7 @@ import {
     CompetitivePositioningAnalysis,
     MarketOpportunityPriorityAnalysis,
 } from "../models";
+import { getTranslations, MarketingTranslations } from "../locales";
 
 /**
  * Result of AI generation including token usage.
@@ -48,6 +49,11 @@ export class AnalyzeMarketingData extends WorkflowProcessFunctionBase {
      * 関数のID。
      */
     id: string = "analyze_marketing_data";
+
+    /**
+     * Translations for the current locale.
+     */
+    private translations: MarketingTranslations = getTranslations("en");
 
     /**
      * The process of the function.
@@ -107,7 +113,13 @@ export class AnalyzeMarketingData extends WorkflowProcessFunctionBase {
         }
 
         try {
-            // 4. GoogleGenAI を初期化（VertexAI モード）
+            // 4. Localeを取得して翻訳を初期化
+            const locale = typeof action.locale === "object"
+                ? action.locale["@language"]
+                : action.locale;
+            this.translations = getTranslations(locale);
+
+            // 5. GoogleGenAI を初期化（VertexAI モード）
             const genai = new GoogleGenAI({
                 vertexai: true,
                 project: projectId,
@@ -528,7 +540,7 @@ ${marketResearchSection}
 4. Identify 4-6 key metrics with their values and trends (up/down/stable)
 ${data.marketResearchData || data.marketResearch ? "5. Integrate market research insights into your analysis, considering market potential and competitive landscape" : ""}
 
-Respond in Japanese.`;
+${this.translations.respondInLanguage}`;
     }
 
     /**
@@ -586,7 +598,7 @@ Important: Consider the market research data when making recommendations:
 - Leverage business opportunities and differentiation points
 - Align with revenue and traffic strategies from market research
 ` : ""}
-Focus on data-driven recommendations. Respond in Japanese.`;
+Focus on data-driven recommendations. ${this.translations.respondInLanguage}`;
     }
 
     /**
@@ -636,7 +648,7 @@ Analyze trends and provide:
 4. predictions: 3-5 predictions for the next period based on current trends
 ${data.marketResearchData || data.marketResearch ? "5. Consider market demand forecasts and market drivers when making predictions" : ""}
 
-Respond in Japanese.`;
+${this.translations.respondInLanguage}`;
     }
 
     /**
@@ -659,7 +671,7 @@ Analyze the reviews and provide:
 2. commonThemes: List 3-6 recurring themes or topics mentioned by users
 3. actionableInsights: List 3-5 specific, actionable insights based on the feedback
 
-Respond in Japanese.`;
+${this.translations.respondInLanguage}`;
     }
 
     /**
@@ -823,12 +835,12 @@ ${data.firebaseAnalytics ? JSON.stringify(data.firebaseAnalytics, null, 2) : "�
    - **proposedChange**: 提案する具体的な変更内容
    - **modificationType**: "add"（新規追加）, "modify"（修正）, "refactor"（リファクタリング）, "optimize"（最適化）のいずれか
 
-重要：
-- codeReferencesのfilePathは必ず「利用可能なファイルパス」リストから選択してください
-- マーケティング指標（ユーザー獲得、リテンション、エンゲージメント、収益化）を改善するコード変更に焦点を当ててください
-- 各改善提案は具体的で実行可能なものにしてください
+Important:
+- codeReferences filePath must be selected from the "Available File Paths" list above
+- Focus on code changes that improve marketing metrics (user acquisition, retention, engagement, monetization)
+- Each improvement suggestion should be specific and actionable
 
-日本語で回答してください。`;
+${this.translations.respondInLanguage}`;
     }
 
     /**
@@ -959,10 +971,10 @@ ${JSON.stringify(data.marketResearchData?.competitorAnalysis.differentiationOppo
 3. **differentiationStrategy**: 総合的な差別化戦略（3-4文）
    - 複数の競合に対して有効な差別化ポイント
 
-4. **quickWins**: すぐに実行可能な差別化施策（3-5点）
-   - 1-2週間で実行可能なもの
+4. **quickWins**: Quick-win differentiation tactics (3-5 points)
+   - Things that can be executed in 1-2 weeks
 
-日本語で回答してください。`;
+${this.translations.respondInLanguage}`;
     }
 
     /**
@@ -1092,11 +1104,11 @@ ${data.marketResearch?.demandForecast.summary || "情報なし"}
    - **estimatedEffort**: 実装工数の見積もり（low/medium/high）
    - **recommendedAction**: 推奨アクション（1文）
 
-2. **strategicRecommendation**: 戦略的推奨事項（3-4文）
-   - 優先的に取り組むべき機会
-   - リソース配分の提案
+2. **strategicRecommendation**: Strategic recommendations (3-4 sentences)
+   - Priority opportunities to pursue
+   - Resource allocation proposals
 
-日本語で回答してください。`;
+${this.translations.respondInLanguage}`;
     }
 }
 

@@ -7,6 +7,7 @@ import {
     CompetitorAnalysis,
     BusinessOpportunity,
 } from "../models";
+import { getTranslations } from "../locales";
 
 /**
  * Project input data for market research.
@@ -100,7 +101,10 @@ export class ResearchMarket extends WorkflowProcessFunctionBase {
             });
 
             // 6. プロンプトを構築
-            const prompt = this.buildResearchPrompt(projectData);
+            const locale = typeof action.locale === "object"
+                ? action.locale["@language"]
+                : action.locale;
+            const prompt = this.buildResearchPrompt(projectData, locale);
 
             // 7. Gemini APIを呼び出し
             console.log("ResearchMarket: Calling Gemini API with Google Search grounding...");
@@ -196,47 +200,48 @@ export class ResearchMarket extends WorkflowProcessFunctionBase {
     /**
      * Build the research prompt for Gemini.
      */
-    private buildResearchPrompt(project: ProjectInput): string {
-        return `あなたは専門の市場調査アナリストです。以下のプロジェクト情報に基づいて、Google検索を使用して包括的な市場調査を行ってください。
+    private buildResearchPrompt(project: ProjectInput, locale?: string): string {
+        const t = getTranslations(locale);
+        return `You are a professional market research analyst. Based on the following project information, conduct comprehensive market research using Google Search.
 
-## プロジェクト情報
-- **概要**: ${project.description || "未提供"}
-- **コンセプト**: ${project.concept || "未提供"}
-- **目標**: ${project.goal || "未提供"}
-- **ターゲット層**: ${project.target || "未提供"}
-- **KPI**: ${project.kpi ? JSON.stringify(project.kpi, null, 2) : "未提供"}
+## Project Information
+- **Description**: ${project.description || "Not provided"}
+- **Concept**: ${project.concept || "Not provided"}
+- **Goal**: ${project.goal || "Not provided"}
+- **Target Audience**: ${project.target || "Not provided"}
+- **KPIs**: ${project.kpi ? JSON.stringify(project.kpi, null, 2) : "Not provided"}
 
-## 調査目的
-以下の観点から市場を調査・分析してください：
+## Research Objectives
+Investigate and analyze the market from the following perspectives:
 
-### 1. 市場ポテンシャル分析
-- 現在の市場規模と成長トレンド
-- TAM（Total Addressable Market）、SAM（Serviceable Addressable Market）、SOM（Serviceable Obtainable Market）の推定
-- 市場を牽引する主要因
-- 市場参入の障壁
-- ターゲットとなる市場セグメント
+### 1. Market Potential Analysis
+- Current market size and growth trends
+- TAM (Total Addressable Market), SAM (Serviceable Addressable Market), SOM (Serviceable Obtainable Market) estimates
+- Key market drivers
+- Market entry barriers
+- Target market segments
 
-### 2. 競合分析
-- 直接競合するサービス・製品（3-5社）
-- 間接競合（隣接市場のプレイヤー）
-- 各競合の強み・弱み
-- 価格帯やビジネスモデル
-- 市場でのポジショニング
-- 競合に対する差別化ポイント
-- 市場のギャップ（満たされていないニーズ）
+### 2. Competitive Analysis
+- Direct competitors (3-5 companies)
+- Indirect competitors (adjacent market players)
+- Strengths and weaknesses of each competitor
+- Pricing and business models
+- Market positioning
+- Differentiation points against competitors
+- Market gaps (unmet needs)
 
-### 3. ビジネス機会
-- 市場のギャップから生まれる機会
-- 新興トレンドに基づく機会
-- 技術変革やテクノロジーシフトによる機会
-- ターゲット未開拓のセグメント
+### 3. Business Opportunities
+- Opportunities arising from market gaps
+- Opportunities based on emerging trends
+- Opportunities from technology shifts
+- Underserved target segments
 
-## 調査指示
-- Google検索を使用してリアルタイムの市場データを収集してください
-- 可能な限り定量的なデータ（市場規模、成長率、シェアなど）を含めてください
-- 情報源のURLを記録してください
-- 直近12ヶ月以内の最新データを優先してください
-- 調査結果は日本語で出力してください`;
+## Research Instructions
+- Use Google Search to collect real-time market data
+- Include quantitative data (market size, growth rate, market share, etc.) whenever possible
+- Record source URLs
+- Prioritize data from the last 12 months
+- ${t.respondInLanguage}`;
     }
 
     /**

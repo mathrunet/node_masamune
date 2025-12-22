@@ -120,6 +120,7 @@ describe("GenerateMarketingMarkdown Integration Tests", () => {
         tokenExpiredTime: Date;
         accumulatedResults?: { [key: string]: any };
         actionIndex?: number;
+        locale?: string;
     }) {
         const now = new Date();
         const nowTs = toTimestamp(now);
@@ -170,7 +171,7 @@ describe("GenerateMarketingMarkdown Integration Tests", () => {
 
         // Create Action
         const actionIndex = options.actionIndex ?? 0;
-        await actionRef.save({
+        const actionData: any = {
             "@uid": options.actionId,
             "@time": nowTs,
             command: options.actions[actionIndex],
@@ -183,7 +184,11 @@ describe("GenerateMarketingMarkdown Integration Tests", () => {
             usage: 0,
             "createdTime": new ModelTimestamp(nowTs.toDate()),
             "updatedTime": new ModelTimestamp(nowTs.toDate()),
-        });
+        };
+        if (options.locale) {
+            actionData.locale = options.locale;
+        }
+        await actionRef.save(actionData);
 
         return { organizationRef, projectRef, taskRef, actionRef, taskPath, actionPath };
     }
@@ -219,13 +224,14 @@ describe("GenerateMarketingMarkdown Integration Tests", () => {
     /**
      * Helper: Save Markdown to local tmp directory
      */
-    function saveMarkdownToLocal(markdownContent: string): string | null {
+    function saveMarkdownToLocal(markdownContent: string, locale?: string): string | null {
         try {
             const tmpDir = path.join(__dirname, "..", "tmp");
             if (!fs.existsSync(tmpDir)) {
                 fs.mkdirSync(tmpDir, { recursive: true });
             }
-            const localPath = path.join(tmpDir, "marketing_report.md");
+            const filename = locale ? `marketing_report_${locale}.md` : "marketing_report.md";
+            const localPath = path.join(tmpDir, filename);
             fs.writeFileSync(localPath, markdownContent, "utf-8");
             console.log(`Markdown saved to: ${localPath}`);
             return localPath;
@@ -930,6 +936,7 @@ describe("GenerateMarketingMarkdown Integration Tests", () => {
                 tokenExpiredTime,
                 accumulatedResults,
                 actionIndex: 0,
+                locale: "ja",
             });
 
             try {
@@ -953,7 +960,7 @@ describe("GenerateMarketingMarkdown Integration Tests", () => {
                 expect(markdownContent).toBeDefined();
                 expect(typeof markdownContent).toBe("string");
 
-                // Verify competitive positioning section is present
+                // Verify competitive positioning section is present (Japanese)
                 expect(markdownContent).toContain("競合ポジショニング分析");
                 expect(markdownContent).toContain("市場での位置づけ");
                 expect(markdownContent).toContain("競合比較");
@@ -1039,6 +1046,7 @@ describe("GenerateMarketingMarkdown Integration Tests", () => {
                 tokenExpiredTime,
                 accumulatedResults,
                 actionIndex: 0,
+                locale: "ja",
             });
 
             try {
@@ -1143,6 +1151,7 @@ describe("GenerateMarketingMarkdown Integration Tests", () => {
                 tokenExpiredTime,
                 accumulatedResults,
                 actionIndex: 0,
+                locale: "ja",
             });
 
             try {
@@ -1188,5 +1197,121 @@ describe("GenerateMarketingMarkdown Integration Tests", () => {
                 await firestore.doc(refs.taskPath).delete().catch(() => { });
             }
         }, 60000);
+    });
+
+    describe("Multi-Locale Output Tests", () => {
+        it("should generate Markdown in both Japanese and English", async () => {
+            // Mock data with all sections
+            const mockResults = {
+                marketingAnalytics: {
+                    overallAnalysis: {
+                        healthScore: 85,
+                        summary: "Test summary for multi-locale output",
+                        keyInsights: ["Insight 1", "Insight 2"],
+                        criticalIssues: ["Issue 1"],
+                    },
+                    competitivePositioning: {
+                        marketPosition: "Market leader in the niche segment.",
+                        competitorComparison: [
+                            {
+                                competitor: "Main Rival",
+                                ourStrengths: ["Better pricing", "More features"],
+                                ourWeaknesses: ["Smaller community"],
+                                battleStrategy: "Build community and showcase value",
+                            },
+                        ],
+                        differentiationStrategy: "Focus on AI-driven automation.",
+                        quickWins: ["Launch community forum", "Create tutorial videos"],
+                    },
+                    marketOpportunityPriority: {
+                        prioritizedOpportunities: [
+                            {
+                                opportunity: "Global expansion",
+                                fitScore: "excellent",
+                                fitReason: "Product is already localized",
+                                estimatedEffort: "medium",
+                                requiredChanges: ["Add payment gateways", "Local marketing"],
+                                recommendedAction: "Start with APAC region",
+                            },
+                        ],
+                        strategicRecommendation: "Pursue global expansion while maintaining competitive advantage.",
+                    },
+                    marketDataIntegrated: true,
+                    generatedAt: new Date().toISOString(),
+                },
+            };
+
+            const locales = [
+                { code: "ja", expectedSection: "競合ポジショニング分析" },
+                { code: "en", expectedSection: "Competitive Positioning Analysis" },
+            ];
+
+            for (const locale of locales) {
+                console.log(`\n=== Generating Markdown for locale: ${locale.code} ===`);
+
+                const taskId = `test-multi-locale-md-${locale.code}-${Date.now()}`;
+                const actionId = `test-action-multi-locale-md-${locale.code}-${Date.now()}`;
+                const token = `test-token-multi-locale-md-${locale.code}-${Date.now()}`;
+                const tokenExpiredTime = new Date(Date.now() + 60 * 60 * 1000);
+
+                const actions = [{
+                    command: "generate_marketing_markdown",
+                    index: 0,
+                }];
+
+                const refs = await createTestDataWithResults({
+                    taskId,
+                    actionId,
+                    actions,
+                    token,
+                    tokenExpiredTime,
+                    accumulatedResults: mockResults,
+                    actionIndex: 0,
+                    locale: locale.code,
+                });
+
+                try {
+                    const func = require("../../src/functions/generate_marketing_markdown");
+                    const wrapped = config.wrap(func([], {}, {}));
+
+                    await wrapped({
+                        data: {
+                            path: refs.actionPath,
+                            token: token,
+                        },
+                        params: {},
+                    });
+
+                    // Verify results
+                    const actionDoc = await firestore.doc(refs.actionPath).load();
+                    const actionData = actionDoc.data();
+
+                    expect(actionData).toBeDefined();
+                    const markdownContent = actionData?.results?.marketingAnalyticsMarkdown;
+                    expect(markdownContent).toBeDefined();
+                    expect(typeof markdownContent).toBe("string");
+
+                    // Verify locale-specific content
+                    expect(markdownContent).toContain(locale.expectedSection);
+
+                    console.log(`[${locale.code}] Markdown length: ${markdownContent?.length} characters`);
+                    console.log(`[${locale.code}] Contains expected section: ${locale.expectedSection}`);
+
+                    // Save to local tmp directory
+                    const localPath = saveMarkdownToLocal(markdownContent, locale.code);
+                    if (localPath) {
+                        console.log(`[${locale.code}] Markdown saved to: ${localPath}`);
+                    }
+                } finally {
+                    await firestore.doc(refs.actionPath).delete().catch(() => { });
+                    await firestore.doc(refs.taskPath).delete().catch(() => { });
+                }
+            }
+
+            console.log("\n=== Multi-Locale Markdown Generation Complete ===");
+            console.log("Output files:");
+            console.log("  - test/tmp/marketing_report_ja.md");
+            console.log("  - test/tmp/marketing_report_en.md");
+        }, 120000);
     });
 });

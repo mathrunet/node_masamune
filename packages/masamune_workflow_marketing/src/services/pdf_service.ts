@@ -2,7 +2,7 @@
  * PDF Service
  *
  * Generates PDF marketing reports using pdfkit.
- * Supports Japanese text with NotoSansJP fonts.
+ * Supports multilingual text with appropriate fonts.
  *
  * @see https://pdfkit.org/
  */
@@ -11,13 +11,35 @@ import PDFDocument from "pdfkit";
 import * as path from "path";
 import * as fs from "fs";
 import { PDFInputData, PDFGenerationOptions, GeneratedCharts } from "../models";
+import {
+    getTranslations,
+    getFontFamily,
+    MarketingTranslations,
+    FontFamily,
+} from "../locales";
 
 // Re-export types for backward compatibility
 export { PDFInputData, PDFGenerationOptions, GeneratedCharts };
 
-// Font names for registration
-const FONT_REGULAR = "NotoSansJP";
-const FONT_BOLD = "NotoSansJP-Bold";
+/**
+ * Font family configuration.
+ */
+interface FontConfig {
+    name: string;
+    regularFile: string;
+    boldFile: string;
+    isVariable?: boolean; // Variable fonts use same file for both
+}
+
+/**
+ * Font family configurations for multilingual support.
+ */
+const FONT_CONFIGS: FontConfig[] = [
+    { name: "NotoSansJP", regularFile: "NotoSansJP-Regular.ttf", boldFile: "NotoSansJP-Bold.ttf" },
+    { name: "NotoSansSC", regularFile: "NotoSansSC.ttf", boldFile: "NotoSansSC.ttf", isVariable: true },
+    { name: "NotoSansKR", regularFile: "NotoSansKR.ttf", boldFile: "NotoSansKR.ttf", isVariable: true },
+    { name: "NotoSans", regularFile: "NotoSans.ttf", boldFile: "NotoSans.ttf", isVariable: true },
+];
 
 /**
  * PDF Service for generating marketing reports.
@@ -28,40 +50,60 @@ export class PDFService {
     private readonly margin = 50;
     private readonly contentWidth: number;
     private fontDir: string;
-    private fontsRegistered = false;
+    private registeredFonts: Set<string> = new Set();
+    private currentFontFamily: FontFamily = "Helvetica";
+    private translations: MarketingTranslations;
 
     constructor() {
         this.contentWidth = this.pageWidth - this.margin * 2;
         // Default font directory: assets/fonts relative to package root
         this.fontDir = path.join(__dirname, "..", "..", "assets", "fonts");
+        // Default to English translations
+        this.translations = getTranslations("en");
     }
 
     /**
-     * Register Japanese fonts to PDFDocument.
+     * Register fonts to PDFDocument based on locale.
      */
-    private registerFonts(doc: PDFKit.PDFDocument): void {
-        const regularFontPath = path.join(this.fontDir, "NotoSansJP-Regular.ttf");
-        const boldFontPath = path.join(this.fontDir, "NotoSansJP-Bold.ttf");
+    private registerFonts(doc: PDFKit.PDFDocument, locale?: string): void {
+        // Determine font family from locale
+        this.currentFontFamily = getFontFamily(locale);
+        this.translations = getTranslations(locale);
 
-        // Check if fonts exist
-        if (fs.existsSync(regularFontPath)) {
-            doc.registerFont(FONT_REGULAR, regularFontPath);
-        }
-        if (fs.existsSync(boldFontPath)) {
-            doc.registerFont(FONT_BOLD, boldFontPath);
-        }
+        // Register all available font families
+        for (const config of FONT_CONFIGS) {
+            const regularPath = path.join(this.fontDir, config.regularFile);
+            const boldPath = path.join(this.fontDir, config.boldFile);
 
-        this.fontsRegistered =
-            fs.existsSync(regularFontPath) && fs.existsSync(boldFontPath);
+            if (fs.existsSync(regularPath)) {
+                doc.registerFont(config.name, regularPath);
+                this.registeredFonts.add(config.name);
+            }
+            if (!config.isVariable && fs.existsSync(boldPath)) {
+                doc.registerFont(`${config.name}-Bold`, boldPath);
+                this.registeredFonts.add(`${config.name}-Bold`);
+            }
+        }
     }
 
     /**
-     * Get font name (uses Japanese fonts if available).
+     * Get font name based on current locale.
      */
     private getFont(bold: boolean = false): string {
-        if (this.fontsRegistered) {
-            return bold ? FONT_BOLD : FONT_REGULAR;
+        if (this.currentFontFamily === "Helvetica") {
+            return bold ? "Helvetica-Bold" : "Helvetica";
         }
+
+        // Check if the font was registered
+        if (this.registeredFonts.has(this.currentFontFamily)) {
+            // For variable fonts, bold is simulated or same font is used
+            if (bold && this.registeredFonts.has(`${this.currentFontFamily}-Bold`)) {
+                return `${this.currentFontFamily}-Bold`;
+            }
+            return this.currentFontFamily;
+        }
+
+        // Fallback to Helvetica
         return bold ? "Helvetica-Bold" : "Helvetica";
     }
 
@@ -93,8 +135,11 @@ export class PDFService {
                     },
                 });
 
-                // Register Japanese fonts
-                this.registerFonts(doc);
+                // Register fonts based on locale
+                const locale = typeof options.locale === "object"
+                    ? options.locale["@language"]
+                    : options.locale;
+                this.registerFonts(doc, locale);
 
                 const chunks: Buffer[] = [];
                 doc.on("data", (chunk) => chunks.push(chunk));
@@ -186,12 +231,13 @@ export class PDFService {
 
         // Report type
         doc.fontSize(20).font(this.getFont());
+        const t = this.translations;
         const reportTypeLabel =
             options.reportType === "daily"
-                ? "Daily Report"
+                ? t.dailyReport
                 : options.reportType === "weekly"
-                    ? "Weekly Report"
-                    : "Monthly Report";
+                    ? t.weeklyReport
+                    : t.monthlyReport;
         doc.text(reportTypeLabel, this.margin, y, {
             width: this.contentWidth,
             align: "center",
@@ -215,7 +261,7 @@ export class PDFService {
         // Generated date
         doc.fontSize(12).font(this.getFont());
         doc.text(
-            `Generated: ${new Date().toISOString().split("T")[0]}`,
+            `${t.generated}: ${new Date().toISOString().split("T")[0]}`,
             this.margin,
             y,
             { width: this.contentWidth, align: "center" }
@@ -230,9 +276,9 @@ export class PDFService {
         if (options.data.googlePlayConsole) sources.push("Google Play");
         if (options.data.appStore) sources.push("App Store");
         if (options.data.firebaseAnalytics) sources.push("Firebase Analytics");
-        if (options.data.marketingAnalytics) sources.push("AI Analysis");
+        if (options.data.marketingAnalytics) sources.push(t.aiAnalysis);
 
-        doc.text(`Data Sources: ${sources.join(" | ")}`, this.margin, y, {
+        doc.text(`${t.dataSources}: ${sources.join(" | ")}`, this.margin, y, {
             width: this.contentWidth,
             align: "center",
         });
@@ -249,10 +295,11 @@ export class PDFService {
     ): void {
         let y = this.margin;
         const analysis = options.data.marketingAnalytics?.overallAnalysis;
+        const t = this.translations;
 
         // Page title
         doc.fontSize(20).font(this.getFont(true));
-        doc.text("エグゼクティブサマリー", this.margin, y);
+        doc.text(t.executiveSummary, this.margin, y);
         y += 35;
 
         // Summary text
@@ -285,7 +332,7 @@ export class PDFService {
         // Key Metrics
         if (analysis?.keyMetrics?.length) {
             doc.fontSize(14).font(this.getFont(true));
-            doc.text("Key Metrics", this.margin, y);
+            doc.text(t.metric, this.margin, y);
             y += 20;
 
             const metricsPerRow = 3;
@@ -339,10 +386,11 @@ export class PDFService {
     ): void {
         let y = this.margin;
         const analysis = options.data.marketingAnalytics?.overallAnalysis;
+        const t = this.translations;
 
         // Page title
         doc.fontSize(20).font(this.getFont(true));
-        doc.text("ハイライトと懸念事項", this.margin, y);
+        doc.text(t.highlightsAndConcerns, this.margin, y);
         y += 40;
 
         const halfWidth = this.contentWidth / 2 - 15;
@@ -358,9 +406,9 @@ export class PDFService {
         // Headers
         doc.fontSize(14).font(this.getFont(true));
         doc.fillColor("#1b5e20");
-        doc.text("Highlights", this.margin, y);
+        doc.text(t.highlights, this.margin, y);
         doc.fillColor("#b71c1c");
-        doc.text("Concerns", this.margin + halfWidth + 30, y);
+        doc.text(t.concerns, this.margin + halfWidth + 30, y);
         y += 25;
 
         // Draw highlights and concerns side by side
@@ -422,10 +470,11 @@ export class PDFService {
     ): void {
         let y = this.margin;
         const firebase = options.data.firebaseAnalytics;
+        const t = this.translations;
 
         // Page title
         doc.fontSize(20).font(this.getFont(true));
-        doc.text("ユーザー分析", this.margin, y);
+        doc.text(t.userAnalytics, this.margin, y);
         y += 35;
 
         if (firebase) {
@@ -433,11 +482,11 @@ export class PDFService {
             const dau = firebase.dau?.toLocaleString() || "N/A";
             const wau = firebase.wau?.toLocaleString() || "N/A";
             const mau = firebase.mau?.toLocaleString() || "N/A";
-            const newUsers = firebase.newUsers?.toLocaleString() || "N/A";
+            const newUsersVal = firebase.newUsers?.toLocaleString() || "N/A";
 
             doc.fillColor("#1565c0");
             doc.fontSize(14).font(this.getFont(true));
-            doc.text(`DAU: ${dau}  |  WAU: ${wau}  |  MAU: ${mau}  |  New Users: ${newUsers}`, this.margin, y);
+            doc.text(`DAU: ${dau}  |  WAU: ${wau}  |  MAU: ${mau}  |  ${t.newUsers}: ${newUsersVal}`, this.margin, y);
             doc.fillColor("#000000");
             y += 25;
 
@@ -445,7 +494,7 @@ export class PDFService {
             if (firebase.dau && firebase.mau && firebase.mau > 0) {
                 const retentionRatio = ((firebase.dau / firebase.mau) * 100).toFixed(1);
                 doc.fontSize(11).font(this.getFont());
-                doc.text(`Retention Ratio (DAU/MAU): ${retentionRatio}%`, this.margin, y);
+                doc.text(`${t.retention} (DAU/MAU): ${retentionRatio}%`, this.margin, y);
                 y += 20;
             }
 
@@ -456,10 +505,10 @@ export class PDFService {
                 if (firebase.averageSessionDuration) {
                     const minutes = Math.floor(firebase.averageSessionDuration / 60);
                     const seconds = Math.floor(firebase.averageSessionDuration % 60);
-                    stats.push(`Avg Session: ${minutes}m ${seconds}s`);
+                    stats.push(`${t.avgSessionDuration}: ${minutes}m ${seconds}s`);
                 }
                 if (firebase.sessionsPerUser) {
-                    stats.push(`Sessions/User: ${firebase.sessionsPerUser.toFixed(1)}`);
+                    stats.push(`${t.sessionsPerUser}: ${firebase.sessionsPerUser.toFixed(1)}`);
                 }
                 doc.text(stats.join("  |  "), this.margin, y);
                 y += 20;
@@ -476,7 +525,7 @@ export class PDFService {
         if (options.charts?.engagement) {
             try {
                 doc.fontSize(12).font(this.getFont(true));
-                doc.text("Active Users", this.margin, y);
+                doc.text(t.activeUsers, this.margin, y);
                 doc.image(options.charts.engagement, this.margin, y + 18, {
                     width: chartWidth,
                     height: chartHeight,
@@ -490,7 +539,7 @@ export class PDFService {
         if (options.charts?.retentionRatio) {
             try {
                 doc.fontSize(12).font(this.getFont(true));
-                doc.text("Retention", this.margin + chartWidth + 20, y);
+                doc.text(t.retention, this.margin + chartWidth + 20, y);
                 doc.image(options.charts.retentionRatio, this.margin + chartWidth + 20, y + 18, {
                     width: chartWidth,
                     height: chartHeight,
@@ -507,7 +556,7 @@ export class PDFService {
         if (options.charts?.demographics) {
             try {
                 doc.fontSize(12).font(this.getFont(true));
-                doc.text("Age Demographics", this.margin, y);
+                doc.text(t.ageDemographics, this.margin, y);
                 doc.image(options.charts.demographics, this.margin, y + 18, {
                     width: chartWidth,
                     height: chartHeight,
@@ -521,7 +570,7 @@ export class PDFService {
         if (options.charts?.countryDistribution) {
             try {
                 doc.fontSize(12).font(this.getFont(true));
-                doc.text("Country Distribution", this.margin + chartWidth + 20, y);
+                doc.text(t.countryDistribution, this.margin + chartWidth + 20, y);
                 doc.image(options.charts.countryDistribution, this.margin + chartWidth + 20, y + 18, {
                     width: chartWidth,
                     height: chartHeight,
@@ -541,10 +590,11 @@ export class PDFService {
         options: PDFGenerationOptions
     ): void {
         let y = this.margin;
+        const t = this.translations;
 
         // Page title
         doc.fontSize(20).font(this.getFont(true));
-        doc.text("評価とレビュー", this.margin, y);
+        doc.text(t.ratingsAndReviews, this.margin, y);
         y += 35;
 
         // Rating summary
@@ -578,7 +628,7 @@ export class PDFService {
             try {
                 doc.fontSize(12).font(this.getFont(true));
                 doc.fillColor("#000000");
-                doc.text("Rating Distribution", this.margin, y);
+                doc.text(t.ratingDistribution, this.margin, y);
                 doc.image(options.charts.ratingDistribution, this.margin, y + 18, {
                     width: chartWidth,
                     height: chartHeight,
@@ -592,7 +642,7 @@ export class PDFService {
         if (options.charts?.sentiment) {
             try {
                 doc.fontSize(12).font(this.getFont(true));
-                doc.text("Review Sentiment", this.margin + chartWidth + 20, y);
+                doc.text(t.sentimentAnalysis, this.margin + chartWidth + 20, y);
                 doc.image(options.charts.sentiment, this.margin + chartWidth + 20, y + 18, {
                     width: chartWidth,
                     height: chartHeight,
@@ -610,18 +660,18 @@ export class PDFService {
         if (reviewAnalysis) {
             doc.fontSize(14).font(this.getFont(true));
             doc.fillColor("#000000");
-            doc.text("Review Analysis", this.margin, y);
+            doc.text(t.sentimentAnalysis, this.margin, y);
             y += 20;
 
             // Sentiment breakdown
             if (reviewAnalysis.sentiment) {
                 doc.fontSize(11).font(this.getFont());
                 doc.fillColor("#4CAF50");
-                doc.text(`Positive: ${reviewAnalysis.sentiment.positive}%`, this.margin, y);
+                doc.text(`${t.positive}: ${reviewAnalysis.sentiment.positive}%`, this.margin, y);
                 doc.fillColor("#9e9e9e");
-                doc.text(`Neutral: ${reviewAnalysis.sentiment.neutral}%`, this.margin + 120, y);
+                doc.text(`${t.neutral}: ${reviewAnalysis.sentiment.neutral}%`, this.margin + 120, y);
                 doc.fillColor("#f44336");
-                doc.text(`Negative: ${reviewAnalysis.sentiment.negative}%`, this.margin + 230, y);
+                doc.text(`${t.negative}: ${reviewAnalysis.sentiment.negative}%`, this.margin + 230, y);
                 y += 25;
             }
 
@@ -629,7 +679,7 @@ export class PDFService {
             if (reviewAnalysis.commonThemes?.length) {
                 doc.fillColor("#000000");
                 doc.fontSize(12).font(this.getFont(true));
-                doc.text("Common Themes:", this.margin, y);
+                doc.text(`${t.commonThemes}:`, this.margin, y);
                 y += 18;
 
                 doc.fontSize(10).font(this.getFont());
@@ -643,7 +693,7 @@ export class PDFService {
             // Actionable insights
             if (reviewAnalysis.actionableInsights?.length) {
                 doc.fontSize(12).font(this.getFont(true));
-                doc.text("Actionable Insights:", this.margin, y);
+                doc.text(`${t.actionableInsights}:`, this.margin, y);
                 y += 18;
 
                 doc.fontSize(10).font(this.getFont());
@@ -667,10 +717,11 @@ export class PDFService {
     ): void {
         let y = this.margin;
         const suggestions = options.data.marketingAnalytics?.improvementSuggestions || [];
+        const t = this.translations;
 
         // Page title
         doc.fontSize(20).font(this.getFont(true));
-        doc.text("改善提案", this.margin, y);
+        doc.text(t.improvementSuggestions, this.margin, y);
         y += 40;
 
         for (const suggestion of suggestions) {
@@ -717,7 +768,7 @@ export class PDFService {
             // Expected impact
             if (suggestion.expectedImpact) {
                 doc.fillColor("#1565c0");
-                doc.text(`Expected Impact: ${suggestion.expectedImpact}`, this.margin + 10, y, {
+                doc.text(`${t.expectedImpact}: ${suggestion.expectedImpact}`, this.margin + 10, y, {
                     width: this.contentWidth - 10,
                 });
                 y = doc.y + 10;
@@ -739,17 +790,18 @@ export class PDFService {
     ): void {
         let y = this.margin;
         const positioning = options.data.marketingAnalytics?.competitivePositioning;
+        const t = this.translations;
 
         // Page title
         doc.fontSize(20).font(this.getFont(true));
-        doc.text("競合ポジショニング分析", this.margin, y);
+        doc.text(t.competitivePositioning, this.margin, y);
         y += 35;
 
         // Market Position
         if (positioning?.marketPosition) {
             doc.fontSize(14).font(this.getFont(true));
             doc.fillColor("#1565c0");
-            doc.text("市場での位置づけ", this.margin, y);
+            doc.text(t.marketPosition, this.margin, y);
             y += 20;
 
             doc.fontSize(11).font(this.getFont());
@@ -764,7 +816,7 @@ export class PDFService {
         if (positioning?.competitorComparison?.length) {
             doc.fontSize(14).font(this.getFont(true));
             doc.fillColor("#1565c0");
-            doc.text("競合比較", this.margin, y);
+            doc.text(t.competitorComparison, this.margin, y);
             y += 25;
 
             for (const comp of positioning.competitorComparison) {
@@ -774,7 +826,7 @@ export class PDFService {
                     y = this.margin;
                     doc.fontSize(16).font(this.getFont(true));
                     doc.fillColor("#000000");
-                    doc.text("競合ポジショニング分析 (続き)", this.margin, y);
+                    doc.text(`${t.competitivePositioning} ${t.continued}`, this.margin, y);
                     y += 30;
                 }
 
@@ -787,60 +839,94 @@ export class PDFService {
                 y += 28;
 
                 const halfWidth = this.contentWidth / 2 - 10;
+                const itemSpacing = 4;
+                const headerHeight = 22;
+                const boxPadding = 10;
+
+                // Calculate heights for both sections first
+                doc.fontSize(9).font(this.getFont());
+
+                // Calculate Strengths heights
+                const strengthHeights: number[] = [];
+                let totalStrengthsHeight = headerHeight;
+                for (const strength of (comp.ourStrengths || []).slice(0, 4)) {
+                    const h = doc.heightOfString(`✓ ${strength}`, { width: halfWidth - 16 });
+                    strengthHeights.push(h);
+                    totalStrengthsHeight += h + itemSpacing;
+                }
+                totalStrengthsHeight += boxPadding;
+
+                // Calculate Weaknesses heights (with extra right padding)
+                const weaknessHeights: number[] = [];
+                let totalWeaknessesHeight = headerHeight;
+                for (const weakness of (comp.ourWeaknesses || []).slice(0, 4)) {
+                    const h = doc.heightOfString(`△ ${weakness}`, { width: halfWidth - 24 });
+                    weaknessHeights.push(h);
+                    totalWeaknessesHeight += h + itemSpacing;
+                }
+                totalWeaknessesHeight += boxPadding;
+
+                // Sync box heights (use the larger one)
+                const boxHeight = Math.max(totalStrengthsHeight, totalWeaknessesHeight, 80);
 
                 // Strengths (left side)
                 if (comp.ourStrengths?.length) {
                     doc.fillColor("#e8f5e9");
-                    const strengthsHeight = Math.max(60, comp.ourStrengths.length * 18 + 25);
-                    doc.rect(this.margin, y, halfWidth, strengthsHeight).fill();
+                    doc.rect(this.margin, y, halfWidth, boxHeight).fill();
 
                     doc.fillColor("#1b5e20");
                     doc.fontSize(10).font(this.getFont(true));
-                    doc.text("当アプリの優位点", this.margin + 8, y + 5);
+                    doc.text(t.ourStrengths, this.margin + 8, y + 5);
 
                     doc.fontSize(9).font(this.getFont());
-                    let sy = y + 22;
+                    let sy = y + headerHeight;
+                    let i = 0;
                     for (const strength of comp.ourStrengths.slice(0, 4)) {
-                        doc.text(`✓ ${strength}`, this.margin + 8, sy, { width: halfWidth - 16 });
-                        sy = doc.y + 2;
+                        doc.text(`✓ ${strength}`, this.margin + 8, sy, {
+                            width: halfWidth - 16,
+                        });
+                        sy += strengthHeights[i] + itemSpacing;
+                        i++;
                     }
                 }
 
                 // Weaknesses (right side)
                 if (comp.ourWeaknesses?.length) {
                     doc.fillColor("#ffebee");
-                    const weaknessesHeight = Math.max(60, comp.ourWeaknesses.length * 18 + 25);
-                    doc.rect(this.margin + halfWidth + 20, y, halfWidth, weaknessesHeight).fill();
+                    doc.rect(this.margin + halfWidth + 20, y, halfWidth, boxHeight).fill();
 
                     doc.fillColor("#b71c1c");
                     doc.fontSize(10).font(this.getFont(true));
-                    doc.text("当アプリの劣位点", this.margin + halfWidth + 28, y + 5);
+                    doc.text(t.ourWeaknesses, this.margin + halfWidth + 28, y + 5);
 
                     doc.fontSize(9).font(this.getFont());
-                    let wy = y + 22;
+                    let wy = y + headerHeight;
+                    let i = 0;
                     for (const weakness of comp.ourWeaknesses.slice(0, 4)) {
-                        doc.text(`△ ${weakness}`, this.margin + halfWidth + 28, wy, { width: halfWidth - 16 });
-                        wy = doc.y + 2;
+                        doc.text(`△ ${weakness}`, this.margin + halfWidth + 28, wy, {
+                            width: halfWidth - 24,
+                        });
+                        wy += weaknessHeights[i] + itemSpacing;
+                        i++;
                     }
                 }
 
-                const maxItems = Math.max(comp.ourStrengths?.length || 0, comp.ourWeaknesses?.length || 0);
-                y += Math.max(60, Math.min(maxItems, 4) * 18 + 25) + 10;
+                y += boxHeight + 10;
 
                 // Battle Strategy
                 if (comp.battleStrategy) {
                     doc.fillColor("#e3f2fd");
-                    doc.rect(this.margin, y, this.contentWidth, 35).fill();
+                    doc.rect(this.margin, y, this.contentWidth, 45).fill();
                     doc.fillColor("#1565c0");
                     doc.fontSize(9).font(this.getFont(true));
-                    doc.text("対抗戦略:", this.margin + 8, y + 5);
+                    doc.text(`${t.battleStrategy}:`, this.margin + 8, y + 5);
                     doc.fontSize(9).font(this.getFont());
                     doc.text(comp.battleStrategy, this.margin + 8, y + 18, {
                         width: this.contentWidth - 16,
-                        height: 15,
+                        height: 24,
                         ellipsis: true,
                     });
-                    y += 45;
+                    y += 55;
                 }
 
                 y += 15;
@@ -857,7 +943,7 @@ export class PDFService {
         if (positioning?.differentiationStrategy) {
             doc.fontSize(14).font(this.getFont(true));
             doc.fillColor("#1565c0");
-            doc.text("差別化戦略", this.margin, y);
+            doc.text(t.differentiationStrategy, this.margin, y);
             y += 20;
 
             doc.fontSize(10).font(this.getFont());
@@ -872,7 +958,7 @@ export class PDFService {
         if (positioning?.quickWins?.length) {
             doc.fontSize(14).font(this.getFont(true));
             doc.fillColor("#1565c0");
-            doc.text("すぐに実行可能な施策", this.margin, y);
+            doc.text(t.quickWins, this.margin, y);
             y += 20;
 
             doc.fontSize(10).font(this.getFont());
@@ -897,10 +983,11 @@ export class PDFService {
     ): void {
         let y = this.margin;
         const priority = options.data.marketingAnalytics?.marketOpportunityPriority;
+        const t = this.translations;
 
         // Page title
         doc.fontSize(20).font(this.getFont(true));
-        doc.text("市場機会優先度分析", this.margin, y);
+        doc.text(t.marketOpportunityPriority, this.margin, y);
         y += 35;
 
         // Prioritized Opportunities
@@ -913,9 +1000,9 @@ export class PDFService {
             };
 
             const effortLabels: Record<string, string> = {
-                low: "低",
-                medium: "中",
-                high: "高",
+                low: t.low,
+                medium: t.medium,
+                high: t.high,
             };
 
             for (const opp of priority.prioritizedOpportunities) {
@@ -925,7 +1012,7 @@ export class PDFService {
                     y = this.margin;
                     doc.fontSize(16).font(this.getFont(true));
                     doc.fillColor("#000000");
-                    doc.text("市場機会優先度分析 (続き)", this.margin, y);
+                    doc.text(`${t.marketOpportunityPriority} ${t.continued}`, this.margin, y);
                     y += 30;
                 }
 
@@ -940,10 +1027,14 @@ export class PDFService {
 
                 // Effort badge
                 doc.fillColor("#757575");
-                doc.rect(this.margin + 75, y, 40, 20).fill();
+                doc.rect(this.margin + 75, y, 70, 20).fill();
                 doc.fillColor("#ffffff");
                 doc.fontSize(9).font(this.getFont());
-                doc.text(`工数:${effortLabels[opp.estimatedEffort] || opp.estimatedEffort}`, this.margin + 80, y + 5);
+                doc.text(`${t.effort}:${effortLabels[opp.estimatedEffort] || opp.estimatedEffort}`, this.margin + 80, y + 5, {
+                    width: 60,
+                    height: 12,
+                    ellipsis: true,
+                });
 
                 y += 25;
 
@@ -957,7 +1048,7 @@ export class PDFService {
                 if (opp.fitReason) {
                     doc.fontSize(10).font(this.getFont());
                     doc.fillColor("#757575");
-                    doc.text(`適合理由: ${opp.fitReason}`, this.margin + 10, y, {
+                    doc.text(`${t.reason}: ${opp.fitReason}`, this.margin + 10, y, {
                         width: this.contentWidth - 10,
                     });
                     y = doc.y + 10;
@@ -967,7 +1058,7 @@ export class PDFService {
                 if (opp.requiredChanges?.length) {
                     doc.fontSize(10).font(this.getFont(true));
                     doc.fillColor("#000000");
-                    doc.text("必要な変更:", this.margin + 10, y);
+                    doc.text(`${t.requiredChanges}:`, this.margin + 10, y);
                     y += 15;
 
                     doc.fontSize(9).font(this.getFont());
@@ -987,17 +1078,17 @@ export class PDFService {
                 // Recommended action
                 if (opp.recommendedAction) {
                     doc.fillColor("#e8f5e9");
-                    doc.rect(this.margin + 10, y, this.contentWidth - 20, 30).fill();
+                    doc.rect(this.margin + 10, y, this.contentWidth - 20, 40).fill();
                     doc.fillColor("#1b5e20");
                     doc.fontSize(9).font(this.getFont(true));
-                    doc.text("推奨アクション:", this.margin + 15, y + 5);
+                    doc.text(`${t.recommendedAction}:`, this.margin + 15, y + 5);
                     doc.fontSize(9).font(this.getFont());
                     doc.text(opp.recommendedAction, this.margin + 15, y + 17, {
                         width: this.contentWidth - 30,
-                        height: 12,
+                        height: 20,
                         ellipsis: true,
                     });
-                    y += 40;
+                    y += 50;
                 }
 
                 y += 15;
@@ -1014,7 +1105,7 @@ export class PDFService {
         if (priority?.strategicRecommendation) {
             doc.fontSize(14).font(this.getFont(true));
             doc.fillColor("#1565c0");
-            doc.text("戦略的推奨事項", this.margin, y);
+            doc.text(t.strategicRecommendations, this.margin, y);
             y += 20;
 
             doc.fillColor("#e3f2fd");
@@ -1041,19 +1132,17 @@ export class PDFService {
     ): void {
         let y = this.margin;
         const trendAnalysis = options.data.marketingAnalytics?.trendAnalysis;
+        const t = this.translations;
 
         // Page title
         doc.fontSize(20).font(this.getFont(true));
-        doc.text("トレンド分析と予測", this.margin, y);
+        doc.text(t.trendAnalysisAndPredictions, this.margin, y);
         y += 35;
-
-        // Trends
-        const halfWidth = this.contentWidth / 2 - 10;
 
         // User Growth Trend
         if (trendAnalysis?.userGrowthTrend) {
             doc.fontSize(12).font(this.getFont(true));
-            doc.text("User Growth", this.margin, y);
+            doc.text(t.userGrowth, this.margin, y);
             y += 18;
 
             doc.fontSize(10).font(this.getFont());
@@ -1066,7 +1155,7 @@ export class PDFService {
         // Engagement Trend
         if (trendAnalysis?.engagementTrend) {
             doc.fontSize(12).font(this.getFont(true));
-            doc.text("Engagement", this.margin, y);
+            doc.text(t.engagement, this.margin, y);
             y += 18;
 
             doc.fontSize(10).font(this.getFont());
@@ -1079,7 +1168,7 @@ export class PDFService {
         // Rating Trend
         if (trendAnalysis?.ratingTrend) {
             doc.fontSize(12).font(this.getFont(true));
-            doc.text("Ratings", this.margin, y);
+            doc.text(t.ratings, this.margin, y);
             y += 18;
 
             doc.fontSize(10).font(this.getFont());
@@ -1092,7 +1181,7 @@ export class PDFService {
         // Predictions
         if (trendAnalysis?.predictions?.length) {
             doc.fontSize(14).font(this.getFont(true));
-            doc.text("Predictions", this.margin, y);
+            doc.text(t.predictions, this.margin, y);
             y += 22;
 
             doc.fontSize(10).font(this.getFont());
@@ -1110,7 +1199,7 @@ export class PDFService {
         doc.fontSize(9).font(this.getFont());
         doc.fillColor("#757575");
         doc.text(
-            `Report generated by Masamune Workflow Marketing - ${new Date().toISOString().split("T")[0]}`,
+            t.generatedBy,
             this.margin,
             y,
             { width: this.contentWidth, align: "center" }
@@ -1130,10 +1219,11 @@ export class PDFService {
         let y = this.margin;
         const githubImprovements = options.data.githubImprovements;
         const improvements = githubImprovements?.improvements || [];
+        const t = this.translations;
 
         // Page title
         doc.fontSize(20).font(this.getFont(true));
-        doc.text("コードベース改善提案", this.margin, y);
+        doc.text(t.codebaseImprovements, this.margin, y);
         y += 25;
 
         // Repository info
@@ -1141,7 +1231,7 @@ export class PDFService {
         doc.fillColor("#757575");
         const repo = githubImprovements?.repository || "";
         const framework = githubImprovements?.framework || "";
-        doc.text(`Repository: ${repo} | Framework: ${framework}`, this.margin, y);
+        doc.text(`${t.repository}: ${repo} | ${t.framework}: ${framework}`, this.margin, y);
         y += 20;
 
         // Summary
@@ -1162,7 +1252,7 @@ export class PDFService {
                 y = this.margin;
                 doc.fontSize(16).font(this.getFont(true));
                 doc.fillColor("#000000");
-                doc.text("コードベース改善提案 (続き)", this.margin, y);
+                doc.text(`${t.codebaseImprovements} ${t.continued}`, this.margin, y);
                 y += 30;
             }
 
@@ -1206,7 +1296,7 @@ export class PDFService {
             if (improvement.relatedFeature) {
                 doc.fillColor("#6a1b9a");
                 doc.fontSize(9).font(this.getFont());
-                doc.text(`関連機能: ${improvement.relatedFeature}`, this.margin + 10, y);
+                doc.text(`${t.relatedFeature}: ${improvement.relatedFeature}`, this.margin + 10, y);
                 y = doc.y + 8;
             }
 
@@ -1215,7 +1305,7 @@ export class PDFService {
             if (codeRefs.length > 0) {
                 doc.fillColor("#000000");
                 doc.fontSize(10).font(this.getFont(true));
-                doc.text("ファイル修正:", this.margin + 10, y);
+                doc.text(`${t.fileModifications}:`, this.margin + 10, y);
                 y += 15;
 
                 for (const ref of codeRefs) {
@@ -1225,7 +1315,7 @@ export class PDFService {
                         y = this.margin;
                         doc.fontSize(16).font(this.getFont(true));
                         doc.fillColor("#000000");
-                        doc.text("コードベース改善提案 (続き)", this.margin, y);
+                        doc.text(`${t.codebaseImprovements} ${t.continued}`, this.margin, y);
                         y += 30;
                     }
 
@@ -1264,14 +1354,14 @@ export class PDFService {
                     // Current functionality
                     doc.fillColor("#757575");
                     doc.fontSize(8).font(this.getFont());
-                    doc.text(`現状: ${ref.currentFunctionality || ""}`, this.margin + 40, y, {
+                    doc.text(`${t.current}: ${ref.currentFunctionality || ""}`, this.margin + 40, y, {
                         width: this.contentWidth - 50,
                     });
                     y = doc.y + 3;
 
                     // Proposed change
                     doc.fillColor("#2e7d32");
-                    doc.text(`変更: ${ref.proposedChange || ""}`, this.margin + 40, y, {
+                    doc.text(`${t.proposed}: ${ref.proposedChange || ""}`, this.margin + 40, y, {
                         width: this.contentWidth - 50,
                     });
                     y = doc.y + 8;
@@ -1282,7 +1372,7 @@ export class PDFService {
             if (improvement.expectedImpact) {
                 doc.fillColor("#1565c0");
                 doc.fontSize(9).font(this.getFont());
-                doc.text(`期待効果: ${improvement.expectedImpact}`, this.margin + 10, y);
+                doc.text(`${t.expectedImpact}: ${improvement.expectedImpact}`, this.margin + 10, y);
                 y = doc.y + 5;
             }
 

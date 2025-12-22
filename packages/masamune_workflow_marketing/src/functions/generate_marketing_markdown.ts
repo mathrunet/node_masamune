@@ -1,6 +1,7 @@
 import { HttpFunctionsOptions } from "@mathrunet/masamune";
 import { Action, WorkflowProcessFunctionBase, WorkflowContext } from "@mathrunet/masamune_workflow";
 import "@mathrunet/masamune";
+import { getTranslations, MarketingTranslations } from "../locales";
 
 /**
  * Input data for Markdown report generation.
@@ -120,6 +121,13 @@ interface MarkdownInputData {
 }
 
 /**
+ * ModelLocale type from masamune_workflow.
+ */
+interface ModelLocale {
+    "@language": string;
+}
+
+/**
  * Options for Markdown report generation.
  *
  * Markdownレポート生成オプション。
@@ -132,6 +140,8 @@ interface MarkdownGenerationOptions {
         startDate: string;
         endDate: string;
     };
+    /** Locale for output strings (default: "en") */
+    locale?: ModelLocale | string;
 }
 
 /**
@@ -146,6 +156,11 @@ export class GenerateMarketingMarkdown extends WorkflowProcessFunctionBase {
      * 関数のID。
      */
     id: string = "generate_marketing_markdown";
+
+    /**
+     * Translations for the current locale.
+     */
+    private translations: MarketingTranslations = getTranslations("en");
 
     /**
      * The process of the function.
@@ -207,6 +222,7 @@ export class GenerateMarketingMarkdown extends WorkflowProcessFunctionBase {
                 appName,
                 reportType: (command?.reportType as "daily" | "weekly" | "monthly") || "weekly",
                 dateRange,
+                locale: action.locale,
             });
 
             console.log("GenerateMarketingMarkdown: Markdown report generated, length:", markdownContent.length, "characters");
@@ -234,6 +250,12 @@ export class GenerateMarketingMarkdown extends WorkflowProcessFunctionBase {
      * Generate the complete Markdown report.
      */
     private generateMarkdownReport(options: MarkdownGenerationOptions): string {
+        // Initialize translations based on locale
+        const locale = typeof options.locale === "object"
+            ? options.locale["@language"]
+            : options.locale;
+        this.translations = getTranslations(locale);
+
         const sections: string[] = [];
 
         // Header section
@@ -295,35 +317,36 @@ export class GenerateMarketingMarkdown extends WorkflowProcessFunctionBase {
      * Generate header section.
      */
     private generateHeader(options: MarkdownGenerationOptions): string {
+        const t = this.translations;
         const appName = options.appName || "Marketing Report";
         const reportTypeLabel =
             options.reportType === "daily"
-                ? "Daily Report"
+                ? t.dailyReport
                 : options.reportType === "weekly"
-                    ? "Weekly Report"
-                    : "Monthly Report";
+                    ? t.weeklyReport
+                    : t.monthlyReport;
 
         const lines: string[] = [
             `# ${appName}`,
             "",
-            `**Report Type:** ${reportTypeLabel}`,
+            `**${t.reportType}:** ${reportTypeLabel}`,
         ];
 
         if (options.dateRange) {
-            lines.push(`**Period:** ${options.dateRange.startDate} - ${options.dateRange.endDate}`);
+            lines.push(`**${t.period}:** ${options.dateRange.startDate} - ${options.dateRange.endDate}`);
         }
 
-        lines.push(`**Generated:** ${new Date().toISOString().split("T")[0]}`);
+        lines.push(`**${t.generated}:** ${new Date().toISOString().split("T")[0]}`);
 
         // Data sources
         const sources: string[] = [];
         if (options.data.googlePlayConsole) sources.push("Google Play");
         if (options.data.appStore) sources.push("App Store");
         if (options.data.firebaseAnalytics) sources.push("Firebase Analytics");
-        if (options.data.marketingAnalytics) sources.push("AI Analysis");
+        if (options.data.marketingAnalytics) sources.push(t.aiAnalysis);
 
         if (sources.length > 0) {
-            lines.push(`**Data Sources:** ${sources.join(" | ")}`);
+            lines.push(`**${t.dataSources}:** ${sources.join(" | ")}`);
         }
 
         return lines.join("\n");
@@ -333,8 +356,9 @@ export class GenerateMarketingMarkdown extends WorkflowProcessFunctionBase {
      * Generate executive summary section.
      */
     private generateExecutiveSummary(options: MarkdownGenerationOptions): string {
+        const t = this.translations;
         const analysis = options.data.marketingAnalytics?.overallAnalysis;
-        const lines: string[] = ["## エグゼクティブサマリー"];
+        const lines: string[] = [`## ${t.executiveSummary}`];
 
         // Summary text
         if (analysis?.summary) {
@@ -343,8 +367,8 @@ export class GenerateMarketingMarkdown extends WorkflowProcessFunctionBase {
 
         // Key Metrics table
         if (analysis?.keyMetrics?.length) {
-            lines.push("", "### Key Metrics", "");
-            lines.push("| Metric | Value | Trend |");
+            lines.push("", `### ${t.metric}`, "");
+            lines.push(`| ${t.metric} | ${t.value} | ${t.trend} |`);
             lines.push("|--------|-------|-------|");
 
             for (const metric of analysis.keyMetrics) {
@@ -360,12 +384,13 @@ export class GenerateMarketingMarkdown extends WorkflowProcessFunctionBase {
      * Generate highlights and concerns section.
      */
     private generateHighlightsConcerns(options: MarkdownGenerationOptions): string {
+        const t = this.translations;
         const analysis = options.data.marketingAnalytics?.overallAnalysis;
-        const lines: string[] = ["## ハイライトと懸念事項"];
+        const lines: string[] = [`## ${t.highlightsAndConcerns}`];
 
         // Highlights
         if (analysis?.highlights?.length) {
-            lines.push("", "### Highlights");
+            lines.push("", `### ${t.highlights}`);
             for (const highlight of analysis.highlights) {
                 lines.push(`- ${highlight}`);
             }
@@ -373,7 +398,7 @@ export class GenerateMarketingMarkdown extends WorkflowProcessFunctionBase {
 
         // Concerns
         if (analysis?.concerns?.length) {
-            lines.push("", "### Concerns");
+            lines.push("", `### ${t.concerns}`);
             for (const concern of analysis.concerns) {
                 lines.push(`- ${concern}`);
             }
@@ -386,16 +411,17 @@ export class GenerateMarketingMarkdown extends WorkflowProcessFunctionBase {
      * Generate user analytics section.
      */
     private generateUserAnalytics(options: MarkdownGenerationOptions): string {
+        const t = this.translations;
         const firebase = options.data.firebaseAnalytics;
-        const lines: string[] = ["## ユーザー分析"];
+        const lines: string[] = [`## ${t.userAnalytics}`];
 
         if (!firebase) {
             return lines.join("\n");
         }
 
         // Main metrics table
-        lines.push("", "### Active Users", "");
-        lines.push("| Metric | Value |");
+        lines.push("", `### ${t.activeUsers}`, "");
+        lines.push(`| ${t.metric} | ${t.value} |`);
         lines.push("|--------|-------|");
 
         if (firebase.dau !== undefined) {
@@ -408,35 +434,35 @@ export class GenerateMarketingMarkdown extends WorkflowProcessFunctionBase {
             lines.push(`| MAU | ${firebase.mau.toLocaleString()} |`);
         }
         if (firebase.newUsers !== undefined) {
-            lines.push(`| New Users | ${firebase.newUsers.toLocaleString()} |`);
+            lines.push(`| ${t.newUsers} | ${firebase.newUsers.toLocaleString()} |`);
         }
 
         // Retention ratio
         if (firebase.dau && firebase.mau && firebase.mau > 0) {
             const retentionRatio = ((firebase.dau / firebase.mau) * 100).toFixed(1);
-            lines.push(`| Retention (DAU/MAU) | ${retentionRatio}% |`);
+            lines.push(`| ${t.retention} (DAU/MAU) | ${retentionRatio}% |`);
         }
 
         // Session stats
         if (firebase.averageSessionDuration !== undefined || firebase.sessionsPerUser !== undefined) {
-            lines.push("", "### Session Statistics", "");
-            lines.push("| Metric | Value |");
+            lines.push("", `### ${t.sessionStatistics}`, "");
+            lines.push(`| ${t.metric} | ${t.value} |`);
             lines.push("|--------|-------|");
 
             if (firebase.averageSessionDuration !== undefined) {
                 const minutes = Math.floor(firebase.averageSessionDuration / 60);
                 const seconds = Math.floor(firebase.averageSessionDuration % 60);
-                lines.push(`| Avg Session Duration | ${minutes}m ${seconds}s |`);
+                lines.push(`| ${t.avgSessionDuration} | ${minutes}m ${seconds}s |`);
             }
             if (firebase.sessionsPerUser !== undefined) {
-                lines.push(`| Sessions/User | ${firebase.sessionsPerUser.toFixed(1)} |`);
+                lines.push(`| ${t.sessionsPerUser} | ${firebase.sessionsPerUser.toFixed(1)} |`);
             }
         }
 
         // Demographics
         if (firebase.demographics?.ageGroups && Object.keys(firebase.demographics.ageGroups).length > 0) {
-            lines.push("", "### Age Demographics", "");
-            lines.push("| Age Group | Percentage |");
+            lines.push("", `### ${t.ageDemographics}`, "");
+            lines.push(`| Age Group | ${t.percentage} |`);
             lines.push("|-----------|------------|");
 
             const sortedAgeGroups = Object.entries(firebase.demographics.ageGroups)
@@ -449,8 +475,8 @@ export class GenerateMarketingMarkdown extends WorkflowProcessFunctionBase {
         }
 
         if (firebase.demographics?.countryDistribution && Object.keys(firebase.demographics.countryDistribution).length > 0) {
-            lines.push("", "### Country Distribution", "");
-            lines.push("| Country | Percentage |");
+            lines.push("", `### ${t.countryDistribution}`, "");
+            lines.push(`| Country | ${t.percentage} |`);
             lines.push("|---------|------------|");
 
             const sortedCountries = Object.entries(firebase.demographics.countryDistribution)
@@ -470,15 +496,16 @@ export class GenerateMarketingMarkdown extends WorkflowProcessFunctionBase {
      * Generate ratings and reviews section.
      */
     private generateRatingsReviews(options: MarkdownGenerationOptions): string {
+        const t = this.translations;
         const googlePlay = options.data.googlePlayConsole;
         const appStore = options.data.appStore;
         const reviewAnalysis = options.data.marketingAnalytics?.reviewAnalysis;
-        const lines: string[] = ["## 評価とレビュー"];
+        const lines: string[] = [`## ${t.ratingsAndReviews}`];
 
         // Rating summary
         if (googlePlay?.averageRating || appStore?.averageRating) {
-            lines.push("", "### Overall Ratings", "");
-            lines.push("| Platform | Rating | Total Ratings |");
+            lines.push("", `### ${t.overallRatings}`, "");
+            lines.push(`| ${t.platform} | ${t.rating} | ${t.totalRatings} |`);
             lines.push("|----------|--------|---------------|");
 
             if (googlePlay?.averageRating) {
@@ -493,19 +520,19 @@ export class GenerateMarketingMarkdown extends WorkflowProcessFunctionBase {
 
         // Rating distribution
         if (googlePlay?.ratingDistribution || appStore?.ratingDistribution) {
-            lines.push("", "### Rating Distribution", "");
+            lines.push("", `### ${t.ratingDistribution}`, "");
 
             const hasGooglePlay = googlePlay?.ratingDistribution;
             const hasAppStore = appStore?.ratingDistribution;
 
             if (hasGooglePlay && hasAppStore) {
-                lines.push("| Rating | Google Play | App Store |");
+                lines.push(`| ${t.rating} | Google Play | App Store |`);
                 lines.push("|--------|-------------|-----------|");
             } else if (hasGooglePlay) {
-                lines.push("| Rating | Google Play |");
+                lines.push(`| ${t.rating} | Google Play |`);
                 lines.push("|--------|-------------|");
             } else {
-                lines.push("| Rating | App Store |");
+                lines.push(`| ${t.rating} | App Store |`);
                 lines.push("|--------|-----------|");
             }
 
@@ -532,22 +559,22 @@ export class GenerateMarketingMarkdown extends WorkflowProcessFunctionBase {
         if (reviewAnalysis) {
             // Sentiment
             if (reviewAnalysis.sentiment) {
-                lines.push("", "### Sentiment Analysis", "");
-                lines.push("| Sentiment | Percentage |");
+                lines.push("", `### ${t.sentimentAnalysis}`, "");
+                lines.push(`| Sentiment | ${t.percentage} |`);
                 lines.push("|-----------|------------|");
 
                 const posBar = this.generateProgressBar(reviewAnalysis.sentiment.positive);
                 const neuBar = this.generateProgressBar(reviewAnalysis.sentiment.neutral);
                 const negBar = this.generateProgressBar(reviewAnalysis.sentiment.negative);
 
-                lines.push(`| Positive | ${posBar} ${reviewAnalysis.sentiment.positive}% |`);
-                lines.push(`| Neutral | ${neuBar} ${reviewAnalysis.sentiment.neutral}% |`);
-                lines.push(`| Negative | ${negBar} ${reviewAnalysis.sentiment.negative}% |`);
+                lines.push(`| ${t.positive} | ${posBar} ${reviewAnalysis.sentiment.positive}% |`);
+                lines.push(`| ${t.neutral} | ${neuBar} ${reviewAnalysis.sentiment.neutral}% |`);
+                lines.push(`| ${t.negative} | ${negBar} ${reviewAnalysis.sentiment.negative}% |`);
             }
 
             // Common themes
             if (reviewAnalysis.commonThemes?.length) {
-                lines.push("", "### Common Themes");
+                lines.push("", `### ${t.commonThemes}`);
                 for (const theme of reviewAnalysis.commonThemes) {
                     lines.push(`- ${theme}`);
                 }
@@ -555,7 +582,7 @@ export class GenerateMarketingMarkdown extends WorkflowProcessFunctionBase {
 
             // Actionable insights
             if (reviewAnalysis.actionableInsights?.length) {
-                lines.push("", "### Actionable Insights");
+                lines.push("", `### ${t.actionableInsights}`);
                 for (const insight of reviewAnalysis.actionableInsights) {
                     lines.push(`- ${insight}`);
                 }
@@ -569,8 +596,9 @@ export class GenerateMarketingMarkdown extends WorkflowProcessFunctionBase {
      * Generate improvement suggestions section.
      */
     private generateImprovements(options: MarkdownGenerationOptions): string {
+        const t = this.translations;
         const suggestions = options.data.marketingAnalytics?.improvementSuggestions || [];
-        const lines: string[] = ["## 改善提案"];
+        const lines: string[] = [`## ${t.improvementSuggestions}`];
 
         for (const suggestion of suggestions) {
             const priorityEmoji = suggestion.priority === "high" ? "🔴" : suggestion.priority === "medium" ? "🟡" : "🟢";
@@ -581,7 +609,7 @@ export class GenerateMarketingMarkdown extends WorkflowProcessFunctionBase {
 
             if (suggestion.expectedImpact) {
                 lines.push("");
-                lines.push(`**Expected Impact:** ${suggestion.expectedImpact}`);
+                lines.push(`**${t.expectedImpact}:** ${suggestion.expectedImpact}`);
             }
         }
 
@@ -594,18 +622,19 @@ export class GenerateMarketingMarkdown extends WorkflowProcessFunctionBase {
      * 競合ポジショニング分析セクションを生成。
      */
     private generateCompetitivePositioning(options: MarkdownGenerationOptions): string {
+        const t = this.translations;
         const positioning = options.data.marketingAnalytics?.competitivePositioning;
-        const lines: string[] = ["## 競合ポジショニング分析"];
+        const lines: string[] = [`## ${t.competitivePositioning}`];
 
         // Market Position
         if (positioning?.marketPosition) {
-            lines.push("", "### 市場での位置づけ");
+            lines.push("", `### ${t.marketPosition}`);
             lines.push("", positioning.marketPosition);
         }
 
         // Competitor Comparison
         if (positioning?.competitorComparison?.length) {
-            lines.push("", "### 競合比較");
+            lines.push("", `### ${t.competitorComparison}`);
 
             for (const comp of positioning.competitorComparison) {
                 lines.push("");
@@ -613,7 +642,7 @@ export class GenerateMarketingMarkdown extends WorkflowProcessFunctionBase {
                 lines.push("");
 
                 if (comp.ourStrengths?.length) {
-                    lines.push("**当アプリの優位点:**");
+                    lines.push(`**${t.ourStrengths}:**`);
                     for (const strength of comp.ourStrengths) {
                         lines.push(`- ✅ ${strength}`);
                     }
@@ -621,7 +650,7 @@ export class GenerateMarketingMarkdown extends WorkflowProcessFunctionBase {
 
                 if (comp.ourWeaknesses?.length) {
                     lines.push("");
-                    lines.push("**当アプリの劣位点:**");
+                    lines.push(`**${t.ourWeaknesses}:**`);
                     for (const weakness of comp.ourWeaknesses) {
                         lines.push(`- ⚠️ ${weakness}`);
                     }
@@ -629,20 +658,20 @@ export class GenerateMarketingMarkdown extends WorkflowProcessFunctionBase {
 
                 if (comp.battleStrategy) {
                     lines.push("");
-                    lines.push(`**対抗戦略:** ${comp.battleStrategy}`);
+                    lines.push(`**${t.battleStrategy}:** ${comp.battleStrategy}`);
                 }
             }
         }
 
         // Differentiation Strategy
         if (positioning?.differentiationStrategy) {
-            lines.push("", "### 差別化戦略");
+            lines.push("", `### ${t.differentiationStrategy}`);
             lines.push("", positioning.differentiationStrategy);
         }
 
         // Quick Wins
         if (positioning?.quickWins?.length) {
-            lines.push("", "### すぐに実行可能な施策");
+            lines.push("", `### ${t.quickWins}`);
             for (const quickWin of positioning.quickWins) {
                 lines.push(`- 🚀 ${quickWin}`);
             }
@@ -657,15 +686,16 @@ export class GenerateMarketingMarkdown extends WorkflowProcessFunctionBase {
      * 市場機会優先度分析セクションを生成。
      */
     private generateMarketOpportunityPriority(options: MarkdownGenerationOptions): string {
+        const t = this.translations;
         const priority = options.data.marketingAnalytics?.marketOpportunityPriority;
-        const lines: string[] = ["## 市場機会優先度分析"];
+        const lines: string[] = [`## ${t.marketOpportunityPriority}`];
 
         // Prioritized Opportunities
         if (priority?.prioritizedOpportunities?.length) {
-            lines.push("", "### 優先順位付けされた機会", "");
+            lines.push("", `### ${t.prioritizedOpportunities}`, "");
 
             // Summary table
-            lines.push("| 機会 | 適合度 | 工数 |");
+            lines.push(`| ${t.opportunity} | ${t.fitScore} | ${t.effort} |`);
             lines.push("|------|--------|------|");
 
             const fitScoreEmoji: Record<string, string> = {
@@ -676,9 +706,9 @@ export class GenerateMarketingMarkdown extends WorkflowProcessFunctionBase {
             };
 
             const effortLabel: Record<string, string> = {
-                low: "低",
-                medium: "中",
-                high: "高",
+                low: t.low,
+                medium: t.medium,
+                high: t.high,
             };
 
             for (const opp of priority.prioritizedOpportunities) {
@@ -694,14 +724,14 @@ export class GenerateMarketingMarkdown extends WorkflowProcessFunctionBase {
                 lines.push(`#### ${emoji} ${opp.opportunity}`);
                 lines.push("");
 
-                lines.push(`**適合度:** ${opp.fitScore}`);
+                lines.push(`**${t.fitScore}:** ${opp.fitScore}`);
                 if (opp.fitReason) {
-                    lines.push(`**理由:** ${opp.fitReason}`);
+                    lines.push(`**${t.reason}:** ${opp.fitReason}`);
                 }
 
                 if (opp.requiredChanges?.length) {
                     lines.push("");
-                    lines.push("**必要な変更:**");
+                    lines.push(`**${t.requiredChanges}:**`);
                     for (const change of opp.requiredChanges) {
                         lines.push(`- ${change}`);
                     }
@@ -709,7 +739,7 @@ export class GenerateMarketingMarkdown extends WorkflowProcessFunctionBase {
 
                 if (opp.recommendedAction) {
                     lines.push("");
-                    lines.push(`**推奨アクション:** ${opp.recommendedAction}`);
+                    lines.push(`**${t.recommendedAction}:** ${opp.recommendedAction}`);
                 }
 
                 lines.push("");
@@ -718,7 +748,7 @@ export class GenerateMarketingMarkdown extends WorkflowProcessFunctionBase {
 
         // Strategic Recommendation
         if (priority?.strategicRecommendation) {
-            lines.push("### 戦略的推奨事項");
+            lines.push(`### ${t.strategicRecommendations}`);
             lines.push("", priority.strategicRecommendation);
         }
 
@@ -729,16 +759,17 @@ export class GenerateMarketingMarkdown extends WorkflowProcessFunctionBase {
      * Generate GitHub code improvements section.
      */
     private generateGitHubImprovements(options: MarkdownGenerationOptions): string {
+        const t = this.translations;
         const githubImprovements = options.data.githubImprovements;
         const improvements = githubImprovements?.improvements || [];
-        const lines: string[] = ["## コードベース改善提案"];
+        const lines: string[] = [`## ${t.codebaseImprovements}`];
 
         // Repository info
         const repo = githubImprovements?.repository || "";
         const framework = githubImprovements?.framework || "";
         if (repo || framework) {
             lines.push("");
-            lines.push(`**Repository:** ${repo} | **Framework:** ${framework}`);
+            lines.push(`**${t.repository}:** ${repo} | **${t.framework}:** ${framework}`);
         }
 
         // Summary
@@ -760,16 +791,16 @@ export class GenerateMarketingMarkdown extends WorkflowProcessFunctionBase {
 
             if (improvement.relatedFeature) {
                 lines.push("");
-                lines.push(`**関連機能:** ${improvement.relatedFeature}`);
+                lines.push(`**${t.relatedFeature}:** ${improvement.relatedFeature}`);
             }
 
             // Code References
             const codeRefs = improvement.codeReferences || [];
             if (codeRefs.length > 0) {
                 lines.push("");
-                lines.push("**ファイル修正:**");
+                lines.push(`**${t.fileModifications}:**`);
                 lines.push("");
-                lines.push("| Type | File | Current | Proposed |");
+                lines.push(`| ${t.type} | ${t.file} | ${t.current} | ${t.proposed} |`);
                 lines.push("|------|------|---------|----------|");
 
                 const modIcon: Record<string, string> = {
@@ -790,7 +821,7 @@ export class GenerateMarketingMarkdown extends WorkflowProcessFunctionBase {
 
             if (improvement.expectedImpact) {
                 lines.push("");
-                lines.push(`**期待効果:** ${improvement.expectedImpact}`);
+                lines.push(`**${t.expectedImpact}:** ${improvement.expectedImpact}`);
             }
         }
 
@@ -801,26 +832,27 @@ export class GenerateMarketingMarkdown extends WorkflowProcessFunctionBase {
      * Generate trend analysis section.
      */
     private generateTrendAnalysis(options: MarkdownGenerationOptions): string {
+        const t = this.translations;
         const trendAnalysis = options.data.marketingAnalytics?.trendAnalysis;
-        const lines: string[] = ["## トレンド分析と予測"];
+        const lines: string[] = [`## ${t.trendAnalysisAndPredictions}`];
 
         if (trendAnalysis?.userGrowthTrend) {
-            lines.push("", "### User Growth");
+            lines.push("", `### ${t.userGrowth}`);
             lines.push(trendAnalysis.userGrowthTrend);
         }
 
         if (trendAnalysis?.engagementTrend) {
-            lines.push("", "### Engagement");
+            lines.push("", `### ${t.engagement}`);
             lines.push(trendAnalysis.engagementTrend);
         }
 
         if (trendAnalysis?.ratingTrend) {
-            lines.push("", "### Ratings");
+            lines.push("", `### ${t.ratings}`);
             lines.push(trendAnalysis.ratingTrend);
         }
 
         if (trendAnalysis?.predictions?.length) {
-            lines.push("", "### Predictions");
+            lines.push("", `### ${t.predictions}`);
             for (const prediction of trendAnalysis.predictions) {
                 lines.push(`- ${prediction}`);
             }
@@ -833,7 +865,8 @@ export class GenerateMarketingMarkdown extends WorkflowProcessFunctionBase {
      * Generate footer section.
      */
     private generateFooter(): string {
-        return `*Report generated by Masamune Workflow Marketing - ${new Date().toISOString().split("T")[0]}*`;
+        const t = this.translations;
+        return `*${t.generatedBy} - ${new Date().toISOString().split("T")[0]}*`;
     }
 
     /**

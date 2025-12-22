@@ -138,10 +138,16 @@ export class AnalyzeGitHubProcess extends WorkflowProcessFunctionBase {
                 };
             }
 
-            // 4. Get GitHub token from project
+            // 4. Get GitHub token and locale from project
             const projectDoc = await projectRef.load();
             const projectData = projectDoc.data() as Project | undefined;
-            const githubToken = projectData?.github_personal_access_token;
+            const githubToken = projectData?.githubPersonalAccessToken;
+            const projectLocale = projectData?.locale;
+
+            // Extract locale string
+            const locale = typeof projectLocale === "object" && projectLocale
+                ? projectLocale["@language"]
+                : projectLocale;
 
             if (!githubToken) {
                 throw new Error("No GitHub token in project");
@@ -160,6 +166,7 @@ export class AnalyzeGitHubProcess extends WorkflowProcessFunctionBase {
 
             const analysisService = new GitHubAnalysisService({
                 projectId: gcpProjectId,
+                locale: locale,
             });
 
             // 6. Load all file contents in parallel

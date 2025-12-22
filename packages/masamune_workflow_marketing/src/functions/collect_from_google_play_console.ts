@@ -34,11 +34,11 @@ export class CollectFromGooglePlayConsole extends WorkflowProcessFunctionBase {
         const action = context.action;
         const project = await (action.project?.ref ?? action.project)?.load();
         const projectData = project?.data() as Project | undefined;
-        const serviceAccountJson = projectData?.google_service_account;
+        const serviceAccountJson = projectData?.googleServiceAccount;
 
-        // 2. google_service_accountが無ければ空結果を返す
+        // 2. googleServiceAccountが無ければ空結果を返す
         if (!serviceAccountJson) {
-            console.warn("CollectFromGooglePlayConsole: No google_service_account found in project");
+            console.warn("CollectFromGooglePlayConsole: No googleServiceAccount found in project");
             return {
                 ...action,
                 results: {

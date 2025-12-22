@@ -92,6 +92,7 @@ export class GenerateMarketingPdf extends WorkflowProcessFunctionBase {
                 appName,
                 reportType: (command?.reportType as "daily" | "weekly" | "monthly") || "weekly",
                 dateRange,
+                locale: action.locale,
             });
             console.log("GenerateMarketingPdf: PDF generated, size:", pdfBuffer.length, "bytes");
 

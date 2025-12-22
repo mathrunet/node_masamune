@@ -34,9 +34,9 @@ export class CollectFromAppStore extends WorkflowProcessFunctionBase {
         const action = context.action;
         const project = await (action.project?.ref ?? action.project)?.load();
         const projectData = project?.data() as Project | undefined;
-        const issuerId = projectData?.appstore_issuer_id;
-        const authKeyId = projectData?.appstore_auth_key_id;
-        const authKey = projectData?.appstore_auth_key;
+        const issuerId = projectData?.appstoreIssuerId;
+        const authKeyId = projectData?.appstoreAuthKeyId;
+        const authKey = projectData?.appstoreAuthKey;
 
         // 2. App Store認証情報が無ければ空結果を返す
         if (!issuerId || !authKeyId || !authKey) {

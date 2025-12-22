@@ -87,7 +87,7 @@ export class AnalyzeGitHubInit extends WorkflowProcessFunctionBase {
 
         const projectDoc = await projectRef.load();
         const projectData = projectDoc.data() as Project | undefined;
-        const githubToken = projectData?.github_personal_access_token;
+        const githubToken = projectData?.githubPersonalAccessToken;
 
         if (!githubToken) {
             console.error("AnalyzeGitHubInit: No GitHub token in project");
@@ -95,7 +95,7 @@ export class AnalyzeGitHubInit extends WorkflowProcessFunctionBase {
                 ...action,
                 results: {
                     githubAnalysis: {
-                        error: "No github_personal_access_token configured in project",
+                        error: "No githubPersonalAccessToken configured in project",
                     },
                 },
             };

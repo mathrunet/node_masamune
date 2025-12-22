@@ -12,6 +12,7 @@ import {
     Action,
     WorkflowProcessFunctionBase,
     WorkflowContext,
+    Project,
 } from "@mathrunet/masamune_workflow";
 import * as admin from "firebase-admin";
 import { GitHubAnalysisService } from "../services/github_analysis_service";
@@ -100,7 +101,17 @@ export class AnalyzeGitHubSummary extends WorkflowProcessFunctionBase {
 
             const state = analysisData.state;
 
-            // 2. Initialize analysis service
+            // 2. Get locale from project
+            const projectDoc = await projectRef.load();
+            const projectData = projectDoc.data() as Project | undefined;
+            const projectLocale = projectData?.locale;
+
+            // Extract locale string
+            const locale = typeof projectLocale === "object" && projectLocale
+                ? projectLocale["@language"]
+                : projectLocale;
+
+            // 3. Initialize analysis service
             const gcpProjectId = process.env.GCLOUD_PROJECT || process.env.GOOGLE_CLOUD_PROJECT;
             if (!gcpProjectId) {
                 throw new Error("No GCP project ID found");
@@ -108,9 +119,10 @@ export class AnalyzeGitHubSummary extends WorkflowProcessFunctionBase {
 
             const analysisService = new GitHubAnalysisService({
                 projectId: gcpProjectId,
+                locale: locale,
             });
 
-            // 3. Load all folder summaries from memory
+            // 4. Load all folder summaries from memory
             console.log("AnalyzeGitHubSummary: Loading folder summaries...");
             const folderSummaries: FolderSummary[] = [];
 
@@ -144,7 +156,7 @@ export class AnalyzeGitHubSummary extends WorkflowProcessFunctionBase {
 
             console.log(`AnalyzeGitHubSummary: Loaded ${folderSummaries.length} folder summaries`);
 
-            // 4. Generate final analysis
+            // 5. Generate final analysis
             console.log("AnalyzeGitHubSummary: Generating final analysis...");
             const frameworkInfo: FrameworkInfo = state.framework || {
                 framework: "unknown",
@@ -158,14 +170,14 @@ export class AnalyzeGitHubSummary extends WorkflowProcessFunctionBase {
                 githubRepositoryPath
             );
 
-            // 5. Update state to completed and save
+            // 6. Update state to completed and save
             analysisData.state.phase = "completed";
             await writeAnalysisData(projectId, analysisData);
 
-            // 6. Calculate cost
+            // 7. Calculate cost
             const cost = analysisService.calculateCost(result.inputTokens, result.outputTokens);
 
-            // 7. Return final analysis
+            // 8. Return final analysis
             console.log("AnalyzeGitHubSummary: Analysis complete");
             return {
                 ...action,

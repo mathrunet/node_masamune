@@ -8,6 +8,7 @@ import {
     RevenueStrategy,
     TrafficStrategy,
 } from "../models";
+import { getTranslations } from "../locales";
 
 /**
  * Project input data for analysis.
@@ -94,7 +95,10 @@ export class AnalyzeMarketResearch extends WorkflowProcessFunctionBase {
             });
 
             // 5. プロンプトを構築
-            const prompt = this.buildAnalysisPrompt(projectData, marketResearchData);
+            const locale = typeof action.locale === "object"
+                ? action.locale["@language"]
+                : action.locale;
+            const prompt = this.buildAnalysisPrompt(projectData, marketResearchData, locale);
 
             // 6. Gemini APIを呼び出し
             console.log("AnalyzeMarketResearch: Calling Gemini API for deep analysis...");
@@ -191,66 +195,67 @@ export class AnalyzeMarketResearch extends WorkflowProcessFunctionBase {
     /**
      * Build the analysis prompt for Gemini.
      */
-    private buildAnalysisPrompt(project: ProjectInput, researchData: MarketResearchData): string {
-        return `あなたは戦略的ビジネスアナリストです。以下のプロジェクト情報と市場調査データに基づいて、詳細な戦略分析を行ってください。
+    private buildAnalysisPrompt(project: ProjectInput, researchData: MarketResearchData, locale?: string): string {
+        const t = getTranslations(locale);
+        return `You are a strategic business analyst. Based on the following project information and market research data, conduct a detailed strategic analysis.
 
-## プロジェクト情報
-- **概要**: ${project.description || "未提供"}
-- **コンセプト**: ${project.concept || "未提供"}
-- **目標**: ${project.goal || "未提供"}
-- **ターゲット層**: ${project.target || "未提供"}
-- **KPI**: ${project.kpi ? JSON.stringify(project.kpi, null, 2) : "未提供"}
+## Project Information
+- **Description**: ${project.description || "Not provided"}
+- **Concept**: ${project.concept || "Not provided"}
+- **Goal**: ${project.goal || "Not provided"}
+- **Target Audience**: ${project.target || "Not provided"}
+- **KPIs**: ${project.kpi ? JSON.stringify(project.kpi, null, 2) : "Not provided"}
 
-## 市場調査データ
+## Market Research Data
 ${JSON.stringify(researchData, null, 2)}
 
-## 分析タスク
+## Analysis Tasks
 
-### 1. 需要予測
-以下の時点での詳細な需要予測を行ってください：
-- **現在**: 現在の市場需要
-- **3ヶ月後**: 短期見通し
-- **1年後**: 中期予測
-- **3年後**: 長期予測
-- **5年後**: 戦略的視野
+### 1. Demand Forecast
+Provide detailed demand forecasts for the following time periods:
+- **Current**: Current market demand
+- **3 months**: Short-term outlook
+- **1 year**: Medium-term forecast
+- **3 years**: Long-term forecast
+- **5 years**: Strategic horizon
 
-各期間について以下を評価してください：
-- 需要レベル（very_high/high/medium/low/very_low）
-- 予測の主要因
-- 予測の信頼度（high/medium/low）
+For each period, evaluate:
+- Demand level (very_high/high/medium/low/very_low)
+- Key factors driving the forecast
+- Forecast confidence (high/medium/low)
 
-### 2. 収益向上施策
-収益を増加させるための具体的な施策を3〜5つ提案してください：
-- 価格最適化
-- 新しいマネタイズモデル
-- 市場拡大機会
-- パートナーシップ機会
-- プロダクト強化
+### 2. Revenue Enhancement Strategies
+Propose 3-5 specific strategies to increase revenue:
+- Pricing optimization
+- New monetization models
+- Market expansion opportunities
+- Partnership opportunities
+- Product enhancements
 
-各施策について以下を含めてください：
-- 優先度（high/medium/low）
-- 期待される効果
-- 実装ステップ
-- 追跡すべきKPI
-- タイムライン
+For each strategy, include:
+- Priority (high/medium/low)
+- Expected impact
+- Implementation steps
+- KPIs to track
+- Timeline
 
-### 3. 流入向上施策
-ユーザー獲得・流入を増加させるための具体的な施策を3〜5つ提案してください：
-- オーガニック成長戦術
-- 有料獲得チャネル
-- コンテンツマーケティング
-- バイラル/紹介メカニズム
-- パートナーシップ駆動型成長
+### 3. Traffic Growth Strategies
+Propose 3-5 specific strategies to increase user acquisition and traffic:
+- Organic growth tactics
+- Paid acquisition channels
+- Content marketing
+- Viral/referral mechanisms
+- Partnership-driven growth
 
-### 4. キーインサイト
-調査と分析から得られた重要な洞察を5〜7つリストアップしてください。
+### 4. Key Insights
+List 5-7 key insights derived from the research and analysis.
 
-## 出力指示
-- 提供された調査データに基づいて全ての推奨を行ってください
-- 実行可能で具体的な戦略を優先してください
-- 実装タイムラインを含めてください
-- 成功を追跡するための主要指標を特定してください
-- 結果は日本語で出力してください`;
+## Output Instructions
+- Base all recommendations on the provided research data
+- Prioritize actionable and specific strategies
+- Include implementation timelines
+- Identify key metrics for tracking success
+- ${t.respondInLanguage}`;
     }
 
     /**
