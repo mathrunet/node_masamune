@@ -10,3 +10,5 @@
  */
 export * from "@mathrunet/masamune";
 export * from "./functions";
+export * from "./models/google_play_developer_data";
+export * from "./clients/google_play_scraper_client";

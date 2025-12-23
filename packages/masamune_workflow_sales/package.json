@@ -39,9 +39,10 @@
   "homepage": "https://github.com/mathrunet/node_masamune#readme",
   "dependencies": {
     "@mathrunet/masamune": "^3.9.5",
-    "@mathrunet/masamune_workflow": "^3.9.1",
+    "@mathrunet/masamune_workflow": "^3.9.3",
     "firebase-admin": "^13.1.0",
     "firebase-functions": "^6.3.2",
+    "google-play-scraper": "^9.1.1",
     "typescript": "^5.9.2"
   },
   "devDependencies": {
