@@ -80,6 +80,22 @@ interface ModelLocale {
 }
 
 /**
+ * Style options for PDF generation.
+ *
+ * PDF生成のスタイルオプション。
+ */
+export interface PDFStyleOptions {
+    /** Color scheme: "dark" (black background/white text) or "light" (white background/black text) */
+    colorScheme?: "dark" | "light";
+    /** URL of the icon image to display in the top-left of the header */
+    headerIconUrl?: string;
+    /** Organization title to display in the top-right of the header */
+    organizationTitle?: string;
+    /** Copyright text to display in the footer */
+    copyright?: string;
+}
+
+/**
  * Options for PDF generation.
  *
  * PDF生成オプション。
@@ -95,4 +111,6 @@ export interface PDFGenerationOptions {
     };
     /** Locale for output strings (default: "en") */
     locale?: ModelLocale | string;
+    /** Style options for PDF appearance */
+    style?: PDFStyleOptions;
 }

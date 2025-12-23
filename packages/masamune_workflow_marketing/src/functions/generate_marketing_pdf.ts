@@ -3,6 +3,7 @@ import { Action, WorkflowProcessFunctionBase, WorkflowContext } from "@mathrunet
 import * as admin from "firebase-admin";
 import { ChartService, ChartInputData } from "../services/chart_service";
 import { PDFService, PDFInputData } from "../services/pdf_service";
+import { PDFStyleOptions } from "../models/pdf_data";
 import "@mathrunet/masamune";
 
 /**
@@ -87,6 +88,14 @@ export class GenerateMarketingPdf extends WorkflowProcessFunctionBase {
                 ? { startDate: data.startDate, endDate: data.endDate }
                 : undefined;
 
+            // Determine style options from action command
+            const styleOptions: PDFStyleOptions = {
+                colorScheme: data?.colorScheme as "dark" | "light" | undefined,
+                headerIconUrl: data?.headerIconUrl as string | undefined,
+                organizationTitle: data?.organizationTitle as string | undefined,
+                copyright: data?.copyright as string | undefined,
+            };
+
             const pdfBuffer = await pdfService.generateReport({
                 data: pdfInputData,
                 charts,
@@ -94,6 +103,7 @@ export class GenerateMarketingPdf extends WorkflowProcessFunctionBase {
                 reportType: (data?.reportType as "daily" | "weekly" | "monthly") || "weekly",
                 dateRange,
                 locale: action.locale,
+                style: styleOptions,
             });
             console.log("GenerateMarketingPdf: PDF generated, size:", pdfBuffer.length, "bytes");
 

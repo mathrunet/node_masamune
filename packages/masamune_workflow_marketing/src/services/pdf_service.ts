@@ -10,7 +10,7 @@
 import PDFDocument from "pdfkit";
 import * as path from "path";
 import * as fs from "fs";
-import { PDFInputData, PDFGenerationOptions, GeneratedCharts } from "../models";
+import { PDFInputData, PDFGenerationOptions, GeneratedCharts, PDFStyleOptions } from "../models";
 import {
     getTranslations,
     getFontFamily,
@@ -19,7 +19,7 @@ import {
 } from "../locales";
 
 // Re-export types for backward compatibility
-export { PDFInputData, PDFGenerationOptions, GeneratedCharts };
+export { PDFInputData, PDFGenerationOptions, GeneratedCharts, PDFStyleOptions };
 
 /**
  * Font family configuration.
@@ -42,24 +42,244 @@ const FONT_CONFIGS: FontConfig[] = [
 ];
 
 /**
+ * Color scheme configuration for PDF styling.
+ */
+interface ColorScheme {
+    background: string;
+    text: string;
+    textSecondary: string;
+    primary: string;
+    primaryLight: string;
+    success: string;
+    successLight: string;
+    successDark: string;
+    error: string;
+    errorLight: string;
+    errorDark: string;
+    warning: string;
+    neutral: string;
+    googlePlay: string;
+    appStore: string;
+    boxBackground: string;
+    summaryBackground: string;
+    highlightBackground: string;
+    concernBackground: string;
+    competitorHeader: string;
+}
+
+/**
+ * Light color scheme (default).
+ */
+const LIGHT_SCHEME: ColorScheme = {
+    background: "#ffffff",
+    text: "#000000",
+    textSecondary: "#757575",
+    primary: "#1565c0",
+    primaryLight: "#e3f2fd",
+    success: "#2e7d32",
+    successLight: "#e8f5e9",
+    successDark: "#1b5e20",
+    error: "#c62828",
+    errorLight: "#ffebee",
+    errorDark: "#b71c1c",
+    warning: "#f57c00",
+    neutral: "#757575",
+    googlePlay: "#4CAF50",
+    appStore: "#007AFF",
+    boxBackground: "#f5f5f5",
+    summaryBackground: "#e3f2fd",
+    highlightBackground: "#e8f5e9",
+    concernBackground: "#ffebee",
+    competitorHeader: "#37474f",
+};
+
+/**
+ * Dark color scheme.
+ */
+const DARK_SCHEME: ColorScheme = {
+    background: "#212121",
+    text: "#ffffff",
+    textSecondary: "#b0b0b0",
+    primary: "#64b5f6",
+    primaryLight: "#1e3a5f",
+    success: "#81c784",
+    successLight: "#1b3d1e",
+    successDark: "#4caf50",
+    error: "#ef5350",
+    errorLight: "#3d1b1b",
+    errorDark: "#f44336",
+    warning: "#ffb74d",
+    neutral: "#9e9e9e",
+    googlePlay: "#66bb6a",
+    appStore: "#42a5f5",
+    boxBackground: "#1e1e1e",
+    summaryBackground: "#1e3a5f",
+    highlightBackground: "#1b3d1e",
+    concernBackground: "#3d1b1b",
+    competitorHeader: "#263238",
+};
+
+/**
  * PDF Service for generating marketing reports.
  */
 export class PDFService {
     private readonly pageWidth = 595.28; // A4 width in points
     private readonly pageHeight = 841.89; // A4 height in points
     private readonly margin = 50;
+    private readonly headerHeight = 45; // Header height in points
+    private readonly footerHeight = 30; // Footer height in points
     private readonly contentWidth: number;
+    private readonly maxContentY: number; // Maximum Y position for content (before footer)
     private fontDir: string;
     private registeredFonts: Set<string> = new Set();
     private currentFontFamily: FontFamily = "Helvetica";
     private translations: MarketingTranslations;
+    private colors: ColorScheme = LIGHT_SCHEME;
+    private styleOptions: PDFStyleOptions = {};
+    private headerIconBuffer: Buffer | null = null;
 
     constructor() {
         this.contentWidth = this.pageWidth - this.margin * 2;
+        // Maximum Y for content: page height - bottom margin - footer height
+        this.maxContentY = this.pageHeight - this.margin - this.footerHeight;
         // Default font directory: assets/fonts relative to package root
         this.fontDir = path.join(__dirname, "..", "..", "assets", "fonts");
         // Default to English translations
         this.translations = getTranslations("en");
+    }
+
+    /**
+     * Download image from URL and return as Buffer.
+     */
+    private async downloadImage(url: string): Promise<Buffer | null> {
+        try {
+            // Convert GitHub blob URL to raw URL
+            let rawUrl = url;
+            if (url.includes("github.com") && url.includes("/blob/")) {
+                rawUrl = url
+                    .replace("github.com", "raw.githubusercontent.com")
+                    .replace("/blob/", "/");
+            }
+
+            const response = await fetch(rawUrl);
+            if (!response.ok) {
+                console.warn(`Failed to download image from ${rawUrl}: ${response.status}`);
+                return null;
+            }
+            const arrayBuffer = await response.arrayBuffer();
+            return Buffer.from(arrayBuffer);
+        } catch (error) {
+            console.warn(`Error downloading image from ${url}:`, error);
+            return null;
+        }
+    }
+
+    /**
+     * Draw page background for dark mode.
+     */
+    private drawPageBackground(doc: PDFKit.PDFDocument): void {
+        if (this.styleOptions.colorScheme === "dark") {
+            doc.save();
+            doc.rect(0, 0, this.pageWidth, this.pageHeight).fill(this.colors.background);
+            doc.restore();
+        }
+    }
+
+    /**
+     * Draw page header with icon and organization title.
+     */
+    private drawPageHeader(doc: PDFKit.PDFDocument): number {
+        let y = this.margin;
+
+        // Only draw header if we have icon or organization title
+        if (!this.headerIconBuffer && !this.styleOptions.organizationTitle) {
+            return y;
+        }
+
+        // Draw icon on the left
+        if (this.headerIconBuffer) {
+            try {
+                const iconSize = 28;
+                doc.image(this.headerIconBuffer, this.margin, y, {
+                    width: iconSize,
+                    height: iconSize,
+                    fit: [iconSize, iconSize],
+                });
+            } catch (error) {
+                console.warn("Failed to draw header icon:", error);
+            }
+        }
+
+        // Draw organization title on the right
+        if (this.styleOptions.organizationTitle) {
+            doc.fontSize(11).font(this.getFont(true));
+            doc.fillColor(this.colors.text);
+            doc.text(
+                this.styleOptions.organizationTitle,
+                this.margin,
+                y + 8,
+                { width: this.contentWidth, align: "right" }
+            );
+        }
+
+        return y + this.headerHeight;
+    }
+
+    /**
+     * Draw page footer with copyright.
+     * Uses direct graphics commands to avoid auto-pagination.
+     */
+    private drawPageFooter(doc: PDFKit.PDFDocument): void {
+        if (!this.styleOptions.copyright) {
+            return;
+        }
+
+        const footerText = `© ${new Date().getFullYear()} ${this.styleOptions.copyright}`;
+        const footerY = this.pageHeight - this.footerHeight;
+        const fontSize = 8;
+
+        // Save current position
+        const savedY = doc.y;
+
+        // Set font and color
+        doc.fontSize(fontSize).font(this.getFont());
+        doc.fillColor(this.colors.textSecondary);
+
+        // Calculate text width for centering
+        const textWidth = doc.widthOfString(footerText);
+        const centerX = this.margin + (this.contentWidth - textWidth) / 2;
+
+        // Use save/restore and direct positioning to avoid auto-pagination
+        doc.save();
+
+        // Draw text using _fragment or simpleText approach
+        // Move to position and draw without triggering pagination
+        (doc as any)._fragment(footerText, centerX, footerY, {
+            lineBreak: false,
+            textWidth: textWidth,
+            wordSpacing: 0,
+            characterSpacing: 0,
+        });
+
+        doc.restore();
+
+        // Restore Y position to prevent state pollution
+        doc.y = savedY;
+    }
+
+    /**
+     * Initialize a new page with background, header, and return starting Y position.
+     * When isNewPage is true, draws footer on current page before adding new page.
+     */
+    private initPage(doc: PDFKit.PDFDocument, isNewPage: boolean = false): number {
+        if (isNewPage) {
+            // Draw footer on current page before creating new page
+            this.drawPageFooter(doc);
+            doc.addPage();
+        }
+        this.drawPageBackground(doc);
+        const y = this.drawPageHeader(doc);
+        return y;
     }
 
     /**
@@ -111,6 +331,17 @@ export class PDFService {
      * Generate a complete marketing report PDF.
      */
     async generateReport(options: PDFGenerationOptions): Promise<Buffer> {
+        // Initialize style options
+        this.styleOptions = options.style || {};
+        this.colors = this.styleOptions.colorScheme === "dark" ? DARK_SCHEME : LIGHT_SCHEME;
+
+        // Download header icon if specified
+        if (this.styleOptions.headerIconUrl) {
+            this.headerIconBuffer = await this.downloadImage(this.styleOptions.headerIconUrl);
+        } else {
+            this.headerIconBuffer = null;
+        }
+
         return new Promise((resolve, reject) => {
             try {
                 const appName = options.appName ||
@@ -146,63 +377,69 @@ export class PDFService {
                 doc.on("end", () => resolve(Buffer.concat(chunks)));
                 doc.on("error", reject);
 
+                // Draw background for first page (cover page)
+                this.drawPageBackground(doc);
+
                 // Cover page
                 this.addCoverPage(doc, options, appName);
 
                 // Executive Summary page
                 if (options.data.marketingAnalytics?.overallAnalysis) {
-                    doc.addPage();
-                    this.addSummaryPage(doc, options);
+                    const summaryY = this.initPage(doc, true);
+                    this.addSummaryPage(doc, options, summaryY);
 
                     // Highlights & Concerns page (separate page to avoid overflow)
                     const analysis = options.data.marketingAnalytics.overallAnalysis;
                     if ((analysis.highlights?.length || 0) > 0 || (analysis.concerns?.length || 0) > 0) {
-                        doc.addPage();
-                        this.addHighlightsConcernsPage(doc, options);
+                        const highlightsY = this.initPage(doc, true);
+                        this.addHighlightsConcernsPage(doc, options, highlightsY);
                     }
                 }
 
                 // User Analytics page
                 if (options.data.firebaseAnalytics) {
-                    doc.addPage();
-                    this.addUserAnalyticsPage(doc, options);
+                    const analyticsY = this.initPage(doc, true);
+                    this.addUserAnalyticsPage(doc, options, analyticsY);
                 }
 
                 // Ratings & Reviews page
                 if (options.data.googlePlayConsole || options.data.appStore || options.data.marketingAnalytics?.reviewAnalysis) {
-                    doc.addPage();
-                    this.addRatingsReviewsPage(doc, options);
+                    const ratingsY = this.initPage(doc, true);
+                    this.addRatingsReviewsPage(doc, options, ratingsY);
                 }
 
                 // Competitive Positioning page (market research data)
                 if (options.data.marketingAnalytics?.competitivePositioning) {
-                    doc.addPage();
-                    this.addCompetitivePositioningPage(doc, options);
+                    const competitiveY = this.initPage(doc, true);
+                    this.addCompetitivePositioningPage(doc, options, competitiveY);
                 }
 
                 // Market Opportunity Priority page (market research data)
                 if (options.data.marketingAnalytics?.marketOpportunityPriority) {
-                    doc.addPage();
-                    this.addMarketOpportunityPriorityPage(doc, options);
+                    const opportunityY = this.initPage(doc, true);
+                    this.addMarketOpportunityPriorityPage(doc, options, opportunityY);
                 }
 
                 // Trend Analysis page
                 if (options.data.marketingAnalytics?.trendAnalysis) {
-                    doc.addPage();
-                    this.addTrendAnalysisPage(doc, options);
+                    const trendY = this.initPage(doc, true);
+                    this.addTrendAnalysisPage(doc, options, trendY);
                 }
 
                 // Improvement Suggestions page
                 if (options.data.marketingAnalytics?.improvementSuggestions?.length) {
-                    doc.addPage();
-                    this.addImprovementsPage(doc, options);
+                    const improvementsY = this.initPage(doc, true);
+                    this.addImprovementsPage(doc, options, improvementsY);
                 }
 
                 // GitHub-based Code Improvements page(s)
                 if (options.data.githubImprovements?.improvements?.length) {
-                    doc.addPage();
-                    this.addGitHubImprovementsPage(doc, options);
+                    const githubY = this.initPage(doc, true);
+                    this.addGitHubImprovementsPage(doc, options, githubY);
                 }
+
+                // Draw footer on the last page
+                this.drawPageFooter(doc);
 
                 doc.end();
             } catch (error) {
@@ -223,6 +460,7 @@ export class PDFService {
 
         // App name
         doc.fontSize(32).font(this.getFont(true));
+        doc.fillColor(this.colors.text);
         doc.text(appName, this.margin, y, {
             width: this.contentWidth,
             align: "center",
@@ -231,6 +469,7 @@ export class PDFService {
 
         // Report type
         doc.fontSize(20).font(this.getFont());
+        doc.fillColor(this.colors.text);
         const t = this.translations;
         const reportTypeLabel =
             options.reportType === "daily"
@@ -247,6 +486,7 @@ export class PDFService {
         // Date range
         if (options.dateRange) {
             doc.fontSize(16);
+            doc.fillColor(this.colors.text);
             doc.text(
                 `${options.dateRange.startDate} - ${options.dateRange.endDate}`,
                 this.margin,
@@ -260,6 +500,7 @@ export class PDFService {
 
         // Generated date
         doc.fontSize(12).font(this.getFont());
+        doc.fillColor(this.colors.text);
         doc.text(
             `${t.generated}: ${new Date().toISOString().split("T")[0]}`,
             this.margin,
@@ -270,7 +511,7 @@ export class PDFService {
         // Data sources at the bottom
         y = this.pageHeight - 150;
         doc.fontSize(10).font(this.getFont());
-        doc.fillColor("#757575");
+        doc.fillColor(this.colors.textSecondary);
 
         const sources: string[] = [];
         if (options.data.googlePlayConsole) sources.push("Google Play");
@@ -283,7 +524,7 @@ export class PDFService {
             align: "center",
         });
 
-        doc.fillColor("#000000");
+        doc.fillColor(this.colors.text);
     }
 
     /**
@@ -291,9 +532,10 @@ export class PDFService {
      */
     private addSummaryPage(
         doc: PDFKit.PDFDocument,
-        options: PDFGenerationOptions
+        options: PDFGenerationOptions,
+        startY: number = this.margin
     ): void {
-        let y = this.margin;
+        let y = startY;
         const analysis = options.data.marketingAnalytics?.overallAnalysis;
         const t = this.translations;
 
@@ -348,11 +590,11 @@ export class PDFService {
                 }
 
                 // Metric box
-                doc.fillColor("#f5f5f5");
+                doc.fillColor(this.colors.boxBackground);
                 doc.rect(x + 2, y, metricBoxWidth - 4, 50).fill();
 
                 // Metric title
-                doc.fillColor("#1565c0");
+                doc.fillColor(this.colors.primary);
                 doc.fontSize(9).font(this.getFont(true));
                 doc.text(metric.metric, x + 8, y + 8, {
                     width: metricBoxWidth - 16,
@@ -360,7 +602,7 @@ export class PDFService {
 
                 // Trend indicator and value
                 const trendColor =
-                    metric.trend === "up" ? "#2e7d32" : metric.trend === "down" ? "#c62828" : "#757575";
+                    metric.trend === "up" ? this.colors.success : metric.trend === "down" ? this.colors.error : this.colors.textSecondary;
                 const trendIcon = metric.trend === "up" ? "+" : metric.trend === "down" ? "-" : "~";
                 doc.fillColor(trendColor);
                 doc.fontSize(13).font(this.getFont(true));
@@ -372,7 +614,7 @@ export class PDFService {
             y += 70;
         }
 
-        doc.fillColor("#000000");
+        doc.fillColor(this.colors.text);
     }
 
     /**
@@ -382,9 +624,10 @@ export class PDFService {
      */
     private addHighlightsConcernsPage(
         doc: PDFKit.PDFDocument,
-        options: PDFGenerationOptions
+        options: PDFGenerationOptions,
+        startY: number = this.margin
     ): void {
-        let y = this.margin;
+        let y = startY;
         const analysis = options.data.marketingAnalytics?.overallAnalysis;
         const t = this.translations;
 
@@ -403,9 +646,9 @@ export class PDFService {
 
         // Headers
         doc.fontSize(14).font(this.getFont(true));
-        doc.fillColor("#1b5e20");
+        doc.fillColor(this.colors.successDark);
         doc.text(t.highlights, this.margin, y);
-        doc.fillColor("#b71c1c");
+        doc.fillColor(this.colors.errorDark);
         doc.text(t.concerns, this.margin + halfWidth + 30, y);
         y += 25;
 
@@ -429,29 +672,31 @@ export class PDFService {
             const rowHeight = Math.max(highlightHeight, concernHeight, 40);
 
             // Check if we need a new page
-            if (y + rowHeight > this.pageHeight - this.margin) {
+            if (y + rowHeight > this.maxContentY) {
+                this.drawPageFooter(doc);
                 doc.addPage();
-                y = this.margin;
+                this.drawPageBackground(doc);
+                y = this.drawPageHeader(doc);
 
                 // Re-add headers on new page
                 doc.fontSize(16).font(this.getFont(true));
-                doc.fillColor("#000000");
+                doc.fillColor(this.colors.text);
                 doc.text(`${t.highlightsAndConcerns} ${t.continued}`, this.margin, y);
                 y += 30;
 
                 doc.fontSize(14).font(this.getFont(true));
-                doc.fillColor("#1b5e20");
+                doc.fillColor(this.colors.successDark);
                 doc.text(t.highlights, this.margin, y);
-                doc.fillColor("#b71c1c");
+                doc.fillColor(this.colors.errorDark);
                 doc.text(t.concerns, this.margin + halfWidth + 30, y);
                 y += 25;
             }
 
             // Draw highlight item
             if (highlightText) {
-                doc.fillColor("#e8f5e9");
+                doc.fillColor(this.colors.highlightBackground);
                 doc.roundedRect(this.margin, y, halfWidth, rowHeight, 4).fill();
-                doc.fillColor("#1b5e20");
+                doc.fillColor(this.colors.successDark);
                 doc.fontSize(10).font(this.getFont());
                 doc.text(highlightText, this.margin + 8, y + 8, {
                     width: halfWidth - boxPadding,
@@ -460,9 +705,9 @@ export class PDFService {
 
             // Draw concern item
             if (concernText) {
-                doc.fillColor("#ffebee");
+                doc.fillColor(this.colors.concernBackground);
                 doc.roundedRect(this.margin + halfWidth + 30, y, halfWidth, rowHeight, 4).fill();
-                doc.fillColor("#b71c1c");
+                doc.fillColor(this.colors.errorDark);
                 doc.fontSize(10).font(this.getFont());
                 doc.text(concernText, this.margin + halfWidth + 38, y + 8, {
                     width: halfWidth - boxPadding,
@@ -472,7 +717,7 @@ export class PDFService {
             y += rowHeight + itemSpacing;
         }
 
-        doc.fillColor("#000000");
+        doc.fillColor(this.colors.text);
     }
 
     /**
@@ -480,9 +725,10 @@ export class PDFService {
      */
     private addUserAnalyticsPage(
         doc: PDFKit.PDFDocument,
-        options: PDFGenerationOptions
+        options: PDFGenerationOptions,
+        startY: number = this.margin
     ): void {
-        let y = this.margin;
+        let y = startY;
         const firebase = options.data.firebaseAnalytics;
         const t = this.translations;
 
@@ -498,10 +744,10 @@ export class PDFService {
             const mau = firebase.mau?.toLocaleString() || "N/A";
             const newUsersVal = firebase.newUsers?.toLocaleString() || "N/A";
 
-            doc.fillColor("#1565c0");
+            doc.fillColor(this.colors.primary);
             doc.fontSize(14).font(this.getFont(true));
             doc.text(`DAU: ${dau}  |  WAU: ${wau}  |  MAU: ${mau}  |  ${t.newUsers}: ${newUsersVal}`, this.margin, y);
-            doc.fillColor("#000000");
+            doc.fillColor(this.colors.text);
             y += 25;
 
             // Retention ratio
@@ -601,9 +847,10 @@ export class PDFService {
      */
     private addRatingsReviewsPage(
         doc: PDFKit.PDFDocument,
-        options: PDFGenerationOptions
+        options: PDFGenerationOptions,
+        startY: number = this.margin
     ): void {
-        let y = this.margin;
+        let y = startY;
         const t = this.translations;
 
         // Page title
@@ -618,19 +865,19 @@ export class PDFService {
         const chartHeight = 180;
 
         if (googlePlay?.averageRating) {
-            doc.fillColor("#4CAF50");
+            doc.fillColor(this.colors.googlePlay);
             doc.fontSize(24).font(this.getFont(true));
             doc.text(`${googlePlay.averageRating.toFixed(1)}`, this.margin, y);
-            doc.fillColor("#000000");
+            doc.fillColor(this.colors.text);
             doc.fontSize(11).font(this.getFont());
             doc.text(`Google Play (${googlePlay.totalRatings?.toLocaleString() || 0} ratings)`, this.margin + 50, y + 8);
         }
 
         if (appStore?.averageRating) {
-            doc.fillColor("#007AFF");
+            doc.fillColor(this.colors.appStore);
             doc.fontSize(24).font(this.getFont(true));
             doc.text(`${appStore.averageRating.toFixed(1)}`, this.margin + chartWidth + 20, y);
-            doc.fillColor("#000000");
+            doc.fillColor(this.colors.text);
             doc.fontSize(11).font(this.getFont());
             doc.text(`App Store (${appStore.totalRatings?.toLocaleString() || 0} ratings)`, this.margin + chartWidth + 70, y + 8);
         }
@@ -641,7 +888,7 @@ export class PDFService {
         if (options.charts?.ratingDistribution) {
             try {
                 doc.fontSize(12).font(this.getFont(true));
-                doc.fillColor("#000000");
+                doc.fillColor(this.colors.text);
                 doc.text(t.ratingDistribution, this.margin, y);
                 doc.image(options.charts.ratingDistribution, this.margin, y + 18, {
                     width: chartWidth,
@@ -673,25 +920,25 @@ export class PDFService {
         const reviewAnalysis = options.data.marketingAnalytics?.reviewAnalysis;
         if (reviewAnalysis) {
             doc.fontSize(14).font(this.getFont(true));
-            doc.fillColor("#000000");
+            doc.fillColor(this.colors.text);
             doc.text(t.sentimentAnalysis, this.margin, y);
             y += 20;
 
             // Sentiment breakdown
             if (reviewAnalysis.sentiment) {
                 doc.fontSize(11).font(this.getFont());
-                doc.fillColor("#4CAF50");
+                doc.fillColor(this.colors.googlePlay);
                 doc.text(`${t.positive}: ${reviewAnalysis.sentiment.positive}%`, this.margin, y);
-                doc.fillColor("#9e9e9e");
+                doc.fillColor(this.colors.neutral);
                 doc.text(`${t.neutral}: ${reviewAnalysis.sentiment.neutral}%`, this.margin + 120, y);
-                doc.fillColor("#f44336");
+                doc.fillColor(this.colors.error);
                 doc.text(`${t.negative}: ${reviewAnalysis.sentiment.negative}%`, this.margin + 230, y);
                 y += 25;
             }
 
             // Common themes
             if (reviewAnalysis.commonThemes?.length) {
-                doc.fillColor("#000000");
+                doc.fillColor(this.colors.text);
                 doc.fontSize(12).font(this.getFont(true));
                 doc.text(`${t.commonThemes}:`, this.margin, y);
                 y += 18;
@@ -712,14 +959,14 @@ export class PDFService {
 
                 doc.fontSize(10).font(this.getFont());
                 for (const insight of reviewAnalysis.actionableInsights) {
-                    doc.fillColor("#1565c0");
+                    doc.fillColor(this.colors.primary);
                     doc.text(`-> ${insight}`, this.margin + 10, y, { width: this.contentWidth - 20 });
                     y = doc.y + 4;
                 }
             }
         }
 
-        doc.fillColor("#000000");
+        doc.fillColor(this.colors.text);
     }
 
     /**
@@ -727,9 +974,10 @@ export class PDFService {
      */
     private addImprovementsPage(
         doc: PDFKit.PDFDocument,
-        options: PDFGenerationOptions
+        options: PDFGenerationOptions,
+        startY: number = this.margin
     ): void {
-        let y = this.margin;
+        let y = startY;
         const suggestions = options.data.marketingAnalytics?.improvementSuggestions || [];
         const t = this.translations;
 
@@ -740,18 +988,20 @@ export class PDFService {
 
         for (const suggestion of suggestions) {
             // Check if we need a new page
-            if (y > this.pageHeight - 150) {
+            if (y > this.maxContentY - 100) {
+                this.drawPageFooter(doc);
                 doc.addPage();
-                y = this.margin;
+                this.drawPageBackground(doc);
+                y = this.drawPageHeader(doc);
             }
 
             // Priority badge
             const priorityColor =
                 suggestion.priority === "high"
-                    ? "#c62828"
+                    ? this.colors.error
                     : suggestion.priority === "medium"
-                        ? "#f57c00"
-                        : "#2e7d32";
+                        ? this.colors.warning
+                        : this.colors.success;
 
             doc.fillColor(priorityColor);
             doc.rect(this.margin, y, 60, 20).fill();
@@ -760,14 +1010,14 @@ export class PDFService {
             doc.text(suggestion.priority.toUpperCase(), this.margin + 5, y + 5);
 
             // Category
-            doc.fillColor("#757575");
+            doc.fillColor(this.colors.textSecondary);
             doc.fontSize(10).font(this.getFont());
             doc.text(`[${suggestion.category}]`, this.margin + 70, y + 5);
 
             y += 25;
 
             // Title
-            doc.fillColor("#000000");
+            doc.fillColor(this.colors.text);
             doc.fontSize(13).font(this.getFont(true));
             doc.text(suggestion.title, this.margin, y);
             y += 20;
@@ -781,14 +1031,14 @@ export class PDFService {
 
             // Expected impact
             if (suggestion.expectedImpact) {
-                doc.fillColor("#1565c0");
+                doc.fillColor(this.colors.primary);
                 doc.text(`${t.expectedImpact}: ${suggestion.expectedImpact}`, this.margin + 10, y, {
                     width: this.contentWidth - 10,
                 });
                 y = doc.y + 10;
             }
 
-            doc.fillColor("#000000");
+            doc.fillColor(this.colors.text);
             y += 15;
         }
     }
@@ -800,9 +1050,10 @@ export class PDFService {
      */
     private addCompetitivePositioningPage(
         doc: PDFKit.PDFDocument,
-        options: PDFGenerationOptions
+        options: PDFGenerationOptions,
+        startY: number = this.margin
     ): void {
-        let y = this.margin;
+        let y = startY;
         const positioning = options.data.marketingAnalytics?.competitivePositioning;
         const t = this.translations;
 
@@ -814,12 +1065,12 @@ export class PDFService {
         // Market Position
         if (positioning?.marketPosition) {
             doc.fontSize(14).font(this.getFont(true));
-            doc.fillColor("#1565c0");
+            doc.fillColor(this.colors.primary);
             doc.text(t.marketPosition, this.margin, y);
             y += 20;
 
             doc.fontSize(11).font(this.getFont());
-            doc.fillColor("#000000");
+            doc.fillColor(this.colors.text);
             doc.text(positioning.marketPosition, this.margin, y, {
                 width: this.contentWidth,
             });
@@ -829,24 +1080,26 @@ export class PDFService {
         // Competitor Comparison
         if (positioning?.competitorComparison?.length) {
             doc.fontSize(14).font(this.getFont(true));
-            doc.fillColor("#1565c0");
+            doc.fillColor(this.colors.primary);
             doc.text(t.competitorComparison, this.margin, y);
             y += 25;
 
             for (const comp of positioning.competitorComparison) {
                 // Check if we need a new page
-                if (y > this.pageHeight - 200) {
+                if (y > this.maxContentY - 150) {
+                    this.drawPageFooter(doc);
                     doc.addPage();
-                    y = this.margin;
+                    this.drawPageBackground(doc);
+                    y = this.drawPageHeader(doc);
                     doc.fontSize(16).font(this.getFont(true));
-                    doc.fillColor("#000000");
+                    doc.fillColor(this.colors.text);
                     doc.text(`${t.competitivePositioning} ${t.continued}`, this.margin, y);
                     y += 30;
                 }
 
                 // Competitor name header
                 doc.fillColor("#ffffff");
-                doc.rect(this.margin, y, this.contentWidth, 22).fill("#37474f");
+                doc.rect(this.margin, y, this.contentWidth, 22).fill(this.colors.competitorHeader);
                 doc.fontSize(12).font(this.getFont(true));
                 doc.fillColor("#ffffff");
                 doc.text(`vs ${comp.competitor}`, this.margin + 10, y + 5);
@@ -885,10 +1138,10 @@ export class PDFService {
 
                 // Strengths (left side)
                 if (comp.ourStrengths?.length) {
-                    doc.fillColor("#e8f5e9");
+                    doc.fillColor(this.colors.highlightBackground);
                     doc.rect(this.margin, y, halfWidth, boxHeight).fill();
 
-                    doc.fillColor("#1b5e20");
+                    doc.fillColor(this.colors.successDark);
                     doc.fontSize(10).font(this.getFont(true));
                     doc.text(t.ourStrengths, this.margin + 8, y + 5);
 
@@ -906,10 +1159,10 @@ export class PDFService {
 
                 // Weaknesses (right side)
                 if (comp.ourWeaknesses?.length) {
-                    doc.fillColor("#ffebee");
+                    doc.fillColor(this.colors.concernBackground);
                     doc.rect(this.margin + halfWidth + 20, y, halfWidth, boxHeight).fill();
 
-                    doc.fillColor("#b71c1c");
+                    doc.fillColor(this.colors.errorDark);
                     doc.fontSize(10).font(this.getFont(true));
                     doc.text(t.ourWeaknesses, this.margin + halfWidth + 28, y + 5);
 
@@ -929,9 +1182,9 @@ export class PDFService {
 
                 // Battle Strategy
                 if (comp.battleStrategy) {
-                    doc.fillColor("#e3f2fd");
+                    doc.fillColor(this.colors.summaryBackground);
                     doc.rect(this.margin, y, this.contentWidth, 45).fill();
-                    doc.fillColor("#1565c0");
+                    doc.fillColor(this.colors.primary);
                     doc.fontSize(9).font(this.getFont(true));
                     doc.text(`${t.battleStrategy}:`, this.margin + 8, y + 5);
                     doc.fontSize(9).font(this.getFont());
@@ -948,20 +1201,22 @@ export class PDFService {
         }
 
         // Check if we need a new page for remaining sections
-        if (y > this.pageHeight - 150) {
+        if (y > this.maxContentY - 100) {
+            this.drawPageFooter(doc);
             doc.addPage();
-            y = this.margin;
+            this.drawPageBackground(doc);
+            y = this.drawPageHeader(doc);
         }
 
         // Differentiation Strategy
         if (positioning?.differentiationStrategy) {
             doc.fontSize(14).font(this.getFont(true));
-            doc.fillColor("#1565c0");
+            doc.fillColor(this.colors.primary);
             doc.text(t.differentiationStrategy, this.margin, y);
             y += 20;
 
             doc.fontSize(10).font(this.getFont());
-            doc.fillColor("#000000");
+            doc.fillColor(this.colors.text);
             doc.text(positioning.differentiationStrategy, this.margin, y, {
                 width: this.contentWidth,
             });
@@ -971,19 +1226,19 @@ export class PDFService {
         // Quick Wins
         if (positioning?.quickWins?.length) {
             doc.fontSize(14).font(this.getFont(true));
-            doc.fillColor("#1565c0");
+            doc.fillColor(this.colors.primary);
             doc.text(t.quickWins, this.margin, y);
             y += 20;
 
             doc.fontSize(10).font(this.getFont());
             for (const quickWin of positioning.quickWins) {
-                doc.fillColor("#2e7d32");
+                doc.fillColor(this.colors.success);
                 doc.text(`→ ${quickWin}`, this.margin + 10, y, { width: this.contentWidth - 20 });
                 y = doc.y + 5;
             }
         }
 
-        doc.fillColor("#000000");
+        doc.fillColor(this.colors.text);
     }
 
     /**
@@ -993,9 +1248,10 @@ export class PDFService {
      */
     private addMarketOpportunityPriorityPage(
         doc: PDFKit.PDFDocument,
-        options: PDFGenerationOptions
+        options: PDFGenerationOptions,
+        startY: number = this.margin
     ): void {
-        let y = this.margin;
+        let y = startY;
         const priority = options.data.marketingAnalytics?.marketOpportunityPriority;
         const t = this.translations;
 
@@ -1007,10 +1263,10 @@ export class PDFService {
         // Prioritized Opportunities
         if (priority?.prioritizedOpportunities?.length) {
             const fitScoreColors: Record<string, string> = {
-                excellent: "#2e7d32",
-                good: "#1565c0",
-                moderate: "#f57c00",
-                poor: "#c62828",
+                excellent: this.colors.success,
+                good: this.colors.primary,
+                moderate: this.colors.warning,
+                poor: this.colors.error,
             };
 
             const effortLabels: Record<string, string> = {
@@ -1021,16 +1277,18 @@ export class PDFService {
 
             for (const opp of priority.prioritizedOpportunities) {
                 // Check if we need a new page
-                if (y > this.pageHeight - 180) {
+                if (y > this.maxContentY - 130) {
+                    this.drawPageFooter(doc);
                     doc.addPage();
-                    y = this.margin;
+                    this.drawPageBackground(doc);
+                    y = this.drawPageHeader(doc);
                     doc.fontSize(16).font(this.getFont(true));
-                    doc.fillColor("#000000");
+                    doc.fillColor(this.colors.text);
                     doc.text(`${t.marketOpportunityPriority} ${t.continued}`, this.margin, y);
                     y += 30;
                 }
 
-                const fitColor = fitScoreColors[opp.fitScore] || "#757575";
+                const fitColor = fitScoreColors[opp.fitScore] || this.colors.textSecondary;
 
                 // Opportunity header with fit score badge
                 doc.fillColor(fitColor);
@@ -1040,7 +1298,7 @@ export class PDFService {
                 doc.text(opp.fitScore.toUpperCase(), this.margin + 5, y + 5);
 
                 // Effort badge
-                doc.fillColor("#757575");
+                doc.fillColor(this.colors.textSecondary);
                 doc.rect(this.margin + 75, y, 70, 20).fill();
                 doc.fillColor("#ffffff");
                 doc.fontSize(9).font(this.getFont());
@@ -1053,7 +1311,7 @@ export class PDFService {
                 y += 25;
 
                 // Opportunity title
-                doc.fillColor("#000000");
+                doc.fillColor(this.colors.text);
                 doc.fontSize(13).font(this.getFont(true));
                 doc.text(opp.opportunity, this.margin, y);
                 y += 20;
@@ -1061,7 +1319,7 @@ export class PDFService {
                 // Fit reason
                 if (opp.fitReason) {
                     doc.fontSize(10).font(this.getFont());
-                    doc.fillColor("#757575");
+                    doc.fillColor(this.colors.textSecondary);
                     doc.text(`${t.reason}: ${opp.fitReason}`, this.margin + 10, y, {
                         width: this.contentWidth - 10,
                     });
@@ -1071,18 +1329,18 @@ export class PDFService {
                 // Required changes
                 if (opp.requiredChanges?.length) {
                     doc.fontSize(10).font(this.getFont(true));
-                    doc.fillColor("#000000");
+                    doc.fillColor(this.colors.text);
                     doc.text(`${t.requiredChanges}:`, this.margin + 10, y);
                     y += 15;
 
                     doc.fontSize(9).font(this.getFont());
                     for (const change of opp.requiredChanges.slice(0, 3)) {
-                        doc.fillColor("#1565c0");
+                        doc.fillColor(this.colors.primary);
                         doc.text(`• ${change}`, this.margin + 20, y, { width: this.contentWidth - 30 });
                         y = doc.y + 3;
                     }
                     if (opp.requiredChanges.length > 3) {
-                        doc.fillColor("#757575");
+                        doc.fillColor(this.colors.textSecondary);
                         doc.text(`+ ${opp.requiredChanges.length - 3} more...`, this.margin + 20, y);
                         y = doc.y + 3;
                     }
@@ -1091,9 +1349,9 @@ export class PDFService {
 
                 // Recommended action
                 if (opp.recommendedAction) {
-                    doc.fillColor("#e8f5e9");
+                    doc.fillColor(this.colors.highlightBackground);
                     doc.rect(this.margin + 10, y, this.contentWidth - 20, 40).fill();
-                    doc.fillColor("#1b5e20");
+                    doc.fillColor(this.colors.successDark);
                     doc.fontSize(9).font(this.getFont(true));
                     doc.text(`${t.recommendedAction}:`, this.margin + 15, y + 5);
                     doc.fontSize(9).font(this.getFont());
@@ -1110,23 +1368,25 @@ export class PDFService {
         }
 
         // Check if we need a new page for strategic recommendation
-        if (y > this.pageHeight - 100) {
+        if (y > this.maxContentY - 50) {
+            this.drawPageFooter(doc);
             doc.addPage();
-            y = this.margin;
+            this.drawPageBackground(doc);
+            y = this.drawPageHeader(doc);
         }
 
         // Strategic Recommendation
         if (priority?.strategicRecommendation) {
             doc.fontSize(14).font(this.getFont(true));
-            doc.fillColor("#1565c0");
+            doc.fillColor(this.colors.primary);
             doc.text(t.strategicRecommendations, this.margin, y);
             y += 20;
 
-            doc.fillColor("#e3f2fd");
+            doc.fillColor(this.colors.summaryBackground);
             doc.rect(this.margin, y, this.contentWidth, 80).fill();
 
             doc.fontSize(10).font(this.getFont());
-            doc.fillColor("#0d47a1");
+            doc.fillColor(this.colors.primary);
             doc.text(priority.strategicRecommendation, this.margin + 10, y + 10, {
                 width: this.contentWidth - 20,
                 height: 65,
@@ -1134,7 +1394,7 @@ export class PDFService {
             });
         }
 
-        doc.fillColor("#000000");
+        doc.fillColor(this.colors.text);
     }
 
     /**
@@ -1142,9 +1402,10 @@ export class PDFService {
      */
     private addTrendAnalysisPage(
         doc: PDFKit.PDFDocument,
-        options: PDFGenerationOptions
+        options: PDFGenerationOptions,
+        startY: number = this.margin
     ): void {
-        let y = this.margin;
+        let y = startY;
         const trendAnalysis = options.data.marketingAnalytics?.trendAnalysis;
         const t = this.translations;
 
@@ -1200,25 +1461,13 @@ export class PDFService {
 
             doc.fontSize(10).font(this.getFont());
             for (const prediction of trendAnalysis.predictions) {
-                doc.fillColor("#1565c0");
+                doc.fillColor(this.colors.primary);
                 doc.text(`-> ${prediction}`, this.margin + 10, y, { width: this.contentWidth - 20 });
                 y = doc.y + 6;
             }
 
-            doc.fillColor("#000000");
+            doc.fillColor(this.colors.text);
         }
-
-        // Footer
-        y = this.pageHeight - 80;
-        doc.fontSize(9).font(this.getFont());
-        doc.fillColor("#757575");
-        doc.text(
-            t.generatedBy,
-            this.margin,
-            y,
-            { width: this.contentWidth, align: "center" }
-        );
-        doc.fillColor("#000000");
     }
 
     /**
@@ -1228,9 +1477,10 @@ export class PDFService {
      */
     private addGitHubImprovementsPage(
         doc: PDFKit.PDFDocument,
-        options: PDFGenerationOptions
+        options: PDFGenerationOptions,
+        startY: number = this.margin
     ): void {
-        let y = this.margin;
+        let y = startY;
         const githubImprovements = options.data.githubImprovements;
         const improvements = githubImprovements?.improvements || [];
         const t = this.translations;
@@ -1242,7 +1492,7 @@ export class PDFService {
 
         // Repository info
         doc.fontSize(10).font(this.getFont());
-        doc.fillColor("#757575");
+        doc.fillColor(this.colors.textSecondary);
         const repo = githubImprovements?.repository || "";
         const framework = githubImprovements?.framework || "";
         doc.text(`${t.repository}: ${repo} | ${t.framework}: ${framework}`, this.margin, y);
@@ -1250,7 +1500,7 @@ export class PDFService {
 
         // Summary
         if (githubImprovements?.improvementSummary) {
-            doc.fillColor("#000000");
+            doc.fillColor(this.colors.text);
             doc.fontSize(11).font(this.getFont());
             doc.text(githubImprovements.improvementSummary, this.margin, y, {
                 width: this.contentWidth,
@@ -1261,11 +1511,13 @@ export class PDFService {
         // Each improvement
         for (const improvement of improvements) {
             // Check if we need a new page
-            if (y > this.pageHeight - 200) {
+            if (y > this.maxContentY - 150) {
+                this.drawPageFooter(doc);
                 doc.addPage();
-                y = this.margin;
+                this.drawPageBackground(doc);
+                y = this.drawPageHeader(doc);
                 doc.fontSize(16).font(this.getFont(true));
-                doc.fillColor("#000000");
+                doc.fillColor(this.colors.text);
                 doc.text(`${t.codebaseImprovements} ${t.continued}`, this.margin, y);
                 y += 30;
             }
@@ -1273,10 +1525,10 @@ export class PDFService {
             // Priority badge
             const priorityColor =
                 improvement.priority === "high"
-                    ? "#c62828"
+                    ? this.colors.error
                     : improvement.priority === "medium"
-                        ? "#f57c00"
-                        : "#2e7d32";
+                        ? this.colors.warning
+                        : this.colors.success;
 
             doc.fillColor(priorityColor);
             doc.rect(this.margin, y, 60, 18).fill();
@@ -1285,7 +1537,7 @@ export class PDFService {
             doc.text(improvement.priority?.toUpperCase() || "MEDIUM", this.margin + 5, y + 4);
 
             // Category badge
-            doc.fillColor("#1565c0");
+            doc.fillColor(this.colors.primary);
             doc.rect(this.margin + 65, y, 80, 18).fill();
             doc.fillColor("#ffffff");
             doc.fontSize(9).font(this.getFont());
@@ -1294,7 +1546,7 @@ export class PDFService {
             y += 25;
 
             // Title
-            doc.fillColor("#000000");
+            doc.fillColor(this.colors.text);
             doc.fontSize(13).font(this.getFont(true));
             doc.text(improvement.title || "", this.margin, y);
             y += 20;
@@ -1317,18 +1569,20 @@ export class PDFService {
             // Code References
             const codeRefs = improvement.codeReferences || [];
             if (codeRefs.length > 0) {
-                doc.fillColor("#000000");
+                doc.fillColor(this.colors.text);
                 doc.fontSize(10).font(this.getFont(true));
                 doc.text(`${t.fileModifications}:`, this.margin + 10, y);
                 y += 15;
 
                 for (const ref of codeRefs) {
                     // Check page break
-                    if (y > this.pageHeight - 100) {
+                    if (y > this.maxContentY - 50) {
+                        this.drawPageFooter(doc);
                         doc.addPage();
-                        y = this.margin;
+                        this.drawPageBackground(doc);
+                        y = this.drawPageHeader(doc);
                         doc.fontSize(16).font(this.getFont(true));
-                        doc.fillColor("#000000");
+                        doc.fillColor(this.colors.text);
                         doc.text(`${t.codebaseImprovements} ${t.continued}`, this.margin, y);
                         y += 30;
                     }
@@ -1341,14 +1595,14 @@ export class PDFService {
                         optimize: "O",
                     };
                     const modColor: Record<string, string> = {
-                        add: "#2e7d32",
-                        modify: "#f57c00",
-                        refactor: "#1565c0",
+                        add: this.colors.success,
+                        modify: this.colors.warning,
+                        refactor: this.colors.primary,
                         optimize: "#6a1b9a",
                     };
 
                     const icon = modIcon[ref.modificationType] || "?";
-                    const color = modColor[ref.modificationType] || "#757575";
+                    const color = modColor[ref.modificationType] || this.colors.textSecondary;
 
                     // Modification type badge
                     doc.fillColor(color);
@@ -1358,7 +1612,7 @@ export class PDFService {
                     doc.text(icon, this.margin + 21, y + 3);
 
                     // File path
-                    doc.fillColor("#1565c0");
+                    doc.fillColor(this.colors.primary);
                     doc.fontSize(9).font(this.getFont());
                     doc.text(ref.filePath || "", this.margin + 40, y + 3, {
                         width: this.contentWidth - 50,
@@ -1366,7 +1620,7 @@ export class PDFService {
                     y += 18;
 
                     // Current functionality
-                    doc.fillColor("#757575");
+                    doc.fillColor(this.colors.textSecondary);
                     doc.fontSize(8).font(this.getFont());
                     doc.text(`${t.current}: ${ref.currentFunctionality || ""}`, this.margin + 40, y, {
                         width: this.contentWidth - 50,
@@ -1374,7 +1628,7 @@ export class PDFService {
                     y = doc.y + 3;
 
                     // Proposed change
-                    doc.fillColor("#2e7d32");
+                    doc.fillColor(this.colors.success);
                     doc.text(`${t.proposed}: ${ref.proposedChange || ""}`, this.margin + 40, y, {
                         width: this.contentWidth - 50,
                     });
@@ -1384,13 +1638,13 @@ export class PDFService {
 
             // Expected Impact
             if (improvement.expectedImpact) {
-                doc.fillColor("#1565c0");
+                doc.fillColor(this.colors.primary);
                 doc.fontSize(9).font(this.getFont());
                 doc.text(`${t.expectedImpact}: ${improvement.expectedImpact}`, this.margin + 10, y);
                 y = doc.y + 5;
             }
 
-            doc.fillColor("#000000");
+            doc.fillColor(this.colors.text);
             y += 20;
         }
     }

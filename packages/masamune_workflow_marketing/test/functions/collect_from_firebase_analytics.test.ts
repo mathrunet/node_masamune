@@ -149,7 +149,7 @@ describe("CollectFromFirebaseAnalytics Integration Tests", () => {
                 "@time": nowTs,
                 name: "Test Project",
                 organization: organizationRef,
-                google_service_account: googleServiceAccount,
+                googleServiceAccount: googleServiceAccount,
                 "createdTime": new ModelTimestamp(nowTs.toDate()),
                 "updatedTime": new ModelTimestamp(nowTs.toDate()),
             });
@@ -295,7 +295,7 @@ describe("CollectFromFirebaseAnalytics Integration Tests", () => {
                 "@time": nowTs,
                 name: "Test Project",
                 organization: organizationRef,
-                google_service_account: googleServiceAccount,
+                googleServiceAccount: googleServiceAccount,
                 "createdTime": new ModelTimestamp(nowTs.toDate()),
                 "updatedTime": new ModelTimestamp(nowTs.toDate()),
             }, { merge: true });
@@ -420,7 +420,7 @@ describe("CollectFromFirebaseAnalytics Integration Tests", () => {
                 "@time": nowTs,
                 name: "Test Project",
                 organization: organizationRef,
-                google_service_account: googleServiceAccount,
+                googleServiceAccount: googleServiceAccount,
                 "createdTime": new ModelTimestamp(nowTs.toDate()),
                 "updatedTime": new ModelTimestamp(nowTs.toDate()),
             }, { merge: true });
@@ -544,7 +544,7 @@ describe("CollectFromFirebaseAnalytics Integration Tests", () => {
                 "@time": nowTs,
                 name: "Test Project",
                 organization: organizationRef,
-                google_service_account: googleServiceAccount,
+                googleServiceAccount: googleServiceAccount,
                 "createdTime": new ModelTimestamp(nowTs.toDate()),
                 "updatedTime": new ModelTimestamp(nowTs.toDate()),
             }, { merge: true });

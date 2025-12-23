@@ -146,11 +146,11 @@ describe("GenerateMarketingPdf Integration Tests", () => {
             "@time": nowTs,
             name: "Test Project",
             organization: organizationRef,
-            google_service_account: googlePlayServiceAccount,
-            appstore_issuer_id: appStoreIssuerId,
-            appstore_auth_key_id: appStoreKeyId,
-            appstore_auth_key: appStorePrivateKey,
-            github_personal_access_token: githubToken,
+            googleServiceAccount: googlePlayServiceAccount,
+            appstoreIssuerId: appStoreIssuerId,
+            appstoreAuthKeyId: appStoreKeyId,
+            appstoreAuthKey: appStorePrivateKey,
+            githubPersonalAccessToken: githubToken,
             "createdTime": new ModelTimestamp(nowTs.toDate()),
             "updatedTime": new ModelTimestamp(nowTs.toDate()),
         });
@@ -1367,6 +1367,217 @@ describe("GenerateMarketingPdf Integration Tests", () => {
             console.log("Output files:");
             console.log("  - test/tmp/marketing_report_ja.pdf");
             console.log("  - test/tmp/marketing_report_en.pdf");
+        }, 180000);
+    });
+
+    describe("Dark Theme PDF Test", () => {
+        it("should generate PDF with dark theme and custom branding", async () => {
+            const taskId = `test-dark-theme-pdf-${Date.now()}`;
+            const actionId = `test-action-dark-theme-pdf-${Date.now()}`;
+            const token = `test-token-dark-theme-pdf-${Date.now()}`;
+            const tokenExpiredTime = new Date(Date.now() + 60 * 60 * 1000);
+
+            // Define action with dark theme style options
+            const actions = [{
+                command: "generate_marketing_pdf",
+                index: 0,
+                data: {
+                    reportType: "weekly",
+                    colorScheme: "dark",
+                    headerIconUrl: "https://raw.githubusercontent.com/mathrunet/flutter_masamune/master/.github/images/icon.png",
+                    organizationTitle: "mathru.net",
+                    copyright: "mathru.net",
+                },
+            }];
+
+            // Mock data with multiple sections to verify dark theme across pages
+            const mockResults = {
+                googlePlayConsole: {
+                    packageName: "net.mathru.test",
+                    averageRating: 4.5,
+                    totalRatings: 1000,
+                    ratingDistribution: { "5": 600, "4": 250, "3": 100, "2": 30, "1": 20 },
+                },
+                appStore: {
+                    appId: "123456789",
+                    appName: "Dark Theme Test App",
+                    averageRating: 4.7,
+                    totalRatings: 500,
+                    ratingDistribution: { "5": 350, "4": 100, "3": 30, "2": 10, "1": 10 },
+                },
+                firebaseAnalytics: {
+                    dau: 5000,
+                    wau: 15000,
+                    mau: 50000,
+                    newUsers: 1000,
+                    totalUsers: 100000,
+                    averageSessionDuration: 300,
+                    sessionsPerUser: 2.5,
+                },
+                marketingAnalytics: {
+                    overallAnalysis: {
+                        healthScore: 85,
+                        summary: "アプリは全体的に良好な状態です。ユーザー満足度が高く、継続的な成長を示しています。",
+                        keyInsights: [
+                            "ユーザーエンゲージメントが前月比15%向上",
+                            "新規ユーザー獲得が安定的に推移",
+                            "両ストアでの評価が4.5以上を維持",
+                        ],
+                        criticalIssues: [
+                            "Android版での一部クラッシュ報告",
+                        ],
+                    },
+                    improvementSuggestions: [
+                        {
+                            category: "UX改善",
+                            priority: "high",
+                            title: "オンボーディングフローの最適化",
+                            description: "新規ユーザーの離脱率を下げるためにオンボーディングを改善",
+                            impact: "新規ユーザーのリテンション率が20%向上見込み",
+                        },
+                        {
+                            category: "パフォーマンス",
+                            priority: "medium",
+                            title: "起動時間の短縮",
+                            description: "コールドスタートの起動時間を3秒以内に",
+                            impact: "ユーザー満足度の向上",
+                        },
+                    ],
+                    trendAnalysis: {
+                        userGrowth: "positive",
+                        engagementTrend: "stable",
+                        ratingTrend: "positive",
+                        summary: "全体的に上昇傾向にあり、特にユーザー成長が顕著です。",
+                    },
+                    reviewAnalysis: {
+                        positiveThemes: ["使いやすい", "デザインが良い", "機能が充実"],
+                        negativeThemes: ["たまに落ちる", "読み込みが遅い"],
+                        commonRequests: ["ダークモード対応", "ウィジェット機能"],
+                    },
+                    competitivePositioning: {
+                        marketPosition: "ニッチ市場でのリーダーポジション",
+                        competitorComparison: [
+                            {
+                                competitor: "競合A社",
+                                ourStrengths: ["優れたUI/UX", "高速な動作"],
+                                ourWeaknesses: ["機能数では劣る"],
+                                battleStrategy: "ユーザー体験の差別化で勝負",
+                            },
+                        ],
+                        differentiationStrategy: "AI機能とシンプルさの両立",
+                        quickWins: ["比較ページの作成", "ケーススタディの公開"],
+                    },
+                    marketOpportunityPriority: {
+                        prioritizedOpportunities: [
+                            {
+                                opportunity: "企業向け展開",
+                                fitScore: "excellent",
+                                fitReason: "現在の機能がエンタープライズニーズに適合",
+                                estimatedEffort: "medium",
+                                requiredChanges: ["SSO対応", "監査ログ実装"],
+                                recommendedAction: "SSO実装を優先して企業営業を開始",
+                            },
+                        ],
+                        strategicRecommendation: "企業市場への展開を主軸に、既存のB2C事業と並行して成長を目指す。",
+                    },
+                    marketDataIntegrated: true,
+                    generatedAt: new Date().toISOString(),
+                },
+                githubRepository: {
+                    repository: "mathrunet/flutter_masamune",
+                    framework: "Flutter",
+                    platforms: ["iOS", "Android", "Web"],
+                    overview: "Masamuneフレームワークを使用したFlutterアプリケーション開発",
+                    architecture: "クリーンアーキテクチャベース",
+                    features: [
+                        { name: "認証機能", description: "多様な認証プロバイダーをサポート" },
+                        { name: "データ同期", description: "リアルタイムデータ同期機能" },
+                    ],
+                },
+                githubImprovements: {
+                    improvements: [
+                        {
+                            category: "performance",
+                            priority: "high",
+                            title: "画像読み込みの最適化",
+                            description: "大量の画像を効率的に読み込むためのキャッシュ戦略の改善",
+                            codeReferences: [
+                                { filePath: "lib/services/image_service.dart", lineNumber: 45, description: "キャッシュロジックの改善ポイント" },
+                            ],
+                        },
+                        {
+                            category: "code_quality",
+                            priority: "medium",
+                            title: "テストカバレッジの向上",
+                            description: "ユニットテストの追加による品質向上",
+                            codeReferences: [
+                                { filePath: "test/", description: "テスト追加が必要なモジュール" },
+                            ],
+                        },
+                    ],
+                },
+            };
+
+            const refs = await createTestDataWithResults({
+                taskId,
+                actionId,
+                actions,
+                token,
+                tokenExpiredTime,
+                accumulatedResults: mockResults,
+                actionIndex: 0,
+                locale: "ja",
+            });
+
+            try {
+                console.log("=== Dark Theme PDF Test ===");
+                console.log("Style options:");
+                console.log("  - colorScheme: dark");
+                console.log("  - headerIconUrl: GitHub icon");
+                console.log("  - organizationTitle: mathru.net");
+                console.log("  - copyright: mathru.net");
+
+                const func = require("../../src/functions/generate_marketing_pdf");
+                const wrapped = config.wrap(func([], {}, {}));
+
+                await wrapped({
+                    data: {
+                        path: refs.actionPath,
+                        token: token,
+                    },
+                    params: {},
+                });
+
+                // Verify results
+                const actionDoc = await firestore.doc(refs.actionPath).load();
+                const actionData = actionDoc.data();
+
+                expect(actionData).toBeDefined();
+                const pdfPath = actionData?.assets?.marketingAnalyticsPdf;
+                expect(pdfPath).toBeDefined();
+                expect(pdfPath).not.toBe("");
+
+                console.log("PDF Storage path:", pdfPath);
+
+                // Copy PDF to local tmp directory for verification
+                if (pdfPath) {
+                    const localPath = await copyPdfToLocal(pdfPath, "dark_theme");
+                    if (localPath) {
+                        console.log(`\nDark theme PDF saved to: ${localPath}`);
+                        console.log("Open this file to verify:");
+                        console.log("  - Dark background (#212121) on all pages");
+                        console.log("  - White text for readability");
+                        console.log("  - Header with icon on left and 'mathru.net' on right");
+                        console.log("  - Footer with '© 2024 mathru.net' copyright");
+                        console.log("  - No 'Generated by Masamune Marketing Workflow' text");
+                    }
+                }
+
+                console.log("\n=== Dark Theme PDF Test Complete ===");
+            } finally {
+                await firestore.doc(refs.actionPath).delete().catch(() => { });
+                await firestore.doc(refs.taskPath).delete().catch(() => { });
+            }
         }, 180000);
     });
 });

@@ -112,13 +112,13 @@ describe("CollectFromGooglePlayConsole Integration Tests", () => {
             "createdTime": new ModelTimestamp(nowTs.toDate()),
             "updatedTime": new ModelTimestamp(nowTs.toDate()),
         });
-        // Create Project with google_service_account
+        // Create Project with googleServiceAccount
         await projectRef.save({
             "@uid": testProjectId,
             "@time": nowTs,
             name: "Test Project",
             organization: organizationRef,
-            google_service_account: googlePlayServiceAccount,
+            googleServiceAccount: googlePlayServiceAccount,
             "createdTime": new ModelTimestamp(nowTs.toDate()),
             "updatedTime": new ModelTimestamp(nowTs.toDate()),
         });
@@ -306,7 +306,7 @@ describe("CollectFromGooglePlayConsole Integration Tests", () => {
                 "@time": nowTs,
                 name: "Test Project",
                 organization: organizationRef,
-                google_service_account: googlePlayServiceAccount,
+                googleServiceAccount: googlePlayServiceAccount,
                 "createdTime": new ModelTimestamp(nowTs.toDate()),
                 "updatedTime": new ModelTimestamp(nowTs.toDate()),
             }, { merge: true });
@@ -431,7 +431,7 @@ describe("CollectFromGooglePlayConsole Integration Tests", () => {
                 "@time": nowTs,
                 name: "Test Project",
                 organization: organizationRef,
-                google_service_account: googlePlayServiceAccount,
+                googleServiceAccount: googlePlayServiceAccount,
                 "createdTime": new ModelTimestamp(nowTs.toDate()),
                 "updatedTime": new ModelTimestamp(nowTs.toDate()),
             }, { merge: true });
@@ -555,7 +555,7 @@ describe("CollectFromGooglePlayConsole Integration Tests", () => {
                 "@time": nowTs,
                 name: "Test Project",
                 organization: organizationRef,
-                google_service_account: googlePlayServiceAccount,
+                googleServiceAccount: googlePlayServiceAccount,
                 "createdTime": new ModelTimestamp(nowTs.toDate()),
                 "updatedTime": new ModelTimestamp(nowTs.toDate()),
             }, { merge: true });
