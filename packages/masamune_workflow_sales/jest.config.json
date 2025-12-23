@@ -1,5 +1,8 @@
 {
-    "moduleNameMapper": {},
+    "moduleNameMapper": {
+        "^puppeteer-core$": "<rootDir>/test/__mocks__/puppeteer-core.ts",
+        "^@sparticuz/chromium$": "<rootDir>/test/__mocks__/@sparticuz/chromium.ts"
+    },
     "moduleDirectories": [
         "src",
         "node_modules"

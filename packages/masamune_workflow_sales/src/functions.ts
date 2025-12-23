@@ -17,4 +17,16 @@ export const Functions = {
             func: require("./functions/collect_google_play_developers"),
             options: options
         }),
+
+    /**
+     * A function for collecting developer information from App Store public pages.
+     *
+     * App Storeの公開ページからデベロッパー情報を収集するためのFunction。
+     */
+    collectAppStoreDevelopers: (options: masamune.HttpFunctionsOptions = {}) =>
+        new masamune.FunctionsData({
+            id: "collect_app_store_developers",
+            func: require("./functions/collect_app_store_developers"),
+            options: options
+        }),
 } as const;

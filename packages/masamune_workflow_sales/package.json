@@ -40,12 +40,16 @@
   "dependencies": {
     "@mathrunet/masamune": "^3.9.5",
     "@mathrunet/masamune_workflow": "^3.9.3",
+    "@sparticuz/chromium": "^131.0.0",
+    "app-store-scraper": "^0.18.0",
     "firebase-admin": "^13.1.0",
     "firebase-functions": "^6.3.2",
     "google-play-scraper": "^9.1.1",
+    "puppeteer-core": "^23.0.0",
     "typescript": "^5.9.2"
   },
   "devDependencies": {
+    "@types/debug": "^4.1.12",
     "@types/jest": "^29.5.12",
     "conventional-changelog-cli": "^5.0.0",
     "dotenv": "^16.4.5",
