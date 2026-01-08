@@ -38,6 +38,7 @@
   },
   "homepage": "https://github.com/mathrunet/node_masamune#readme",
   "dependencies": {
+    "@google-cloud/text-to-speech": "^6.4.0",
     "@google/genai": "^1.3.0",
     "@mathrunet/masamune": "^3.9.5",
     "@mathrunet/masamune_workflow": "^3.9.3",

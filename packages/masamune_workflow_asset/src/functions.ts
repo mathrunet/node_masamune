@@ -53,4 +53,48 @@ export const Functions = {
             func: require("./functions/generate_image_with_gemini"),
             options: options,
         }),
+    /**
+     * A function for generating audio using Google Cloud Text-to-Speech.
+     *
+     * Google Cloud Text-to-Speechを使用して音声を生成するためのFunction。
+     *
+     * ## Overview
+     *
+     * Generate natural-sounding speech from text using Google Cloud TTS.
+     * Supports SSML input, customizable voice parameters, and multiple output formats.
+     *
+     * Google Cloud TTSを使用してテキストから自然な音声を生成します。
+     * SSML入力、カスタマイズ可能なボイスパラメータ、複数の出力形式をサポートします。
+     *
+     * ## Usage
+     *
+     * ```typescript
+     * import * as m from "@mathrunet/masamune_workflow_asset";
+     *
+     * export const workflow = m.Functions.generateAudioWithGoogleTTS();
+     * ```
+     *
+     * ## ActionCommand.data
+     *
+     * | Parameter | Type | Required | Description |
+     * |-----------|------|----------|-------------|
+     * | text | string | Yes | Text to synthesize |
+     * | voice_name | string | No | Voice name (e.g., "ja-JP-Neural2-A") |
+     * | language | string | No | Language code (e.g., "ja-JP") |
+     * | gender | string | No | Voice gender ("MALE", "FEMALE", "NEUTRAL") |
+     * | output_format | string | No | Output format ("mp3", "wav", "ogg", default: "mp3") |
+     * | speaking_rate | number | No | Speaking rate (0.25-4.0, default: 1.0) |
+     * | pitch | number | No | Pitch (-20.0-20.0, default: 0.0) |
+     * | volume_gain_db | number | No | Volume gain (-96.0-16.0, default: 0.0) |
+     * | output_path | string | No | Output path in Storage |
+     *
+     * @param options Options for the function.
+     * @returns A FunctionsData object.
+     */
+    generateAudioWithGoogleTTS: (options: masamune.HttpFunctionsOptions = {}) =>
+        new masamune.FunctionsData({
+            id: "generate_audio_with_google_tts",
+            func: require("./functions/generate_audio_with_google_tts"),
+            options: options,
+        }),
 } as const;

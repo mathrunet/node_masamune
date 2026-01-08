@@ -29,14 +29,14 @@ export class StorageService {
     }
 
     /**
-     * Uploads an image buffer to Firebase Storage.
-     * 画像バッファをFirebase Storageにアップロードする。
+     * Uploads a file buffer to Firebase Storage.
+     * ファイルバッファをFirebase Storageにアップロードする。
      *
-     * @param buffer Image data to upload
+     * @param buffer File data to upload
      * @param options Upload options
      * @returns Upload result with gs:// and https:// URLs
      */
-    async uploadImage(buffer: Buffer, options: StorageUploadOptions): Promise<StorageUploadResult> {
+    async uploadFile(buffer: Buffer, options: StorageUploadOptions): Promise<StorageUploadResult> {
         const bucketName = options.bucket || this.defaultBucket;
         const bucket = this.storage.bucket(bucketName);
         const file = bucket.file(options.path);

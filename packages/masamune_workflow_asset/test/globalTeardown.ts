@@ -40,16 +40,28 @@ export default async function globalTeardown(): Promise<void> {
             `${process.env.GCLOUD_PROJECT || process.env.GCP_PROJECT_ID}.appspot.com`;
         const bucket = storage.bucket(bucketName);
 
-        // Delete test-generated files with the test prefix
-        const testPrefix = "test-generated-images/";
-        const [files] = await bucket.getFiles({ prefix: testPrefix });
+        // Delete test-generated image files
+        const imagePrefix = "test-generated-images/";
+        const [imageFiles] = await bucket.getFiles({ prefix: imagePrefix });
 
-        if (files.length > 0) {
-            console.log(`[GlobalTeardown] Deleting ${files.length} test files from Storage...`);
-            await Promise.all(files.map((file) => file.delete().catch(() => { })));
-            console.log(`[GlobalTeardown] Deleted ${files.length} test files`);
+        if (imageFiles.length > 0) {
+            console.log(`[GlobalTeardown] Deleting ${imageFiles.length} test image files from Storage...`);
+            await Promise.all(imageFiles.map((file) => file.delete().catch(() => { })));
+            console.log(`[GlobalTeardown] Deleted ${imageFiles.length} test image files`);
         } else {
-            console.log("[GlobalTeardown] No test files to clean up");
+            console.log("[GlobalTeardown] No test image files to clean up");
+        }
+
+        // Delete test-generated audio files
+        const audioPrefix = "test-generated-audio/";
+        const [audioFiles] = await bucket.getFiles({ prefix: audioPrefix });
+
+        if (audioFiles.length > 0) {
+            console.log(`[GlobalTeardown] Deleting ${audioFiles.length} test audio files from Storage...`);
+            await Promise.all(audioFiles.map((file) => file.delete().catch(() => { })));
+            console.log(`[GlobalTeardown] Deleted ${audioFiles.length} test audio files`);
+        } else {
+            console.log("[GlobalTeardown] No test audio files to clean up");
         }
     } catch (error: any) {
         // Don't fail tests if cleanup fails

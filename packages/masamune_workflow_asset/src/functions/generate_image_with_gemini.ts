@@ -130,7 +130,7 @@ export class GenerateImageWithGemini extends WorkflowProcessFunctionBase {
             // 8. Upload to Firebase Storage
             console.log(`GenerateImageWithGemini: Uploading to ${storageBucket}/${outputPath}`);
 
-            const uploadResult = await storageService.uploadImage(response.imageBuffer, {
+            const uploadResult = await storageService.uploadFile(response.imageBuffer, {
                 bucket: storageBucket,
                 path: outputPath,
                 contentType,

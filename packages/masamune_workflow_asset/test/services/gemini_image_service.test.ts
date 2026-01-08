@@ -146,7 +146,7 @@ describe("GeminiImageService Unit Tests", () => {
             const outputPath = StorageService.generatePath("test-uploads", "png");
             const contentType = StorageService.getContentType("png");
 
-            const uploadResult = await storageService.uploadImage(testPngBuffer, {
+            const uploadResult = await storageService.uploadFile(testPngBuffer, {
                 bucket: storageBucket,
                 path: outputPath,
                 contentType,
