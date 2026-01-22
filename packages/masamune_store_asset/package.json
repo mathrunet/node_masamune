@@ -1,0 +1,45 @@
+{
+  "name": "masamune_store_asset",
+  "version": "3.0.0",
+  "description": "Generate store assets (icons, screenshots, feature graphics) from YAML config with Japanese font support",
+  "main": "src/index.js",
+  "bin": {
+    "katanaasset": "./bin/generate-assets.js"
+  },
+  "scripts": {
+    "generate": "node bin/generate-assets.js",
+    "test": "jest",
+    "prepare": "chmod +x bin/generate-assets.js"
+  },
+  "keywords": [
+    "app-store",
+    "google-play",
+    "screenshots",
+    "assets",
+    "generator",
+    "cli",
+    "japanese",
+    "i18n"
+  ],
+  "author": "mathru",
+  "license": "MIT",
+  "dependencies": {
+    "canvas": "^3.2.1",
+    "chalk": "^4.1.2",
+    "commander": "^11.1.0",
+    "js-yaml": "^4.1.0",
+    "ora": "^5.4.1"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "files": [
+    "bin/",
+    "src/",
+    "templates/",
+    "README.md"
+  ]
+}

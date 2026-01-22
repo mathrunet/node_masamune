@@ -1,0 +1,79 @@
+# テスト用設定ファイル - Landscape配置パターンの確認
+
+# プロジェクト設定
+project_name: "Test Landscape Layouts"
+
+# 基本設定
+app:
+  name: "Test App"
+  package: "com.example.testapp"
+
+# 言語設定
+locales:
+  - ja
+
+# アセット生成設定
+assets:
+  screenshots: true
+  icons: false
+  feature_graphics: false
+  logo: false
+
+# スクリーンショット設定
+screenshots:
+  # サイズ設定
+  sizes:
+    iphone:
+      name: "iPhone"
+      portrait:
+        width: 1290
+        height: 2796
+      landscape:
+        width: 2796
+        height: 1290
+
+  # 背景設定
+  background:
+    gradient:
+      enabled: true
+      type: linear
+      colors:
+        - "#FF6B6B"
+        - "#4ECDC4"
+      angle: 135
+
+  # スクリーンショット定義（横向きのみテスト）
+  landscape:
+    # パターン1: 左にテキスト、右にスクリーンショット
+    - title:
+        ja: "左側にテキスト配置"
+      font_size: 64
+      text_color: "#FFFFFF"
+      layout_pattern: "text-left"
+      screenshot:
+        ja: "./assets/screenshots/ja/screen1.png"
+
+    # パターン2: 右にテキスト、左にスクリーンショット
+    - title:
+        ja: "右側にテキスト配置"
+      font_size: 64
+      text_color: "#FFFFFF"
+      layout_pattern: "text-right"
+      screenshot:
+        ja: "./assets/screenshots/ja/screen1.png"
+
+    # デフォルト: 通常の上部配置
+    - title:
+        ja: "通常の上部配置"
+      font_size: 64
+      text_color: "#FFFFFF"
+      screenshot:
+        ja: "./assets/screenshots/ja/screen1.png"
+
+# 出力ディレクトリ
+output_dir: "./output-test"
+
+# 出力設定
+output:
+  format: png
+  directory: "./output-test"

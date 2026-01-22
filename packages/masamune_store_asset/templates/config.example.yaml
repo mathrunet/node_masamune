@@ -1,0 +1,383 @@
+# ストアアセット生成設定ファイル
+
+# 基本設定
+project_name: "MyApp"
+output_dir: "./output"
+
+# フォント設定
+fonts:
+  - family: "Noto Sans JP"
+    path: "./fonts/NotoSansJP-Regular.ttf"
+    weight: normal
+  - family: "Noto Sans JP Bold"
+    path: "./fonts/NotoSansJP-Bold.ttf"
+    weight: bold
+
+# 言語設定
+locales:
+  - ja
+  - en
+
+# アイコン設定
+icon:
+  foreground:
+    path: "./assets/icon_foreground.png"
+  background:
+    # パターン1: 画像
+    # path: "./assets/icon_background.png"
+
+    # パターン2: 単色
+    # color: "#FF6B6B"
+
+    # パターン3: グラデーション
+    gradient:
+      type: linear  # linear or radial
+      colors:
+        - "#667eea"
+        - "#764ba2"
+      angle: 135  # 線形グラデーション用（0-360度）
+
+# フィーチャーグラフィック設定（Google Play用）
+feature_graphic:
+  foreground:
+    path: "./assets/feature_foreground.png"
+    scale: 1  # オプション: フォアグラウンド画像のスケール（デフォルト: 1）
+  background:
+    gradient:
+      type: linear
+      colors:
+        - "#667eea"
+        - "#764ba2"
+      angle: 135
+
+  # 新機能: アイコンをオーバーレイ配置（オプション）
+  icon:
+    # パターン1: 画像パス
+    path: "./assets/icon.png"
+
+    # パターン2: テキストから生成（pathの代わりに使用）
+    # text: "A"  # 表示するテキスト（例: 単一文字のアイコン）
+    # font_family: "Arial"  # フォントファミリー（fonts設定で登録済みのフォントも使用可）
+    # font_size: 80  # フォントサイズ
+    # font_weight: "bold"  # フォントウェイト（normal, bold）
+    # color: "#FFFFFF"  # テキスト色
+    # background_color: "#007AFF"  # 背景色（オプション、未指定時は透明）
+    # width: 100  # 生成画像の幅
+    # height: 100  # 生成画像の高さ
+    # text_border:  # テキストボーダー設定（オプション）
+    #   enabled: true  # ボーダーを有効にする
+    #   width: 2  # ボーダー幅（ピクセル）
+    #   color: "rgba(0, 0, 0, 0.8)"  # ボーダー色（RGBA形式で透明度も指定可能）
+
+    # 共通の配置オプション
+    align: "bottom-right"  # 配置位置: top-left, top-center, top-right, left-center, center, right-center, bottom-left, bottom-center, bottom-right
+    scale: 0.2  # 画像のスケール（デフォルト: 0.2）
+    marginX: 20  # X軸方向の余白（デフォルト: 20px）
+    marginY: 20  # Y軸方向の余白（デフォルト: 20px）
+
+  # 新機能: ロゴをオーバーレイ配置（オプション）
+  logo:
+    # パターン1: 画像パス
+    path: "./assets/logo.png"
+
+    # パターン2: テキストから生成（pathの代わりに使用）
+    # text: "MyApp"  # 表示するテキスト
+    # font_family: "Noto Sans JP"  # フォントファミリー
+    # font_size: 60  # フォントサイズ
+    # font_weight: "bold"  # フォントウェイト
+    # color: "#FFFFFF"  # テキスト色
+    # background_color: "rgba(0,0,0,0.8)"  # 背景色（オプション、RGBAで半透明も可）
+    # width: 200  # 生成画像の幅
+    # height: 100  # 生成画像の高さ
+    # text_border:  # テキストボーダー設定（オプション）
+    #   enabled: true  # ボーダーを有効にする
+    #   width: 3  # ボーダー幅（ピクセル）
+    #   color: "#000000"  # ボーダー色（不透明な黒）
+
+    # 共通の配置オプション
+    align: "bottom-right"  # 配置位置（iconと同じオプション）
+    scale: 0.15  # 画像のスケール（デフォルト: 0.15）
+    marginX: 20  # X軸方向の余白（デフォルト: 20px）
+    marginY: 80  # Y軸方向の余白（iconの上に配置する場合は値を大きく）
+
+# ロゴ設定
+logo:
+  # パターン1: 画像
+  path: "./assets/logo.png"
+
+  # パターン2: テキストから生成
+  # text: "MyApp"
+  # font_family: "Noto Sans JP"
+  # font_size: 72
+  # color: "#FFFFFF"
+  # text_border:  # テキストボーダー設定（オプション）
+  #   enabled: true  # ボーダーを有効にする
+  #   width: 2  # ボーダー幅（ピクセル）
+  #   color: "rgba(0, 0, 0, 0.8)"  # ボーダー色（黒色80%不透明度）
+
+# スクリーンショット設定
+screenshots:
+  # サイズ仕様
+  sizes:
+    iphone:
+      name: "iphone-6.9"  # iPhone 16 Pro Max
+      portrait:
+        width: 1290
+        height: 2796
+      landscape:
+        width: 2796
+        height: 1290
+    ipad:
+      name: "ipad-12.9"  # iPad Pro 12.9インチ
+      portrait:
+        width: 2048
+        height: 2732
+      landscape:
+        width: 2732
+        height: 2048
+
+  # 背景設定
+  background:
+    gradient:
+      type: linear
+      colors:
+        - "#FF6B6B"
+        - "#4ECDC4"
+      angle: 135
+
+  # タイトルテキストのグローバルボーダー設定（オプション）
+  # 個別のスクリーンショットで上書き可能
+  # title_border:
+  #   enabled: false  # デフォルトは無効
+  #   width: 1  # ボーダー幅（ピクセル）
+  #   color: "rgba(255, 255, 255, 0.5)"  # ボーダー色（白色50%不透明度）
+
+  # デバイスフレーム
+  iphone_frame:
+    path: "./assets/frames/iphone-16-pro-max.png"
+
+  ipad_frame:
+    path: "./assets/frames/ipad-pro-12.9.png"
+
+  # グローバルロゴ設定（すべてのスクリーンショットのデフォルト）
+  # 個別スクリーンショットで上書き可能
+  logo:
+    # パターン1: 画像パスから読み込み
+    path: "./assets/logo.png"
+
+    # パターン2: テキストから生成（pathの代わりに使用）
+    # text: "MyApp"  # 表示するテキスト
+    # font_family: "Noto Sans JP"  # フォントファミリー
+    # font_size: 60  # フォントサイズ
+    # font_weight: "bold"  # フォントウェイト
+    # color: "#FFFFFF"  # テキスト色
+    # background_color: "rgba(0,0,0,0.8)"  # 背景色（省略で透明、RGBAで半透明も可）
+    # width: 200  # 生成画像の幅
+    # height: 100  # 生成画像の高さ
+    # text_border:  # テキストボーダー設定（オプション）
+    #   enabled: true  # ボーダーを有効にする
+    #   width: 3  # ボーダー幅（ピクセル）
+    #   color: "#000000"  # ボーダー色
+
+    # 配置オプション
+    align: "bottom-right"  # 配置位置: top-left, top-center, top-right, left-center, center, right-center, bottom-left, bottom-center, bottom-right
+    scale: 0.15  # ロゴのスケール（0.15 = 15%サイズ）
+    marginX: 20  # X軸方向の余白（ピクセル）
+    marginY: 20  # Y軸方向の余白（ピクセル）
+
+  # グローバルアイコン設定（すべてのスクリーンショットのデフォルト）
+  # 個別スクリーンショットで上書き可能
+  icon:
+    # パターン1: 画像パスから読み込み
+    path: "./assets/icon.png"
+
+    # パターン2: テキストから生成（pathの代わりに使用）
+    # text: "A"  # 表示するテキスト（例: 単一文字のアイコン）
+    # font_family: "Arial"  # フォントファミリー
+    # font_size: 80  # フォントサイズ
+    # font_weight: "bold"  # フォントウェイト
+    # color: "#FFFFFF"  # テキスト色
+    # background_color: "#007AFF"  # 背景色（省略で透明）
+    # width: 100  # 生成画像の幅
+    # height: 100  # 生成画像の高さ
+    # text_border:  # テキストボーダー設定（オプション）
+    #   enabled: true  # ボーダーを有効にする
+    #   width: 2  # ボーダー幅（ピクセル）
+    #   color: "rgba(0, 0, 0, 0.8)"  # ボーダー色
+
+    # 配置オプション
+    align: "bottom-left"  # 配置位置（ロゴと重ならないように左下）: top-left, top-center, top-right, left-center, center, right-center, bottom-left, bottom-center, bottom-right
+    scale: 0.2  # アイコンのスケール（0.2 = 20%サイズ）
+    marginX: 20  # X軸方向の余白（ピクセル）
+    marginY: 20  # Y軸方向の余白（ピクセル）
+
+  # スクリーンショット定義（縦向き）
+  #
+  # screenshotの指定方法:
+  #   パターン1: 全デバイス共通（従来形式）
+  #     screenshot:
+  #       ja: "./assets/screenshots/ja/screen1.png"
+  #       en: "./assets/screenshots/en/screen1.png"
+  #
+  #   パターン2: デバイス別（新形式）- phoneとtabletで異なる素材を使用
+  #     screenshot:
+  #       ja:
+  #         phone: "./assets/screenshots/ja/phone/screen1.png"
+  #         tablet: "./assets/screenshots/ja/tablet/screen1.png"
+  #       en:
+  #         phone: "./assets/screenshots/en/phone/screen1.png"
+  #         tablet: "./assets/screenshots/en/tablet/screen1.png"
+  #
+  portrait:
+    - title:
+        ja: "素晴らしい機能1"
+        en: "Amazing Feature 1"
+      font_family:
+        ja: "Noto Sans JP"
+        en: "Noto Sans JP"
+      font_size: 72
+      screenshot:
+        ja: "./assets/screenshots/ja/screen1.png"
+        en: "./assets/screenshots/en/screen1.png"
+      # 個別スクリーンショットでのボーダー設定（オプション）
+      # text_border:
+      #   enabled: true
+      #   width: 2
+      #   color: "rgba(0, 0, 0, 0.6)"  # 黒色60%不透明度
+
+      # 個別ロゴ設定（このスクリーンショットのみ、グローバル設定を上書き）
+      # logo:
+      #   path: "./assets/special-logo.png"  # 特別なロゴを使用
+      #   align: "top-left"  # 左上に配置
+      #   scale: 0.2  # 大きめのサイズ
+      #   marginX: 30
+      #   marginY: 30
+
+    - title:
+        ja: "便利な機能2"
+        en: "Useful Feature 2"
+      font_family:
+        ja: "Noto Sans JP"
+        en: "Noto Sans JP"
+      font_size: 72
+      screenshot:
+        ja: "./assets/screenshots/ja/screen2.png"
+        en: "./assets/screenshots/en/screen2.png"
+      # このスクリーンショットではロゴを表示しない
+      # logo: null
+
+      # 個別アイコン設定（このスクリーンショットのみ、グローバル設定を上書き）
+      # icon:
+      #   path: "./assets/special-icon.png"  # 特別なアイコンを使用
+      #   align: "top-right"  # 右上に配置
+      #   scale: 0.25  # 大きめのサイズ
+      #   marginX: 30
+      #   marginY: 30
+
+      # このスクリーンショットではアイコンを表示しない
+      # icon: null
+
+    - title:
+        ja: "快適な機能3"
+        en: "Comfortable Feature 3"
+      font_family:
+        ja: "Noto Sans JP"
+        en: "Noto Sans JP"
+      font_size: 72
+      screenshot:
+        ja: "./assets/screenshots/ja/screen3.png"
+        en: "./assets/screenshots/en/screen3.png"
+
+    - title:
+        ja: "簡単な機能4"
+        en: "Easy Feature 4"
+      font_family:
+        ja: "Noto Sans JP"
+        en: "Noto Sans JP"
+      font_size: 72
+      screenshot:
+        ja: "./assets/screenshots/ja/screen4.png"
+        en: "./assets/screenshots/en/screen4.png"
+
+    - title:
+        ja: "強力な機能5"
+        en: "Powerful Feature 5"
+      font_family:
+        ja: "Noto Sans JP"
+        en: "Noto Sans JP"
+      font_size: 72
+      screenshot:
+        ja: "./assets/screenshots/ja/screen5.png"
+        en: "./assets/screenshots/en/screen5.png"
+
+  # スクリーンショット定義（横向き）
+  # layout_pattern: landscapeモードでの配置パターン
+  #   - "text-left" : 左にテキスト、右にスクリーンショット
+  #   - "text-right" : 右にテキスト、左にスクリーンショット
+  #   - デフォルト（未指定）: 通常の上部配置
+  landscape:
+    - title:
+        ja: "横向き機能1"
+        en: "Landscape Feature 1"
+      font_family:
+        ja: "Noto Sans JP"
+        en: "Noto Sans JP"
+      font_size: 72
+      layout_pattern: "text-left"  # 左にテキスト、右にスクリーンショット
+      screenshot:
+        ja: "./assets/screenshots/ja/screen_landscape1.png"
+        en: "./assets/screenshots/en/screen_landscape1.png"
+
+    - title:
+        ja: "横向き機能2"
+        en: "Landscape Feature 2"
+      font_family:
+        ja: "Noto Sans JP"
+        en: "Noto Sans JP"
+      font_size: 72
+      layout_pattern: "text-right"  # 右にテキスト、左にスクリーンショット
+      screenshot:
+        ja: "./assets/screenshots/ja/screen_landscape2.png"
+        en: "./assets/screenshots/en/screen_landscape2.png"
+
+    - title:
+        ja: "横向き機能3"
+        en: "Landscape Feature 3"
+      font_family:
+        ja: "Noto Sans JP"
+        en: "Noto Sans JP"
+      font_size: 72
+      layout_pattern: "text-left"  # 左にテキスト、右にスクリーンショット
+      screenshot:
+        ja: "./assets/screenshots/ja/screen_landscape3.png"
+        en: "./assets/screenshots/en/screen_landscape3.png"
+
+    - title:
+        ja: "横向き機能4"
+        en: "Landscape Feature 4"
+      font_family:
+        ja: "Noto Sans JP"
+        en: "Noto Sans JP"
+      font_size: 72
+      layout_pattern: "text-right"  # 右にテキスト、左にスクリーンショット
+      screenshot:
+        ja: "./assets/screenshots/ja/screen_landscape4.png"
+        en: "./assets/screenshots/en/screen_landscape4.png"
+
+    - title:
+        ja: "横向き機能5"
+        en: "Landscape Feature 5"
+      font_family:
+        ja: "Noto Sans JP"
+        en: "Noto Sans JP"
+      font_size: 72
+      # layout_patternを指定しない場合は通常の上部配置
+      screenshot:
+        ja: "./assets/screenshots/ja/screen_landscape5.png"
+        en: "./assets/screenshots/en/screen_landscape5.png"
+
+# 出力設定
+output:
+  format: png
+  quality: 95
+  naming_pattern: "{locale}/{type}/{size}/{index}.png"

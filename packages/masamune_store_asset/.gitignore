@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Output
+output/
+*.png
+*.jpg
+*.jpeg
+
+# Except example assets
+!assets/**/*.png
+!assets/**/*.jpg
+!assets/**/*.jpeg
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Test
+coverage/
+.nyc_output/
+
+# Temporary files
+*.tmp
+tmp/
+temp/
