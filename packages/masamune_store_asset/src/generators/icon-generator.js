@@ -77,7 +77,7 @@ class IconGenerator {
    * @param {string} outputPath - 出力パス
    */
   async generateAdaptiveForeground(foregroundConfig, outputPath) {
-    const size = 512; // Androidアダプティブアイコンの推奨サイズ
+    const size = 1024; // Androidアダプティブアイコンの推奨サイズ
     const foregroundScale = 0.625;
     // 透過背景でキャンバスを作成
     const { canvas, ctx } = this.composer.createCanvas(size, size, { transparent: true });
@@ -103,7 +103,7 @@ class IconGenerator {
    * @param {string} outputPath - 出力パス
    */
   async generateAdaptiveBackground(backgroundConfig, outputPath) {
-    const size = 512; // Androidアダプティブアイコンの推奨サイズ
+    const size = 1024; // Androidアダプティブアイコンの推奨サイズ
     const { canvas, ctx } = this.composer.createCanvas(size, size);
 
     await this.drawBackground(ctx, size, size, backgroundConfig);
