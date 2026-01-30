@@ -12,3 +12,4 @@ export * from "@mathrunet/masamune";
 export * from "./functions";
 export * from "./lib/interfaces";
 export * from "./lib/workflow_process_function_base";
+export * from "./lib/workflow_job_runner_function_base";
