@@ -20,7 +20,9 @@ import { MarketResearchData } from "../../src/models";
 dotenv.config({ path: path.join(__dirname, "../.env") });
 
 // Service account path for authentication
-const serviceAccountPath = "test/mathru-net-39425d37638c.json";
+const serviceAccountPath = process.env.GOOGLE_SERVICE_ACCOUNT_PATH ||
+    process.env.VERTEXAI_SERVICE_ACCOUNT_PATH ||
+    "test/mathru-net-39425d37638c.json";
 
 // Initialize firebase-functions-test with actual project
 const config = require("firebase-functions-test")({
@@ -53,6 +55,12 @@ describe("ResearchMarket Integration Tests", () => {
 
     beforeAll(() => {
         firestore = admin.firestore();
+    });
+
+    // 各テスト間に遅延を追加してレート制限を回避
+    afterEach(async () => {
+        console.log("Waiting 5 seconds before next test to avoid rate limits...");
+        await new Promise(resolve => setTimeout(resolve, 5000));
     });
 
     afterAll(async () => {

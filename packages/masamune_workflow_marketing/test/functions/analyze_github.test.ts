@@ -432,7 +432,9 @@ describeE2E("End-to-End GitHub Analysis", () => {
 // Storage integration test
 describe("GitHub Analysis Storage Integration", () => {
     const testProjectId = `test-github-storage-${Date.now()}`;
-    const serviceAccountPath = path.resolve(__dirname, "../mathru-net-39425d37638c.json");
+    const serviceAccountPath = process.env.GOOGLE_SERVICE_ACCOUNT_PATH ||
+        process.env.VERTEXAI_SERVICE_ACCOUNT_PATH ||
+        path.resolve(__dirname, "../mathru-net-39425d37638c.json");
 
     beforeAll(() => {
         // Initialize Firebase Admin if not already initialized

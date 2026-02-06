@@ -7,11 +7,17 @@
 
 import * as admin from "firebase-admin";
 import * as path from "path";
+import * as dotenv from "dotenv";
 import "@mathrunet/masamune";
+
+// Load test environment variables
+dotenv.config({ path: path.join(__dirname, ".env") });
 
 // Service account path for authentication
 // Note: __dirname in Jest globalTeardown refers to test/ directory
-const serviceAccountPath = path.resolve(__dirname, "mathru-net-39425d37638c.json");
+const serviceAccountPath = process.env.GOOGLE_SERVICE_ACCOUNT_PATH ||
+    process.env.VERTEXAI_SERVICE_ACCOUNT_PATH ||
+    path.resolve(__dirname, "mathru-net-39425d37638c.json");
 
 /**
  * Recursively delete all documents in a collection and their subcollections.

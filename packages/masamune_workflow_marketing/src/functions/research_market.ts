@@ -34,6 +34,83 @@ export class ResearchMarket extends WorkflowProcessFunctionBase {
     id: string = "research_market";
 
     /**
+     * Vertex AI API呼び出しのためのリトライヘルパー
+     *
+     * @param operation - 実行する非同期操作
+     * @param maxRetries - 最大リトライ回数（デフォルト: 3）
+     * @param initialDelay - 初期遅延時間（ミリ秒、デフォルト: 2000）
+     */
+    private async withRetry<T>(
+        operation: () => Promise<T>,
+        maxRetries: number = 3,
+        initialDelay: number = 2000
+    ): Promise<T> {
+        let lastError: Error | null = null;
+
+        for (let attempt = 0; attempt <= maxRetries; attempt++) {
+            try {
+                return await operation();
+            } catch (error: any) {
+                lastError = error;
+
+                // リトライ可能なエラーかチェック
+                const isRetryable = this.isRetryableError(error);
+                const isLastAttempt = attempt === maxRetries;
+
+                if (!isRetryable || isLastAttempt) {
+                    throw error;
+                }
+
+                // エクスポネンシャルバックオフ + ジッター
+                const backoffDelay = initialDelay * Math.pow(2, attempt);
+                const jitter = Math.random() * 1000; // 0-1000msのランダムジッター
+                const totalDelay = backoffDelay + jitter;
+
+                console.warn(
+                    `ResearchMarket: API call failed (attempt ${attempt + 1}/${maxRetries + 1}). ` +
+                    `Retrying in ${Math.ceil(totalDelay / 1000)}s... Error: ${error.message}`
+                );
+
+                await this.sleep(totalDelay);
+            }
+        }
+
+        throw lastError || new Error("Operation failed after retries");
+    }
+
+    /**
+     * エラーがリトライ可能かどうかを判定
+     */
+    private isRetryableError(error: any): boolean {
+        // エラーメッセージやステータスコードからリトライ可能性を判定
+        const errorMessage = error.message || String(error);
+        const errorString = errorMessage.toLowerCase();
+
+        // リトライ可能なエラーパターン
+        const retryablePatterns = [
+            '429',                    // Too Many Requests
+            'rate limit',             // レート制限
+            'quota',                  // クォータ超過
+            'resource exhausted',     // リソース枯渇
+            '503',                    // Service Unavailable
+            'service unavailable',    // サービス利用不可
+            'deadline exceeded',      // タイムアウト
+            'timeout',                // タイムアウト
+            'temporary',              // 一時的なエラー
+            'try again',              // 再試行を促すメッセージ
+        ];
+
+        return retryablePatterns.some(pattern => errorString.includes(pattern));
+    }
+
+    /**
+     * 指定時間スリープ
+     */
+    private sleep(ms: number): Promise<void> {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    /**
      * The process of the function.
      *
      * @param context
@@ -87,50 +164,98 @@ export class ResearchMarket extends WorkflowProcessFunctionBase {
             // 4. VertexAI を初期化
             const vertexAI = new VertexAI({ project: gcpProjectId, location: region });
 
-            // 5. Google Searchを有効にしたモデルを取得
-            const model = vertexAI.preview.getGenerativeModel({
+            // 5. プロンプトを構築
+            const locale = typeof action.locale === "object"
+                ? action.locale["@language"]
+                : action.locale;
+            const searchPrompt = this.buildResearchPrompt(projectData, locale);
+
+            // === Stage 1: Google Search Groundingで情報収集 ===
+            console.log("ResearchMarket: Stage 1 - Collecting data with Google Search grounding...");
+            const searchModel = vertexAI.preview.getGenerativeModel({
                 model: modelName,
-                generationConfig: {
-                    responseMimeType: "application/json",
-                    responseSchema: this.getResponseSchema(),
-                },
                 tools: [{
                     // @ts-ignore - googleSearch is a valid tool for grounding
                     googleSearch: {}
                 }]
             });
 
-            // 6. プロンプトを構築
-            const locale = typeof action.locale === "object"
-                ? action.locale["@language"]
-                : action.locale;
-            const prompt = this.buildResearchPrompt(projectData, locale);
+            const searchResult = await this.withRetry(
+                async () => await searchModel.generateContent(searchPrompt),
+                3,      // 最大3回リトライ
+                2000    // 初期遅延2秒
+            );
+            const searchResponse = searchResult.response;
+            const rawData = searchResponse.candidates?.[0].content.parts[0].text;
 
-            // 7. Gemini APIを呼び出し
-            console.log("ResearchMarket: Calling Gemini API with Google Search grounding...");
-            const result = await model.generateContent(prompt);
-            const response = result.response;
-            const text = response.candidates?.[0].content.parts[0].text;
+            if (!rawData) {
+                throw new Error("Failed to collect data with Google Search grounding.");
+            }
 
-            if (!text) {
-                throw new Error("Failed to generate content from Gemini.");
+            // Grounding metadata（参照URL）を取得
+            const groundingMetadata = searchResponse.candidates?.[0].groundingMetadata;
+            if (groundingMetadata?.searchEntryPoint?.renderedContent) {
+                console.log("ResearchMarket: Search sources found:", groundingMetadata.searchEntryPoint.renderedContent);
+            }
+
+            // === Stage 2: 収集データを構造化 ===
+            console.log("ResearchMarket: Stage 2 - Structuring collected data...");
+
+            // Stage 1とStage 2の間に遅延を追加（レート制限対策）
+            await this.sleep(1000);
+
+            const structureModel = vertexAI.getGenerativeModel({
+                model: modelName,
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: this.getResponseSchema(),
+                }
+            });
+
+            const structurePrompt = `You are a data structuring expert. Transform the following market research data into the specified JSON format.
+
+## Raw Research Data
+${rawData}
+
+## Instructions
+- Extract all relevant information from the raw data
+- Organize it according to the required schema
+- Preserve all data sources and URLs mentioned
+- Maintain accuracy of all numerical data and statistics
+- Fill in any missing fields with appropriate default values`;
+
+            const structuredResult = await this.withRetry(
+                async () => await structureModel.generateContent(structurePrompt),
+                3,      // 最大3回リトライ
+                2000    // 初期遅延2秒
+            );
+            const structuredResponse = structuredResult.response;
+            const structuredText = structuredResponse.candidates?.[0].content.parts[0].text;
+
+            if (!structuredText) {
+                throw new Error("Failed to structure the research data.");
             }
 
             // 8. JSONをパース
-            const cleanedText = text.replace(/```json/g, "").replace(/```/g, "").trim();
+            const cleanedText = structuredText.replace(/```json/g, "").replace(/```/g, "").trim();
             const firstBrace = cleanedText.indexOf("{");
             const lastBrace = cleanedText.lastIndexOf("}");
 
             if (firstBrace === -1 || lastBrace === -1) {
-                throw new Error("No JSON object found in response.");
+                throw new Error("No JSON object found in structured response.");
             }
 
             const jsonText = cleanedText.substring(firstBrace, lastBrace + 1);
             const researchResult = JSON.parse(jsonText) as MarketResearchData;
 
-            // 9. トークン使用量とコストを計算
-            const inputTokens = response.usageMetadata?.promptTokenCount ?? 0;
-            const outputTokens = response.usageMetadata?.candidatesTokenCount ?? 0;
+            // 9. トークン使用量とコストを計算（両ステージの合計）
+            const stage1InputTokens = searchResponse.usageMetadata?.promptTokenCount ?? 0;
+            const stage1OutputTokens = searchResponse.usageMetadata?.candidatesTokenCount ?? 0;
+            const stage2InputTokens = structuredResponse.usageMetadata?.promptTokenCount ?? 0;
+            const stage2OutputTokens = structuredResponse.usageMetadata?.candidatesTokenCount ?? 0;
+
+            const inputTokens = stage1InputTokens + stage2InputTokens;
+            const outputTokens = stage1OutputTokens + stage2OutputTokens;
             const cost = inputTokens * inputPrice + outputTokens * outputPrice;
 
             console.log(`ResearchMarket: Generated successfully. Tokens: ${inputTokens} input, ${outputTokens} output. Cost: $${cost.toFixed(6)}`);
@@ -241,7 +366,15 @@ Investigate and analyze the market from the following perspectives:
 - Include quantitative data (market size, growth rate, market share, etc.) whenever possible
 - Record source URLs
 - Prioritize data from the last 12 months
-- ${t.respondInLanguage}`;
+- ${t.respondInLanguage}
+
+## Output Format
+Please provide comprehensive market research data including all findings from your Google Search.
+The data should include:
+- Market potential (TAM, SAM, SOM if available)
+- Competitor information with specific company names and details
+- Business opportunities based on market gaps and trends
+- URLs and sources for all data points found`;
     }
 
     /**

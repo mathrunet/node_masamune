@@ -20,7 +20,9 @@ import "@mathrunet/masamune";
 dotenv.config({ path: path.join(__dirname, "../.env") });
 
 // Service account path for authentication
-const serviceAccountPath = "test/mathru-net-39425d37638c.json";
+const serviceAccountPath = process.env.GOOGLE_SERVICE_ACCOUNT_PATH ||
+    process.env.VERTEXAI_SERVICE_ACCOUNT_PATH ||
+    "test/mathru-net-39425d37638c.json";
 
 // Initialize firebase-functions-test with actual project
 const config = require("firebase-functions-test")({
@@ -65,7 +67,9 @@ describe("CollectFromFirebaseAnalytics Integration Tests", () => {
 
         // Load Google service account JSON
         const projectRoot = path.join(__dirname, "..", "..");
-        const saPath = path.join(projectRoot, googleServiceAccountPath);
+        const saPath = path.isAbsolute(googleServiceAccountPath)
+            ? googleServiceAccountPath
+            : path.join(projectRoot, googleServiceAccountPath);
         if (fs.existsSync(saPath)) {
             googleServiceAccount = fs.readFileSync(saPath, "utf-8");
         } else {
