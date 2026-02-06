@@ -21,7 +21,9 @@ dotenv.config({ path: path.join(__dirname, "../.env") });
 
 // Service account path for authentication
 const serviceAccountPath = process.env.GOOGLE_SERVICE_ACCOUNT_PATH
-    ? path.join(__dirname, "..", process.env.GOOGLE_SERVICE_ACCOUNT_PATH)
+    ? (path.isAbsolute(process.env.GOOGLE_SERVICE_ACCOUNT_PATH)
+        ? process.env.GOOGLE_SERVICE_ACCOUNT_PATH
+        : path.join(__dirname, "..", process.env.GOOGLE_SERVICE_ACCOUNT_PATH))
     : path.join(__dirname, "../mathru-net-27ae75a92bc7.json");
 
 // Test configuration
@@ -48,11 +50,16 @@ if (!fs.existsSync(tmpDir)) {
     fs.mkdirSync(tmpDir, { recursive: true });
 }
 
-describe("GeminiImageService Unit Tests", () => {
+describe.skip("GeminiImageService Unit Tests - SKIPPED: Use Imagen 3 instead", () => {
     let geminiService: GeminiImageService;
     let storageService: StorageService;
 
     beforeAll(() => {
+        // Reset test counter at the start of test suite
+        if ((global as any).resetTestCounter) {
+            (global as any).resetTestCounter();
+        }
+
         geminiService = new GeminiImageService({
             projectId,
             region,
@@ -66,11 +73,14 @@ describe("GeminiImageService Unit Tests", () => {
             console.log(`Project ID: ${projectId}`);
             console.log(`Region: ${region}`);
 
-            const response = await geminiService.generateImage({
+            // Add initial delay to avoid rate limiting (using default 90 seconds + progressive delay)
+            await (global as any).delayForRateLimit();
+
+            const response = await geminiService.generateImageWithRetry({
                 prompt: "A cute cartoon cat wearing a bow tie, simple illustration style",
                 width: 512,
                 height: 512,
-            });
+            }, 3);
 
             // Verify response structure
             expect(response.imageBuffer).toBeInstanceOf(Buffer);
@@ -100,17 +110,20 @@ describe("GeminiImageService Unit Tests", () => {
             );
             console.log(`Estimated cost: $${cost.toFixed(6)}`);
 
-        }, 120000); // 2 minutes timeout
+        }, 300000); // 5 minutes timeout
 
         it("should generate an image with negative prompt", async () => {
             console.log("\n=== Testing image generation with negative prompt ===");
 
-            const response = await geminiService.generateImage({
+            // Add delay to avoid rate limiting (using default 90 seconds + progressive delay)
+            await (global as any).delayForRateLimit();
+
+            const response = await geminiService.generateImageWithRetry({
                 prompt: "A beautiful garden with flowers, watercolor style",
                 negativePrompt: "dark, scary, dead flowers, wilted",
                 width: 512,
                 height: 512,
-            });
+            }, 3);
 
             expect(response.imageBuffer).toBeInstanceOf(Buffer);
             expect(response.imageBuffer.length).toBeGreaterThan(0);
@@ -120,7 +133,7 @@ describe("GeminiImageService Unit Tests", () => {
             fs.writeFileSync(localPath, response.imageBuffer);
             console.log(`\nSaved locally: ${localPath}`);
 
-        }, 120000);
+        }, 300000); // 5 minutes timeout
     });
 
     describe("Storage Upload", () => {

@@ -28,7 +28,7 @@ export class GenerateTextFromMultimodal extends WorkflowProcessFunctionBase {
     });
 
     // Validate required parameters
-    const prompt = commandData?.prompt || action.command?.prompt;
+    const prompt = commandData?.prompt || (action.command as any)?.prompt;
     if (!prompt) {
       console.error("GenerateTextFromMultimodal: No prompt provided");
       throw new Error("prompt is required in command data");

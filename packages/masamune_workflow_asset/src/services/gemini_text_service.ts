@@ -20,7 +20,7 @@ export class GeminiTextService {
       project: options.projectId,
       location: options.region || "us-central1",
     });
-    this.model = options.model || "gemini-2.0-flash-exp";
+    this.model = options.model || "gemini-2.5-flash";
   }
 
   /**

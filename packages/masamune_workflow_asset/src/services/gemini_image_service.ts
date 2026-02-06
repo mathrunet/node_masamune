@@ -24,8 +24,8 @@ const DEFAULT_MODEL = "gemini-2.0-flash-exp";
 const DEFAULT_REGION = "us-central1";
 
 /**
- * Service for generating images using Gemini 2.5 Flash.
- * Gemini 2.5 Flashを使用して画像を生成するサービス。
+ * Service for generating images using Gemini 2.0 Flash Experimental.
+ * Gemini 2.0 Flash Experimentalを使用して画像を生成するサービス。
  */
 export class GeminiImageService {
     private genai: GoogleGenAI;
@@ -42,6 +42,52 @@ export class GeminiImageService {
             location: options.region ?? DEFAULT_REGION,
         });
         this.model = options.model ?? DEFAULT_MODEL;
+    }
+
+    /**
+     * Generates an image from a text prompt using Gemini with retry logic.
+     * テキストプロンプトからGeminiを使用して画像を生成する（リトライロジック付き）。
+     *
+     * @param request Image generation request
+     * @param maxRetries Maximum number of retry attempts for rate limiting (default: 3)
+     * @returns Generated image response with buffer and metadata
+     */
+    async generateImageWithRetry(request: ImageGenerationRequest, maxRetries: number = 3): Promise<ImageGenerationResponse> {
+        let lastError: Error | undefined;
+
+        for (let attempt = 0; attempt < maxRetries; attempt++) {
+            try {
+                const response = await this.generateImage(request);
+
+                // Add delay after successful request to avoid rate limiting
+                if ((global as any).delayAfterSuccess) {
+                    await (global as any).delayAfterSuccess(30000);
+                }
+
+                return response;
+            } catch (error: any) {
+                // Check if it's a rate limit error (429)
+                if (error?.status === 429 || error?.message?.includes("429") || error?.message?.includes("Resource exhausted")) {
+                    lastError = error;
+
+                    // Much longer backoff periods: 30s, 60s, 120s
+                    const delays = [30000, 60000, 120000];
+                    const actualDelay = delays[attempt] || 120000;
+
+                    console.log(`⚠️  Rate limited (attempt ${attempt + 1}/${maxRetries})`);
+                    console.log(`   Waiting ${actualDelay / 1000}s before retry...`);
+                    console.log(`   Error: ${error?.message || 'Unknown error'}`);
+
+                    await new Promise(resolve => setTimeout(resolve, actualDelay));
+                    continue;
+                }
+                // If it's not a rate limit error, throw immediately
+                throw error;
+            }
+        }
+
+        // If all retries failed, throw the last error
+        throw lastError || new Error("Max retries exceeded");
     }
 
     /**
@@ -90,7 +136,7 @@ export class GeminiImageService {
         // Add text prompt
         contentParts.push({ text: prompt });
 
-        // Generate content with image output modality
+        // Generate content with image output
         const response = await this.genai.models.generateContent({
             model: this.model,
             contents: [
@@ -99,9 +145,6 @@ export class GeminiImageService {
                     parts: contentParts,
                 },
             ],
-            config: {
-                responseModalities: ["IMAGE", "TEXT"],
-            } as any, // Type assertion needed as responseModalities may not be in types yet
         });
 
         // Extract image data from response

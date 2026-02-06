@@ -29,6 +29,8 @@ export interface GeminiImageCommandData {
     model?: string;
     /** Seed value (-1 for random) */
     seed?: number;
+    /** Number of outputs to generate */
+    num_outputs?: number;
     /** Output path in Storage (optional, auto-generated if not provided) */
     output_path?: string;
     /** Image type for categorization */
@@ -110,6 +112,8 @@ export interface ImageGenerationRequest {
     referenceImage?: Buffer;
     /** Seed value */
     seed?: number;
+    /** Number of outputs to generate */
+    numOutputs?: number;
 }
 
 /**

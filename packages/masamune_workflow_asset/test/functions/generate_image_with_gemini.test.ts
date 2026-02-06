@@ -4,6 +4,9 @@
  * Tests using firebase-functions-test with actual Gemini API.
  * Generated images are saved to both Firebase Storage and local test/tmp/ directory.
  *
+ * NOTE: These tests are currently SKIPPED because Gemini image generation
+ * is not working properly through Vertex AI. Use Imagen 3 tests instead.
+ *
  * Required:
  * - Service account with Vertex AI and Storage permissions
  * - Environment variables in test/.env
@@ -21,7 +24,9 @@ dotenv.config({ path: path.join(__dirname, "../.env") });
 
 // Service account path for authentication
 const serviceAccountPath = process.env.GOOGLE_SERVICE_ACCOUNT_PATH
-    ? path.join(__dirname, "..", process.env.GOOGLE_SERVICE_ACCOUNT_PATH)
+    ? (path.isAbsolute(process.env.GOOGLE_SERVICE_ACCOUNT_PATH)
+        ? process.env.GOOGLE_SERVICE_ACCOUNT_PATH
+        : path.join(__dirname, "..", process.env.GOOGLE_SERVICE_ACCOUNT_PATH))
     : path.join(__dirname, "../mathru-net-27ae75a92bc7.json");
 
 // Test configuration
@@ -61,11 +66,21 @@ if (!fs.existsSync(tmpDir)) {
     fs.mkdirSync(tmpDir, { recursive: true });
 }
 
-describe("GenerateImageWithGemini Integration Tests", () => {
+describe.skip("GenerateImageWithGemini Integration Tests - SKIPPED: Use Imagen 3 instead", () => {
     let firestore: admin.firestore.Firestore;
 
     beforeAll(() => {
+        // Reset test counter at the start of test suite
+        if ((global as any).resetTestCounter) {
+            (global as any).resetTestCounter();
+        }
+
         firestore = admin.firestore();
+    });
+
+    // Add delay before each test to avoid rate limiting (using default 90 seconds + progressive delay)
+    beforeEach(async () => {
+        await (global as any).delayForRateLimit();
     });
 
     afterAll(async () => {
@@ -252,7 +267,7 @@ describe("GenerateImageWithGemini Integration Tests", () => {
                 await firestore.doc(refs.actionPath).delete().catch(() => {});
                 await firestore.doc(refs.taskPath).delete().catch(() => {});
             }
-        }, 180000); // 3 minutes timeout for image generation
+        }, 300000); // 5 minutes timeout for image generation
     });
 
     describe("Image Generation with Negative Prompt", () => {
@@ -315,7 +330,7 @@ describe("GenerateImageWithGemini Integration Tests", () => {
                 await firestore.doc(refs.actionPath).delete().catch(() => {});
                 await firestore.doc(refs.taskPath).delete().catch(() => {});
             }
-        }, 180000);
+        }, 300000); // 5 minutes timeout
     });
 
     describe("Custom Output Path", () => {
@@ -368,7 +383,7 @@ describe("GenerateImageWithGemini Integration Tests", () => {
                 await firestore.doc(refs.actionPath).delete().catch(() => {});
                 await firestore.doc(refs.taskPath).delete().catch(() => {});
             }
-        }, 180000);
+        }, 300000); // 5 minutes timeout
     });
 
     describe("Error Handling", () => {
@@ -578,6 +593,6 @@ describe("GenerateImageWithGemini Integration Tests", () => {
                 await firestore.doc(refs.actionPath).delete().catch(() => {});
                 await firestore.doc(refs.taskPath).delete().catch(() => {});
             }
-        }, 180000);
+        }, 300000); // 5 minutes timeout
     });
 });

@@ -21,7 +21,9 @@ dotenv.config({ path: path.join(__dirname, "../.env") });
 
 // Service account path for authentication
 const serviceAccountPath = process.env.GOOGLE_SERVICE_ACCOUNT_PATH
-    ? path.join(__dirname, "..", process.env.GOOGLE_SERVICE_ACCOUNT_PATH)
+    ? (path.isAbsolute(process.env.GOOGLE_SERVICE_ACCOUNT_PATH)
+        ? process.env.GOOGLE_SERVICE_ACCOUNT_PATH
+        : path.join(__dirname, "..", process.env.GOOGLE_SERVICE_ACCOUNT_PATH))
     : path.join(__dirname, "../mathru-net-27ae75a92bc7.json");
 
 // Test configuration

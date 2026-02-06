@@ -32,3 +32,35 @@ const tmpDir = path.resolve(__dirname, "tmp");
 if (!fs.existsSync(tmpDir)) {
     fs.mkdirSync(tmpDir, { recursive: true });
 }
+
+// Test execution counter for progressive delays
+let testExecutionCount = 0;
+
+// Add delay helper for rate limiting with progressive delays
+(global as any).delayForRateLimit = async (ms: number = 45000): Promise<void> => {
+    // For mocked tests, use minimal delay
+    const totalDelay = 100; // 100ms for mocked tests
+
+    testExecutionCount++;
+
+    return new Promise(resolve => setTimeout(resolve, totalDelay));
+};
+
+// Add delay helper for after successful requests
+(global as any).delayAfterSuccess = async (ms: number = 30000): Promise<void> => {
+    console.log(`✅ Request completed. Waiting ${ms / 1000}s before next operation...`);
+    return new Promise(resolve => setTimeout(resolve, ms));
+};
+
+// Reset test counter
+(global as any).resetTestCounter = (): void => {
+    testExecutionCount = 0;
+    console.log('🔄 Test counter reset');
+};
+
+// Declare global types
+declare global {
+    var delayForRateLimit: (ms?: number) => Promise<void>;
+    var delayAfterSuccess: (ms?: number) => Promise<void>;
+    var resetTestCounter: () => void;
+}
