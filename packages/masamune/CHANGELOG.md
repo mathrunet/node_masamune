@@ -1,4 +1,4 @@
-## 3.9.6 (2026-02-19)
+## 3.9.7 (2026-02-19)
 
 
 ### chore
@@ -239,6 +239,7 @@
 * DatabaseId can be specified in FirestoreTriggeredProcessFunctionBase. ([44c56e4](https://github.com/mathrunet/node_masamune/commit/44c56e42de16b328b2639e41af68e256fa36e73f))
 * Define default fields. ([a2d8393](https://github.com/mathrunet/node_masamune/commit/a2d83932c4f1b8bf5288f8ee21b04c131d98e9c8))
 * Drop the version of node-fetch to eliminate the error. ([36b2a89](https://github.com/mathrunet/node_masamune/commit/36b2a895943e4081d8cc51750172e594c73fe637))
+* Enable logging for Firestore value conversion processes in default model field value converter ([71fa63e](https://github.com/mathrunet/node_masamune/commit/71fa63ebed9d358f67832cbeee1f702246d9b790))
 * Enabled setting an expiration date. ([3e109fd](https://github.com/mathrunet/node_masamune/commit/3e109fde06deb84d782daa41a8df9858b0760bd8))
 * Explicitly pass the Firebase Admin app during Firestore and Storage initialization, and update the version. ([9169415](https://github.com/mathrunet/node_masamune/commit/9169415adb873a0ce1534a5762158d84ca477212))
 * Export the Loader. ([5050efe](https://github.com/mathrunet/node_masamune/commit/5050efe82895649103a68f8108e82173017c23c8))
