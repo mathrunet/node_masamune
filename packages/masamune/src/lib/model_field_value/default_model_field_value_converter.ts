@@ -230,6 +230,7 @@ export class FirestoreModelFieldValueConverterUtils {
         var replaced: { [field: string]: any } | null = null;
         for (const key in data) {
             const val = data[key];
+            console.log(`FirestoreConvertTo: ${key} : ${val} data: ${JSON.stringify(data)}`);
             for (const converter of defaultFirestoreConverters) {
                 replaced = converter.convertTo(key, val, data, firestoreInstance);
                 if (replaced !== null) {
