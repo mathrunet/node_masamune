@@ -1,4 +1,4 @@
-## 3.9.9 (2026-02-19)
+## 3.9.10 (2026-02-19)
 
 
 ### chore
@@ -334,6 +334,7 @@
 * Update converter implementations to use a single result variable instead of an object for storing results ([3dd647f](https://github.com/mathrunet/node_masamune/commit/3dd647fccc5656346f93584b9161438ec2d0eb57))
 * Update dependency versions for `@mathrunet/katana` ([d4a9aea](https://github.com/mathrunet/node_masamune/commit/d4a9aeadb6541d808618098c5a4b2eaf72bf7d50))
 * Update test environment variable files and .gitignore for asset generation ([03a1979](https://github.com/mathrunet/node_masamune/commit/03a1979dedae29c33f420cd2d6dcfbff92a9321f))
+* Update version to 3.9.9 and add ModelFieldValueConvert class for data conversion with geoHash functionality ([c1f3265](https://github.com/mathrunet/node_masamune/commit/c1f3265fb063df1c303e9e96b7bad372964f19be))
 * ver.1.6.5. ([33bb2ec](https://github.com/mathrunet/node_masamune/commit/33bb2ec9f27c208926b093699d65d1c74ad854e7))
 * Video bug fix. ([0fa5f9f](https://github.com/mathrunet/node_masamune/commit/0fa5f9f8ef2cda5420a54db9445f72e9b1f4d6e6))
 
