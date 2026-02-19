@@ -208,7 +208,7 @@ export class FirestoreModelCounterConverter extends FirestoreModelFieldValueConv
       }
       if (Object.keys(map).length > 0 && Object.values(map).every((e) => e["@type"] === this.type)) {
         const target: { [key: string]: any } = {};
-        const res: { [key: string]: any } = {};
+        let res: number | FieldValue | null = null;
         const targetKey = `#${key}`;
         for (const [k, entry] of Object.entries(map)) {
           const fromUser = entry["@source"] === "user";
@@ -220,7 +220,7 @@ export class FirestoreModelCounterConverter extends FirestoreModelFieldValueConv
             "@increment": increment,
             "@target": key,
           };
-          res[k] = fromUser ? count : FieldValue.increment(increment);
+          res = fromUser ? count : FieldValue.increment(increment);
         }
         return {
           [targetKey]: target,

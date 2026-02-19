@@ -204,7 +204,7 @@ export class FirestoreModelGeoValueConverter extends FirestoreModelFieldValueCon
       }
       if (Object.keys(map).length > 0 && Object.values(map).every((e) => e["@type"] === this.type)) {
         const target: { [key: string]: any } = {};
-        const res: { [key: string]: string } = {};
+        let res: string | null = null;
         const targetKey = `#${key}`;
         for (const [k, entry] of Object.entries(map)) {
           const fromUser = entry["@source"] === "user";
@@ -218,7 +218,7 @@ export class FirestoreModelGeoValueConverter extends FirestoreModelFieldValueCon
             "@target": key,
           };
           if (fromUser) {
-            res[k] = geoHash;
+            res = geoHash;
           }
         }
         return {

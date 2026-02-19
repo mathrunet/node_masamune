@@ -188,7 +188,7 @@ export class FirestoreModelTimeConverter extends FirestoreModelFieldValueConvert
         const val = value["@time"] as number | null | undefined ?? 0;
         const useNow = value["@now"] as boolean | null | undefined ?? false;
         const targetKey = `#${key}`;
-        
+
         const result: { [field: string]: any } = {
           [targetKey]: {
             "@type": this.type,
@@ -196,7 +196,7 @@ export class FirestoreModelTimeConverter extends FirestoreModelFieldValueConvert
             "@target": key,
           },
         };
-        
+
         if (fromUser) {
           if (useNow) {
             result[key] = FieldValue.serverTimestamp();
@@ -206,7 +206,7 @@ export class FirestoreModelTimeConverter extends FirestoreModelFieldValueConvert
         } else {
           result[key] = createTimestampFromMicroseconds(val);
         }
-        
+
         return result;
       }
     } else if (Array.isArray(value)) {
@@ -215,18 +215,18 @@ export class FirestoreModelTimeConverter extends FirestoreModelFieldValueConvert
         const target: any[] = [];
         const res: any[] = [];
         const targetKey = `#${key}`;
-        
+
         for (const entry of list) {
           const fromUser = (entry["@source"] as string | null | undefined ?? "") === "user";
           const time = entry["@time"] as number | null | undefined ?? 0;
           const useNow = entry["@now"] as boolean | null | undefined ?? false;
-          
+
           target.push({
             "@type": this.type,
             "@time": time,
             "@target": key,
           });
-          
+
           if (fromUser) {
             if (useNow) {
               res.push(FieldValue.serverTimestamp());
@@ -237,7 +237,7 @@ export class FirestoreModelTimeConverter extends FirestoreModelFieldValueConvert
             res.push(createTimestampFromMicroseconds(time));
           }
         }
-        
+
         return {
           [targetKey]: target,
           [key]: res,
@@ -253,31 +253,31 @@ export class FirestoreModelTimeConverter extends FirestoreModelFieldValueConvert
       }
       if (Object.keys(map).length > 0 && Object.values(map).every((e) => e["@type"] === this.type)) {
         const target: { [key: string]: any } = {};
-        const res: { [key: string]: any } = {};
+        let res: Timestamp | FieldValue | null = null;
         const targetKey = `#${key}`;
-        
+
         for (const [k, entry] of Object.entries(map)) {
           const fromUser = (entry["@source"] as string | null | undefined ?? "") === "user";
           const time = entry["@time"] as number | null | undefined ?? 0;
           const useNow = entry["@now"] as boolean | null | undefined ?? false;
-          
+
           target[k] = {
             "@type": this.type,
             "@time": time,
             "@target": key,
           };
-          
+
           if (fromUser) {
             if (useNow) {
-              res[k] = FieldValue.serverTimestamp();
+              res = FieldValue.serverTimestamp();
             } else {
-              res[k] = createTimestampFromMicroseconds(time);
+              res = createTimestampFromMicroseconds(time);
             }
           } else {
-            res[k] = createTimestampFromMicroseconds(time);
+            res = createTimestampFromMicroseconds(time);
           }
         }
-        
+
         return {
           [targetKey]: target,
           [key]: res,

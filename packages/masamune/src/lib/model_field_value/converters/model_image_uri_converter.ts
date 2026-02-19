@@ -179,7 +179,7 @@ export class FirestoreModelImageUriConverter extends FirestoreModelFieldValueCon
       const map = Object.entries(value).filter(([_, v]) => isDynamicMap(v));
       if (map.length > 0 && map.every(([_, v]) => (v as any)["@type"] === this.type)) {
         const target: { [field: string]: { [field: string]: any } } = {};
-        const res: { [field: string]: string } = {};
+        let res: string | null = null;
         const targetKey = `#${key}`;
         for (const [k, v] of map) {
           const uri = (v as any)["@uri"] as string || "";
@@ -188,7 +188,7 @@ export class FirestoreModelImageUriConverter extends FirestoreModelFieldValueCon
             "@uri": uri,
             "@target": key,
           };
-          res[k] = uri;
+          res = uri;
         }
         return {
           [targetKey]: target,

@@ -213,7 +213,7 @@ export class FirestoreModelLocaleConverter extends FirestoreModelFieldValueConve
       }
       if (Object.keys(map).length > 0 && Object.values(map).every((e) => e["@type"] === this.type)) {
         const target: { [key: string]: any } = {};
-        const res: { [key: string]: string } = {};
+        let res: string | null = null;
         const targetKey = `#${key}`;
         for (const [k, entry] of Object.entries(map)) {
           const language = entry["@language"] as string | null | undefined ?? "";
@@ -225,9 +225,9 @@ export class FirestoreModelLocaleConverter extends FirestoreModelFieldValueConve
             "@target": key,
           };
           if (country) {
-            res[k] = `${language}_${country}`;
+            res = `${language}_${country}`;
           } else {
-            res[k] = language;
+            res = language;
           }
         }
         return {

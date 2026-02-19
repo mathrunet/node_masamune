@@ -216,7 +216,7 @@ export class FirestoreModelDateRangeConverter extends FirestoreModelFieldValueCo
       }
       if (Object.keys(map).length > 0 && Object.values(map).every((e) => e["@type"] === this.type)) {
         const target: { [key: string]: any } = {};
-        const res: { [key: string]: string } = {};
+        let res: string | null = null;
         const targetKey = `#${key}`;
         for (const [k, entry] of Object.entries(map)) {
           const start = entry["@start"] as number | null | undefined ?? 0;
@@ -227,7 +227,7 @@ export class FirestoreModelDateRangeConverter extends FirestoreModelFieldValueCo
             "@end": end,
             "@target": key,
           };
-          res[k] = `${new Date(start / 1000.0).toISOString()}|${new Date(end / 1000.0).toISOString()}`;
+          res = `${new Date(start / 1000.0).toISOString()}|${new Date(end / 1000.0).toISOString()}`;
         }
         return {
           [targetKey]: target,
