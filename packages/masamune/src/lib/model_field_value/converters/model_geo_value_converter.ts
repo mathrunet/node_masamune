@@ -43,6 +43,7 @@ export class ModelGeoValueConverter extends ModelFieldValueConverter {
       return {
         [key]: {
           "@type": this.type,
+          "@geoHash": value.geoHash(),
           "@latitude": value["@latitude"],
           "@longitude": value["@longitude"],
           "@source": value["@source"],

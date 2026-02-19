@@ -531,6 +531,7 @@ export class ModelGeoValue extends ModelFieldValue {
     }
     "@latitude": number;
     "@longitude": number;
+    "@radiusKm"?: number | undefined
 
     /**
      * Get the value of the geo value.
@@ -544,6 +545,19 @@ export class ModelGeoValue extends ModelFieldValue {
             latitude: this["@latitude"] as number,
             longitude: this["@longitude"] as number
         };
+    }
+
+    /**
+     * Get the geo hash of the geo value.
+     * 
+     * 地理値のGeoHashを取得します。
+     * 
+     * @returns The geo hash of the geo value.
+     */
+    geoHash(): string {
+        const radiusKm = this["@radiusKm"] ?? 1.0;
+        const precision = geoHashSetPrecision(radiusKm);
+        return geoHashEncode(this["@latitude"], this["@longitude"], precision);
     }
 }
 
@@ -661,4 +675,67 @@ export class ModelRefBase extends ModelFieldValue {
         return this["@doc"];
     }
 
+}
+
+const geoHashBase32Codes = "0123456789bcdefghjkmnpqrstuvwxyz";
+
+function geoHashSetPrecision(km: number): number {
+    if (km <= 0.00477) {
+        return 9;
+    } else if (km <= 0.0382) {
+        return 8;
+    } else if (km <= 0.153) {
+        return 7;
+    } else if (km <= 1.22) {
+        return 6;
+    } else if (km <= 4.89) {
+        return 5;
+    } else if (km <= 39.1) {
+        return 4;
+    } else if (km <= 156) {
+        return 3;
+    } else if (km <= 1250) {
+        return 2;
+    } else {
+        return 1;
+    }
+}
+
+function geoHashEncode(latitude: number, longitude: number, numberOfChars: number): string {
+    const chars: string[] = [];
+    let bits = 0, bitsTotal = 0, hashValue = 0;
+    let maxLat = 90, minLat = -90, maxLon = 180, minLon = -180;
+
+    while (chars.length < numberOfChars) {
+        let mid: number;
+        if (bitsTotal % 2 === 0) {
+            mid = (maxLon + minLon) / 2;
+            if (longitude > mid) {
+                hashValue = (hashValue << 1) + 1;
+                minLon = mid;
+            } else {
+                hashValue = (hashValue << 1) + 0;
+                maxLon = mid;
+            }
+        } else {
+            mid = (maxLat + minLat) / 2;
+            if (latitude > mid) {
+                hashValue = (hashValue << 1) + 1;
+                minLat = mid;
+            } else {
+                hashValue = (hashValue << 1) + 0;
+                maxLat = mid;
+            }
+        }
+
+        bits++;
+        bitsTotal++;
+        if (bits === 5) {
+            chars.push(geoHashBase32Codes[hashValue]);
+            bits = 0;
+            hashValue = 0;
+        }
+    }
+
+    return chars.join("");
 }
