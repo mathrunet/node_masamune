@@ -194,7 +194,7 @@ export class FirestoreModelFieldValueConverterUtils {
             for (const converter of defaultFirestoreConverters) {
                 replaced = converter.convertFrom(key, val, data, firestoreInstance);
                 if (replaced !== null) {
-                    // console.log(`FirestoreConvertFrom(${converter.type}): ${key} : ${val} to ${replaced}`);
+                    console.log(`FirestoreConvertFrom(${converter.type}): ${key} : ${val} to ${replaced}`);
                     break;
                 }
             }
@@ -233,7 +233,7 @@ export class FirestoreModelFieldValueConverterUtils {
             for (const converter of defaultFirestoreConverters) {
                 replaced = converter.convertTo(key, val, data, firestoreInstance);
                 if (replaced !== null) {
-                    // console.log(`FirestoreConvertTo(${converter.type}): ${key} : ${val} to ${replaced}`);
+                    console.log(`FirestoreConvertTo(${converter.type}): ${key} : ${val} to ${replaced}`);
                     break;
                 }
             }
