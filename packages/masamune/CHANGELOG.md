@@ -1,8 +1,9 @@
-## 3.9.7 (2026-02-19)
+## 3.9.8 (2026-02-19)
 
 
 ### chore
 
+* Add debug log. ([c54a5e7](https://github.com/mathrunet/node_masamune/commit/c54a5e709141b320530df097d83408c195db5696))
 * Add error messages. ([d7f2b00](https://github.com/mathrunet/node_masamune/commit/d7f2b00590761aac98b25f03c1a36f2ee20be5c7))
 * Add log. ([189fd83](https://github.com/mathrunet/node_masamune/commit/189fd832d8660cac5d83ef24fcc0d341c640af45))
 * Add Node.js 20 engine requirement to all package.json files ([1e60d25](https://github.com/mathrunet/node_masamune/commit/1e60d25b2c44e1efd398a6a1229d2ba3f46da1f5))
