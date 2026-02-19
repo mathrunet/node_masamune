@@ -68,11 +68,12 @@ export class FirestoreNullConverter extends FirestoreModelFieldValueConverter {
     original: { [field: string]: any },
     firestoreInstance: FirebaseFirestore.Firestore
   ): { [field: string]: any } | null {
-    if (value instanceof DocumentReference || value instanceof Timestamp || value instanceof GeoPoint || value instanceof VectorValue) {
+    if (value instanceof DocumentReference || value instanceof Timestamp || value instanceof Date || value instanceof FieldValue || value instanceof GeoPoint || value instanceof VectorValue) {
       return null;
     }
     if (isDynamicMap(value) && original[key] !== undefined) {
       const originalMap = original[key];
+      console.log(`FirestoreNullConverter.convertTo1: ${key} : ${value} to ${originalMap}`);
       if (isDynamicMap(originalMap)) {
         const newRes: { [field: string]: any } = { ...value };
         for (const [k, v] of Object.entries(originalMap)) {
@@ -83,6 +84,7 @@ export class FirestoreNullConverter extends FirestoreModelFieldValueConverter {
         return { [key]: newRes };
       }
     } else if (value === null) {
+      console.log(`FirestoreNullConverter.convertToValueNull: ${key} : ${value}`);
       return { [key]: FieldValue.delete() };
     }
     return null;
