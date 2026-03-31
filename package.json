@@ -56,5 +56,8 @@
     "url": "https://github.com/mathrunet/node_masamune/issues"
   },
   "homepage": "https://github.com/mathrunet/node_masamune#readme",
-  "version": "0.1.0"
+  "version": "0.1.0",
+  "overrides": {
+    "axios": "1.13.2"
+  }
 }
