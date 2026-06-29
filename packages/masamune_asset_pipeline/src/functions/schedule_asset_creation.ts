@@ -1,5 +1,5 @@
 import * as functions from "firebase-functions/v2";
-import { SchedulerFunctionsOptions, firestoreLoader } from "@mathrunet/masamune";
+import { SchedulerFunctionsOptions, firestoreLoader } from "@mathrunet/masamune_firebase";
 import * as admin from "firebase-admin";
 
 /**

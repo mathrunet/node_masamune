@@ -1,5 +1,5 @@
 import * as functions from "firebase-functions/v2";
-import { HttpFunctionsOptions, firestoreLoader } from "@mathrunet/masamune";
+import { HttpFunctionsOptions, firestoreLoader } from "@mathrunet/masamune_firebase";
 import * as admin from "firebase-admin";
 
 /**

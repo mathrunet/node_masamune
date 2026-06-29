@@ -6,7 +6,7 @@ import * as os from "os";
 import * as fs from "fs";
 import Ffmpeg from "fluent-ffmpeg";
 import ffmpegStatic from "ffmpeg-static";
-import { HttpFunctionsOptions } from "@mathrunet/masamune";
+import { HttpFunctionsOptions } from "@mathrunet/masamune_firebase";
 import { TextToSpeechClient } from "@google-cloud/text-to-speech";
 import { GoogleAuth } from "google-auth-library";
 
