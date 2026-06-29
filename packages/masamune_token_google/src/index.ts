@@ -9,4 +9,5 @@
  * [YouTube]: https://www.youtube.com/c/mathrunetchannel
  */
 export * from "@mathrunet/masamune";
+export * from "@mathrunet/masamune_firebase";
 export * from "./functions";

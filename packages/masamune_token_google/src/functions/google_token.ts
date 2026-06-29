@@ -1,5 +1,5 @@
 import * as functions from "firebase-functions/v2";
-import { HttpFunctionsOptions } from "@mathrunet/masamune";
+import { HttpFunctionsOptions } from "@mathrunet/masamune_firebase";
 import { GoogleAuth } from "google-auth-library";
 import { GoogleTokenResponse } from "../lib/interface";
 
