@@ -1,6 +1,6 @@
 import * as admin from "firebase-admin";
-import { ModelServerCommandBase, ModelToken, utils } from "@mathrunet/masamune";
-import "@mathrunet/masamune";
+import { ModelServerCommandBase, ModelToken, utils } from "@mathrunet/masamune_firebase";
+import "@mathrunet/masamune_firebase";
 
 const config = require("firebase-functions-test")({
     storageBucket: "development-for-mathrunet.appspot.com",

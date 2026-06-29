@@ -2,7 +2,7 @@ import * as functions from "firebase-functions/v2";
 import { notification } from "../schedulers/notification";
 import { copyDocument } from "../schedulers/copy_document";
 import { deleteDocuments } from "../schedulers/delete_documents";
-import { SchedulerFunctionsOptions, firestoreLoader } from "@mathrunet/masamune";
+import { SchedulerFunctionsOptions, firestoreLoader } from "@mathrunet/masamune_firebase";
 import { SendNotificationRequest } from "@mathrunet/masamune_notification";
 import "@mathrunet/masamune";
 import { SchedulerCopyDocumentRequest, SchedulerData } from "../lib/interface";
