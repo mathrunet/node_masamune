@@ -32,10 +32,10 @@ export * from "./lib/src/request_process_workders_base";
  * 
  * [Workers]で定義された要素を配列として渡します。渡されたメソッドがデプロイされます。
  */
-export function deploy(exports: any, deployWorkders: WorkersBase[]) {
+export function deploy(deployWorkders: WorkersBase[]): hono.Hono {
     const app = new hono.Hono();
     for (const worker of deployWorkders) {
         app.route(worker.path, worker.build());
     }
-    exports.default = app;
+    return app;
 }
