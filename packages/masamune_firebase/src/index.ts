@@ -30,7 +30,6 @@ export * from "./lib/model_field_value/default_model_field_value_converter";
 
 export * from "./lib/exntensions/firestore.extension";
 
-export * from "./functions";
 
 /**
  * Methods for deploying to Firebase Functions.
