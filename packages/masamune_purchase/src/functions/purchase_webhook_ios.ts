@@ -1,6 +1,6 @@
 import * as functions from "firebase-functions/v2";
 import "@mathrunet/masamune";
-import { HttpFunctionsOptions, firestoreLoader, utils } from "@mathrunet/masamune";
+import { HttpFunctionsOptions, firestoreLoader, utils } from "@mathrunet/masamune_firebase";
 import { IOSTransactionInfo } from "../lib/interface";
 
 /**

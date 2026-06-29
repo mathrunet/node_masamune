@@ -1,5 +1,5 @@
 import * as admin from "firebase-admin";
-import "@mathrunet/masamune";
+import "@mathrunet/masamune_firebase";
 import * as dotenv from "dotenv";
 import * as path from "path";
 
@@ -38,9 +38,9 @@ describe("Subscription Verify", () => {
     describe("Android (Google Play)", () => {
         const hasAndroidCredentials = () => {
             return process.env.PURCHASE_ANDROID_SERVICEACCOUNT_EMAIL &&
-                   process.env.PURCHASE_ANDROID_SERVICEACCOUNT_PRIVATE_KEY &&
-                   process.env.PURCHASE_ANDROID_PACKAGE_NAME &&
-                   process.env.PURCHASE_ANDROID_SUBSCRIPTION_PRODUCT_ID;
+                process.env.PURCHASE_ANDROID_SERVICEACCOUNT_PRIVATE_KEY &&
+                process.env.PURCHASE_ANDROID_PACKAGE_NAME &&
+                process.env.PURCHASE_ANDROID_SUBSCRIPTION_PRODUCT_ID;
         };
 
         const hasAndroidTestToken = () => {
@@ -132,7 +132,7 @@ describe("Subscription Verify", () => {
     describe("iOS (App Store)", () => {
         const hasIOSCredentials = () => {
             return process.env.PURCHASE_IOS_SHAREDSECRET &&
-                   process.env.PURCHASE_IOS_SUBSCRIPTION_PRODUCT_ID;
+                process.env.PURCHASE_IOS_SUBSCRIPTION_PRODUCT_ID;
         };
 
         const hasIOSTestReceipt = () => {

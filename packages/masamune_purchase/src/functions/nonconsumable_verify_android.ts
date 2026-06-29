@@ -1,7 +1,7 @@
 import * as functions from "firebase-functions/v2";
 import * as verifier from "../lib/verify_android";
 import * as updater from "../lib/update_unlock";
-import { HttpFunctionsOptions, firestoreLoader } from "@mathrunet/masamune";
+import { HttpFunctionsOptions, firestoreLoader } from "@mathrunet/masamune_firebase";
 
 /**
  * Performs non-consumable in-app purchases. Unlock by setting the value of the field in the document specified in [path] to `true`.

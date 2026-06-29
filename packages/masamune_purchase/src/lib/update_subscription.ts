@@ -1,5 +1,5 @@
 import * as path from "path";
-import { utils } from "@mathrunet/masamune";
+import { utils } from "@mathrunet/masamune_firebase";
 import "@mathrunet/masamune";
 import { UpdateSubscriptionData, UpdateSubscriptionRequest } from "./interface";
 

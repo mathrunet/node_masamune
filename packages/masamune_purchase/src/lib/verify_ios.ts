@@ -1,5 +1,5 @@
 import * as functions from "firebase-functions/v2";
-import { Api } from "@mathrunet/masamune";
+import { Api } from "@mathrunet/masamune_firebase";
 import * as jwt from "jsonwebtoken";
 import { VerifyIOSRequest, VerifyIOSResponse, VerifyIOSStoreKit2Request } from "./interface";
 

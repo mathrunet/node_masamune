@@ -1,6 +1,6 @@
 import * as functions from "firebase-functions/v2";
 import * as verifier from "../lib/verify_android";
-import { PubsubFunctionsOptions, firestoreLoader, utils } from "@mathrunet/masamune";
+import { PubsubFunctionsOptions, firestoreLoader, utils } from "@mathrunet/masamune_firebase";
 import "@mathrunet/masamune";
 
 /**

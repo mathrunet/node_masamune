@@ -1,7 +1,7 @@
 import * as functions from "firebase-functions/v2";
 import * as verifier from "../lib/verify_ios";
 import * as subscription from "../lib/update_subscription";
-import { HttpFunctionsOptions, firestoreLoader } from "@mathrunet/masamune";
+import { HttpFunctionsOptions, firestoreLoader } from "@mathrunet/masamune_firebase";
 
 /**
  * Verify subscriptions and add data.
