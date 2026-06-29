@@ -1,5 +1,5 @@
 import * as functions from "firebase-functions/v2";
-import { Api, HttpFunctionsOptions } from "@mathrunet/masamune";
+import { Api, HttpFunctionsOptions } from "@mathrunet/masamune_firebase";
 import { GeocodingResponse } from "../lib/interface";
 
 /**
