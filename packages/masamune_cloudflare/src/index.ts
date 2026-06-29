@@ -3,7 +3,7 @@
  * 
  * Manages packages on Cloudflare Workers for the server portion (NodeJS) of the Masamune framework.
  * 
- * To use, import * as masamune from "@mathrunet/masamune";
+ * To use, import * as masamune from "@mathrunet/masamune_cloudflare";
  *
  * [mathru.net]: https://mathru.net
  * [YouTube]: https://www.youtube.com/c/mathrunetchannel

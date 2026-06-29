@@ -1,7 +1,7 @@
 {
-  "name": "@mathrunet/masamune_cloudflare",
-  "version": "3.1.4",
-  "description": "Manages packages on Cloudflare Workers for the server portion of the Masamune framework.",
+  "name": "@mathrunet/masamune_cloudflare_tidb",
+  "version": "3.0.0",
+  "description": "Server-side package of the Masamune framework for working with TiDB via Cloudflare.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
@@ -41,6 +41,7 @@
   "homepage": "https://github.com/mathrunet/node_masamune#readme",
   "dependencies": {
     "@mathrunet/masamune": "^3.10.2",
+    "@mathrunet/masamune_cloudflare": "^3.1.4",
     "hono": "^4.12.27",
     "typescript": "^5.9.2"
   },

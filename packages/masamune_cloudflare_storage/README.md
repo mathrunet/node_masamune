@@ -2,7 +2,7 @@
   <a href="https://mathru.net">
     <img width="240px" src="https://raw.githubusercontent.com/mathrunet/node_masamune/main/.github/images/icon.png" alt="Masamune logo" style="border-radius: 32px"s><br/>
   </a>
-  <h1 align="center">Masamune Framework for Cloudflare Workers</h1>
+  <h1 align="center">Cloudflare Storage(R2) for Cloudflare Workers</h1>
 </p>
 
 <p align="center">
@@ -39,7 +39,7 @@ Also, [katana_functions_firebase](https://pub.dev/packages/katana_functions_fire
 Install the following packages
 
 ```bash
-npm install @mathrunet/masamune_cloudflare
+npm install @mathrunet/masamune_cloudflare_storage
 ```
 
 # Implementation
@@ -47,7 +47,7 @@ npm install @mathrunet/masamune_cloudflare
 Pass the return value of the `deploy` function to `export default`. It is defined by passing various Workers to the `deploy` function.
 
 ```typescript
-import * as m from "@mathrunet/masamune_cloudflare";
+import * as m from "@mathrunet/masamune_cloudflare_storage";
 
 // Define [m.Workers.xxxx] for the functions to be added to Workers.
 //
