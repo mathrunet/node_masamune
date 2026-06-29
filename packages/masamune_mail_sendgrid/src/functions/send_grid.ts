@@ -1,6 +1,6 @@
 import * as functions from "firebase-functions/v2";
 import * as sendgrid from "../lib/send_grid";
-import { HttpFunctionsOptions } from "@mathrunet/masamune";
+import { HttpFunctionsOptions } from "@mathrunet/masamune_firebase";
 import { SendGridRequest, SendGridResponse } from "../lib/interface";
 
 /**

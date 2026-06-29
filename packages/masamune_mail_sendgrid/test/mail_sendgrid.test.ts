@@ -1,5 +1,5 @@
 import * as admin from "firebase-admin";
-import "@mathrunet/masamune";
+import "@mathrunet/masamune_firebase";
 import * as dotenv from "dotenv";
 import * as path from "path";
 import { SendGridRequest } from "../src/lib/interface";
