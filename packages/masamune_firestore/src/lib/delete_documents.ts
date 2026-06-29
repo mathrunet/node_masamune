@@ -1,6 +1,6 @@
 
 import * as admin from "firebase-admin";
-import { utils, firestore } from "@mathrunet/masamune";
+import { utils, firestore } from "@mathrunet/masamune_firebase";
 import "@mathrunet/masamune";
 import { FirestoreDeleteDocumentsRequest } from "./interface";
 

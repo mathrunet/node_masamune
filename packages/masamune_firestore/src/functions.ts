@@ -1,4 +1,4 @@
-import * as katana from "@mathrunet/masamune";
+import * as katana from "@mathrunet/masamune_firebase";
 
 /**
  * Define a list of applicable Functions for FirebaseFunctions.

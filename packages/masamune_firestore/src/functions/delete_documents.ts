@@ -1,5 +1,5 @@
 import * as functions from "firebase-functions/v2";
-import { RelationPathFunctionsOptions, firestoreLoader } from "@mathrunet/masamune";
+import { RelationPathFunctionsOptions, firestoreLoader } from "@mathrunet/masamune_firebase";
 import * as delete_documents from "../lib/delete_documents";
 import { FirestoreDeleteDocumentsRequest } from "../lib/interface";
 

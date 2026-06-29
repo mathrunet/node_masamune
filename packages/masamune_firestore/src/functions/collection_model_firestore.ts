@@ -1,7 +1,7 @@
 import * as functions from "firebase-functions/v2";
-import { HttpFunctionsOptions, FirestoreModelFieldValueConverterUtils } from "@mathrunet/masamune";
+import { HttpFunctionsOptions, FirestoreModelFieldValueConverterUtils } from "@mathrunet/masamune_firebase";
 import { Firestore } from "@google-cloud/firestore";
-import "@mathrunet/masamune";
+import "@mathrunet/masamune_firebase";
 import { FirestoreModelResponse } from "../lib/interface";
 
 /**

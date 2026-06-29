@@ -1,5 +1,5 @@
 import * as functions from "firebase-functions/v2";
-import { HttpFunctionsOptions } from "@mathrunet/masamune";
+import { HttpFunctionsOptions } from "@mathrunet/masamune_firebase";
 import { Firestore } from "@google-cloud/firestore";
 import { AggregateField } from "firebase-admin/firestore";
 import { FirestoreModelResponse } from "../lib/interface";
