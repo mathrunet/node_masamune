@@ -1,5 +1,3 @@
-import * as firestore from "firebase-admin/firestore";
-
 /**
  * The source of ModelFieldValue.
  * 
