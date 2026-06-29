@@ -14,8 +14,8 @@ import * as admin from "firebase-admin";
 import * as dotenv from "dotenv";
 import * as path from "path";
 import * as fs from "fs";
-import { ModelTimestamp } from "@mathrunet/masamune";
-import "@mathrunet/masamune";
+import { ModelTimestamp } from "@mathrunet/masamune_firebase";
+import "@mathrunet/masamune_firebase";
 
 // Load test environment variables
 dotenv.config({ path: path.join(__dirname, "../.env") });
@@ -378,8 +378,8 @@ describe("CollectFromAppStore Integration Tests", () => {
                 console.log("Next action:", JSON.stringify(taskData?.nextAction, null, 2));
             } finally {
                 // Cleanup
-                await firestore.doc(multiActionPath).delete().catch(() => {});
-                await firestore.doc(multiTaskPath).delete().catch(() => {});
+                await firestore.doc(multiActionPath).delete().catch(() => { });
+                await firestore.doc(multiTaskPath).delete().catch(() => { });
                 await cleanupTestData();
             }
         }, 120000);
@@ -503,8 +503,8 @@ describe("CollectFromAppStore Integration Tests", () => {
                 console.log("Error:", JSON.stringify(taskData?.error, null, 2));
             } finally {
                 // Cleanup
-                await firestore.doc(expiredActionPath).delete().catch(() => {});
-                await firestore.doc(expiredTaskPath).delete().catch(() => {});
+                await firestore.doc(expiredActionPath).delete().catch(() => { });
+                await firestore.doc(expiredTaskPath).delete().catch(() => { });
                 await cleanupTestData();
             }
         }, 60000);
@@ -628,8 +628,8 @@ describe("CollectFromAppStore Integration Tests", () => {
                 console.log("Error:", JSON.stringify(taskData?.error, null, 2));
             } finally {
                 // Cleanup
-                await firestore.doc(invalidActionPath).delete().catch(() => {});
-                await firestore.doc(invalidTaskPath).delete().catch(() => {});
+                await firestore.doc(invalidActionPath).delete().catch(() => { });
+                await firestore.doc(invalidTaskPath).delete().catch(() => { });
                 await cleanupTestData();
             }
         }, 60000);

@@ -9,7 +9,7 @@
  * 5. Saves initial state to Firebase Storage (as JSON)
  */
 
-import { HttpFunctionsOptions } from "@mathrunet/masamune";
+import { HttpFunctionsOptions } from "@mathrunet/masamune_firebase";
 import {
     Action,
     WorkflowProcessFunctionBase,
@@ -86,7 +86,7 @@ export class AnalyzeGitHubInit extends WorkflowProcessFunctionBase {
         }
 
         const projectDoc = await projectRef.load();
-        const projectData = projectDoc.data() as Project | undefined;
+        const projectData = projectDoc?.data() as Project | undefined;
         const githubToken = projectData?.githubPersonalAccessToken;
 
         if (!githubToken) {

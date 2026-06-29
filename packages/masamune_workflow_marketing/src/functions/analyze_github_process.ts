@@ -7,7 +7,7 @@
  * 3. Caches summaries in Storage JSON
  */
 
-import { HttpFunctionsOptions } from "@mathrunet/masamune";
+import { HttpFunctionsOptions } from "@mathrunet/masamune_firebase";
 import {
     Action,
     WorkflowProcessFunctionBase,
@@ -154,7 +154,7 @@ export class AnalyzeGitHubProcess extends WorkflowProcessFunctionBase {
 
             // 4. Get GitHub token and locale from project
             const projectDoc = await projectRef.load();
-            const projectData = projectDoc.data() as Project | undefined;
+            const projectData = projectDoc?.data() as Project | undefined;
             const githubToken = projectData?.githubPersonalAccessToken;
             const projectLocale = projectData?.locale;
 

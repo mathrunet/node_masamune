@@ -7,7 +7,7 @@
  * 3. Returns final JSON to action.results.githubRepository
  */
 
-import { HttpFunctionsOptions } from "@mathrunet/masamune";
+import { HttpFunctionsOptions } from "@mathrunet/masamune_firebase";
 import {
     Action,
     WorkflowProcessFunctionBase,
@@ -105,7 +105,7 @@ export class AnalyzeGitHubSummary extends WorkflowProcessFunctionBase {
 
             // 2. Get locale from project
             const projectDoc = await projectRef.load();
-            const projectData = projectDoc.data() as Project | undefined;
+            const projectData = projectDoc?.data() as Project | undefined;
             const projectLocale = projectData?.locale;
 
             // Extract locale string

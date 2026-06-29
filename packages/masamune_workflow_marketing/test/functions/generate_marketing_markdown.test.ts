@@ -20,8 +20,8 @@ import * as admin from "firebase-admin";
 import * as dotenv from "dotenv";
 import * as path from "path";
 import * as fs from "fs";
-import { ModelTimestamp } from "@mathrunet/masamune";
-import "@mathrunet/masamune";
+import { ModelTimestamp } from "@mathrunet/masamune_firebase";
+import "@mathrunet/masamune_firebase";
 import { Action } from "@mathrunet/masamune_workflow";
 
 // Load test environment variables

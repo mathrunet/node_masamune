@@ -13,8 +13,8 @@ import * as admin from "firebase-admin";
 import * as dotenv from "dotenv";
 import * as path from "path";
 import * as fs from "fs";
-import { ModelTimestamp } from "@mathrunet/masamune";
-import "@mathrunet/masamune";
+import { ModelTimestamp } from "@mathrunet/masamune_firebase";
+import "@mathrunet/masamune_firebase";
 
 // Load test environment variables
 dotenv.config({ path: path.join(__dirname, "../.env") });

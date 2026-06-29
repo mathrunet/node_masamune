@@ -1,4 +1,4 @@
-import { HttpFunctionsOptions } from "@mathrunet/masamune";
+import { HttpFunctionsOptions } from "@mathrunet/masamune_firebase";
 import { Action, WorkflowProcessFunctionBase, Project, WorkflowContext } from "@mathrunet/masamune_workflow";
 import { VertexAI, SchemaType } from "@google-cloud/vertexai";
 import {

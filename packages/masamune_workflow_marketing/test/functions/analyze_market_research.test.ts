@@ -12,8 +12,8 @@
 import * as admin from "firebase-admin";
 import * as dotenv from "dotenv";
 import * as path from "path";
-import { ModelTimestamp } from "@mathrunet/masamune";
-import "@mathrunet/masamune";
+import { ModelTimestamp } from "@mathrunet/masamune_firebase";
+import "@mathrunet/masamune_firebase";
 import { MarketResearch, MarketResearchData } from "../../src/models";
 
 // Load test environment variables

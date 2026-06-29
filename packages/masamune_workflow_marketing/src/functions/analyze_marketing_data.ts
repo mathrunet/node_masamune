@@ -1,4 +1,4 @@
-import { HttpFunctionsOptions } from "@mathrunet/masamune";
+import { HttpFunctionsOptions } from "@mathrunet/masamune_firebase";
 import { Action, WorkflowProcessFunctionBase, Project, WorkflowContext } from "@mathrunet/masamune_workflow";
 import { GoogleGenAI, Type } from "@google/genai";
 import {
@@ -158,33 +158,33 @@ export class AnalyzeMarketingData extends WorkflowProcessFunctionBase {
                 competitivePositioningResult,
                 marketOpportunityResult,
             ] = await Promise.all([
-                    this.generateOverallAnalysis(genai, combinedData, modelName),
-                    this.generateImprovementSuggestions(genai, combinedData, modelName),
-                    this.generateTrendAnalysis(genai, combinedData, modelName),
-                    reviews.length > 0
-                        ? this.analyzeReviews(genai, reviews, modelName)
-                        : Promise.resolve({
-                            data: {
-                                sentiment: { positive: 0, neutral: 0, negative: 0 },
-                                commonThemes: [],
-                                actionableInsights: [],
-                            },
-                            inputTokens: 0,
-                            outputTokens: 0,
-                        }),
-                    // GitHub改善提案（GitHubデータがある場合のみ）
-                    githubRepository && !("error" in githubRepository)
-                        ? this.generateGitHubImprovements(genai, combinedData, modelName)
-                        : Promise.resolve(null),
-                    // 競合ポジショニング分析（市場調査データがある場合のみ）
-                    marketDataIntegrated
-                        ? this.generateCompetitivePositioning(genai, combinedData, modelName)
-                        : Promise.resolve(null),
-                    // 市場機会優先度分析（市場調査データがある場合のみ）
-                    marketDataIntegrated
-                        ? this.generateMarketOpportunityPriority(genai, combinedData, modelName)
-                        : Promise.resolve(null),
-                ]);
+                this.generateOverallAnalysis(genai, combinedData, modelName),
+                this.generateImprovementSuggestions(genai, combinedData, modelName),
+                this.generateTrendAnalysis(genai, combinedData, modelName),
+                reviews.length > 0
+                    ? this.analyzeReviews(genai, reviews, modelName)
+                    : Promise.resolve({
+                        data: {
+                            sentiment: { positive: 0, neutral: 0, negative: 0 },
+                            commonThemes: [],
+                            actionableInsights: [],
+                        },
+                        inputTokens: 0,
+                        outputTokens: 0,
+                    }),
+                // GitHub改善提案（GitHubデータがある場合のみ）
+                githubRepository && !("error" in githubRepository)
+                    ? this.generateGitHubImprovements(genai, combinedData, modelName)
+                    : Promise.resolve(null),
+                // 競合ポジショニング分析（市場調査データがある場合のみ）
+                marketDataIntegrated
+                    ? this.generateCompetitivePositioning(genai, combinedData, modelName)
+                    : Promise.resolve(null),
+                // 市場機会優先度分析（市場調査データがある場合のみ）
+                marketDataIntegrated
+                    ? this.generateMarketOpportunityPriority(genai, combinedData, modelName)
+                    : Promise.resolve(null),
+            ]);
 
             // 6. トークン使用量を集計してコストを計算
             const totalInputTokens =

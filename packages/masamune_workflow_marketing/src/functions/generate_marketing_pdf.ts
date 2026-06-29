@@ -1,4 +1,4 @@
-import { HttpFunctionsOptions } from "@mathrunet/masamune";
+import { HttpFunctionsOptions } from "@mathrunet/masamune_firebase";
 import { Action, WorkflowProcessFunctionBase, WorkflowContext } from "@mathrunet/masamune_workflow";
 import * as admin from "firebase-admin";
 import { ChartService, ChartInputData } from "../services/chart_service";
