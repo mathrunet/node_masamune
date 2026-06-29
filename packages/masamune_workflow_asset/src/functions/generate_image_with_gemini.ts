@@ -5,7 +5,7 @@
  * Gemini 2.0 Flash Experimentalを使用して画像を生成するためのFunction。
  * asset_masamune/docker/comfyui/src/models/action.pyとインターフェースを統一。
  */
-import { HttpFunctionsOptions } from "@mathrunet/masamune";
+import { HttpFunctionsOptions } from "@mathrunet/masamune_firebase";
 import { Action, WorkflowProcessFunctionBase, WorkflowContext } from "@mathrunet/masamune_workflow";
 import { GeminiImageService } from "../services/gemini_image_service";
 import { StorageService } from "../services/storage_service";

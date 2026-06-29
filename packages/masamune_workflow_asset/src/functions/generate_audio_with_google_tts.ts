@@ -3,7 +3,7 @@
  *
  * Google Cloud Text-to-Speechを使用して音声を生成するためのFunction。
  */
-import { HttpFunctionsOptions } from "@mathrunet/masamune";
+import { HttpFunctionsOptions } from "@mathrunet/masamune_firebase";
 import { Action, WorkflowProcessFunctionBase, WorkflowContext } from "@mathrunet/masamune_workflow";
 import { GoogleTTSService } from "../services/google_tts_service";
 import { StorageService } from "../services/storage_service";

@@ -5,7 +5,7 @@
  * Google Imagen 3を使用して画像を生成するためのFunction。
  * asset_masamune/docker/comfyui/src/models/action.pyとインターフェースを統一。
  */
-import { HttpFunctionsOptions } from "@mathrunet/masamune";
+import { HttpFunctionsOptions } from "@mathrunet/masamune_firebase";
 import { Action, WorkflowProcessFunctionBase, WorkflowContext } from "@mathrunet/masamune_workflow";
 import { Imagen3Service } from "../services/imagen3_service";
 import { StorageService } from "../services/storage_service";

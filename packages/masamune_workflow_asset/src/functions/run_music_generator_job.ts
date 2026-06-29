@@ -1,5 +1,5 @@
 import { WorkflowJobRunnerFunctionBase } from "@mathrunet/masamune_workflow";
-import { HttpFunctionsOptions } from "@mathrunet/masamune";
+import { HttpFunctionsOptions } from "@mathrunet/masamune_firebase";
 
 /**
  * Function to run Music Generator Cloud Run Job.
