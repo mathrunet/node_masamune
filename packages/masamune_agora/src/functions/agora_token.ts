@@ -1,6 +1,6 @@
 import * as functions from "firebase-functions/v2";
 import { RtcTokenBuilder, RtcRole } from "agora-token";
-import { HttpFunctionsOptions } from "@mathrunet/masamune";
+import { HttpFunctionsOptions } from "@mathrunet/masamune_firebase";
 
 /**
  * Obtain an Agora.io security token.
