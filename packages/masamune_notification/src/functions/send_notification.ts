@@ -1,6 +1,6 @@
 import * as functions from "firebase-functions/v2";
 import { sendNotification } from "../lib/send_notification";
-import { HttpFunctionsOptions, ModelToken, firestoreLoader } from "@mathrunet/masamune";
+import { HttpFunctionsOptions, ModelToken, firestoreLoader } from "@mathrunet/masamune_firebase";
 
 /**
  * Define the process for PUSH notification.

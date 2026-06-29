@@ -1,6 +1,6 @@
 import * as functions from "firebase-functions/v2";
 import * as admin from "firebase-admin";
-import { utils, firestore, ModelToken } from "@mathrunet/masamune";
+import { utils, firestore, ModelToken } from "@mathrunet/masamune_firebase";
 import "@mathrunet/masamune";
 import { SendNotificationRequest, SendNotificationResponse } from "./interface";
 

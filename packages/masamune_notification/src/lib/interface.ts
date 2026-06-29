@@ -1,4 +1,4 @@
-import { ModelToken } from "@mathrunet/masamune";
+import { ModelToken } from "@mathrunet/masamune_firebase";
 
 /**
  * Send notification request interface.
