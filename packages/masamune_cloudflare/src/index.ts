@@ -17,6 +17,8 @@ export * from "./lib/src/workers_base";
 export * from "./lib/src/workers_data";
 export * from "./lib/src/request_process_workders_base";
 
+export * from "./functions";
+
 /**
  * Methods for deploying to Cloudflare Workers.
  * 
