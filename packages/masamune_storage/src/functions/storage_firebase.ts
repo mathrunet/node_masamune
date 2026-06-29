@@ -1,5 +1,5 @@
 import * as functions from "firebase-functions/v2";
-import { HttpFunctionsOptions } from "@mathrunet/masamune";
+import { HttpFunctionsOptions } from "@mathrunet/masamune_firebase";
 import { Storage } from "@google-cloud/storage";
 import "@mathrunet/masamune";
 import { StorageFirebaseOptions, StorageFirebaseResponse } from "../lib/interface";
