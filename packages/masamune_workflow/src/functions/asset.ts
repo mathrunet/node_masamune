@@ -1,5 +1,5 @@
 import * as functions from "firebase-functions/v2";
-import { HttpFunctionsOptions, firestoreLoader, storageLoader } from "@mathrunet/masamune";
+import { HttpFunctionsOptions, firestoreLoader, storageLoader } from "@mathrunet/masamune_firebase";
 import { Asset } from "../lib/interfaces";
 import "@mathrunet/masamune";
 

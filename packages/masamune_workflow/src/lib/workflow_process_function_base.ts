@@ -1,5 +1,5 @@
 import * as functions from "firebase-functions/v2";
-import { firestoreLoader, FunctionsBase, HttpFunctionsOptions, ModelTimestamp } from "@mathrunet/masamune";
+import { firestoreLoader, FunctionsBase, HttpFunctionsOptions, ModelTimestamp } from "@mathrunet/masamune_firebase";
 import * as admin from "firebase-admin";
 import { Action, Task, Usage, Plan, Subscription, Campaign, TaskLog } from "./interfaces";
 import { GoogleGenAI } from "@google/genai";

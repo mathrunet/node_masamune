@@ -1,5 +1,5 @@
 import * as functions from "firebase-functions/v2";
-import { SchedulerFunctionsOptions, firestoreLoader, utils, ModelTimestamp } from "@mathrunet/masamune";
+import { SchedulerFunctionsOptions, firestoreLoader, utils, ModelTimestamp } from "@mathrunet/masamune_firebase";
 import { Workflow } from "../lib/interfaces";
 import * as admin from "firebase-admin";
 import "@mathrunet/masamune";
@@ -43,7 +43,7 @@ module.exports = (
                         const project = data.project;
                         const organization = data.organization;
                         const actions = data.actions;
-                        if (actions.length <= 0) { 
+                        if (actions.length <= 0) {
                             const updatedWorkflowData: Workflow = {
                                 ...data,
                                 "@time": now,
@@ -81,7 +81,7 @@ module.exports = (
                                 }, { merge: true }
                             )
                         );
-                        switch (repeat) { 
+                        switch (repeat) {
                             case "daily": {
                                 const updatedWorkflowData: Workflow = {
                                     ...data,

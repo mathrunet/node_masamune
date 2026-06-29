@@ -9,6 +9,7 @@
  * [YouTube]: https://www.youtube.com/c/mathrunetchannel
  */
 export * from "@mathrunet/masamune";
+export * from "@mathrunet/masamune_firebase";
 export * from "./functions";
 export * from "./lib/interfaces";
 export * from "./lib/workflow_process_function_base";

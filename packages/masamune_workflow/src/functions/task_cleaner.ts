@@ -1,5 +1,5 @@
 import * as functions from "firebase-functions/v2";
-import { SchedulerFunctionsOptions, firestoreLoader, ModelFieldValue, ModelTimestamp } from "@mathrunet/masamune";
+import { SchedulerFunctionsOptions, firestoreLoader, ModelFieldValue, ModelTimestamp } from "@mathrunet/masamune_firebase";
 import { Task, Action } from "../lib/interfaces";
 import * as admin from "firebase-admin";
 import "@mathrunet/masamune";
@@ -53,7 +53,7 @@ module.exports = (
                                 status: 500,
                                 "message": "Task timed out",
                             },
-                            "updatedTime":  new ModelTimestamp(now),
+                            "updatedTime": new ModelTimestamp(now),
                         };
                         promies.push(
                             task.ref.save(
@@ -75,7 +75,7 @@ module.exports = (
                                     status: 500,
                                     "message": "Task timed out",
                                 },
-                                "updatedTime":  new ModelTimestamp(now),
+                                "updatedTime": new ModelTimestamp(now),
                             };
                             promies.push(
                                 action.ref.save(

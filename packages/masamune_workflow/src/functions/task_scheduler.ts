@@ -1,5 +1,5 @@
 import * as functions from "firebase-functions/v2";
-import { SchedulerFunctionsOptions, firestoreLoader, ModelFieldValue, utils, ModelTimestamp } from "@mathrunet/masamune";
+import { SchedulerFunctionsOptions, firestoreLoader, ModelFieldValue, utils, ModelTimestamp } from "@mathrunet/masamune_firebase";
 import { Action, Task } from "../lib/interfaces";
 import * as admin from "firebase-admin";
 import * as adminFunctions from "firebase-admin/functions";
@@ -60,7 +60,7 @@ module.exports = (
                             "@time": now,
                             "command": nextAction,
                             "locale": data.locale,
-                            "task": task.ref.toModelRefBase(),
+                            "task": task.ref.toModelRefFirebase(),
                             "workflow": data.workflow,
                             "organization": organization,
                             "project": project,

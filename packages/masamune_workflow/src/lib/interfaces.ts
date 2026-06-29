@@ -1,4 +1,4 @@
-import { ModelLocale, ModelRefBase, ModelTimestamp } from "@mathrunet/masamune";
+import { ModelLocale, ModelRefFirebase, ModelTimestamp } from "@mathrunet/masamune_firebase";
 import * as admin from "firebase-admin";
 import { WorkflowContext } from "./workflow_process_function_base";
 import { Firestore } from "firebase-admin/firestore";
@@ -82,7 +82,7 @@ export interface Organization extends Model {
  * メンバーのインターフェース。
  */
 export interface Member extends Model {
-    "organization"?: ModelRefBase;
+    "organization"?: ModelRefFirebase;
     "userId"?: string;
     "role": WorkflowRole;
     "createdTime": ModelTimestamp;
@@ -102,7 +102,7 @@ export interface Project extends Model {
     "target"?: string;
     "locale"?: ModelLocale | string;
     "kpi"?: { [key: string]: any };
-    "organization"?: ModelRefBase;
+    "organization"?: ModelRefFirebase;
     "icon"?: string;
     "googleAccessToken"?: string;
     "googleRefreshToken"?: string;
@@ -122,9 +122,9 @@ export interface Project extends Model {
  */
 export interface Workflow extends Model {
     "name"?: string;
-    "project"?: ModelRefBase;
+    "project"?: ModelRefFirebase;
     "locale"?: ModelLocale | string;
-    "organization"?: ModelRefBase;
+    "organization"?: ModelRefFirebase;
     "repeat": WorkflowRepeat;
     "actions": ActionCommand[];
     "prompt"?: string;
@@ -141,13 +141,13 @@ export interface Workflow extends Model {
  * タスクのインターフェース。
  */
 export interface Task extends Model {
-    "workflow"?: ModelRefBase;
-    "organization"?: ModelRefBase;
-    "project"?: ModelRefBase;
+    "workflow"?: ModelRefFirebase;
+    "organization"?: ModelRefFirebase;
+    "project"?: ModelRefFirebase;
     "locale"?: ModelLocale | string;
     "status": WorkflowTaskStatus;
     "actions": ActionCommand[];
-    "currentAction"?: ModelRefBase | admin.firestore.FieldValue;
+    "currentAction"?: ModelRefFirebase | admin.firestore.FieldValue;
     "nextAction"?: ActionCommand | admin.firestore.FieldValue;
     "error"?: { [key: string]: any };
     "log"?: TaskLog[];
@@ -184,10 +184,10 @@ export interface TaskLog {
  */
 export interface Action extends Model {
     "command": ActionCommand;
-    "task"?: ModelRefBase;
-    "workflow"?: ModelRefBase;
-    "organization"?: ModelRefBase;
-    "project"?: ModelRefBase;
+    "task"?: ModelRefFirebase;
+    "workflow"?: ModelRefFirebase;
+    "organization"?: ModelRefFirebase;
+    "project"?: ModelRefFirebase;
     "status": WorkflowTaskStatus;
     "locale"?: ModelLocale | string;
     "error"?: { [key: string]: any };
@@ -223,7 +223,7 @@ export interface ActionCommand {
  * アセットのインターフェース。
  */
 export interface Asset extends Model {
-    "organization"?: ModelRefBase;
+    "organization"?: ModelRefFirebase;
     "source"?: string;
     "content"?: string;
     "path"?: string;
@@ -239,8 +239,8 @@ export interface Asset extends Model {
  * ページのインターフェース。
  */
 export interface Page extends Model {
-    "organization"?: ModelRefBase;
-    "project"?: ModelRefBase;
+    "organization"?: ModelRefFirebase;
+    "project"?: ModelRefFirebase;
     "content"?: string;
     "path"?: string;
     "locale"?: ModelLocale | string;
@@ -254,7 +254,7 @@ export interface Page extends Model {
  * 利用量のインターフェース。
  */
 export interface Usage extends Model {
-    "organization"?: ModelRefBase;
+    "organization"?: ModelRefFirebase;
     "usage": number;
     "latestPlan"?: string | admin.firestore.FieldValue;
     "bucketBalance"?: number;
@@ -280,7 +280,7 @@ export interface Plan extends Model {
  * キャンペーンのインターフェース。
  */
 export interface Campaign extends Model {
-    "organization"?: ModelRefBase;
+    "organization"?: ModelRefFirebase;
     "limit"?: number;
     "expiredTime"?: ModelTimestamp;
     "createdTime": ModelTimestamp;
@@ -293,7 +293,7 @@ export interface Campaign extends Model {
  * 証明書のインターフェース。
  */
 export interface Certificate extends Model {
-    "organization"?: ModelRefBase;
+    "organization"?: ModelRefFirebase;
     "token"?: string;
     "scope"?: string[];
     "expiredTime"?: ModelTimestamp;
