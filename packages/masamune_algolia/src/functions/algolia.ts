@@ -1,6 +1,6 @@
 import * as functions from "firebase-functions/v2";
 import * as algolia from "algoliasearch";
-import { PathFunctionsOptions, FirestoreModelFieldValueConverterUtils, firestoreLoader, ModelFieldValueConverterUtils } from "@mathrunet/masamune";
+import { PathFunctionsOptions, FirestoreModelFieldValueConverterUtils, firestoreLoader, ModelFieldValueConverterUtils } from "@mathrunet/masamune_firebase";
 import { AlgoliaData } from "../lib/interface";
 
 /**

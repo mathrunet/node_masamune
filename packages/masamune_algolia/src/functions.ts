@@ -1,4 +1,4 @@
-import * as data from "@mathrunet/masamune";
+import * as data from "@mathrunet/masamune_firebase";
 
 /**
  * Define a list of applicable Functions for FirebaseFunctions.
