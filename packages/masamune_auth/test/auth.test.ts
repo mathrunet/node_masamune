@@ -1,5 +1,5 @@
 import * as admin from "firebase-admin";
-import "@mathrunet/masamune";
+import "@mathrunet/masamune_firebase";
 
 const config = require("firebase-functions-test")({
     storageBucket: "development-for-mathrunet.appspot.com",

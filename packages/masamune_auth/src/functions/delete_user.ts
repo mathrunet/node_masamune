@@ -1,5 +1,5 @@
 import * as functions from "firebase-functions/v2";
-import { HttpFunctionsOptions } from "@mathrunet/masamune";
+import { HttpFunctionsOptions } from "@mathrunet/masamune_firebase";
 import * as admin from "firebase-admin";
 import { DeleteUserResponse } from "../lib/interface";
 
