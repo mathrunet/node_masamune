@@ -25,10 +25,10 @@ ctx1.font = 'bold 100px "MPlus"';
 ctx1.fillStyle = '#FFFFFF';
 ctx1.textAlign = 'center';
 ctx1.textBaseline = 'middle';
-ctx1.fillText('ClaudeCodeUI', 350, 75);
+ctx1.fillText('SamuraiAI', 350, 75);
 
 console.log('Font:', ctx1.font);
-const metrics = ctx1.measureText('ClaudeCodeUI');
+const metrics = ctx1.measureText('SamuraiAI');
 console.log('Text width:', metrics.width);
 
 fs.writeFileSync('test-registered-font.png', canvas1.toBuffer('image/png'));
@@ -46,10 +46,10 @@ ctx2.font = 'bold 100px sans-serif';
 ctx2.fillStyle = '#FFFFFF';
 ctx2.textAlign = 'center';
 ctx2.textBaseline = 'middle';
-ctx2.fillText('ClaudeCodeUI', 350, 75);
+ctx2.fillText('SamuraiAI', 350, 75);
 
 console.log('Font:', ctx2.font);
-const metrics2 = ctx2.measureText('ClaudeCodeUI');
+const metrics2 = ctx2.measureText('SamuraiAI');
 console.log('Text width:', metrics2.width);
 
 fs.writeFileSync('test-sans-serif.png', canvas2.toBuffer('image/png'));

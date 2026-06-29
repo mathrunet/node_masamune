@@ -153,3 +153,6 @@ test/*.p8
 # Temporary video files for testing
 tmp/
 test/tmp/
+
+# Nested package-lock.json (workspace 構成では不要、衝突源になるため除外)
+packages/*/package-lock.json

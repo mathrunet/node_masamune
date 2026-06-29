@@ -13,7 +13,7 @@ ctx1.font = 'bold 100px "Arial"';
 ctx1.fillStyle = '#FFFFFF';
 ctx1.textAlign = 'center';
 ctx1.textBaseline = 'middle';
-ctx1.fillText('ClaudeCodeUI', 350, 75);
+ctx1.fillText('SamuraiAI', 350, 75);
 
 console.log('Font:', ctx1.font);
 console.log('FillStyle:', ctx1.fillStyle);
@@ -33,7 +33,7 @@ ctx2.font = 'bold 100px "Arial"';
 ctx2.fillStyle = '#FFFFFF';
 ctx2.textAlign = 'center';
 ctx2.textBaseline = 'middle';
-ctx2.fillText('ClaudeCodeUI', 350, 75);
+ctx2.fillText('SamuraiAI', 350, 75);
 
 console.log('Font:', ctx2.font);
 console.log('FillStyle:', ctx2.fillStyle);
@@ -52,7 +52,7 @@ ctx3.font = 'bold 100px "Arial"';
 ctx3.fillStyle = '#FFFFFF';
 ctx3.textAlign = 'center';
 ctx3.textBaseline = 'middle';
-ctx3.fillText('ClaudeCodeUI', 350, 75);
+ctx3.fillText('SamuraiAI', 350, 75);
 
 console.log('Font:', ctx3.font);
 console.log('FillStyle:', ctx3.fillStyle);
@@ -74,10 +74,10 @@ ctx4.textAlign = 'center';
 ctx4.textBaseline = 'middle';
 
 // Draw text
-ctx4.fillText('ClaudeCodeUI', 350, 75);
+ctx4.fillText('SamuraiAI', 350, 75);
 
 // Measure text
-const metrics = ctx4.measureText('ClaudeCodeUI');
+const metrics = ctx4.measureText('SamuraiAI');
 console.log('Text metrics:');
 console.log('  width:', metrics.width);
 console.log('  actualBoundingBoxAscent:', metrics.actualBoundingBoxAscent);

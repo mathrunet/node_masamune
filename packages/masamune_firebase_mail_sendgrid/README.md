@@ -2,7 +2,7 @@
   <a href="https://mathru.net">
     <img width="240px" src="https://raw.githubusercontent.com/mathrunet/node_masamune/main/.github/images/icon.png" alt="Masamune logo" style="border-radius: 32px"s><br/>
   </a>
-  <h1 align="center">Masamune Framework</h1>
+  <h1 align="center">Masamune Main Sendgrid for Firebase Functions</h1>
 </p>
 
 <p align="center">
@@ -30,7 +30,7 @@
 
 ---
 
-Just load the package in index.ts and pass the predefined data to the methods to implement the server side.
+Masamune framework package plugin for SendGrid support.
 
 Also, [katana_functions_firebase](https://pub.dev/packages/katana_functions_firebase/score) can be used to execute server-side functions from methods defined on the client side, allowing for safe implementation.
 
@@ -39,7 +39,7 @@ Also, [katana_functions_firebase](https://pub.dev/packages/katana_functions_fire
 Install the following packages
 
 ```bash
-npm install @mathrunet/masamune_firebase
+npm install @mathrunet/masamune_firebase_mail_sendgrid
 ```
 
 # Implementation
@@ -47,7 +47,7 @@ npm install @mathrunet/masamune_firebase
 Import the package as follows and pass the value of `exports` and the list of functions you wish to define to the `deploy` function.
 
 ```dart
-import * as m from "@mathrunet/masamune_firebase";
+import * as m from "@mathrunet/masamune_firebase_mail_sendgrid";
 
 // Define [m.Functions.xxxx] for the functions to be added to Functions.
 // 
@@ -55,8 +55,8 @@ import * as m from "@mathrunet/masamune_firebase";
 m.deploy(
     exports,
     [
-        // Function for PUSH Notification.
-        m.TestFunctions.test,
+        // Function for SendGrid.
+        m.Functions.sendgrid,
     ],
 );
 ```
