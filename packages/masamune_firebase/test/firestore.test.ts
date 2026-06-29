@@ -1,10 +1,12 @@
 import * as admin from "firebase-admin";
 import { ModelCounter, ModelDate, ModelDateRange, ModelFieldValue, ModelGeoValue, ModelImageUri, ModelLocale, ModelLocalizedLocaleVaue, ModelLocalizedValue, ModelRefBase, ModelSearch, ModelTime, ModelTimeRange, ModelTimestamp, ModelTimestampRange, ModelToken, ModelUri, ModelVectorValue, ModelVideoUri } from "@mathrunet/masamune";
+import { ModelRefFirebase } from "../src/lib/model_field_value/model_field_value";
+import "../src/lib/exntensions/firestore.extension";
 
+process.env.FIRESTORE_EMULATOR_HOST = process.env.FIRESTORE_EMULATOR_HOST ?? "127.0.0.1:8080";
 const config = require("firebase-functions-test")({
-    storageBucket: "development-for-mathrunet.appspot.com",
-    projectId: "development-for-mathrunet",
-}, "test/development-for-mathrunet-e2c2c84b2167.json");
+    projectId: "masamune-firebase-test",
+});
 
 function removeSource(data: { [key: string]: any } | undefined): { [key: string]: any } {
     if (data == undefined) {
@@ -17,7 +19,7 @@ function removeSource(data: { [key: string]: any } | undefined): { [key: string]
         if (val instanceof ModelFieldValue) {
             delete updated["@source"];
         }
-        if (val instanceof ModelRefBase) {
+        if (val instanceof ModelRefFirebase) {
             delete updated["@doc"];
         }
         result[key] = updated;
@@ -43,7 +45,7 @@ interface TestModel {
     token?: ModelToken;
     geo?: ModelGeoValue;
     vector?: ModelVectorValue;
-    ref?: ModelRefBase;
+    ref?: ModelRefFirebase;
 }
 
 describe("Firestore Test", () => {
@@ -91,7 +93,7 @@ describe("Firestore Test", () => {
             token: new ModelToken(["aaa", "bbb", "ccc"]),
             geo: new ModelGeoValue(35.68177834908552, 139.75310000426765),
             vector: new ModelVectorValue([1.0, 2.0, 3.0]),
-            ref: new ModelRefBase("test/ref"),
+            ref: new ModelRefFirebase("test/ref"),
         };
         console.log(testData);
         const firestoreInstance = admin.firestore();

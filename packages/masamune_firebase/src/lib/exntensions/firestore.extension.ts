@@ -334,11 +334,9 @@ declare module "@google-cloud/firestore" {
     const result = await this.get();
     const data = result.data() as { [field: string]: any } | undefined ?? {};
     const firestoreInstance = result.ref.firestore;
-    const converted = ModelFieldValueConverterUtils.convertFrom({
-        data: FirestoreModelFieldValueConverterUtils.convertFrom({
-            data: data,
-            firestoreInstance: firestoreInstance,
-        }),
+    const converted = FirestoreModelFieldValueConverterUtils.convertFrom({
+        data: data,
+        firestoreInstance: firestoreInstance,
     });
     return new DocumentModel(result, converted as AppModelType);
 };
@@ -364,9 +362,7 @@ declare module "@google-cloud/firestore" {
     const update = data as { [field: string]: any } | undefined ?? {};
     const firestoreInstance = this.firestore;
     const converted = FirestoreModelFieldValueConverterUtils.convertTo({
-        data: ModelFieldValueConverterUtils.convertTo({
-            data: update,
-        }),
+        data: update,
         firestoreInstance: firestoreInstance,
     });
     return await this.set({
@@ -399,9 +395,7 @@ declare module "@google-cloud/firestore" {
     const update = data as { [field: string]: any } | undefined ?? {};
     const firestoreInstance = this.firestore;
     const converted = FirestoreModelFieldValueConverterUtils.convertTo({
-        data: ModelFieldValueConverterUtils.convertTo({
-            data: update,
-        }),
+        data: update,
         firestoreInstance: firestoreInstance,
     });
     return await this.set({
@@ -425,22 +419,18 @@ declare module "@google-cloud/firestore" {
     for (const doc of result.docs) {
         const data = doc.data() as { [field: string]: any } | undefined ?? {};
         const firestoreInstance = doc.ref.firestore;
-        const converted = ModelFieldValueConverterUtils.convertFrom({
-            data: FirestoreModelFieldValueConverterUtils.convertFrom({
-                data: data,
-                firestoreInstance: firestoreInstance,
-            }),
+        const converted = FirestoreModelFieldValueConverterUtils.convertFrom({
+            data: data,
+            firestoreInstance: firestoreInstance,
         });
         docs.push(new QueryDocumentModel(doc, converted as AppModelType));
     }
     for (const doc of result.docChanges()) {
         const data = doc.doc.data() as { [field: string]: any } | undefined ?? {};
         const firestoreInstance = doc.doc.ref.firestore;
-        const converted = ModelFieldValueConverterUtils.convertFrom({
-            data: FirestoreModelFieldValueConverterUtils.convertFrom({
-                data: data,
-                firestoreInstance: firestoreInstance,
-            }),
+        const converted = FirestoreModelFieldValueConverterUtils.convertFrom({
+            data: data,
+            firestoreInstance: firestoreInstance,
         });
         changes.push(new DocumentChangeModel(doc, new QueryDocumentModel(doc.doc, converted as AppModelType)));
     }

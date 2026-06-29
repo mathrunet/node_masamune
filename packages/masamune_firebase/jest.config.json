@@ -1,5 +1,7 @@
 {
-    "moduleNameMapper": {},
+    "moduleNameMapper": {
+        "^buffer-equal-constant-time$": "<rootDir>/test/shims/buffer-equal-constant-time.js"
+    },
     "moduleDirectories": [
         "src",
         "node_modules"

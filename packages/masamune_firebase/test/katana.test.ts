@@ -1,5 +1,5 @@
 import { utils } from "@mathrunet/masamune";
-import { firestore } from "@mathrunet/masamune_firebase";
+import * as firestore from "../src/lib/src/firestore_base";
 
 describe("Masamune Test", () => {
     test("Has Match", async () => {

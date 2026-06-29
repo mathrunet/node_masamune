@@ -101,10 +101,10 @@ export class FirestoreModelFieldValueConverterUtils {
         var replaced: { [field: string]: any } | null = null;
         for (const key in data) {
             const val = data[key];
+            replaced = null;
             for (const converter of defaultFirestoreConverters) {
                 replaced = converter.convertFrom(key, val, data, firestoreInstance);
                 if (replaced !== null) {
-                    // console.log(`FirestoreConvertFrom(${converter.type}): ${key} : ${val} to ${replaced}`);
                     break;
                 }
             }
