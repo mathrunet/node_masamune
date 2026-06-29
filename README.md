@@ -67,9 +67,9 @@ m.deploy(
 ```typescript
 import * as m from "@mathrunet/masamune_cloudflare";
 
-// Define [m.Workers.xxxx] for the functions to be added to Workers.
+// Define [m.Functions.xxxx] for the functions to be added to Workers.
 //
-// Workersに追加する機能を[m.Workers.xxxx]を定義してください。
+// Workersに追加する機能を[m.Functions.xxxx]を定義してください。
 export default m.deploy(
     [
         // Worker for Test.
