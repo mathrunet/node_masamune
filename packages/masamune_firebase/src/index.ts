@@ -12,6 +12,7 @@ import * as admin from "firebase-admin";
 import { Regions } from "./lib/regions";
 import { FunctionsBase } from "./lib/src/functions_base";
 
+export * from "@mathrunet/masamune";
 export * from "./lib/api";
 export * from "./lib/regions";
 
