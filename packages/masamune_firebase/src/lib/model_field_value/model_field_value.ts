@@ -1,5 +1,6 @@
 import * as firestore from "firebase-admin/firestore";
 import { ModelFieldValueSource, ModelRefBase } from "@mathrunet/masamune";
+import { DocumentModel } from "../exntensions/firestore.extension";
 
 
 /**
@@ -7,7 +8,7 @@ import { ModelFieldValueSource, ModelRefBase } from "@mathrunet/masamune";
  * 
  * katana_modelの`ModelRefFirebase`用のインターフェース。
  */
-export class ModelRefFirebase extends ModelRefBase {
+export class ModelRefFirebase extends ModelRefBase<DocumentModel<firestore.DocumentData, firestore.DocumentData>> {
     constructor(ref: string, doc?: firestore.DocumentReference | undefined, source?: ModelFieldValueSource) {
         super("ModelRefBase", source);
         this["@ref"] = ref;
@@ -33,8 +34,12 @@ export class ModelRefFirebase extends ModelRefBase {
      * 
      * @returns The value of the ref.
      */
-    async load(): Promise<void> {
-        await this["@doc"]?.load();
+    async load(): Promise<DocumentModel<firestore.DocumentData, firestore.DocumentData> | undefined | null> {
+        const res = await this["@doc"]?.load();
+        if (!res) {
+            throw new Error("Failed to load document");
+        }
+        return res;
     }
 
     /**
