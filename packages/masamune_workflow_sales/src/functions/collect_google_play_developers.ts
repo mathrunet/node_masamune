@@ -1,5 +1,5 @@
 import * as admin from "firebase-admin";
-import { HttpFunctionsOptions, ModelTimestamp } from "@mathrunet/masamune";
+import { HttpFunctionsOptions, ModelTimestamp } from "@mathrunet/masamune_firebase";
 import { Action, WorkflowProcessFunctionBase, WorkflowContext } from "@mathrunet/masamune_workflow";
 import { GooglePlayScraperClient } from "../clients/google_play_scraper_client";
 import {

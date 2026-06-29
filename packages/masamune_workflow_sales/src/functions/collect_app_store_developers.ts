@@ -1,5 +1,5 @@
 import * as admin from "firebase-admin";
-import { HttpFunctionsOptions } from "@mathrunet/masamune";
+import { HttpFunctionsOptions } from "@mathrunet/masamune_firebase";
 import { Action, WorkflowProcessFunctionBase, WorkflowContext } from "@mathrunet/masamune_workflow";
 import { AppStoreScraperClient } from "../clients/app_store_scraper_client";
 import {

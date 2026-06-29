@@ -38,7 +38,8 @@
   },
   "homepage": "https://github.com/mathrunet/node_masamune#readme",
   "dependencies": {
-    "@mathrunet/masamune": "^3.9.5",
+    "@mathrunet/masamune": "^3.10.4",
+    "@mathrunet/masamune_firebase": "^3.1.2",
     "@mathrunet/masamune_workflow": "^3.9.3",
     "@sparticuz/chromium": "^131.0.0",
     "app-store-scraper": "^0.18.0",
