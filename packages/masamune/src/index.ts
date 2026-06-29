@@ -10,7 +10,9 @@
  */
 import * as admin from "firebase-admin";
 import { Regions } from "./lib/regions";
+import * as hono from "hono";
 import { FunctionsBase } from "./lib/src/functions_base";
+import { WorkersBase } from "./lib/src/workers_base";
 
 export * from "./lib/api";
 export * from "./lib/regions";
@@ -59,7 +61,7 @@ export * as test from "./functions/test";
  * 
  * pub/subで用いるトピック名やスケジュールの長さなどを指定します。
  */
-export function deploy(exports: any, region: Regions, deployFunctions: FunctionsBase[]) {
+export function deployFirebase(exports: any, region: Regions, deployFunctions: FunctionsBase[]) {
     if (admin.apps.length === 0) {
         admin.initializeApp();
     }
@@ -68,4 +70,32 @@ export function deploy(exports: any, region: Regions, deployFunctions: Functions
             exports[func.id] = func.build(region);
         }
     }
+}
+
+/**
+ * Methods for deploying to Cloudflare Workers.
+ * 
+ * Cloudflare Workersにデプロイするためのメソッドです。
+ * 
+ * @param exports
+ * Pass the `exports` as is.
+ * 
+ * `exports`をそのまま渡します。
+ * 
+ * @param region
+ * Specify a region such as `us-central1`.
+ * 
+ * `us-central1`などのリージョンを指定します。
+ * 
+ * @param deployWorkders
+ * The elements defined in [Workers] are passed as an array. The passed method is deployed.
+ * 
+ * [Workers]で定義された要素を配列として渡します。渡されたメソッドがデプロイされます。
+ */
+export function deployCloudflare(exports: any, deployWorkders: WorkersBase[]) {
+    const app = new hono.Hono();
+    for (const worker of deployWorkders) {
+        app.route(worker.path, worker.build());
+    }
+    exports.default = app;
 }
