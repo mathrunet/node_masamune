@@ -1,5 +1,5 @@
 import * as admin from "firebase-admin";
-import "@mathrunet/masamune";
+import "@mathrunet/masamune_firebase";
 import * as path from "path";
 
 const config = require("firebase-functions-test")({

@@ -1,6 +1,6 @@
 import * as functions from "firebase-functions/v2";
 import * as admin from "firebase-admin";
-import { StorageFunctionsOptions } from "@mathrunet/masamune";
+import { StorageFunctionsOptions } from "@mathrunet/masamune_firebase";
 import * as path from "path";
 import * as os from "os";
 import * as fs from "fs";
