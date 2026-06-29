@@ -587,7 +587,7 @@ export class ModelVectorValue extends ModelFieldValue {
  * 
  * katana_modelの`ModelRefBase`用のインターフェース。
  */
-export class ModelRefBase extends ModelFieldValue {
+export class ModelRefBase<LoadResponseType> extends ModelFieldValue {
     constructor(ref: string, source?: ModelFieldValueSource) {
         super("ModelRefBase", source);
         this["@ref"] = ref;
@@ -612,7 +612,7 @@ export class ModelRefBase extends ModelFieldValue {
      * 
      * @returns The value of the ref.
      */
-    async load(): Promise<void> { }
+    async load(): Promise<LoadResponseType | undefined | null> { return null; }
 
     /**
      * Save the document.
