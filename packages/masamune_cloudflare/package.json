@@ -40,7 +40,7 @@
   },
   "homepage": "https://github.com/mathrunet/node_masamune#readme",
   "dependencies": {
-    "form-data": "^4.0.0",
+    "@mathrunet/masamune": "^3.10.2",
     "hono": "^4.12.27",
     "typescript": "^5.9.2"
   },

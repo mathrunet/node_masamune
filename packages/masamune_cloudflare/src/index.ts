@@ -11,6 +11,7 @@
 import * as hono from "hono";
 import { WorkersBase } from "./lib/src/workers_base";
 
+export * from "@mathrunet/masamune";
 export * from "./lib/api";
 export * from "./lib/src/workers_base";
 export * from "./lib/src/workers_data";
