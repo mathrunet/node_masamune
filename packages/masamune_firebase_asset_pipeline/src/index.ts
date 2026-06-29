@@ -3,7 +3,7 @@
  * 
  * Masamune framework package plugin that provides a pipeline for generating content such as images and videos.
  * 
- * To use, import * as m from "@mathrunet/masamune_asset_pipeline";
+ * To use, import * as m from "@mathrunet/masamune_firebase_asset_pipeline";
  *
  * [mathru.net]: https://mathru.net
  * [YouTube]: https://www.youtube.com/c/mathrunetchannel

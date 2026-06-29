@@ -3,7 +3,7 @@
  * 
  * Masamune framework package plugin for geocoding location data.
  * 
- * To use, import * as m from "@mathrunet/masamune_location_geocoding";
+ * To use, import * as m from "@mathrunet/masamune_firebase_location_geocoding";
  *
  * [mathru.net]: https://mathru.net
  * [YouTube]: https://www.youtube.com/c/mathrunetchannel

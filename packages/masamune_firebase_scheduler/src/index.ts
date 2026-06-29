@@ -3,7 +3,7 @@
  * 
  * Masamune framework plugin package for building a scheduler that periodically executes processes.
  * 
- * To use, import * as m from "@mathrunet/masamune_scheduler";
+ * To use, import * as m from "@mathrunet/masamune_firebase_scheduler";
  *
  * [mathru.net]: https://mathru.net
  * [YouTube]: https://www.youtube.com/c/mathrunetchannel

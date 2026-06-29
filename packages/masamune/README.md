@@ -44,10 +44,12 @@ npm install @mathrunet/masamune
 
 # Implementation
 
-Import the package as follows and pass the value of `exports` and the list of functions you wish to define to the `deploy` function.
+If you want to use Firebase Functions, import [@mathrunet/masamune_firebase](https://www.npmjs.com/package/@mathrunet/masamune_firebase). If you want to use Cloudflare Workers, import [@mathrunet/masamune_cloudflare](https://www.npmjs.com/package/@mathrunet/masamune_cloudflare).
 
-```dart
-import * as m from "@mathrunet/masamune";
+By defining individual deploy methods, you can utilize various Functions and Workers.
+
+```typescript
+import * as m from "@mathrunet/masamune_firebase";
 
 // Define [m.Functions.xxxx] for the functions to be added to Functions.
 // 
@@ -55,13 +57,26 @@ import * as m from "@mathrunet/masamune";
 m.deploy(
     exports,
     [
-        // Function for PUSH Notification.
+        // Function for Test.
         m.TestFunctions.test,
     ],
 );
 ```
 
-Functions passed to deploy are deployed to Cloud Functions for Firebase.
+
+```typescript
+import * as m from "@mathrunet/masamune_cloudflare";
+
+// Define [m.Workers.xxxx] for the functions to be added to Workers.
+//
+// Workersに追加する機能を[m.Workers.xxxx]を定義してください。
+export default m.deploy(
+    [
+        // Worker for Test.
+        m.TestWorkers.test,
+    ],
+);
+```
 
 # GitHub Sponsors
 

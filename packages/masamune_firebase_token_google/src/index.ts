@@ -3,7 +3,7 @@
  * 
  * A Masamune framework plugin package for outputting tokens on Google.
  * 
- * To use, import * as m from "@mathrunet/masamune_token_google";
+ * To use, import * as m from "@mathrunet/masamune_firebase_token_google";
  *
  * [mathru.net]: https://mathru.net
  * [YouTube]: https://www.youtube.com/c/mathrunetchannel

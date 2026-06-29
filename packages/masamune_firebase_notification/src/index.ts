@@ -3,7 +3,7 @@
  * 
  * Masamune framework package plugin for sending Push Notifications.
  * 
- * To use, import * as m from "@mathrunet/masamune_notification";
+ * To use, import * as m from "@mathrunet/masamune_firebase_notification";
  *
  * [mathru.net]: https://mathru.net
  * [YouTube]: https://www.youtube.com/c/mathrunetchannel

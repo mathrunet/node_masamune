@@ -3,7 +3,7 @@
  * 
  * Masamune framework package plugin for Firebase Authentication support.
  * 
- * To use, import * as m from "@mathrunet/masamune_auth";
+ * To use, import * as m from "@mathrunet/masamune_firebase_auth";
  *
  * [mathru.net]: https://mathru.net
  * [YouTube]: https://www.youtube.com/c/mathrunetchannel

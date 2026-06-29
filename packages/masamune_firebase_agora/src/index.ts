@@ -3,7 +3,7 @@
  * 
  * Masamune framework plugin that can issue Agora.io tokens, among other things.
  * 
- * To use, import * as m from "@mathrunet/masamune_agora";
+ * To use, import * as m from "@mathrunet/masamune_firebase_agora";
  *
  * [mathru.net]: https://mathru.net
  * [YouTube]: https://www.youtube.com/c/mathrunetchannel

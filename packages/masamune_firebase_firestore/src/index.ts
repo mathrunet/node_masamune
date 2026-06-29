@@ -3,7 +3,7 @@
  * 
  * Masamune framework package plugin for performing Firestore operations on the Functions side.
  * 
- * To use, import * as m from "@mathrunet/masamune_firestore";
+ * To use, import * as m from "@mathrunet/masamune_firebase_firestore";
  *
  * [mathru.net]: https://mathru.net
  * [YouTube]: https://www.youtube.com/c/mathrunetchannel

@@ -3,7 +3,7 @@
  * 
  * Masamune framework package plugin for video and image conversion.
  * 
- * To use, import * as m from "@mathrunet/masamune_media";
+ * To use, import * as m from "@mathrunet/masamune_firebase_media";
  *
  * [mathru.net]: https://mathru.net
  * [YouTube]: https://www.youtube.com/c/mathrunetchannel

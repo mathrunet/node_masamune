@@ -2,7 +2,7 @@
   <a href="https://mathru.net">
     <img width="240px" src="https://raw.githubusercontent.com/mathrunet/node_masamune/main/.github/images/icon.png" alt="Masamune logo" style="border-radius: 32px"s><br/>
   </a>
-  <h1 align="center">Masamune Framework</h1>
+  <h1 align="center">Masamune Framework for Firebase Functions</h1>
 </p>
 
 <p align="center">
@@ -46,7 +46,7 @@ npm install @mathrunet/masamune_firebase
 
 Import the package as follows and pass the value of `exports` and the list of functions you wish to define to the `deploy` function.
 
-```dart
+```typescript
 import * as m from "@mathrunet/masamune_firebase";
 
 // Define [m.Functions.xxxx] for the functions to be added to Functions.

@@ -46,7 +46,7 @@ npm install @mathrunet/masamune_firebase_workflow
 
 Import the package as follows and pass the value of `exports` and the list of functions you wish to define to the `deploy` function.
 
-```dart
+```typescript
 import * as m from "@mathrunet/masamune_firebase_workflow";
 
 // Define [m.Functions.xxxx] for the functions to be added to Functions.

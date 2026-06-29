@@ -3,7 +3,7 @@
  * 
  * Masamune framework plugin package for performing mobile billing checks and managing subscriptions.
  * 
- * To use, import * as m from "@mathrunet/masamune_purchase";
+ * To use, import * as m from "@mathrunet/masamune_firebase_purchase";
  *
  * [mathru.net]: https://mathru.net
  * [YouTube]: https://www.youtube.com/c/mathrunetchannel

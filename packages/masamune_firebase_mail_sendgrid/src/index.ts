@@ -3,7 +3,7 @@
  * 
  * Masamune framework package plugin for SendGrid support.
  * 
- * To use, import * as m from "@mathrunet/masamune_mail_sendgrid";
+ * To use, import * as m from "@mathrunet/masamune_firebase_mail_sendgrid";
  *
  * [mathru.net]: https://mathru.net
  * [YouTube]: https://www.youtube.com/c/mathrunetchannel

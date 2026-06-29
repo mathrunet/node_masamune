@@ -3,7 +3,7 @@
  * 
  * A Masamune framework plugin package for outputting tokens on Android.
  * 
- * To use, import * as m from "@mathrunet/masamune_token_android";
+ * To use, import * as m from "@mathrunet/masamune_firebase_token_android";
  *
  * [mathru.net]: https://mathru.net
  * [YouTube]: https://www.youtube.com/c/mathrunetchannel
