@@ -1,5 +1,5 @@
 import * as admin from "firebase-admin";
-import "@mathrunet/masamune";
+import "@mathrunet/masamune_firebase";
 import * as dotenv from "dotenv";
 import * as path from "path";
 
@@ -21,8 +21,8 @@ describe("Android Token", () => {
 
     const hasCredentials = () => {
         return process.env.PURCHASE_ANDROID_CLIENTID &&
-               process.env.PURCHASE_ANDROID_CLIENTSECRET &&
-               process.env.PURCHASE_ANDROID_REDIRECTURI;
+            process.env.PURCHASE_ANDROID_CLIENTSECRET &&
+            process.env.PURCHASE_ANDROID_REDIRECTURI;
     };
 
     // onRequest関数のハンドラを取得するヘルパー
