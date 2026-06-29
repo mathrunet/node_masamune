@@ -1,4 +1,3 @@
-import { DocumentReference, Timestamp } from "firebase-admin/firestore";
 
 /**
  * Base class for converting [ModelFieldValue] for use in Firestore.
@@ -107,7 +106,7 @@ export abstract class FirestoreModelFieldValueConverter {
         original: { [field: string]: any },
         firestoreInstance: FirebaseFirestore.Firestore
     ): { [field: string]: any } | null;
-    
+
     /**
      * Generate a header for ModelFieldValue.
      * 

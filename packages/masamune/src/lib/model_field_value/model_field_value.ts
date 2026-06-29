@@ -1,5 +1,4 @@
 import * as firestore from "firebase-admin/firestore";
-import { DocumentModel } from "../exntensions/firestore.extension";
 
 /**
  * The source of ModelFieldValue.
@@ -591,13 +590,11 @@ export class ModelVectorValue extends ModelFieldValue {
  * katana_modelの`ModelRefBase`用のインターフェース。
  */
 export class ModelRefBase extends ModelFieldValue {
-    constructor(ref: string, doc?: firestore.DocumentReference | undefined, source?: ModelFieldValueSource) {
+    constructor(ref: string, source?: ModelFieldValueSource) {
         super("ModelRefBase", source);
         this["@ref"] = ref;
-        this["@doc"] = doc;
     }
     "@ref": string;
-    "@doc": firestore.DocumentReference | undefined;
 
     /**
      * Get the value of the ref.
@@ -617,13 +614,7 @@ export class ModelRefBase extends ModelFieldValue {
      * 
      * @returns The value of the ref.
      */
-    async load(): Promise<DocumentModel<firestore.DocumentData, firestore.DocumentData>> {
-        const res = await this["@doc"]?.load();
-        if (!res) {
-            throw new Error("Failed to load document");
-        }
-        return res;
-    }
+    async load(): Promise<void> { }
 
     /**
      * Save the document.
@@ -634,9 +625,7 @@ export class ModelRefBase extends ModelFieldValue {
      * @param options The options to save.
      * @returns The value of the ref.
      */
-    async save(data: firestore.PartialWithFieldValue<firestore.DocumentData>, options: firestore.SetOptions): Promise<void> {
-        await this["@doc"]?.save(data, options);
-    }
+    async save(data: { [key: string]: any }, options?: { [key: string]: any } | undefined): Promise<void> { }
 
     /**
      * Delete the document.
@@ -645,9 +634,7 @@ export class ModelRefBase extends ModelFieldValue {
      * 
      * @returns The value of the ref.
      */
-    async delete(): Promise<void> {
-        await this["@doc"]?.delete();
-    }
+    async delete(): Promise<void> { }
 
     /**
      * Get the id of the ref.
@@ -657,24 +644,8 @@ export class ModelRefBase extends ModelFieldValue {
      * @returns The id of the ref.
      */
     get id(): string {
-        const doc = this["@doc"];
-        if (!doc) {
-            return this["@ref"]?.split("/").pop() ?? "";
-        }
-        return doc.id;
+        return this["@ref"]?.split("/").pop() ?? "";
     }
-
-    /**
-     * Get the ref of the document.
-     * 
-     * ドキュメントのリファレンスを取得します。
-     * 
-     * @returns The ref of the document.
-     */
-    get ref(): firestore.DocumentReference | undefined {
-        return this["@doc"];
-    }
-
 }
 
 const geoHashBase32Codes = "0123456789bcdefghjkmnpqrstuvwxyz";

@@ -1,4 +1,3 @@
-import * as crypto from "crypto";
 export { };
 
 declare global {
@@ -22,11 +21,11 @@ declare global {
         encrypt({
             key,
             ivKey
-            }: {
+        }: {
             key: string,
             ivKey: string
-            }): string;
-        
+        }): Promise<string>;
+
         /**
          * Decrypts a string.
          * 文字列を復号化します。
@@ -45,11 +44,11 @@ declare global {
         decrypt({
             key,
             ivKey,
-            }: {
+        }: {
             key: string,
             ivKey: string,
-            }): string;
-        
+        }): Promise<string>;
+
         /**
          * Converts alphabets and numbers to full-width characters.
          * 
@@ -206,18 +205,18 @@ declare global {
         removeOnlyEmoji(): string;
 
         /**
-         * Converts [string] to a valid Firestore map key by removing invalid characters.
+         * Converts [string] to a valid NoSQL database (e.g., Firestore) map key by removing invalid characters.
          * 
-         * FirestoreのMapのキーとして使用できるように、[string]から無効な文字を削除します。
+         * NoSQLデータベース(e.g., Firestore)のMapのキーとして使用できるように、[string]から無効な文字を削除します。
          * 
          * Invalid characters removed: . / ~ * [ ]
          * 削除される無効な文字: . / ~ * [ ]
          * 
          * @return {string}
-         * String that can be used as a Firestore map key.
-         * FirestoreのMapのキーとして使用できる文字列。
+         * String that can be used as a NoSQL database (e.g., Firestore) map key.
+         * NoSQLデータベース(e.g., Firestore)のMapのキーとして使用できる文字列。
          */
-        toFirestoreMapKey(): string;
+        toNoSQLDatabaseMapKey(): string;
 
         /**
          * Converts [string] to a searchable map.
@@ -232,35 +231,50 @@ declare global {
     }
 }
 
-String.prototype.encrypt = function ({
+String.prototype.encrypt = async function ({
     key,
     ivKey
 }: {
     key: string,
     ivKey: string
-}) {
+}): Promise<string> {
     const raw = (this as String).valueOf();
-    const iv = Buffer.from(ivKey);
-    const cipher = crypto.createCipheriv("aes-256-cbc", Buffer.from(key), iv);
-    let encrypted = cipher.update(raw);
-    encrypted = Buffer.concat([encrypted, cipher.final()]);
-    return encrypted.toString("hex");
+    const enc = new TextEncoder();
+    const cryptoKey = await crypto.subtle.importKey(
+        "raw", enc.encode(key), { name: "AES-CBC" }, false, ["encrypt"],
+    );
+    const encrypted = await crypto.subtle.encrypt(
+        { name: "AES-CBC", iv: enc.encode(ivKey) },
+        cryptoKey,
+        enc.encode(raw),
+    );
+    return Array.from(new Uint8Array(encrypted))
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join("");
 };
 
-String.prototype.decrypt = function ({
+String.prototype.decrypt = async function ({
     key,
     ivKey
 }: {
     key: string,
     ivKey: string
 }) {
-    const encrypted = (this as String).valueOf();
-    const iv = Buffer.from(ivKey);
-    const encryptedText = Buffer.from(encrypted, "hex");
-    const decipher = crypto.createDecipheriv("aes-256-cbc", Buffer.from(key), iv);
-    let decrypted = decipher.update(encryptedText);
-    decrypted = Buffer.concat([decrypted, decipher.final()]);
-    return decrypted.toString();
+    const hex = (this as String).valueOf();
+    const enc = new TextEncoder();
+    const dec = new TextDecoder();
+    const matched = hex.match(/.{1,2}/g);
+    if (!matched) return "";
+    const bytes = new Uint8Array(matched.map((b) => parseInt(b, 16)));
+    const cryptoKey = await crypto.subtle.importKey(
+        "raw", enc.encode(key), { name: "AES-CBC" }, false, ["decrypt"],
+    );
+    const decrypted = await crypto.subtle.decrypt(
+        { name: "AES-CBC", iv: enc.encode(ivKey) },
+        cryptoKey,
+        bytes,
+    );
+    return dec.decode(decrypted);
 };
 
 String.prototype.toZenkakuNumericAndAlphabet = function () {
@@ -317,11 +331,11 @@ String.prototype.toZenkakuKatakana = function () {
     });
     text = text.replace(/[ﾊ-ﾎ]ﾟ/g, (s) => {
         const handakuten: { [key: string]: string } = {
-        'ﾊﾟ': 'パ',
-        'ﾋﾟ': 'ピ',
-        'ﾌﾟ': 'プ',
-        'ﾍﾟ': 'ペ',
-        'ﾎﾟ': 'ポ',
+            'ﾊﾟ': 'パ',
+            'ﾋﾟ': 'ピ',
+            'ﾌﾟ': 'プ',
+            'ﾍﾟ': 'ペ',
+            'ﾎﾟ': 'ポ',
         };
         return handakuten[s] ?? s;
     });
@@ -419,8 +433,8 @@ String.prototype.removeOnlyEmoji = function () {
     return (this as String).valueOf().replace(/[\u{1F100}-\u{1F1FF}\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '');
 };
 
-String.prototype.toFirestoreMapKey = function () {
-    // FirestoreのMapのキーに使用できない文字を削除
+String.prototype.toNoSQLDatabaseMapKey = function () {
+    // NoSQLデータベース(e.g., Firestore)のMapのキーに使用できない文字を削除
     // 使用できない文字: . / ~ * [ ]
     return (this as String).valueOf()
         .replace(/[\.\/~\*\[\]]/g, '')  // 禁止文字を削除
@@ -440,7 +454,7 @@ String.prototype.toSearchableMap = function () {
                 .toZenkakuKatakana()
                 .toKatakana()
                 .removeOnlyEmoji()
-                .toFirestoreMapKey()
+                .toNoSQLDatabaseMapKey()
                 .splitByCharacterAndBigram(),
         )
         .filter((value: string, index: number, self: string[]) => self.indexOf(value) === index)
