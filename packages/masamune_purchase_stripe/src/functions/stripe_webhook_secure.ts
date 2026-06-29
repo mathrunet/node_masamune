@@ -1,6 +1,6 @@
 import * as functions from "firebase-functions/v2";
 import * as stripe from "stripe";
-import { HttpFunctionsOptions, firestoreLoader } from "@mathrunet/masamune";
+import { HttpFunctionsOptions, firestoreLoader } from "@mathrunet/masamune_firebase";
 
 /**
  * Webhook for proper redirection when 3D Secure authentication is required.
@@ -86,7 +86,7 @@ module.exports = (
             }));
             return;
           }
-          const param = JSON.parse(token.decrypt({
+          const param = JSON.parse(await token.decrypt({
             key: apiKey.slice(0, 32),
             ivKey: apiKey.slice(-16),
           }));

@@ -1,7 +1,7 @@
 import * as functions from "firebase-functions/v2";
 import * as stripe from "stripe";
 import * as admin from "firebase-admin";
-import { HttpFunctionsOptions, firestoreLoader } from "@mathrunet/masamune";
+import { HttpFunctionsOptions, firestoreLoader } from "@mathrunet/masamune_firebase";
 import { lib as sendgrid } from "@mathrunet/masamune_mail_sendgrid";
 import "@mathrunet/masamune";
 
