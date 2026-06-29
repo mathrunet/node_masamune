@@ -10,4 +10,4 @@
  */
 export * from "@mathrunet/masamune";
 export * from "@mathrunet/masamune_cloudflare";
-export * from "./workers";
+export * from "./functions";

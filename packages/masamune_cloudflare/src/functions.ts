@@ -2,11 +2,11 @@ import { WorkersOptions } from "./lib/src/workers_base";
 import { WorkersData } from "./lib/src/workers_data";
 
 /**
- * Define a list of applicable Workers for Cloudflare Workers.
+ * Define a list of applicable Functions for Cloudflare Workers.
  * 
- * Cloudflare Workers用の適用可能なWorkerの一覧を定義します。
+ * Cloudflare Workers用の適用可能なFunctionsの一覧を定義します。
  */
-export const Workers = {
+export const Functions = {
   /**
    * Endpoints for testing.
    * 
