@@ -5,7 +5,7 @@ import { Context, MiddlewareHandler } from "hono";
  *
  * Cloudflare Workersの認証コンテキスト。
  */
-export interface WorkersAuthenticationContext {
+export interface WorkersAuthContext {
     /**
      * User ID.
      *
@@ -22,11 +22,11 @@ export interface WorkersAuthenticationContext {
 }
 
 /**
- * Base class for authentication middleware for Cloudflare Workers.
+ * Base class for authentication adapter for Cloudflare Workers.
  *
- * Cloudflare Workers用の認証ミドルウェアのベースクラス。
+ * Cloudflare Workers用の認証アダプターのベースクラス。
  */
-export abstract class WorkersAuthenticationMiddlewareBase {
+export abstract class WorkersAuthAdapterBase {
     /**
      * Create Hono middleware.
      *
@@ -39,9 +39,9 @@ export abstract class WorkersAuthenticationMiddlewareBase {
      *
      * 認証コンテキストを設定します。
      */
-    protected setAuthenticationContext(
+    protected setAuthContext(
         context: Context,
-        authentication: WorkersAuthenticationContext,
+        authentication: WorkersAuthContext,
     ): void {
         context.set("authentication", authentication);
     }

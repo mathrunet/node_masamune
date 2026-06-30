@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { WorkersAuthenticationMiddlewareBase } from "./workers_authentication_middleware_base";
+import { WorkersAuthAdapterBase } from "./workers_auth_adapter_base";
 
 /**
  * Define Function data for Cloudflare Workers.
@@ -97,8 +97,8 @@ export abstract class WorkersBase {
      * 認証ミドルウェアを適用します。
      */
     protected applyAuthentication(hono: Hono, options: WorkersOptions): Hono {
-        if (options.authentication) {
-            hono.use("*", options.authentication.build());
+        if (options.auth) {
+            hono.use("*", options.auth.build());
         }
         return hono;
     }
@@ -111,11 +111,11 @@ export abstract class WorkersBase {
  */
 export interface WorkersOptions {
     /**
-     * Authentication middleware.
+     * Authentication adapter.
      *
-     * 認証ミドルウェア。
+     * 認証アダプター。
      */
-    authentication?: WorkersAuthenticationMiddlewareBase | null | undefined;
+    auth?: WorkersAuthAdapterBase | null | undefined;
 }
 
 /**
@@ -130,8 +130,8 @@ export function resolveWorkersOptions(
     return {
         ...defaultOptions,
         ...options,
-        authentication: options.authentication === undefined
-            ? defaultOptions.authentication
-            : options.authentication,
+        auth: options.auth === undefined
+            ? defaultOptions.auth
+            : options.auth,
     };
 }

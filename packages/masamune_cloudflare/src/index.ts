@@ -14,10 +14,11 @@ import { WorkersBase, WorkersOptions } from "./lib/src/workers_base";
 export * from "@mathrunet/masamune";
 export * from "./lib/api";
 export * from "./lib/src/workers_base";
-export * from "./lib/src/workers_authentication_middleware_base";
+export * from "./lib/src/workers_auth_adapter_base";
 export * from "./lib/src/workers_data";
 export * from "./lib/src/request_process_workders_base";
-export * from "./lib/middlewares";
+export * from "./lib/adapters/firebase_auth_adapter";
+export * from "./lib/adapters/none_auth_adapter";
 
 /**
  * Methods for deploying to Cloudflare Workers.

@@ -5,14 +5,14 @@ import {
     KeyStorer,
 } from "firebase-auth-cloudflare-workers";
 import { Context, MiddlewareHandler } from "hono";
-import { WorkersAuthenticationMiddlewareBase } from "../src/workers_authentication_middleware_base";
+import { WorkersAuthAdapterBase } from "../src/workers_auth_adapter_base";
 
 /**
- * Options for Firebase Authentication middleware.
+ * Options for Firebase Authentication adapter.
  *
- * Firebase Authenticationミドルウェアのオプション。
+ * Firebase Authenticationアダプターのオプション。
  */
-export interface FirebaseAuthenticationMiddlewareOptions {
+export interface FirebaseAuthOptions {
     /**
      * Firebase project ID.
      *
@@ -108,13 +108,13 @@ export class FirebaseCacheApiKeyStorer implements KeyStorer {
  *
  * Firebase Authentication用のミドルウェア。
  */
-export class FirebaseAuthenticationMiddleware extends WorkersAuthenticationMiddlewareBase {
-    constructor(options: FirebaseAuthenticationMiddlewareOptions) {
+export class FirebaseAuthAdapter extends WorkersAuthAdapterBase {
+    constructor(options: FirebaseAuthOptions) {
         super();
         this.options = options;
     }
 
-    private readonly options: FirebaseAuthenticationMiddlewareOptions;
+    private readonly options: FirebaseAuthOptions;
 
     build(): MiddlewareHandler {
         return async (context, next) => {
@@ -131,7 +131,7 @@ export class FirebaseAuthenticationMiddleware extends WorkersAuthenticationMiddl
                     this.options.emulatorEnv,
                     this.options.clockSkewSeconds,
                 );
-                this.setAuthenticationContext(context, {
+                this.setAuthContext(context, {
                     uid: decoded.uid,
                     token: decoded as FirebaseIdToken,
                 });
