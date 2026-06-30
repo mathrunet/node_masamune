@@ -1,5 +1,5 @@
-import { Context, Hono } from "hono";
-import { BlankEnv, BlankInput } from "hono/types";
+import { Hono } from "hono";
+import { WorkersAuthenticationMiddlewareBase } from "./workers_authentication_middleware_base";
 
 /**
  * Define Function data for Cloudflare Workers.
@@ -80,7 +80,28 @@ export abstract class WorkersBase {
      * 
      * Cloudflare Workersを生成するためのコードを記述します。
      */
-    abstract build(): Hono;
+    abstract build(defaultOptions?: WorkersOptions): Hono;
+
+    /**
+     * Merge default options and worker options.
+     *
+     * デフォルトオプションとWorkerのオプションをマージします。
+     */
+    protected resolveOptions(defaultOptions: WorkersOptions = {}): WorkersOptions {
+        return resolveWorkersOptions(defaultOptions, this.options);
+    }
+
+    /**
+     * Apply authentication middleware.
+     *
+     * 認証ミドルウェアを適用します。
+     */
+    protected applyAuthentication(hono: Hono, options: WorkersOptions): Hono {
+        if (options.authentication) {
+            hono.use("*", options.authentication.build());
+        }
+        return hono;
+    }
 }
 
 /**
@@ -89,4 +110,28 @@ export abstract class WorkersBase {
  * 処理のオプションを指定します。
  */
 export interface WorkersOptions {
+    /**
+     * Authentication middleware.
+     *
+     * 認証ミドルウェア。
+     */
+    authentication?: WorkersAuthenticationMiddlewareBase | null | undefined;
+}
+
+/**
+ * Merge Workers options.
+ *
+ * Workersのオプションをマージします。
+ */
+export function resolveWorkersOptions(
+    defaultOptions: WorkersOptions = {},
+    options: WorkersOptions = {},
+): WorkersOptions {
+    return {
+        ...defaultOptions,
+        ...options,
+        authentication: options.authentication === undefined
+            ? defaultOptions.authentication
+            : options.authentication,
+    };
 }

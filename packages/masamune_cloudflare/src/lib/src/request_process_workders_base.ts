@@ -36,8 +36,10 @@ export abstract class RequestProcessWorkdersBase extends WorkersBase {
 
     abstract path: string;
     data: { [key: string]: any } = {};
-    build(): Hono {
+    build(defaultOptions: WorkersOptions = {}): Hono {
         const hono = new Hono();
+        const options = this.resolveOptions(defaultOptions);
+        this.applyAuthentication(hono, options);
         return this.process(hono);
     }
 }
