@@ -26,6 +26,7 @@ export type {
 export interface TursoDatabaseConnection {
   url: string;
   authToken?: string | undefined;
+  created?: boolean | undefined;
 }
 
 export interface TursoWorkersOptions extends WorkersOptions {

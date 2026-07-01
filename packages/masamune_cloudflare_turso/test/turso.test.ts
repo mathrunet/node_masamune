@@ -1092,6 +1092,31 @@ describe("Turso Cloudflare workers", () => {
     );
   });
 
+  test("waits for a newly created database before executing CRUD", async () => {
+    mockCreatedDatabase({
+      url: "libsql://readydb.turso.io",
+    });
+    execute
+      .mockRejectedValueOnce(new Error("HTTP error! status: 404"))
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] });
+    const app = deploy([Functions.turso(dynamicOptions())]);
+
+    const response = await app.request(
+      "http://localhost/turso/database/readydb/users",
+    );
+
+    expect(response.status).toBe(200);
+    expect(execute).toHaveBeenNthCalledWith(1, "SELECT 1");
+    expect(execute).toHaveBeenNthCalledWith(2, "SELECT 1");
+    expect(execute).toHaveBeenNthCalledWith(
+      3,
+      expect.objectContaining({
+        sql: expect.stringContaining('SELECT * FROM "users"'),
+      }),
+    );
+  });
+
   test("does not create databases when autoCreateDatabase is false", async () => {
     const fetchMock = jest.spyOn(globalThis, "fetch").mockResolvedValueOnce({
       ok: false,

@@ -25,6 +25,7 @@ export type SqlValue =
   null | string | number | bigint | ArrayBuffer | boolean | Uint8Array | Date;
 
 const connectionCache = new Map<string, TursoDatabaseConnection>();
+const readyRetryDelaysMs = [250, 500, 1000, 2000, 4000];
 
 export function createTursoClient(
   connection: TursoDatabaseConnection,
@@ -44,11 +45,59 @@ export async function resolveDatabaseConnection(
   const databaseName = `${options.databasePrefix ?? ""}${normalizedDatabase}`;
   const cached = connectionCache.get(databaseName);
   if (cached) {
-    return cached;
+    return {
+      ...cached,
+      created: false,
+    };
   }
   const created = await ensurePlatformDatabase(databaseName, options);
-  connectionCache.set(databaseName, created);
+  if (!created.created) {
+    cacheDatabaseConnection(database, options, created);
+  }
   return created;
+}
+
+export function cacheDatabaseConnection(
+  database: string,
+  options: TursoWorkersOptions,
+  connection: TursoDatabaseConnection,
+): void {
+  const normalizedDatabase = validateLogicalName(database, "database");
+  const databaseName = `${options.databasePrefix ?? ""}${normalizedDatabase}`;
+  connectionCache.set(databaseName, {
+    url: connection.url,
+    authToken: connection.authToken,
+    created: false,
+  });
+}
+
+export function clearDatabaseConnectionCache(
+  database: string,
+  options: TursoWorkersOptions,
+): void {
+  const normalizedDatabase = validateLogicalName(database, "database");
+  const databaseName = `${options.databasePrefix ?? ""}${normalizedDatabase}`;
+  connectionCache.delete(databaseName);
+}
+
+export async function waitForDatabaseReady(client: TursoClient): Promise<void> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt <= readyRetryDelaysMs.length; attempt++) {
+    try {
+      await client.execute("SELECT 1");
+      return;
+    } catch (error) {
+      lastError = error;
+      if (
+        !isTransientTursoError(error) ||
+        attempt === readyRetryDelaysMs.length
+      ) {
+        throw error;
+      }
+      await sleep(readyRetryDelaysMs[attempt]);
+    }
+  }
+  throw lastError;
 }
 
 async function ensurePlatformDatabase(
@@ -69,6 +118,7 @@ async function ensurePlatformDatabase(
     Authorization: `Bearer ${platformApiToken}`,
     "Content-Type": "application/json",
   };
+  let created = false;
   const existing = await fetch(
     `${baseUrl}/databases/${encodeURIComponent(databaseName)}`,
     {
@@ -93,6 +143,7 @@ async function ensurePlatformDatabase(
         `Failed to create Turso database: ${response.status}`,
       );
     }
+    created = true;
   } else if (!existing.ok) {
     throw new HttpError(
       500,
@@ -121,9 +172,16 @@ async function ensurePlatformDatabase(
     );
   }
   const authToken = await createDatabaseToken(baseUrl, databaseName, headers);
+  if (!authToken) {
+    throw new HttpError(
+      500,
+      "Turso database auth token was not found in Platform API response.",
+    );
+  }
   return {
     url,
     authToken,
+    created,
   };
 }
 
@@ -141,7 +199,10 @@ async function createDatabaseToken(
     },
   );
   if (!response.ok) {
-    return undefined;
+    throw new HttpError(
+      500,
+      `Failed to create Turso database token: ${response.status}`,
+    );
   }
   const body = (await response.json()) as Record<string, unknown>;
   const token = body.jwt ?? body.token;
@@ -170,6 +231,17 @@ function firstNonEmpty(...values: (string | undefined)[]): string | undefined {
     }
   }
   return undefined;
+}
+
+export function isTransientTursoError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return /(?:HTTP error! status|Turso database|Turso database token|Turso database:): (404|409|425|429|500|502|503|504)/.test(
+    message,
+  );
+}
+
+function sleep(milliseconds: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
 
 function findDatabaseUrl(value: unknown): string | undefined {

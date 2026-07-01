@@ -2,6 +2,7 @@ import { Context, Hono } from "hono";
 import {
   AuthenticationContext,
   TursoCrudMethod,
+  TursoRequestBody,
   RulesOperation,
   TursoWorkersOptions,
 } from "../lib/types";
@@ -13,8 +14,12 @@ import {
   normalizeHttpMethodToRulesOperation,
 } from "../lib/rules";
 import {
+  cacheDatabaseConnection,
+  clearDatabaseConnectionCache,
   createTursoClient,
+  isTransientTursoError,
   resolveDatabaseConnection,
+  waitForDatabaseReady,
 } from "../lib/turso_client";
 import { resolveTursoWorkersOptionsFromEnv } from "../lib/env";
 
@@ -43,22 +48,31 @@ async function handleCrud(
   options: TursoWorkersOptions,
   method: TursoCrudMethod,
 ): Promise<Response> {
+  let request:
+    | (Required<Pick<TursoRequestBody, "database" | "table">> &
+        TursoRequestBody)
+    | undefined;
+  let resolvedOptions: TursoWorkersOptions | undefined;
+  let phase = "parse";
   try {
-    const resolvedOptions = resolveTursoWorkersOptionsFromEnv(context, options);
-    const request = await parseCrudRequest(context);
-    const connection = await resolveDatabaseConnection(request.database, resolvedOptions);
+    resolvedOptions = resolveTursoWorkersOptionsFromEnv(context, options);
+    request = await parseCrudRequest(context);
+    const crudRequest = request;
+    phase = "connect";
+    const connection = await resolveDatabaseConnection(crudRequest.database, resolvedOptions);
     const client = createTursoClient(connection);
     const engine = createTursoRulesEngine(resolvedOptions.rules);
     const authentication = context.get("authentication") as AuthenticationContext | undefined;
+    phase = "rules";
     const result = await engine.evaluate({
       path: buildRulesPath({
-        database: request.database,
-        table: request.table,
-        indexKey: request.indexKey ?? "*",
+        database: crudRequest.database,
+        table: crudRequest.table,
+        indexKey: crudRequest.indexKey ?? "*",
       }),
-      operation: resolveCrudRulesOperation(method, request),
+      operation: resolveCrudRulesOperation(method, crudRequest),
       authentication,
-      fetchDocument: async () => fetchDocumentForRules(client, request),
+      fetchDocument: async () => fetchDocumentForRules(client, crudRequest),
       server: true,
     });
     if (!result.allowed) {
@@ -67,15 +81,30 @@ async function handleCrud(
         rule: result.rulePath,
       }, 403);
     }
+    if (connection.created) {
+      phase = "database-ready";
+      await waitForDatabaseReady(client);
+      cacheDatabaseConnection(crudRequest.database, resolvedOptions, connection);
+    }
+    phase = method === "POST" ? "create-table-or-insert" : "execute";
     const response = await executeCrud({
       client,
       method,
-      request,
+      request: crudRequest,
       autoCreateTable: resolvedOptions.autoCreateTable !== false,
       autoMigrateAddColumns: resolvedOptions.autoMigrateAddColumns !== false,
     });
     return context.json({ data: response });
   } catch (error) {
+    if (request && resolvedOptions && isTransientTursoError(error)) {
+      clearDatabaseConnectionCache(request.database, resolvedOptions);
+      return context.json({
+        error: error instanceof Error ? error.message : String(error),
+        phase,
+        database: request.database,
+        table: request.table,
+      }, 503);
+    }
     return jsonError(context, error);
   }
 }
