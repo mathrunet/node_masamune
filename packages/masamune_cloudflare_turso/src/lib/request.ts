@@ -42,13 +42,10 @@ export async function parseCrudRequest(context: Context): Promise<Required<Pick<
   };
 }
 
-export async function parseTokenRequest(context: Context): Promise<Required<Pick<TursoTokenRequestBody, "database" | "scope">> & TursoTokenRequestBody> {
+export async function parseTokenRequest(context: Context): Promise<Required<Pick<TursoTokenRequestBody, "database">> & TursoTokenRequestBody> {
   const body = await parseJsonBody<TursoTokenRequestBody>(context);
   const database = validateLogicalName(body.database ?? "main", "database");
-  if (!Array.isArray(body.scope) || body.scope.length === 0) {
-    throw new HttpError(400, "scope is required.");
-  }
-  const scope = body.scope.map((item) => {
+  const scope = body.scope?.map((item) => {
     if (!item || typeof item !== "object") {
       throw new HttpError(400, "scope item must be an object.");
     }
@@ -77,7 +74,7 @@ export async function parseTokenRequest(context: Context): Promise<Required<Pick
   return {
     ...body,
     database,
-    scope,
+    ...(scope ? { scope } : {}),
   };
 }
 

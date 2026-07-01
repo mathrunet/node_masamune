@@ -11,9 +11,18 @@ export type RulesAccessRule =
   | "allow"
   | "authenticated"
   | {
-    type: "fieldMatch";
-    field: string;
-  };
+      type: "serverOnly";
+    }
+  | {
+      type: "fieldMatch";
+      field: string;
+      serverOnly?: boolean | undefined;
+    }
+  | {
+      type: "pathParamMatch";
+      param: string;
+      serverOnly?: boolean | undefined;
+    };
 
 export type RulesEntry = Partial<Record<RulesOperationKey, RulesAccessRule>>;
 
@@ -27,17 +36,7 @@ export interface TursoDatabaseConnection {
   authToken?: string | undefined;
 }
 
-export interface TursoTokenIssuerOptions {
-  secret?: string | undefined;
-  issuer?: string | undefined;
-  audience?: string | undefined;
-}
-
 export interface TursoWorkersOptions extends Omit<WorkersOptions, "rules"> {
-  url?: string | undefined;
-  authToken?: string | undefined;
-  databases?: Record<string, TursoDatabaseConnection> | undefined;
-  defaultDatabase?: string | undefined;
   databaseNamePrefix?: string | undefined;
   organizationName?: string | undefined;
   groupName?: string | undefined;
@@ -47,7 +46,6 @@ export interface TursoWorkersOptions extends Omit<WorkersOptions, "rules"> {
   autoMigrateAddColumns?: boolean | undefined;
   maxTtlSeconds?: number | undefined;
   rules?: RulesConfig | undefined;
-  tokenIssuer?: TursoTokenIssuerOptions | undefined;
 }
 
 export interface TursoRequestBody {
@@ -75,6 +73,13 @@ export interface TursoOrderCondition {
 export interface TursoTokenScopeInput {
   table: string;
   operations: RulesOperationKey[];
+}
+
+export type TursoTokenAccessMode = "none" | "functions" | "direct";
+
+export interface TursoTokenScopeOutput extends TursoTokenScopeInput {
+  readMode?: TursoTokenAccessMode | undefined;
+  writeMode?: TursoTokenAccessMode | undefined;
 }
 
 export interface TursoTokenRequestBody {

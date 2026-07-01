@@ -48,6 +48,7 @@ async function handleCrud(
       operation: normalizeHttpMethodToRulesOperation(method),
       authentication,
       fetchDocument: async () => fetchDocumentForRules(client, request),
+      server: true,
     });
     if (!result.allowed) {
       return context.json({

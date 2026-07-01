@@ -49,55 +49,56 @@ Pass the return value of the `deploy` function to `export default`. It is define
 ```typescript
 import * as m from "@mathrunet/masamune_cloudflare_turso";
 
-export default m.deploy(
-    [
-        m.Functions.turso({
-            url: TURSO_DATABASE_URL,
-            authToken: TURSO_AUTH_TOKEN,
-            rules: {
-                version: "1",
-                rules: {
-                    "database/*/table/*/*": {
-                        read: "deny",
-                        write: "deny",
-                    },
-                    "database/main/table/users/*": {
-                        read: "authenticated",
-                        write: "authenticated",
-                    },
-                },
-            },
-        }),
-        m.Functions.tursoToken({
-            url: TURSO_DATABASE_URL,
-            authToken: TURSO_AUTH_TOKEN,
-            rules: {
-                version: "1",
-                rules: {
-                    "database/main/table/users/*": {
-                        read: "authenticated",
-                    },
-                },
-            },
-            tokenIssuer: {
-                secret: TURSO_TOKEN_SECRET,
-            },
-        }),
-    ],
-);
+export default m.deploy([
+  m.Functions.turso({
+    organizationName: TURSO_ORGANIZATION_NAME,
+    groupName: TURSO_GROUP_NAME,
+    platformApiToken: TURSO_PLATFORM_API_TOKEN,
+    autoCreateDatabase: true,
+    autoCreateTable: true,
+    autoMigrateAddColumns: true,
+    rules: {
+      version: "1",
+      rules: {
+        "database/*/table/*/*": {
+          read: "deny",
+          write: "deny",
+        },
+        "database/main/table/users/*": {
+          read: "authenticated",
+          write: "authenticated",
+        },
+      },
+    },
+  }),
+  m.Functions.tursoToken({
+    organizationName: TURSO_ORGANIZATION_NAME,
+    groupName: TURSO_GROUP_NAME,
+    platformApiToken: TURSO_PLATFORM_API_TOKEN,
+    rules: {
+      version: "1",
+      rules: {
+        "database/main": {
+          read: "authenticated",
+          write: "deny",
+        },
+      },
+    },
+  }),
+]);
 ```
 
 # Endpoints
 
 The package exposes Turso through a single provider path.
 
-| Method | Path | Description |
-|---|---|---|
-| `GET` | `/turso` | Read rows or count rows. |
-| `POST` | `/turso` | Create a row. |
-| `PUT` | `/turso` | Update rows. |
-| `DELETE` | `/turso` | Delete rows. |
-| `POST` | `/turso/token` | Issue a scoped short-lived token. |
+| Method   | Path           | Description                       |
+| -------- | -------------- | --------------------------------- |
+| `GET`    | `/turso`       | Read rows or count rows.          |
+| `POST`   | `/turso`       | Create a row.                     |
+| `PUT`    | `/turso`       | Update rows.                      |
+| `DELETE` | `/turso`       | Delete rows.                      |
+| `POST`   | `/turso/token` | Issue a database-scoped short-lived token. |
 
 `GET /turso` uses query parameters.
 
@@ -134,14 +135,20 @@ The worker can create Turso databases and tables automatically.
 
 ```typescript
 m.Functions.turso({
-    organizationName: TURSO_ORGANIZATION_NAME,
-    groupName: TURSO_GROUP_NAME,
-    platformApiToken: TURSO_PLATFORM_API_TOKEN,
-    defaultDatabase: "main",
-    autoCreateDatabase: true,
-    autoCreateTable: true,
-    autoMigrateAddColumns: true,
+  organizationName: TURSO_ORGANIZATION_NAME,
+  groupName: TURSO_GROUP_NAME,
+  platformApiToken: TURSO_PLATFORM_API_TOKEN,
+  autoCreateDatabase: true,
+  autoCreateTable: true,
+  autoMigrateAddColumns: true,
 });
+```
+
+`groupName` must point to an existing Turso group. The region/location is set
+when the group is created, not when each database is created.
+
+```bash
+turso group create my-group --location aws-ap-northeast-1
 ```
 
 `groupName` can also be omitted when the runtime environment provides
@@ -170,20 +177,83 @@ CREATE TABLE IF NOT EXISTS table_name (
 
 Objects and arrays are stored as JSON strings.
 
-# Scoped short-lived token
+# Database-scoped short-lived token
 
-Use `/turso/token` to issue a token after filtering the requested scope through `rules`.
+Use `/turso/token` to issue a Turso database token after resolving `read-only`
+or `full-access` authorization through `rules`.
+
+Token authorization is evaluated against the database path:
+
+```json
+{
+  "version": "1",
+  "rules": {
+    "database/main": {
+      "read": "authenticated",
+      "write": "deny"
+    }
+  }
+}
+```
+
+If `read` is allowed and `write` is denied, the worker issues a `read-only`
+token. If both `read` and all write operations are allowed, the worker issues a
+`full-access` token. If `read` is denied, the token request returns `403`.
+
+Named path parameters can be compared with the authenticated user ID:
+
+```json
+{
+  "version": "1",
+  "rules": {
+    "database/{uid}": {
+      "read": { "type": "pathParamMatch", "param": "uid" },
+      "write": { "type": "pathParamMatch", "param": "uid" }
+    }
+  }
+}
+```
+
+With this rule, only the authenticated user whose `uid` is equal to the
+database name can access that database.
+
+Read and write operations can be restricted to the Workers endpoint while
+issuing only the direct Turso token that is safe for the requested scope:
+
+```json
+{
+  "version": "1",
+  "rules": {
+    "database/{uid}": {
+      "read": { "type": "pathParamMatch", "param": "uid" },
+      "write": {
+        "type": "pathParamMatch",
+        "param": "uid",
+        "serverOnly": true
+      }
+    }
+  }
+}
+```
+
+`serverOnly` can also be used with `read` and `fieldMatch` rules. A
+server-only rule does not grant direct token access for that operation.
+
+Table/document rules below the database path are also treated as server-side
+rules for token issuance when they restrict `read` or `write`. This is
+intentional because Turso Platform tokens are database-scoped and cannot enforce
+document-level `fieldMatch` or `pathParamMatch` checks on the client.
 
 ```json
 {
   "database": "main",
+  "ttlSeconds": 600,
   "scope": [
     {
       "table": "users",
-      "operations": ["read"]
+      "operations": ["read", "write"]
     }
-  ],
-  "ttlSeconds": 600
+  ]
 }
 ```
 
@@ -192,19 +262,50 @@ The response is:
 ```json
 {
   "token": "<jwt>",
-  "expiresAt": 1760000000
+  "expiresAt": 1760000000,
+  "url": "libsql://your-db.turso.io",
+  "readMode": "direct",
+  "writeMode": "functions",
+  "scopes": [
+    {
+      "table": "users",
+      "operations": ["read", "write"],
+      "readMode": "direct",
+      "writeMode": "functions"
+    }
+  ]
 }
 ```
 
+If both read and write are functions-only, `/turso/token` does not return
+`token`, `expiresAt`, or `url`; it returns only the resolved modes and scopes:
+
+```json
+{
+  "readMode": "functions",
+  "writeMode": "functions",
+  "scopes": [
+    {
+      "table": "users",
+      "operations": ["read", "write"],
+      "readMode": "functions",
+      "writeMode": "functions"
+    }
+  ]
+}
+```
+
+`url` is resolved by the Workers backend. This lets clients use direct libSQL
+access for dynamically created databases without building the Turso hostname on
+the client.
+
 `ttlSeconds` defaults to 600 seconds and is capped by `maxTtlSeconds` (default: 3600 seconds).
 
-When `organizationName` and `platformApiToken` are configured, tokens are generated with the Turso Platform API:
+Tokens are generated with the Turso Platform API:
 
 ```text
 POST /v1/organizations/{organizationSlug}/databases/{databaseName}/auth/tokens
 ```
-
-If Platform API settings are not available, the worker falls back to a local HS256 JWT signed with `tokenIssuer.secret` or `authToken`.
 
 # GitHub Sponsors
 
