@@ -53,15 +53,15 @@ import rulesJson from "../rules.json";
 export default m.deploy(
   [
     m.Functions.turso({
-      organizationName: "xxxx",
-      groupName: "xxxx",
+      organization: "xxxx",
+      group: "xxxx",
       autoCreateDatabase: true,
       autoCreateTable: true,
       autoMigrateAddColumns: true,
     }),
     m.Functions.tursoToken({
-      organizationName: "xxxx",
-      groupName: "xxxx",
+      organization: "xxxx",
+      group: "xxxx",
     }),
   ],
   {
@@ -73,8 +73,8 @@ export default m.deploy(
 Cloudflare bindings are also supported and take precedence over options:
 
 - `TURSO_PLATFORM_API_TOKEN`
-- `TURSO_ORGANIZATION_NAME`
-- `TURSO_GROUP_NAME`
+- `TURSO_ORGANIZATION`
+- `TURSO_GROUP`
 
 For production, store the Platform API token as a secret:
 
@@ -137,8 +137,8 @@ The worker can create Turso databases and tables automatically.
 
 ```typescript
 m.Functions.turso({
-  organizationName: TURSO_ORGANIZATION_NAME,
-  groupName: TURSO_GROUP_NAME,
+  organization: TURSO_ORGANIZATION,
+  group: TURSO_GROUP,
   platformApiToken: TURSO_PLATFORM_API_TOKEN,
   autoCreateDatabase: true,
   autoCreateTable: true,
@@ -194,7 +194,7 @@ option.
       "read": "allow",
       "write": "server"
     },
-    "database/main/table/users/*": {
+    "database/main/users/*": {
       "read": "authenticated",
       "write": { "type": "field", "field": "ownerId", "server": true }
     }

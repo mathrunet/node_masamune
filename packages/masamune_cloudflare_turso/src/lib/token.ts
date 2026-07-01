@@ -44,11 +44,11 @@ async function issuePlatformDatabaseToken({
   authorization: TursoDatabaseTokenAuthorization;
   options: TursoWorkersOptions;
 }): Promise<string> {
-  const databaseName = `${options.databaseNamePrefix ?? ""}${database}`;
-  const organizationName = options.organizationName;
+  const databaseName = `${options.databasePrefix ?? ""}${database}`;
+  const organizationName = options.organization;
   const platformApiToken = options.platformApiToken;
   if (!organizationName || !platformApiToken) {
-    throw new Error("organizationName and platformApiToken are required.");
+    throw new Error("organization and platformApiToken are required.");
   }
   const response = await fetch(
     "https://api.turso.tech/v1/organizations/" +

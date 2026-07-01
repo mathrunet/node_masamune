@@ -2,8 +2,8 @@ import { Context } from "hono";
 import { TursoWorkersOptions } from "./types";
 
 interface TursoWorkersEnv {
-  TURSO_ORGANIZATION_NAME?: string | undefined;
-  TURSO_GROUP_NAME?: string | undefined;
+  TURSO_ORGANIZATION?: string | undefined;
+  TURSO_GROUP?: string | undefined;
   TURSO_PLATFORM_API_TOKEN?: string | undefined;
 }
 
@@ -14,11 +14,11 @@ export function resolveTursoWorkersOptionsFromEnv(
   const env = (context.env ?? {}) as TursoWorkersEnv;
   return {
     ...options,
-    organizationName: firstNonEmpty(
-      env.TURSO_ORGANIZATION_NAME,
-      options.organizationName,
+    organization: firstNonEmpty(
+      env.TURSO_ORGANIZATION,
+      options.organization,
     ),
-    groupName: firstNonEmpty(env.TURSO_GROUP_NAME, options.groupName),
+    group: firstNonEmpty(env.TURSO_GROUP, options.group),
     platformApiToken: firstNonEmpty(
       env.TURSO_PLATFORM_API_TOKEN,
       options.platformApiToken,

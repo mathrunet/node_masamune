@@ -29,9 +29,9 @@ export interface TursoDatabaseConnection {
 }
 
 export interface TursoWorkersOptions extends WorkersOptions {
-  databaseNamePrefix?: string | undefined;
-  organizationName?: string | undefined;
-  groupName?: string | undefined;
+  databasePrefix?: string | undefined;
+  organization?: string | undefined;
+  group?: string | undefined;
   platformApiToken?: string | undefined;
   autoCreateDatabase?: boolean | undefined;
   autoCreateTable?: boolean | undefined;

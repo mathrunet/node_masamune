@@ -21,7 +21,7 @@ const allowRules = {
       read: "allow",
       write: "allow",
     },
-    "database/*/table/*/*": {
+    "database/*/*": {
       read: "allow",
       write: "allow",
     },
@@ -47,8 +47,8 @@ function dynamicOptions(
   options: Partial<TursoWorkersOptions> = {},
 ): TursoWorkersOptions {
   return {
-    organizationName: "example-org",
-    groupName: "primary-group",
+    organization: "example-org",
+    group: "primary-group",
     platformApiToken: "platform-token",
     rules: allowRules,
     ...options,
@@ -159,7 +159,7 @@ describe("Turso Cloudflare workers", () => {
           rules: {
             version: "1",
             rules: {
-              "database/*/table/*/*": {
+              "database/*/*": {
                 read: "deny",
                 write: "deny",
               },
@@ -387,6 +387,63 @@ describe("Turso Cloudflare workers", () => {
     );
   });
 
+  test("uses functions write mode when descendant table rules deny writes", async () => {
+    mockExistingDatabase({
+      url: "libsql://test.turso.io",
+    }).mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({ jwt: "read-only-token" }),
+    } as Response);
+    const app = deploy([
+      Functions.tursoToken(
+        dynamicOptions({
+          rules: {
+            version: "1",
+            rules: {
+              "database/test": {
+                read: "allow",
+                write: "allow",
+              },
+              "database/test/users": {
+                read: "allow",
+                write: "deny",
+              },
+            },
+          },
+        }),
+      ),
+    ]);
+
+    const response = await app.request("http://localhost/turso/token/database/test", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        ttlSeconds: 60,
+      }),
+    });
+    const body = (await response.json()) as {
+      token: string;
+      readMode: string;
+      writeMode: string;
+    };
+
+    expect(response.status).toBe(200);
+    expect(body.token).toBe("read-only-token");
+    expect(body.readMode).toBe("direct");
+    expect(body.writeMode).toBe("functions");
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "/v1/organizations/example-org/databases/test/auth/tokens?expiration=60s&authorization=read-only",
+      ),
+      expect.objectContaining({
+        method: "POST",
+      }),
+    );
+  });
+
   test("uses Cloudflare env secret before platformApiToken option", async () => {
     const fetchMock = mockExistingDatabase({
       url: "libsql://env-priority-db.turso.io",
@@ -398,8 +455,8 @@ describe("Turso Cloudflare workers", () => {
     const app = deploy([
       Functions.tursoToken(
         dynamicOptions({
-          organizationName: "option-org",
-          groupName: "option-group",
+          organization: "option-org",
+          group: "option-group",
           platformApiToken: "option-token",
           rules: {
             version: "1",
@@ -426,8 +483,8 @@ describe("Turso Cloudflare workers", () => {
         }),
       },
       {
-        TURSO_ORGANIZATION_NAME: "env-org",
-        TURSO_GROUP_NAME: "env-group",
+        TURSO_ORGANIZATION: "env-org",
+        TURSO_GROUP: "env-group",
         TURSO_PLATFORM_API_TOKEN: "env-token",
       },
     );
@@ -584,7 +641,7 @@ describe("Turso Cloudflare workers", () => {
                   read: "server",
                   write: "server",
                 },
-                "database/{uid}/table/*/*": {
+                "database/{uid}/*": {
                   read: "server",
                   write: "server",
                 },
@@ -656,7 +713,7 @@ describe("Turso Cloudflare workers", () => {
                   read: "allow",
                   write: "deny",
                 },
-                "database/field-scope/table/posts/*": {
+                "database/field-scope/posts/*": {
                   read: { type: "field", field: "ownerId" },
                 },
               },
@@ -752,7 +809,7 @@ describe("Turso Cloudflare workers", () => {
     const engine = createTursoRulesEngine({
       version: "1",
       rules: {
-        "database/main/table/posts/*": {
+        "database/main/posts/*": {
           update: {
             type: "field",
             field: "ownerId",
@@ -763,13 +820,13 @@ describe("Turso Cloudflare workers", () => {
     });
 
     const direct = await engine.evaluate({
-      path: "database/main/table/posts/post-1",
+      path: "database/main/posts/post-1",
       operation: "update",
       authentication: { uid: "user-1" },
       fetchDocument: async () => ({ ownerId: "user-1" }),
     });
     const server = await engine.evaluate({
-      path: "database/main/table/posts/post-1",
+      path: "database/main/posts/post-1",
       operation: "update",
       authentication: { uid: "user-1" },
       fetchDocument: async () => ({ ownerId: "user-1" }),

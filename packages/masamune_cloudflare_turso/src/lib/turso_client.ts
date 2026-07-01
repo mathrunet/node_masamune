@@ -37,7 +37,7 @@ export async function resolveDatabaseConnection(
   options: TursoWorkersOptions,
 ): Promise<TursoDatabaseConnection> {
   const normalizedDatabase = validateLogicalName(database, "database");
-  const databaseName = `${options.databaseNamePrefix ?? ""}${normalizedDatabase}`;
+  const databaseName = `${options.databasePrefix ?? ""}${normalizedDatabase}`;
   const cached = connectionCache.get(databaseName);
   if (cached) {
     return cached;
@@ -51,12 +51,12 @@ async function ensurePlatformDatabase(
   databaseName: string,
   options: TursoWorkersOptions,
 ): Promise<TursoDatabaseConnection> {
-  const organizationName = options.organizationName;
+  const organizationName = options.organization;
   const platformApiToken = options.platformApiToken;
   if (!organizationName || !platformApiToken) {
     throw new HttpError(
       500,
-      "organizationName and platformApiToken are required to create Turso databases.",
+      "organization and platformApiToken are required to create Turso databases.",
     );
   }
   const groupName = resolveDatabaseGroupName(options);
@@ -146,13 +146,13 @@ async function createDatabaseToken(
 
 function resolveDatabaseGroupName(options: TursoWorkersOptions): string {
   const groupName = firstNonEmpty(
-    options.groupName,
-    typeof process !== "undefined" ? process.env?.TURSO_GROUP_NAME : undefined,
+    options.group,
+    typeof process !== "undefined" ? process.env?.TURSO_GROUP : undefined,
   );
   if (!groupName) {
     throw new HttpError(
       500,
-      "groupName or TURSO_GROUP_NAME is required to create Turso databases.",
+      "group or TURSO_GROUP is required to create Turso databases.",
     );
   }
   return groupName;
