@@ -318,6 +318,51 @@ describe("Turso Cloudflare workers", () => {
     );
   });
 
+  test("upserts rows on POST when value contains an existing id", async () => {
+    mockExistingDatabase({ url: "libsql://postupsertdb.turso.io" });
+    execute
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({
+        columns: ["cid", "name", "type", "notnull", "dflt_value", "pk"],
+        rows: [
+          [0, "id", "TEXT", 0, null, 1],
+          [1, "created_at", "INTEGER", 0, null, 0],
+          [2, "updated_at", "INTEGER", 0, null, 0],
+          [3, "name", "TEXT", 0, null, 0],
+        ],
+      })
+      .mockResolvedValueOnce({
+        columns: ["id", "name", "created_at", "updated_at"],
+        rows: [
+          ["user_1", "Alice", 1, 2],
+        ],
+      });
+    const app = deploy([Functions.turso(dynamicOptions())]);
+
+    const response = await app.request("http://localhost/turso/database/postupsertdb/users", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        value: {
+          id: "user_1",
+          name: "Alice",
+        },
+      }),
+    });
+    const body = (await response.json()) as { data: Record<string, unknown>[] };
+
+    expect(response.status).toBe(200);
+    expect(body.data).toHaveLength(1);
+    expect(execute).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sql: expect.stringContaining("INSERT OR REPLACE INTO"),
+      }),
+    );
+  });
+
   test("checks update rules for POST with path indexKey", async () => {
     mockExistingDatabase({ url: "libsql://postruledb.turso.io" });
     execute

@@ -107,7 +107,7 @@ async function insertRow(
   const keys = Object.keys(row).map((key) => validateIdentifier(key, "column"));
   const placeholders = keys.map(() => "?").join(", ");
   const result = await client.execute({
-    sql: `INSERT INTO ${quoteIdentifier(request.table)} ` +
+    sql: `INSERT OR REPLACE INTO ${quoteIdentifier(request.table)} ` +
       `(${keys.map(quoteIdentifier).join(", ")}) VALUES (${placeholders}) RETURNING *`,
     args: keys.map((key) => encodeSqlValue(row[key])),
   });
