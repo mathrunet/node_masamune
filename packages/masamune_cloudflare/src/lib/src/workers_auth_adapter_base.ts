@@ -1,4 +1,5 @@
-import { Context, MiddlewareHandler } from "hono";
+import { Context } from "hono";
+import { WorkerAdapterBase } from "./worker_adapter_base";
 
 /**
  * Authentication context for Cloudflare Workers.
@@ -26,14 +27,7 @@ export interface WorkersAuthContext {
  *
  * Cloudflare Workers用の認証アダプターのベースクラス。
  */
-export abstract class WorkersAuthAdapterBase {
-    /**
-     * Create Hono middleware.
-     *
-     * Honoミドルウェアを作成します。
-     */
-    abstract build(): MiddlewareHandler;
-
+export abstract class WorkersAuthAdapterBase extends WorkerAdapterBase {
     /**
      * Set authentication context.
      *

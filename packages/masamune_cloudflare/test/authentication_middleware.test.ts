@@ -1,9 +1,9 @@
 import { Hono } from "hono";
-import { deploy } from "../src";
+import { deploy, WorkersOptions } from "../src";
 import {
-    FirebaseAuthenticationMiddleware,
-    NoAuthenticationMiddleware,
-} from "../src/lib/middlewares";
+    FirebaseAuthAdapter,
+} from "../src/lib/adapters/firebase_auth_adapter";
+import { NoneAuthAdapter } from "../src/lib/adapters/none_auth_adapter";
 import { WorkersData } from "../src/lib/src/workers_data";
 
 jest.mock("firebase-auth-cloudflare-workers", () => ({
@@ -22,7 +22,7 @@ const keyStore = {
     put: jest.fn(),
 };
 
-function createWorker(options = {}) {
+function createWorker(options: WorkersOptions = {}) {
     return new WorkersData({
         path: "/test",
         options,
@@ -46,7 +46,7 @@ describe("authentication middleware", () => {
 
     test("allows requests without authentication when NoAuthenticationMiddleware is used", async () => {
         const app = deploy([
-            createWorker({ authentication: new NoAuthenticationMiddleware() }),
+            createWorker({ auth: new NoneAuthAdapter() }),
         ]);
 
         const response = await app.request("http://localhost/test");
@@ -60,7 +60,7 @@ describe("authentication middleware", () => {
         mockVerifyIdToken.mockResolvedValueOnce({ uid: "user-1" });
         const app = deploy([
             createWorker({
-                authentication: new FirebaseAuthenticationMiddleware({
+                auth: new FirebaseAuthAdapter({
                     projectId: "test-project",
                     keyStore,
                 }),
@@ -84,7 +84,7 @@ describe("authentication middleware", () => {
         mockVerifyIdToken.mockRejectedValueOnce(new Error("invalid token"));
         const app = deploy([
             createWorker({
-                authentication: new FirebaseAuthenticationMiddleware({
+                auth: new FirebaseAuthAdapter({
                     projectId: "test-project",
                     keyStore,
                 }),
@@ -106,7 +106,7 @@ describe("authentication middleware", () => {
     test("rejects requests when Firebase Authentication bearer token is missing", async () => {
         const app = deploy([
             createWorker({
-                authentication: new FirebaseAuthenticationMiddleware({
+                auth: new FirebaseAuthAdapter({
                     projectId: "test-project",
                     keyStore,
                 }),
@@ -127,7 +127,7 @@ describe("authentication middleware", () => {
             createWorker(),
             new WorkersData({
                 path: "/public",
-                options: { authentication: new NoAuthenticationMiddleware() },
+                options: { auth: new NoneAuthAdapter() },
                 func: (hono: Hono) => {
                     hono.get("/", async (context) => {
                         return context.json({ message: "Public" });
@@ -136,7 +136,7 @@ describe("authentication middleware", () => {
                 },
             }),
         ], {
-            authentication: new FirebaseAuthenticationMiddleware({
+            auth: new FirebaseAuthAdapter({
                 projectId: "test-project",
                 keyStore,
             }),

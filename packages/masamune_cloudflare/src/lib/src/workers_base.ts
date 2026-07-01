@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { WorkersAuthAdapterBase } from "./workers_auth_adapter_base";
+import { WorkersRuleAdapterBase } from "./workers_rule_adapter_base";
 
 /**
  * Define Function data for Cloudflare Workers.
@@ -102,6 +103,18 @@ export abstract class WorkersBase {
         }
         return hono;
     }
+
+    /**
+     * Apply rules middleware.
+     *
+     * rulesミドルウェアを適用します。
+     */
+    protected applyRules(hono: Hono, options: WorkersOptions): Hono {
+        if (options.rules) {
+            hono.use("*", options.rules.build());
+        }
+        return hono;
+    }
 }
 
 /**
@@ -116,6 +129,13 @@ export interface WorkersOptions {
      * 認証アダプター。
      */
     auth?: WorkersAuthAdapterBase | null | undefined;
+
+    /**
+     * Rules adapter.
+     *
+     * rulesアダプター。
+     */
+    rules?: WorkersRuleAdapterBase | null | undefined;
 }
 
 /**
@@ -127,11 +147,18 @@ export function resolveWorkersOptions(
     defaultOptions: WorkersOptions = {},
     options: WorkersOptions = {},
 ): WorkersOptions {
+    const defaultAuth = defaultOptions.auth;
+    const auth = options.auth;
+    const defaultRules = defaultOptions.rules;
+    const rules = options.rules;
     return {
         ...defaultOptions,
         ...options,
-        auth: options.auth === undefined
-            ? defaultOptions.auth
-            : options.auth,
+        auth: auth === undefined
+            ? defaultAuth
+            : auth,
+        rules: rules === undefined
+            ? defaultRules
+            : rules,
     };
 }

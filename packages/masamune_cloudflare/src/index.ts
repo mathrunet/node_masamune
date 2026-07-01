@@ -15,10 +15,16 @@ export * from "@mathrunet/masamune";
 export * from "./lib/api";
 export * from "./lib/src/workers_base";
 export * from "./lib/src/workers_auth_adapter_base";
+export * from "./lib/src/workers_rule_adapter_base";
 export * from "./lib/src/workers_data";
 export * from "./lib/src/request_process_workders_base";
+export * from "./lib/src/rules/rules_loader";
+export * from "./lib/src/rules/path_matcher";
+export * from "./lib/src/rules/rules_engine";
 export * from "./lib/adapters/firebase_auth_adapter";
 export * from "./lib/adapters/none_auth_adapter";
+export * from "./lib/adapters/rules_middleware";
+export * from "./lib/middlewares";
 
 /**
  * Methods for deploying to Cloudflare Workers.
