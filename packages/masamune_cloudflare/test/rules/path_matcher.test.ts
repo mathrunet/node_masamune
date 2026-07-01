@@ -25,6 +25,17 @@ describe("path matcher", () => {
         expect(result.wildcardSegments).toBe(2);
     });
 
+    test("matches named path parameters", () => {
+        const result = matchRulePath(
+            "database/{uid}",
+            "database/user-1",
+        );
+
+        expect(result.matched).toBe(true);
+        expect(result.params).toEqual({ uid: "user-1" });
+        expect(result.namedWildcardSegments).toBe(1);
+    });
+
     test("matches deep wildcard as remaining segments", () => {
         const result = matchRulePath(
             "database/main/table/**",
@@ -65,5 +76,19 @@ describe("path matcher", () => {
             "database/**/users",
             "database/main/table/users",
         )).toThrow("'**' must be the last segment");
+    });
+
+    test("rejects invalid named path parameters", () => {
+        expect(() => matchRulePath(
+            "database/{invalid-name}",
+            "database/main",
+        )).toThrow("Invalid path parameter segment");
+    });
+
+    test("rejects duplicate named path parameters", () => {
+        expect(() => matchRulePath(
+            "database/{uid}/table/users/{uid}",
+            "database/user-1/table/users/user-1",
+        )).toThrow("Duplicate path parameter");
     });
 });

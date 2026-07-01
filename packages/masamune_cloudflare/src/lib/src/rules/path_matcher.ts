@@ -8,7 +8,9 @@ import { validateRulePath } from "./rules_loader";
 export interface RulePathMatch {
     matched: boolean;
     rulePath: string;
+    params: Record<string, string>;
     literalSegments: number;
+    namedWildcardSegments: number;
     wildcardSegments: number;
     deepWildcardSegments: number;
     matchedSegments: number;
@@ -23,7 +25,9 @@ export function matchRulePath(rulePath: string, requestPath: string): RulePathMa
     validateRulePath(rulePath);
     const ruleSegments = splitPath(rulePath);
     const requestSegments = splitPath(requestPath);
+    const params: Record<string, string> = {};
     let literalSegments = 0;
+    let namedWildcardSegments = 0;
     let wildcardSegments = 0;
     let deepWildcardSegments = 0;
 
@@ -34,7 +38,9 @@ export function matchRulePath(rulePath: string, requestPath: string): RulePathMa
             return {
                 matched: true,
                 rulePath,
+                params,
                 literalSegments,
+                namedWildcardSegments,
                 wildcardSegments,
                 deepWildcardSegments,
                 matchedSegments: requestSegments.length,
@@ -45,6 +51,13 @@ export function matchRulePath(rulePath: string, requestPath: string): RulePathMa
             return createUnmatched(rulePath);
         }
         if (ruleSegment === "*") {
+            wildcardSegments++;
+            continue;
+        }
+        const paramName = parseNamedPathParam(ruleSegment);
+        if (paramName) {
+            params[paramName] = requestSegment;
+            namedWildcardSegments++;
             wildcardSegments++;
             continue;
         }
@@ -59,7 +72,9 @@ export function matchRulePath(rulePath: string, requestPath: string): RulePathMa
     return {
         matched: true,
         rulePath,
+        params,
         literalSegments,
+        namedWildcardSegments,
         wildcardSegments,
         deepWildcardSegments,
         matchedSegments: requestSegments.length,
@@ -77,6 +92,9 @@ export function compareRulePathMatch(a: RulePathMatch, b: RulePathMatch): number
     }
     if (a.deepWildcardSegments !== b.deepWildcardSegments) {
         return a.deepWildcardSegments - b.deepWildcardSegments;
+    }
+    if (a.namedWildcardSegments !== b.namedWildcardSegments) {
+        return b.namedWildcardSegments - a.namedWildcardSegments;
     }
     if (a.wildcardSegments !== b.wildcardSegments) {
         return a.wildcardSegments - b.wildcardSegments;
@@ -111,9 +129,16 @@ function createUnmatched(rulePath: string): RulePathMatch {
     return {
         matched: false,
         rulePath,
+        params: {},
         literalSegments: 0,
+        namedWildcardSegments: 0,
         wildcardSegments: 0,
         deepWildcardSegments: 0,
         matchedSegments: 0,
     };
+}
+
+function parseNamedPathParam(segment: string): string | undefined {
+    const match = /^\{([A-Za-z_][A-Za-z0-9_]*)\}$/.exec(segment);
+    return match?.[1];
 }

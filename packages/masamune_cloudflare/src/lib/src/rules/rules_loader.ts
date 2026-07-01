@@ -28,7 +28,10 @@ export type RulesAccessRule =
     | "deny"
     | "allow"
     | "authenticated"
-    | RulesFieldMatchAccessRule;
+    | "server"
+    | RulesFieldMatchAccessRule
+    | RulesFieldAccessRule
+    | RulesPathAccessRule;
 
 /**
  * Field match access rule.
@@ -38,6 +41,28 @@ export type RulesAccessRule =
 export interface RulesFieldMatchAccessRule {
     type: "fieldMatch";
     field: string;
+}
+
+/**
+ * Field match access rule.
+ *
+ * フィールド一致アクセスルール。
+ */
+export interface RulesFieldAccessRule {
+    type: "field";
+    field: string;
+    server?: boolean | undefined;
+}
+
+/**
+ * Path parameter access rule.
+ *
+ * パスパラメーター一致アクセスルール。
+ */
+export interface RulesPathAccessRule {
+    type: "path";
+    param: string;
+    server?: boolean | undefined;
 }
 
 /**
@@ -71,7 +96,7 @@ export interface RulesConfig {
  */
 export interface LoadedRulesConfig extends RulesConfig { }
 
-const allowedAccessValues = new Set(["deny", "allow", "authenticated"]);
+const allowedAccessValues = new Set(["deny", "allow", "authenticated", "server"]);
 const allowedOperationKeys = new Set([
     "get",
     "create",
@@ -124,6 +149,20 @@ export function validateRulePath(path: string): void {
     if (segments.some((segment) => segment.length === 0)) {
         throw new Error(`Rule path must not contain empty segments: ${path}`);
     }
+    const paramNames = new Set<string>();
+    for (const segment of segments) {
+        const paramName = parseNamedPathParam(segment);
+        if ((segment.startsWith("{") || segment.endsWith("}")) && !paramName) {
+            throw new Error(`Invalid path parameter segment '${segment}' in rule path: ${path}`);
+        }
+        if (!paramName) {
+            continue;
+        }
+        if (paramNames.has(paramName)) {
+            throw new Error(`Duplicate path parameter '${paramName}' in rule path: ${path}`);
+        }
+        paramNames.add(paramName);
+    }
     const deepWildcardIndex = segments.indexOf("**");
     if (deepWildcardIndex >= 0 && deepWildcardIndex !== segments.length - 1) {
         throw new Error(`'**' must be the last segment in rule path: ${path}`);
@@ -158,8 +197,27 @@ function validateAccessRule(path: string, operation: string, access: unknown): R
                 field: access.field,
             };
         }
+        if (access.type === "field" && typeof access.field === "string" && access.field.length > 0) {
+            return {
+                type: "field",
+                field: access.field,
+                ...(access.server === true ? { server: true } : {}),
+            };
+        }
+        if (access.type === "path" && typeof access.param === "string" && access.param.length > 0) {
+            return {
+                type: "path",
+                param: access.param,
+                ...(access.server === true ? { server: true } : {}),
+            };
+        }
     }
     throw new Error(`Invalid access rule for ${operation} in ${path}.`);
+}
+
+function parseNamedPathParam(segment: string): string | undefined {
+    const match = /^\{([A-Za-z_][A-Za-z0-9_]*)\}$/.exec(segment);
+    return match?.[1];
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

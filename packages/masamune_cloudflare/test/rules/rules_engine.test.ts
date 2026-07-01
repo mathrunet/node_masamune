@@ -1,7 +1,9 @@
 import {
     RulesEngine,
+    buildDatabaseRulesPath,
     buildRulesPath,
     normalizeHttpMethodToRulesOperation,
+    resolveDatabaseTokenAccess,
 } from "../../src/lib/src/rules/rules_engine";
 import { loadRulesConfig } from "../../src/lib/src/rules/rules_loader";
 
@@ -93,6 +95,71 @@ describe("rules engine", () => {
         expect(denied.allowed).toBe(false);
     });
 
+    test("evaluates field rule with fetched document", async () => {
+        const engine = new RulesEngine({
+            version: "1",
+            rules: {
+                "database/main/table/users/*": {
+                    update: { type: "field", field: "ownerId" },
+                },
+            },
+        });
+
+        const result = await engine.evaluate({
+            path: "database/main/table/users/user-1",
+            operation: "update",
+            authentication: { uid: "user-1" },
+            fetchDocument: async () => ({ ownerId: "user-1" }),
+        });
+
+        expect(result.allowed).toBe(true);
+    });
+
+    test("evaluates path parameter rules", async () => {
+        const engine = new RulesEngine({
+            version: "1",
+            rules: {
+                "database/{uid}": {
+                    read: { type: "path", param: "uid" },
+                },
+            },
+        });
+
+        const result = await engine.evaluate({
+            path: "database/user-1",
+            operation: "read",
+            authentication: { uid: "user-1" },
+        });
+
+        expect(result.allowed).toBe(true);
+        expect(result.params).toEqual({ uid: "user-1" });
+    });
+
+    test("evaluates server-only rules", async () => {
+        const engine = new RulesEngine({
+            version: "1",
+            rules: {
+                "database/main": {
+                    write: "server",
+                },
+            },
+        });
+
+        const denied = await engine.evaluate({
+            path: "database/main",
+            operation: "write",
+            server: false,
+        });
+        const allowed = await engine.evaluate({
+            path: "database/main",
+            operation: "write",
+            server: true,
+        });
+
+        expect(denied.allowed).toBe(false);
+        expect(allowed.allowed).toBe(true);
+    });
+
     test("is independent from rule map insertion order", async () => {
         const reorderedRules = {
             version: "1",
@@ -127,6 +194,34 @@ describe("rules engine", () => {
             table: "users",
             indexKey: "user-1",
         })).toBe("database/main/table/users/user-1");
+    });
+
+    test("builds database rules path", () => {
+        expect(buildDatabaseRulesPath({ database: "main" })).toBe("database/main");
+    });
+
+    test("resolves database token access modes", async () => {
+        const engine = new RulesEngine({
+            version: "1",
+            rules: {
+                "database/main": {
+                    read: "allow",
+                    write: "server",
+                },
+            },
+        });
+
+        const access = await resolveDatabaseTokenAccess({
+            engine,
+            database: "main",
+            operations: ["read", "write"],
+        });
+
+        expect(access).toMatchObject({
+            authorization: "read-only",
+            readMode: "direct",
+            writeMode: "functions",
+        });
     });
 
     test("validates rules config schema", () => {

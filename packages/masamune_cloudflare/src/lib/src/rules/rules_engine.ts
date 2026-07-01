@@ -19,6 +19,7 @@ export interface RulesEvaluationInput {
     operation: RulesOperation | RulesOperationKey;
     authentication?: WorkersAuthContext | undefined;
     fetchDocument?: (() => Promise<Record<string, unknown> | null | undefined>) | undefined;
+    server?: boolean | undefined;
 }
 
 /**
@@ -30,6 +31,7 @@ export interface RulesEvaluationResult {
     allowed: boolean;
     rulePath?: string | undefined;
     access?: RulesAccessRule | undefined;
+    params?: Record<string, string> | undefined;
 }
 
 /**
@@ -41,6 +43,52 @@ export interface RulesPathArguments {
     database: string;
     table: string;
     indexKey: string;
+}
+
+/**
+ * Access mode resolved from rules.
+ *
+ * rulesから解決されたアクセスモード。
+ */
+export type RulesAccessMode = "none" | "functions" | "direct";
+
+/**
+ * Database token authorization resolved from rules.
+ *
+ * rulesから解決されたデータベーストークン権限。
+ */
+export type RulesDatabaseTokenAuthorization = "read-only" | "full-access";
+
+/**
+ * Target input for database token rules evaluation.
+ *
+ * データベーストークンrules評価対象。
+ */
+export interface RulesTokenTargetInput {
+    table: string;
+    operations: RulesOperationKey[];
+}
+
+/**
+ * Target output for database token rules evaluation.
+ *
+ * データベーストークンrules評価結果。
+ */
+export interface RulesTokenTargetOutput extends RulesTokenTargetInput {
+    readMode?: RulesAccessMode | undefined;
+    writeMode?: RulesAccessMode | undefined;
+}
+
+/**
+ * Database token access resolved from rules.
+ *
+ * rulesから解決されたデータベーストークンアクセス。
+ */
+export interface RulesDatabaseTokenAccess {
+    authorization?: RulesDatabaseTokenAuthorization | undefined;
+    readMode: RulesAccessMode;
+    writeMode: RulesAccessMode;
+    scopes: RulesTokenTargetOutput[];
 }
 
 /**
@@ -74,20 +122,83 @@ export class RulesEngine {
             return {
                 rulePath: match.rulePath,
                 entry: this.config.rules[match.rulePath],
+                params: match.params,
             };
         }));
-        const access = resolveAccessRule(resolved.entry, operation);
-        if (!access) {
+        const resolvedAccess = resolveAccessRule(resolved.entry, resolved.params, operation);
+        if (!resolvedAccess) {
             return {
                 allowed: false,
                 rulePath: resolved.rulePath,
             };
         }
         return {
-            allowed: await evaluateAccessRule(access, input.authentication, input.fetchDocument),
+            allowed: await evaluateAccessRule(
+                resolvedAccess.access,
+                input.authentication,
+                input.fetchDocument,
+                resolvedAccess.params,
+                input.server === true,
+            ),
             rulePath: resolved.rulePath,
-            access,
+            access: resolvedAccess.access,
+            params: resolvedAccess.params,
         };
+    }
+
+    /**
+     * Returns true when a table scoped rule requires server evaluation.
+     *
+     * テーブル配下ルールにサーバー評価が必要な制約がある場合はtrueを返します。
+     */
+    hasScopedRestriction({
+        database,
+        table,
+        operation,
+    }: {
+        database: string;
+        table: string;
+        operation: RulesOperation | RulesOperationKey;
+    }): boolean {
+        const normalized = normalizeRulesOperation(operation);
+        for (const [rulePath, entry] of Object.entries(this.config.rules)) {
+            if (!isRulePathInTableScope(rulePath, database, table)) {
+                continue;
+            }
+            const access = resolveAccessRule(entry, {}, normalized)?.access;
+            if (!access || isDirectSafeScopeAccess(access)) {
+                continue;
+            }
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Returns true when a table scoped rule explicitly denies access.
+     *
+     * テーブル配下ルールに明示的なdenyがある場合はtrueを返します。
+     */
+    hasScopedDeny({
+        database,
+        table,
+        operation,
+    }: {
+        database: string;
+        table: string;
+        operation: RulesOperation | RulesOperationKey;
+    }): boolean {
+        const normalized = normalizeRulesOperation(operation);
+        for (const [rulePath, entry] of Object.entries(this.config.rules)) {
+            if (!isRulePathInTableScope(rulePath, database, table)) {
+                continue;
+            }
+            const access = resolveAccessRule(entry, {}, normalized)?.access;
+            if (access === "deny") {
+                return true;
+            }
+        }
+        return false;
     }
 }
 
@@ -103,6 +214,18 @@ export function buildRulesPath({ database, table, indexKey }: RulesPathArguments
         "table",
         encodeRulesPathSegment(table),
         encodeRulesPathSegment(indexKey),
+    ].join("/");
+}
+
+/**
+ * Build a normalized database rules path.
+ *
+ * 正規化されたデータベースrulesパスを生成します。
+ */
+export function buildDatabaseRulesPath({ database }: { database: string }): string {
+    return [
+        "database",
+        encodeRulesPathSegment(database),
     ].join("/");
 }
 
@@ -146,6 +269,179 @@ export function normalizeRulesOperation(operation: RulesOperation | RulesOperati
 }
 
 /**
+ * Expand operation aliases to concrete operations.
+ *
+ * 操作エイリアスを具体的な操作へ展開します。
+ */
+export function expandRulesOperation(operation: RulesOperationKey): RulesOperation[] {
+    switch (operation) {
+        case "read":
+            return ["get"];
+        case "write":
+            return ["create", "update", "delete"];
+        case "get":
+        case "create":
+        case "update":
+        case "delete":
+            return [operation];
+    }
+}
+
+/**
+ * Filter token targets by rules.
+ *
+ * rulesによりトークン対象をフィルタします。
+ */
+export async function filterAllowedScope({
+    engine,
+    database,
+    scope,
+    authentication,
+}: {
+    engine: RulesEngine;
+    database: string;
+    scope: RulesTokenTargetInput[];
+    authentication?: WorkersAuthContext | undefined;
+}): Promise<RulesTokenTargetInput[]> {
+    const allowed: RulesTokenTargetInput[] = [];
+    for (const item of scope) {
+        const operations: RulesOperationKey[] = [];
+        for (const operationKey of item.operations) {
+            const expanded = expandRulesOperation(operationKey);
+            const results = await Promise.all(expanded.map((operation) => {
+                return engine.evaluate({
+                    path: buildRulesPath({
+                        database,
+                        table: item.table,
+                        indexKey: "*",
+                    }),
+                    operation,
+                    authentication,
+                });
+            }));
+            if (results.every((result) => result.allowed)) {
+                operations.push(operationKey);
+            }
+        }
+        if (operations.length > 0) {
+            allowed.push({
+                table: item.table,
+                operations,
+            });
+        }
+    }
+    return allowed;
+}
+
+/**
+ * Resolve database token access from rules.
+ *
+ * rulesからデータベーストークンアクセスを解決します。
+ */
+export async function resolveDatabaseTokenAccess({
+    engine,
+    database,
+    operations,
+    scope = [],
+    authentication,
+}: {
+    engine: RulesEngine;
+    database: string;
+    operations?: RulesOperationKey[] | undefined;
+    scope?: RulesTokenTargetInput[] | undefined;
+    authentication?: WorkersAuthContext | undefined;
+}): Promise<RulesDatabaseTokenAccess | undefined> {
+    const path = buildDatabaseRulesPath({ database });
+    const directRead = await engine.evaluate({
+        path,
+        operation: "read",
+        authentication,
+        server: false,
+    });
+    const serverRead = directRead.allowed
+        ? directRead
+        : await engine.evaluate({
+            path,
+            operation: "read",
+            authentication,
+            server: true,
+        });
+    if (!serverRead.allowed) {
+        return undefined;
+    }
+    const directDatabaseWrite = await evaluateDatabaseWrite({
+        engine,
+        path,
+        authentication,
+        server: false,
+    });
+    const serverDatabaseWrite = directDatabaseWrite
+        ? true
+        : await evaluateDatabaseWrite({
+            engine,
+            path,
+            authentication,
+            server: true,
+        });
+    const scopes = await resolveScopeModes({
+        engine,
+        database,
+        scope,
+        authentication,
+    });
+    const readScopes = scopes.filter((item) => requiresRead(item.operations));
+    const writeScopes = scopes.filter((item) => requiresWrite(item.operations));
+    const requestedOperations = operations ?? [];
+    const requestsDatabaseRead = requiresRead(requestedOperations);
+    const requestsDatabaseWrite = requiresWrite(requestedOperations);
+    const hasTargets = scope.length > 0;
+    const readMode = resolveOverallMode(
+        readScopes.map((item) => item.readMode ?? "none"),
+        !hasTargets && (requestedOperations.length === 0 || requestsDatabaseRead)
+            ? directRead.allowed ? "direct" : "functions"
+            : "none",
+    );
+    let writeMode = resolveOverallMode(
+        writeScopes.map((item) => item.writeMode ?? "none"),
+        !hasTargets && (requestedOperations.length === 0 || requestsDatabaseWrite)
+            ? directDatabaseWrite ? "direct" : serverDatabaseWrite ? "functions" : "none"
+            : "none",
+    );
+    if (readMode === "functions" && writeMode === "direct") {
+        writeMode = serverDatabaseWrite ? "functions" : "none";
+    }
+    const authorization = resolveTokenAuthorization(readMode, writeMode);
+    return {
+        authorization,
+        readMode,
+        writeMode,
+        scopes,
+    };
+}
+
+/**
+ * Resolve database token authorization from rules.
+ *
+ * rulesからデータベーストークン権限を解決します。
+ */
+export async function resolveDatabaseTokenAuthorization({
+    engine,
+    database,
+    authentication,
+}: {
+    engine: RulesEngine;
+    database: string;
+    authentication?: WorkersAuthContext | undefined;
+}): Promise<RulesDatabaseTokenAuthorization | undefined> {
+    const access = await resolveDatabaseTokenAccess({
+        engine,
+        database,
+        authentication,
+    });
+    return access?.authorization;
+}
+
+/**
  * Resolve operation lookup order.
  *
  * 操作の解決順を取得します。
@@ -165,9 +461,18 @@ export function resolveRulesOperation(operation: RulesOperation | RulesOperation
 }
 
 function resolveInheritedRule(
-    matches: { rulePath: string, entry: RulesEntry | undefined }[],
-): { rulePath: string, entry: RulesEntry } {
+    matches: {
+        rulePath: string,
+        entry: RulesEntry | undefined,
+        params: Record<string, string>,
+    }[],
+): {
+    rulePath: string,
+    entry: RulesEntry,
+    params: Partial<Record<RulesOperationKey, Record<string, string>>>,
+} {
     const inherited: RulesEntry = {};
+    const inheritedParams: Partial<Record<RulesOperationKey, Record<string, string>>> = {};
     let rulePath = matches[0]?.rulePath ?? "";
     for (const match of [...matches].reverse()) {
         if (!match.entry) {
@@ -176,19 +481,31 @@ function resolveInheritedRule(
         rulePath = match.rulePath;
         for (const [operation, access] of Object.entries(match.entry)) {
             inherited[operation as RulesOperationKey] = access;
+            inheritedParams[operation as RulesOperationKey] = match.params;
         }
     }
     return {
         rulePath,
         entry: inherited,
+        params: inheritedParams,
     };
 }
 
-function resolveAccessRule(entry: RulesEntry, operation: RulesOperation): RulesAccessRule | undefined {
+function resolveAccessRule(
+    entry: RulesEntry,
+    params: Partial<Record<RulesOperationKey, Record<string, string>>>,
+    operation: RulesOperation,
+): {
+    access: RulesAccessRule,
+    params: Record<string, string>,
+} | undefined {
     for (const operationKey of resolveRulesOperation(operation)) {
         const access = entry[operationKey];
         if (access) {
-            return access;
+            return {
+                access,
+                params: params[operationKey] ?? {},
+            };
         }
     }
     return undefined;
@@ -198,6 +515,8 @@ async function evaluateAccessRule(
     access: RulesAccessRule,
     authentication?: WorkersAuthContext | undefined,
     fetchDocument?: (() => Promise<Record<string, unknown> | null | undefined>) | undefined,
+    params: Record<string, string> = {},
+    server = false,
 ): Promise<boolean> {
     switch (access) {
         case "deny":
@@ -206,7 +525,17 @@ async function evaluateAccessRule(
             return true;
         case "authenticated":
             return !!authentication?.uid;
-        default: {
+        case "server":
+            return server;
+        default:
+            break;
+    }
+    if ("server" in access && access.server === true && !server) {
+        return false;
+    }
+    switch (access.type) {
+        case "field":
+        case "fieldMatch": {
             const uid = authentication?.uid;
             if (!uid || !fetchDocument) {
                 return false;
@@ -214,7 +543,208 @@ async function evaluateAccessRule(
             const document = await fetchDocument();
             return document?.[access.field] === uid;
         }
+        case "path": {
+            const uid = authentication?.uid;
+            return !!uid && params[access.param] === uid;
+        }
     }
+}
+
+async function resolveScopeModes({
+    engine,
+    database,
+    scope,
+    authentication,
+}: {
+    engine: RulesEngine;
+    database: string;
+    scope: RulesTokenTargetInput[];
+    authentication?: WorkersAuthContext | undefined;
+}): Promise<RulesTokenTargetOutput[]> {
+    const resolved: RulesTokenTargetOutput[] = [];
+    for (const item of scope) {
+        const readMode = requiresRead(item.operations)
+            ? await resolveScopedOperationMode({
+                engine,
+                database,
+                table: item.table,
+                operation: "read",
+                authentication,
+            })
+            : undefined;
+        const writeMode = requiresWrite(item.operations)
+            ? await resolveScopedOperationMode({
+                engine,
+                database,
+                table: item.table,
+                operation: "write",
+                authentication,
+            })
+            : undefined;
+        resolved.push({
+            table: item.table,
+            operations: item.operations,
+            ...(readMode ? { readMode } : {}),
+            ...(writeMode ? { writeMode } : {}),
+        });
+    }
+    return resolved;
+}
+
+async function resolveScopedOperationMode({
+    engine,
+    database,
+    table,
+    operation,
+    authentication,
+}: {
+    engine: RulesEngine;
+    database: string;
+    table: string;
+    operation: RulesOperationKey;
+    authentication?: WorkersAuthContext | undefined;
+}): Promise<RulesAccessMode> {
+    const path = buildRulesPath({
+        database,
+        table,
+        indexKey: "*",
+    });
+    const expanded = expandRulesOperation(operation);
+    const direct = await Promise.all(expanded.map((item) => engine.evaluate({
+        path,
+        operation: item,
+        authentication,
+        server: false,
+    })));
+    const directAllowed = direct.every((result) => result.allowed);
+    const restricted = expanded.some((item) => engine.hasScopedRestriction({
+        database,
+        table,
+        operation: item,
+    }));
+    if (directAllowed && !restricted) {
+        return "direct";
+    }
+    const denied = expanded.some((item) => engine.hasScopedDeny({
+        database,
+        table,
+        operation: item,
+    }));
+    if (restricted && !denied) {
+        return "functions";
+    }
+    const server = await Promise.all(expanded.map((item) => engine.evaluate({
+        path,
+        operation: item,
+        authentication,
+        server: true,
+    })));
+    return server.every((result) => result.allowed) ? "functions" : "none";
+}
+
+function resolveOverallMode(
+    scopedModes: RulesAccessMode[],
+    fallback: RulesAccessMode,
+): RulesAccessMode {
+    if (scopedModes.length === 0) {
+        return fallback;
+    }
+    if (scopedModes.every((mode) => mode === "direct")) {
+        return "direct";
+    }
+    if (scopedModes.some((mode) => mode === "none")) {
+        return "none";
+    }
+    return "functions";
+}
+
+function resolveTokenAuthorization(
+    readMode: RulesAccessMode,
+    writeMode: RulesAccessMode,
+): RulesDatabaseTokenAuthorization | undefined {
+    if (writeMode === "direct") {
+        return "full-access";
+    }
+    if (readMode === "direct") {
+        return "read-only";
+    }
+    return undefined;
+}
+
+function requiresRead(operations: RulesOperationKey[]): boolean {
+    return operations.some((operation) => expandRulesOperation(operation).includes("get"));
+}
+
+function requiresWrite(operations: RulesOperationKey[]): boolean {
+    return operations.some((operation) => {
+        const expanded = expandRulesOperation(operation);
+        return expanded.includes("create") || expanded.includes("update") || expanded.includes("delete");
+    });
+}
+
+async function evaluateDatabaseWrite({
+    engine,
+    path,
+    authentication,
+    server,
+}: {
+    engine: RulesEngine;
+    path: string;
+    authentication?: WorkersAuthContext | undefined;
+    server: boolean;
+}): Promise<boolean> {
+    const results = await Promise.all(
+        expandRulesOperation("write").map((operation) => {
+            return engine.evaluate({
+                path,
+                operation,
+                authentication,
+                server,
+            });
+        }),
+    );
+    return results.every((result) => result.allowed);
+}
+
+function isRulePathInTableScope(
+    rulePath: string,
+    database: string,
+    table: string,
+): boolean {
+    const segments = splitRulesPath(rulePath);
+    if (segments.length <= 4) {
+        return false;
+    }
+    return segmentMatches(segments[0], "database") &&
+        segmentMatches(segments[1], database) &&
+        segmentMatches(segments[2], "table") &&
+        segmentMatches(segments[3], table);
+}
+
+function segmentMatches(ruleSegment: string | undefined, value: string): boolean {
+    if (!ruleSegment) {
+        return false;
+    }
+    if (ruleSegment === "**") {
+        return true;
+    }
+    return ruleSegment === "*" || !!parseNamedPathParam(ruleSegment) || ruleSegment === value;
+}
+
+function isDirectSafeScopeAccess(access: RulesAccessRule): boolean {
+    return access === "allow";
+}
+
+function splitRulesPath(path: string): string[] {
+    if (path.length === 0 || path.startsWith("/") || path.endsWith("/")) {
+        return [];
+    }
+    return path.split("/");
+}
+
+function parseNamedPathParam(segment: string): string | undefined {
+    const match = /^\{([A-Za-z_][A-Za-z0-9_]*)\}$/.exec(segment);
+    return match?.[1];
 }
 
 function encodeRulesPathSegment(segment: string): string {

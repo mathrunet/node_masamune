@@ -60,6 +60,50 @@ export default m.deploy(
 );
 ```
 
+# Rules
+
+`WorkersOptions.rules` accepts a `rules.json` configuration. Import the JSON
+file and pass it to `deploy` when multiple Cloudflare packages should share the
+same rules.
+
+```typescript
+import * as m from "@mathrunet/masamune_cloudflare";
+import rulesJson from "../rules.json";
+
+export default m.deploy(
+    [
+        m.TestWorkers.test,
+    ],
+    {
+        rules: rulesJson,
+    },
+);
+```
+
+`rules.json` paths use the same normalized format across Turso, TiDB, and KV
+workers.
+
+```json
+{
+  "version": "1",
+  "rules": {
+    "database/main": {
+      "read": "allow",
+      "write": "server"
+    },
+    "database/{uid}/table/users/{uid}": {
+      "read": { "type": "path", "param": "uid" },
+      "write": { "type": "field", "field": "ownerId", "server": true }
+    }
+  }
+}
+```
+
+Supported access values are `deny`, `allow`, `authenticated`, `server`,
+`{ "type": "field", "field": "..." }`, and
+`{ "type": "path", "param": "..." }`. `{ "type": "fieldMatch" }` is still
+accepted for compatibility.
+
 # GitHub Sponsors
 
 Sponsors are always welcome. Thank you for your support!

@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { WorkersAuthAdapterBase } from "./workers_auth_adapter_base";
 import { WorkersRuleAdapterBase } from "./workers_rule_adapter_base";
+import { RulesConfig } from "./rules/rules_loader";
 
 /**
  * Define Function data for Cloudflare Workers.
@@ -110,7 +111,7 @@ export abstract class WorkersBase {
      * rulesミドルウェアを適用します。
      */
     protected applyRules(hono: Hono, options: WorkersOptions): Hono {
-        if (options.rules) {
+        if (isWorkersRuleAdapter(options.rules)) {
             hono.use("*", options.rules.build());
         }
         return hono;
@@ -131,12 +132,19 @@ export interface WorkersOptions {
     auth?: WorkersAuthAdapterBase | null | undefined;
 
     /**
-     * Rules adapter.
+     * Rules adapter or rules.json configuration.
      *
-     * rulesアダプター。
+     * rulesアダプター、またはrules.json設定。
      */
-    rules?: WorkersRuleAdapterBase | null | undefined;
+    rules?: WorkersRulesOption | null | undefined;
 }
+
+/**
+ * Rules option for Workers.
+ *
+ * Workers用rulesオプション。
+ */
+export type WorkersRulesOption = WorkersRuleAdapterBase | RulesConfig;
 
 /**
  * Merge Workers options.
@@ -161,4 +169,28 @@ export function resolveWorkersOptions(
             ? defaultRules
             : rules,
     };
+}
+
+/**
+ * Returns true when rules option is a middleware adapter.
+ *
+ * rulesオプションがミドルウェアアダプターの場合はtrueを返します。
+ */
+export function isWorkersRuleAdapter(
+    rules: WorkersRulesOption | null | undefined,
+): rules is WorkersRuleAdapterBase {
+    return !!rules && typeof (rules as WorkersRuleAdapterBase).build === "function";
+}
+
+/**
+ * Returns true when rules option is rules.json configuration.
+ *
+ * rulesオプションがrules.json設定の場合はtrueを返します。
+ */
+export function isRulesConfig(
+    rules: WorkersRulesOption | null | undefined,
+): rules is RulesConfig {
+    return !!rules && typeof (rules as RulesConfig).version === "string" &&
+        typeof (rules as RulesConfig).rules === "object" &&
+        (rules as RulesConfig).rules !== null;
 }
