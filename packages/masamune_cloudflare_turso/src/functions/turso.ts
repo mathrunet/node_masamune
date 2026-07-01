@@ -22,9 +22,17 @@ module.exports = (
   data: { [key: string]: unknown },
 ) => {
   hono.get("/", async (context) => handleCrud(context, options, "GET"));
+  hono.get("/database/:database/:table", async (context) => handleCrud(context, options, "GET"));
+  hono.get("/database/:database/:table/:indexKey", async (context) => handleCrud(context, options, "GET"));
   hono.post("/", async (context) => handleCrud(context, options, "POST"));
+  hono.post("/database/:database/:table", async (context) => handleCrud(context, options, "POST"));
+  hono.post("/database/:database/:table/:indexKey", async (context) => handleCrud(context, options, "POST"));
   hono.put("/", async (context) => handleCrud(context, options, "PUT"));
+  hono.put("/database/:database/:table", async (context) => handleCrud(context, options, "PUT"));
+  hono.put("/database/:database/:table/:indexKey", async (context) => handleCrud(context, options, "PUT"));
   hono.delete("/", async (context) => handleCrud(context, options, "DELETE"));
+  hono.delete("/database/:database/:table", async (context) => handleCrud(context, options, "DELETE"));
+  hono.delete("/database/:database/:table/:indexKey", async (context) => handleCrud(context, options, "DELETE"));
   return hono;
 };
 

@@ -19,12 +19,18 @@ export class HttpError extends Error {
 
 export async function parseCrudRequest(context: Context): Promise<Required<Pick<TursoRequestBody, "database" | "table">> & TursoRequestBody> {
   const method = context.req.method.toUpperCase();
+  const pathDatabase = optionalParam(context, "database");
+  const pathTable = optionalParam(context, "table");
+  const pathIndexKey = optionalParam(context, "indexKey");
   const body = method === "GET"
     ? parseGetRequest(context)
     : await parseJsonBody<TursoRequestBody>(context);
-  const database = validateLogicalName(body.database ?? "main", "database");
-  const table = validateIdentifier(requiredString(body.table, "table"), "table");
-  const indexKey = body.indexKey ? validateIndexKey(body.indexKey) : undefined;
+  const database = validateLogicalName(pathDatabase ?? body.database ?? "main", "database");
+  const table = validateIdentifier(requiredString(pathTable ?? body.table, "table"), "table");
+  const requestedIndexKey = pathIndexKey ?? body.indexKey;
+  const indexKey = requestedIndexKey
+    ? validateIndexKey(requiredString(requestedIndexKey, "indexKey"))
+    : undefined;
   const where = validateWhere(body.where ?? []);
   const orderBy = validateOrderBy(body.orderBy ?? []);
   const limit = validateLimit(body.limit);
@@ -43,8 +49,9 @@ export async function parseCrudRequest(context: Context): Promise<Required<Pick<
 }
 
 export async function parseTokenRequest(context: Context): Promise<Required<Pick<TursoTokenRequestBody, "database">> & TursoTokenRequestBody> {
+  const pathDatabase = optionalParam(context, "database");
   const body = await parseJsonBody<TursoTokenRequestBody>(context);
-  const database = validateLogicalName(body.database ?? "main", "database");
+  const database = validateLogicalName(pathDatabase ?? body.database ?? "main", "database");
   const scope = body.scope?.map((item) => {
     if (!item || typeof item !== "object") {
       throw new HttpError(400, "scope item must be an object.");
@@ -123,6 +130,11 @@ function parseGetRequest(context: Context): TursoRequestBody {
     limit,
     count: query.count === "true",
   };
+}
+
+function optionalParam(context: Context, name: string): string | undefined {
+  const value = context.req.param(name);
+  return value && value.length > 0 ? value : undefined;
 }
 
 async function parseJsonBody<T>(context: Context): Promise<T> {

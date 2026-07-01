@@ -14,6 +14,8 @@ module.exports = (
   data: { [key: string]: unknown },
 ) => {
   hono.post("/", async (context) => handleToken(context, options));
+  hono.post("/database/:database", async (context) => handleToken(context, options));
+  hono.post("/:database", async (context) => handleToken(context, options));
   return hono;
 };
 

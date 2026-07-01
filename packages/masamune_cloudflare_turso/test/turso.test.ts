@@ -162,6 +162,41 @@ describe("Turso Cloudflare workers", () => {
     expect(execute).not.toHaveBeenCalled();
   });
 
+  test("reads rows from path based GET endpoint", async () => {
+    mockExistingDatabase({ url: "libsql://pathdb.turso.io" });
+    execute.mockResolvedValueOnce({
+      rows: [
+        {
+          id: "user_1",
+          name: "Alice",
+          created_at: 1,
+          updated_at: 1,
+        },
+      ],
+    });
+    const app = deploy([Functions.turso(dynamicOptions())]);
+
+    const response = await app.request(
+      "http://localhost/turso/database/pathdb/users" +
+        "?where=%5B%7B%22type%22%3A%22equalTo%22%2C%22key%22%3A%22name%22%2C%22value%22%3A%22Alice%22%7D%5D" +
+        "&orderBy=%5B%7B%22key%22%3A%22created_at%22%2C%22descending%22%3Atrue%7D%5D" +
+        "&limit=20",
+    );
+    const body = (await response.json()) as { data: unknown[] };
+
+    expect(response.status).toBe(200);
+    expect(body.data).toHaveLength(1);
+    expect(createClient).toHaveBeenCalledWith({
+      url: "libsql://pathdb.turso.io",
+      authToken: "database-token",
+    });
+    expect(execute).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sql: expect.stringContaining('FROM "users"'),
+      }),
+    );
+  });
+
   test("creates table, migrates missing columns, and inserts rows on POST", async () => {
     mockExistingDatabase({ url: "libsql://postdb.turso.io" });
     execute
@@ -187,15 +222,12 @@ describe("Turso Cloudflare workers", () => {
       });
     const app = deploy([Functions.turso(dynamicOptions())]);
 
-    const response = await app.request("http://localhost/turso", {
+    const response = await app.request("http://localhost/turso/database/postdb/users/user_1", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        database: "postdb",
-        table: "users",
-        indexKey: "user_1",
         value: {
           name: "Alice",
         },
@@ -283,13 +315,12 @@ describe("Turso Cloudflare workers", () => {
       ),
     ]);
 
-    const response = await app.request("http://localhost/turso/token", {
+    const response = await app.request("http://localhost/turso/token/database/scopedb", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        database: "scopedb",
         ttlSeconds: 60,
       }),
     });

@@ -94,39 +94,47 @@ The package exposes Turso through a single provider path.
 
 | Method   | Path           | Description                       |
 | -------- | -------------- | --------------------------------- |
-| `GET`    | `/turso`       | Read rows or count rows.          |
-| `POST`   | `/turso`       | Create a row.                     |
-| `PUT`    | `/turso`       | Update rows.                      |
-| `DELETE` | `/turso`       | Delete rows.                      |
-| `POST`   | `/turso/token` | Issue a database-scoped short-lived token. |
+| `GET`    | `/turso/database/{database}/{table}` | Read rows or count rows. |
+| `GET`    | `/turso/database/{database}/{table}/{indexKey}` | Read a row. |
+| `POST`   | `/turso/database/{database}/{table}` | Create a row. |
+| `POST`   | `/turso/database/{database}/{table}/{indexKey}` | Create a row with an explicit ID. |
+| `PUT`    | `/turso/database/{database}/{table}` | Update rows. |
+| `PUT`    | `/turso/database/{database}/{table}/{indexKey}` | Update a row. |
+| `DELETE` | `/turso/database/{database}/{table}` | Delete rows. |
+| `DELETE` | `/turso/database/{database}/{table}/{indexKey}` | Delete a row. |
+| `POST`   | `/turso/token/database/{database}` | Issue a database-scoped short-lived token. |
 
-`GET /turso` uses query parameters.
+`GET` uses the path for `database`, `table`, and optional `indexKey`.
 
 ```text
-/turso?database=main&table=users&indexKey=user_1
+/turso/database/main/users/user_1
 ```
 
 Collection queries can pass `where`, `orderBy`, and `limit`.
 
 ```text
-/turso?database=main&table=users&where=[{"type":"equalTo","key":"name","value":"Alice"}]&orderBy=[{"key":"created_at","descending":true}]&limit=20
+/turso/database/main/users?where=[{"type":"equalTo","key":"name","value":"Alice"}]&orderBy=[{"key":"created_at","descending":true}]&limit=20
 ```
 
 Supported `where` types are `equalTo`, `notEqualTo`, `lessThan`,
 `lessThanOrEqualTo`, `greaterThan`, `greaterThanOrEqualTo`, `whereIn`,
 `whereNotIn`, `isNull`, `isNotNull`, and `like`.
 
-`POST` / `PUT` / `DELETE` use JSON bodies.
+`POST` / `PUT` / `DELETE` use the same path format and JSON bodies for
+`value` or query filters.
 
 ```json
 {
-  "database": "main",
-  "table": "users",
-  "indexKey": "user_1",
   "value": {
     "name": "Alice"
   }
 }
+```
+
+The previous query/body style is still accepted for compatibility:
+
+```text
+/turso?database=main&table=users&indexKey=user_1
 ```
 
 # Database and schema management
@@ -179,8 +187,8 @@ Objects and arrays are stored as JSON strings.
 
 # Database-scoped short-lived token
 
-Use `/turso/token` to issue a Turso database token after resolving `read-only`
-or `full-access` authorization through `rules`.
+Use `/turso/token/database/{database}` to issue a Turso database token after
+resolving `read-only` or `full-access` authorization through `rules`.
 
 Token authorization is evaluated against the database path:
 
@@ -246,7 +254,6 @@ document-level `fieldMatch` or `pathParamMatch` checks on the client.
 
 ```json
 {
-  "database": "main",
   "ttlSeconds": 600,
   "scope": [
     {
@@ -277,8 +284,9 @@ The response is:
 }
 ```
 
-If both read and write are functions-only, `/turso/token` does not return
-`token`, `expiresAt`, or `url`; it returns only the resolved modes and scopes:
+If both read and write are functions-only, `/turso/token/database/{database}`
+does not return `token`, `expiresAt`, or `url`; it returns only the resolved
+modes and scopes:
 
 ```json
 {
