@@ -5,7 +5,12 @@ import {
   createTursoRulesEngine,
   resolveDatabaseTokenAccess,
 } from "../lib/rules";
-import { resolveDatabaseConnection } from "../lib/turso_client";
+import {
+  cacheDatabaseConnection,
+  createTursoClient,
+  resolveDatabaseConnection,
+  waitForDatabaseReady,
+} from "../lib/turso_client";
 import { issueDatabaseToken } from "../lib/token";
 import { resolveTursoWorkersOptionsFromEnv } from "../lib/env";
 
@@ -31,6 +36,11 @@ async function handleToken(
       request.database,
       resolvedOptions,
     );
+    if (connection.created) {
+      const client = createTursoClient(connection);
+      await waitForDatabaseReady(client);
+      cacheDatabaseConnection(request.database, resolvedOptions, connection);
+    }
     const authentication = context.get("authentication") as AuthenticationContext | undefined;
     const engine = createTursoRulesEngine(resolvedOptions.rules);
     const access = await resolveDatabaseTokenAccess({

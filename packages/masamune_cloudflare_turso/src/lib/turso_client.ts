@@ -235,8 +235,12 @@ function firstNonEmpty(...values: (string | undefined)[]): string | undefined {
 
 export function isTransientTursoError(error: unknown): boolean {
   const message = error instanceof Error ? error.message : String(error);
-  return /(?:HTTP error! status|Turso database|Turso database token|Turso database:): (404|409|425|429|500|502|503|504)/.test(
-    message,
+  return (
+    /(?:HTTP error! status|Turso database|Turso database token|Turso database:): (404|409|425|429|500|502|503|504)/.test(
+      message,
+    ) ||
+    /status=?(404|409|425|429|500|502|503|504)\b/.test(message) ||
+    /no route configured for host/i.test(message)
   );
 }
 

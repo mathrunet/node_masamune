@@ -1060,6 +1060,44 @@ describe("Turso Cloudflare workers", () => {
     expect(response.status).toBe(200);
     expect(body.token).toBe("scoped-token");
     expect(body.url).toBe("libsql://tenant-a.turso.io");
+    expect(execute).toHaveBeenCalledWith("SELECT 1");
+  });
+
+  test("waits for an auto-created database to be routable before issuing a direct token", async () => {
+    mockCreatedDatabase({
+      url: "libsql://tenant-routing.turso.io",
+    }).mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({ jwt: "routing-token" }),
+    } as Response);
+    execute
+      .mockRejectedValueOnce(
+        new Error(
+          'Hrana(Api("status=502 Bad Gateway, body={\\"error\\":\\"no route configured for host tenant-routing.turso.io\\"}"))',
+        ),
+      )
+      .mockResolvedValueOnce({ rows: [] });
+    const app = deploy([Functions.tursoToken(dynamicOptions())]);
+
+    const response = await app.request("http://localhost/turso/token", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        database: "tenant-routing",
+        ttlSeconds: 60,
+      }),
+    });
+    const body = (await response.json()) as { token: string; url: string };
+
+    expect(response.status).toBe(200);
+    expect(body.token).toBe("routing-token");
+    expect(body.url).toBe("libsql://tenant-routing.turso.io");
+    expect(execute).toHaveBeenCalledTimes(2);
+    expect(execute).toHaveBeenNthCalledWith(1, "SELECT 1");
+    expect(execute).toHaveBeenNthCalledWith(2, "SELECT 1");
   });
 
   test("uses TURSO_GROUP from environment when creating databases", async () => {
