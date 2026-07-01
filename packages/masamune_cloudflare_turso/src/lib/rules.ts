@@ -253,11 +253,13 @@ export async function filterAllowedScope({
 export async function resolveDatabaseTokenAccess({
   engine,
   database,
+  operations,
   scope = [],
   authentication,
 }: {
   engine: RulesEngine;
   database: string;
+  operations?: RulesOperationKey[] | undefined;
   scope?: TursoTokenScopeInput[] | undefined;
   authentication?: AuthenticationContext | undefined;
 }): Promise<TursoDatabaseTokenAccess | undefined> {
@@ -301,13 +303,21 @@ export async function resolveDatabaseTokenAccess({
   });
   const readScopes = scopes.filter((item) => requiresRead(item.operations));
   const writeScopes = scopes.filter((item) => requiresWrite(item.operations));
+  const requestedOperations = operations ?? [];
+  const requestsDatabaseRead = requiresRead(requestedOperations);
+  const requestsDatabaseWrite = requiresWrite(requestedOperations);
+  const hasTargets = scope.length > 0;
   const readMode = resolveOverallMode(
     readScopes.map((item) => item.readMode ?? "none"),
-    scope.length === 0 ? directRead.allowed ? "direct" : "functions" : "none",
+    !hasTargets && (requestedOperations.length === 0 || requestsDatabaseRead)
+      ? directRead.allowed ? "direct" : "functions"
+      : "none",
   );
   let writeMode = resolveOverallMode(
     writeScopes.map((item) => item.writeMode ?? "none"),
-    scope.length === 0 ? directDatabaseWrite ? "direct" : serverDatabaseWrite ? "functions" : "none" : "none",
+    !hasTargets && (requestedOperations.length === 0 || requestsDatabaseWrite)
+      ? directDatabaseWrite ? "direct" : serverDatabaseWrite ? "functions" : "none"
+      : "none",
   );
   if (readMode === "functions" && writeMode === "direct") {
     writeMode = serverDatabaseWrite ? "functions" : "none";

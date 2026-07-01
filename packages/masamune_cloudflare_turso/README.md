@@ -262,10 +262,23 @@ rules for token issuance when they restrict `read` or `write`. This is
 intentional because Turso Platform tokens are database-scoped and cannot enforce
 document-level `fieldMatch` or `pathParamMatch` checks on the client.
 
+For a database-level Turso token, send `operations` without a table:
+
 ```json
 {
   "ttlSeconds": 600,
-  "scope": [
+  "operations": ["read"]
+}
+```
+
+When the client also needs the Workers backend to decide whether a specific
+table must use Functions fallback, send `targets`. `targets` are used only for
+Masamune rules resolution; they are not passed to Turso as token scopes.
+
+```json
+{
+  "ttlSeconds": 600,
+  "targets": [
     {
       "table": "users",
       "operations": ["read", "write"]
@@ -283,7 +296,7 @@ The response is:
   "url": "libsql://your-db.turso.io",
   "readMode": "direct",
   "writeMode": "functions",
-  "scopes": [
+  "targets": [
     {
       "table": "users",
       "operations": ["read", "write"],
@@ -296,13 +309,13 @@ The response is:
 
 If both read and write are functions-only, `/turso/token/database/{database}`
 does not return `token`, `expiresAt`, or `url`; it returns only the resolved
-modes and scopes:
+modes and targets:
 
 ```json
 {
   "readMode": "functions",
   "writeMode": "functions",
-  "scopes": [
+  "targets": [
     {
       "table": "users",
       "operations": ["read", "write"],
@@ -312,6 +325,10 @@ modes and scopes:
   ]
 }
 ```
+
+The previous `scope` request field and `scopes` response field are still
+accepted/returned for compatibility, but new clients should use `operations`
+and `targets`.
 
 `url` is resolved by the Workers backend. This lets clients use direct libSQL
 access for dynamically created databases without building the Turso hostname on

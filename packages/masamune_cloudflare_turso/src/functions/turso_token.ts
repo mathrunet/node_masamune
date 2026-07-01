@@ -36,7 +36,8 @@ async function handleToken(
     const access = await resolveDatabaseTokenAccess({
       engine,
       database: request.database,
-      scope: request.scope,
+      operations: request.operations,
+      scope: request.targets ?? request.scope,
       authentication,
     });
     if (!access) {
@@ -59,6 +60,7 @@ async function handleToken(
       ...(token ? { ...token, url: connection.url } : {}),
       readMode: access.readMode,
       writeMode: access.writeMode,
+      targets: access.scopes,
       scopes: access.scopes,
     });
   } catch (error) {

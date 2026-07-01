@@ -338,18 +338,23 @@ describe("Turso Cloudflare workers", () => {
       },
       body: JSON.stringify({
         ttlSeconds: 60,
+        operations: ["read"],
       }),
     });
     const body = (await response.json()) as {
       token: string;
       expiresAt: number;
       url: string;
+      readMode: string;
+      writeMode: string;
     };
 
     expect(response.status).toBe(200);
     expect(body.token).toBe("scoped-token");
     expect(body.expiresAt).toBeGreaterThan(Math.floor(Date.now() / 1000));
     expect(body.url).toBe("libsql://scopedb.turso.io");
+    expect(body.readMode).toBe("direct");
+    expect(body.writeMode).toBe("none");
     expect(globalThis.fetch).toHaveBeenCalledWith(
       expect.stringContaining(
         "/v1/organizations/example-org/databases/scopedb/auth/tokens?expiration=60s&authorization=read-only",
@@ -542,7 +547,7 @@ describe("Turso Cloudflare workers", () => {
     );
   });
 
-  test("returns functions scopes without issuing a token when read and write are server-only", async () => {
+  test("returns functions targets without issuing a token when read and write are server-only", async () => {
     const fetchMock = mockExistingDatabase({
       url: "libsql://server-only-user.turso.io",
     });
@@ -577,7 +582,7 @@ describe("Turso Cloudflare workers", () => {
       body: JSON.stringify({
         database: "server-only-user",
         ttlSeconds: 60,
-        scope: [
+        targets: [
           {
             table: "posts",
             operations: ["read", "write"],
@@ -590,7 +595,7 @@ describe("Turso Cloudflare workers", () => {
       url?: string;
       readMode: string;
       writeMode: string;
-      scopes: {
+      targets: {
         table: string;
         operations: string[];
         readMode: string;
@@ -603,7 +608,7 @@ describe("Turso Cloudflare workers", () => {
     expect(body.url).toBeUndefined();
     expect(body.readMode).toBe("functions");
     expect(body.writeMode).toBe("functions");
-    expect(body.scopes).toEqual([
+    expect(body.targets).toEqual([
       {
         table: "posts",
         operations: ["read", "write"],
@@ -648,7 +653,7 @@ describe("Turso Cloudflare workers", () => {
       body: JSON.stringify({
         database: "field-scope",
         ttlSeconds: 60,
-        scope: [
+        targets: [
           {
             table: "posts",
             operations: ["read"],
@@ -660,7 +665,7 @@ describe("Turso Cloudflare workers", () => {
       token?: string;
       readMode: string;
       writeMode: string;
-      scopes: {
+      targets: {
         table: string;
         operations: string[];
         readMode: string;
@@ -671,7 +676,7 @@ describe("Turso Cloudflare workers", () => {
     expect(body.token).toBeUndefined();
     expect(body.readMode).toBe("functions");
     expect(body.writeMode).toBe("none");
-    expect(body.scopes).toEqual([
+    expect(body.targets).toEqual([
       {
         table: "posts",
         operations: ["read"],

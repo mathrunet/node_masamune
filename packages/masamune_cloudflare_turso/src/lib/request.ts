@@ -1,5 +1,6 @@
 import { Context } from "hono";
 import {
+  RulesOperationKey,
   TursoOrderCondition,
   TursoRequestBody,
   TursoTokenRequestBody,
@@ -52,27 +53,15 @@ export async function parseTokenRequest(context: Context): Promise<Required<Pick
   const pathDatabase = optionalParam(context, "database");
   const body = await parseJsonBody<TursoTokenRequestBody>(context);
   const database = validateLogicalName(pathDatabase ?? body.database ?? "main", "database");
-  const scope = body.scope?.map((item) => {
+  const operations = body.operations
+    ? validateOperations(body.operations, "operations")
+    : undefined;
+  const targets = (body.targets ?? body.scope)?.map((item) => {
     if (!item || typeof item !== "object") {
-      throw new HttpError(400, "scope item must be an object.");
+      throw new HttpError(400, "targets item must be an object.");
     }
-    const table = validateIdentifier(requiredString(item.table, "scope.table"), "scope.table");
-    if (!Array.isArray(item.operations) || item.operations.length === 0) {
-      throw new HttpError(400, "scope.operations is required.");
-    }
-    const operations = item.operations.map((operation) => {
-      switch (operation) {
-        case "read":
-        case "write":
-        case "get":
-        case "create":
-        case "update":
-        case "delete":
-          return operation;
-        default:
-          throw new HttpError(400, `Unsupported scope operation: ${operation}`);
-      }
-    });
+    const table = validateIdentifier(requiredString(item.table, "targets.table"), "targets.table");
+    const operations = validateOperations(item.operations, "targets.operations");
     return {
       table,
       operations,
@@ -81,7 +70,8 @@ export async function parseTokenRequest(context: Context): Promise<Required<Pick
   return {
     ...body,
     database,
-    ...(scope ? { scope } : {}),
+    ...(operations ? { operations } : {}),
+    ...(targets ? { targets, scope: targets } : {}),
   };
 }
 
@@ -158,6 +148,28 @@ function requiredString(value: unknown, label: string): string {
     throw new HttpError(400, `${label} is required.`);
   }
   return value;
+}
+
+function validateOperations(
+  operations: unknown,
+  label: string,
+): RulesOperationKey[] {
+  if (!Array.isArray(operations) || operations.length === 0) {
+    throw new HttpError(400, `${label} is required.`);
+  }
+  return operations.map((operation) => {
+    switch (operation) {
+      case "read":
+      case "write":
+      case "get":
+      case "create":
+      case "update":
+      case "delete":
+        return operation;
+      default:
+        throw new HttpError(400, `Unsupported ${label}: ${operation}`);
+    }
+  });
 }
 
 function validateWhere(where: TursoWhereCondition[]): TursoWhereCondition[] {

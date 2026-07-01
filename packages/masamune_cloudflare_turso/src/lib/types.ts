@@ -84,6 +84,8 @@ export interface TursoTokenScopeOutput extends TursoTokenScopeInput {
 
 export interface TursoTokenRequestBody {
   database?: string | undefined;
+  operations?: RulesOperationKey[] | undefined;
+  targets?: TursoTokenScopeInput[] | undefined;
   scope?: TursoTokenScopeInput[] | undefined;
   ttlSeconds?: number | undefined;
 }
