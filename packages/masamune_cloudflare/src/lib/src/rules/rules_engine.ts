@@ -200,6 +200,32 @@ export class RulesEngine {
         }
         return false;
     }
+
+    /**
+     * Returns true when a database descendant rule requires server evaluation.
+     *
+     * データベース配下ルールにサーバー評価が必要な制約がある場合はtrueを返します。
+     */
+    hasDatabaseScopedRestriction({
+        database,
+        operation,
+    }: {
+        database: string;
+        operation: RulesOperation | RulesOperationKey;
+    }): boolean {
+        const normalized = normalizeRulesOperation(operation);
+        for (const [rulePath, entry] of Object.entries(this.config.rules)) {
+            if (!isRulePathInDatabaseScope(rulePath, database)) {
+                continue;
+            }
+            const access = resolveAccessRule(entry, {}, normalized)?.access;
+            if (!access || isDirectSafeScopeAccess(access)) {
+                continue;
+            }
+            return true;
+        }
+        return false;
+    }
 }
 
 /**
@@ -211,7 +237,6 @@ export function buildRulesPath({ database, table, indexKey }: RulesPathArguments
     return [
         "database",
         encodeRulesPathSegment(database),
-        "table",
         encodeRulesPathSegment(table),
         encodeRulesPathSegment(indexKey),
     ].join("/");
@@ -395,16 +420,34 @@ export async function resolveDatabaseTokenAccess({
     const requestsDatabaseRead = requiresRead(requestedOperations);
     const requestsDatabaseWrite = requiresWrite(requestedOperations);
     const hasTargets = scope.length > 0;
+    const restrictedDatabaseRead = !hasTargets && expandRulesOperation("read").some((operation) => {
+        return engine.hasDatabaseScopedRestriction({
+            database,
+            operation,
+        });
+    });
+    const restrictedDatabaseWrite = !hasTargets && expandRulesOperation("write").some((operation) => {
+        return engine.hasDatabaseScopedRestriction({
+            database,
+            operation,
+        });
+    });
+    const databaseReadMode = restrictedDatabaseRead
+        ? serverRead.allowed ? "functions" : "none"
+        : directRead.allowed ? "direct" : "functions";
+    const databaseWriteMode = restrictedDatabaseWrite
+        ? serverDatabaseWrite ? "functions" : "none"
+        : directDatabaseWrite ? "direct" : serverDatabaseWrite ? "functions" : "none";
     const readMode = resolveOverallMode(
         readScopes.map((item) => item.readMode ?? "none"),
         !hasTargets && (requestedOperations.length === 0 || requestsDatabaseRead)
-            ? directRead.allowed ? "direct" : "functions"
+            ? databaseReadMode
             : "none",
     );
     let writeMode = resolveOverallMode(
         writeScopes.map((item) => item.writeMode ?? "none"),
         !hasTargets && (requestedOperations.length === 0 || requestsDatabaseWrite)
-            ? directDatabaseWrite ? "direct" : serverDatabaseWrite ? "functions" : "none"
+            ? databaseWriteMode
             : "none",
     );
     if (readMode === "functions" && writeMode === "direct") {
@@ -712,13 +755,24 @@ function isRulePathInTableScope(
     table: string,
 ): boolean {
     const segments = splitRulesPath(rulePath);
-    if (segments.length <= 4) {
+    if (segments.length <= 2) {
         return false;
     }
     return segmentMatches(segments[0], "database") &&
         segmentMatches(segments[1], database) &&
-        segmentMatches(segments[2], "table") &&
-        segmentMatches(segments[3], table);
+        segmentMatches(segments[2], table);
+}
+
+function isRulePathInDatabaseScope(
+    rulePath: string,
+    database: string,
+): boolean {
+    const segments = splitRulesPath(rulePath);
+    if (segments.length <= 2) {
+        return false;
+    }
+    return segmentMatches(segments[0], "database") &&
+        segmentMatches(segments[1], database);
 }
 
 function segmentMatches(ruleSegment: string | undefined, value: string): boolean {

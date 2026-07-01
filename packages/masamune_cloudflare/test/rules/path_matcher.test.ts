@@ -6,22 +6,22 @@ import {
 describe("path matcher", () => {
     test("matches exact paths", () => {
         const result = matchRulePath(
-            "database/main/table/users/user-1",
-            "database/main/table/users/user-1",
+            "database/main/users/user-1",
+            "database/main/users/user-1",
         );
 
         expect(result.matched).toBe(true);
-        expect(result.literalSegments).toBe(5);
+        expect(result.literalSegments).toBe(4);
     });
 
     test("matches single segment wildcards", () => {
         const result = matchRulePath(
-            "database/*/table/users/*",
-            "database/main/table/users/user-1",
+            "database/*/users/*",
+            "database/main/users/user-1",
         );
 
         expect(result.matched).toBe(true);
-        expect(result.literalSegments).toBe(3);
+        expect(result.literalSegments).toBe(2);
         expect(result.wildcardSegments).toBe(2);
     });
 
@@ -38,18 +38,28 @@ describe("path matcher", () => {
 
     test("matches deep wildcard as remaining segments", () => {
         const result = matchRulePath(
-            "database/main/table/**",
-            "database/main/table/users/user-1",
+            "database/main/**",
+            "database/main/users/user-1",
         );
 
         expect(result.matched).toBe(true);
         expect(result.deepWildcardSegments).toBe(1);
     });
 
+    test("matches parent rule paths as inherited rules", () => {
+        const result = matchRulePath(
+            "database/main/users",
+            "database/main/users/user-1",
+        );
+
+        expect(result.matched).toBe(true);
+        expect(result.literalSegments).toBe(3);
+    });
+
     test("does not match missing segments without deep wildcard", () => {
         const result = matchRulePath(
-            "database/*/table/users/*",
-            "database/main/table/users",
+            "database/*/users/*",
+            "database/main/users",
         );
 
         expect(result.matched).toBe(false);
@@ -57,24 +67,24 @@ describe("path matcher", () => {
 
     test("sorts matches by specificity", () => {
         const matches = [
-            matchRulePath("database/*/table/*/*", "database/main/table/users/user-1"),
-            matchRulePath("database/main/table/**", "database/main/table/users/user-1"),
-            matchRulePath("database/main/table/users/*", "database/main/table/users/user-1"),
+            matchRulePath("database/*/*", "database/main/users/user-1"),
+            matchRulePath("database/main/**", "database/main/users/user-1"),
+            matchRulePath("database/main/users/*", "database/main/users/user-1"),
         ];
 
         const sorted = sortRulePathMatches(matches);
 
         expect(sorted.map((match) => match.rulePath)).toEqual([
-            "database/main/table/users/*",
-            "database/main/table/**",
-            "database/*/table/*/*",
+            "database/main/users/*",
+            "database/main/**",
+            "database/*/*",
         ]);
     });
 
     test("rejects invalid deep wildcard position", () => {
         expect(() => matchRulePath(
             "database/**/users",
-            "database/main/table/users",
+            "database/main/users",
         )).toThrow("'**' must be the last segment");
     });
 
@@ -87,8 +97,8 @@ describe("path matcher", () => {
 
     test("rejects duplicate named path parameters", () => {
         expect(() => matchRulePath(
-            "database/{uid}/table/users/{uid}",
-            "database/user-1/table/users/user-1",
+            "database/{uid}/users/{uid}",
+            "database/user-1/users/user-1",
         )).toThrow("Duplicate path parameter");
     });
 });

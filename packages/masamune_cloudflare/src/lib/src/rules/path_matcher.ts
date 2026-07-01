@@ -66,7 +66,7 @@ export function matchRulePath(rulePath: string, requestPath: string): RulePathMa
         }
         literalSegments++;
     }
-    if (ruleSegments.length !== requestSegments.length) {
+    if (ruleSegments.length > requestSegments.length) {
         return createUnmatched(rulePath);
     }
     return {
@@ -77,7 +77,7 @@ export function matchRulePath(rulePath: string, requestPath: string): RulePathMa
         namedWildcardSegments,
         wildcardSegments,
         deepWildcardSegments,
-        matchedSegments: requestSegments.length,
+        matchedSegments: ruleSegments.length,
     };
 }
 

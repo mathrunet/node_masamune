@@ -10,18 +10,18 @@ import { loadRulesConfig } from "../../src/lib/src/rules/rules_loader";
 const rules = {
     version: "1",
     rules: {
-        "database/*/table/*/*": {
+        "database/*/*": {
             read: "deny",
             write: "deny",
         },
-        "database/main/table/**": {
+        "database/main/**": {
             read: "authenticated",
         },
-        "database/main/table/users/*": {
+        "database/main/users/*": {
             create: "authenticated",
             update: { type: "fieldMatch", field: "ownerId" },
         },
-        "database/main/table/posts/*": {
+        "database/main/posts/*": {
             read: "allow",
             write: "authenticated",
             delete: "deny",
@@ -34,12 +34,12 @@ describe("rules engine", () => {
         const engine = new RulesEngine(rules);
 
         const result = await engine.evaluate({
-            path: "database/main/table/posts/post-1",
+            path: "database/main/posts/post-1",
             operation: "get",
         });
 
         expect(result.allowed).toBe(true);
-        expect(result.rulePath).toBe("database/main/table/posts/*");
+        expect(result.rulePath).toBe("database/main/posts/*");
         expect(result.access).toBe("allow");
     });
 
@@ -47,11 +47,11 @@ describe("rules engine", () => {
         const engine = new RulesEngine(rules);
 
         const denied = await engine.evaluate({
-            path: "database/main/table/users/user-1",
+            path: "database/main/users/user-1",
             operation: "get",
         });
         const allowed = await engine.evaluate({
-            path: "database/main/table/users/user-1",
+            path: "database/main/users/user-1",
             operation: "get",
             authentication: { uid: "user-1" },
         });
@@ -66,7 +66,7 @@ describe("rules engine", () => {
         const engine = new RulesEngine(rules);
 
         const result = await engine.evaluate({
-            path: "database/main/table/posts/post-1",
+            path: "database/main/posts/post-1",
             operation: "delete",
             authentication: { uid: "user-1" },
         });
@@ -79,13 +79,13 @@ describe("rules engine", () => {
         const engine = new RulesEngine(rules);
 
         const allowed = await engine.evaluate({
-            path: "database/main/table/users/user-1",
+            path: "database/main/users/user-1",
             operation: "update",
             authentication: { uid: "user-1" },
             fetchDocument: async () => ({ ownerId: "user-1" }),
         });
         const denied = await engine.evaluate({
-            path: "database/main/table/users/user-1",
+            path: "database/main/users/user-1",
             operation: "update",
             authentication: { uid: "user-2" },
             fetchDocument: async () => ({ ownerId: "user-1" }),
@@ -99,20 +99,43 @@ describe("rules engine", () => {
         const engine = new RulesEngine({
             version: "1",
             rules: {
-                "database/main/table/users/*": {
+                "database/main/users/*": {
                     update: { type: "field", field: "ownerId" },
                 },
             },
         });
 
         const result = await engine.evaluate({
-            path: "database/main/table/users/user-1",
+            path: "database/main/users/user-1",
             operation: "update",
             authentication: { uid: "user-1" },
             fetchDocument: async () => ({ ownerId: "user-1" }),
         });
 
         expect(result.allowed).toBe(true);
+    });
+
+    test("inherits table rule without index key", async () => {
+        const engine = new RulesEngine({
+            version: "1",
+            rules: {
+                "database/main": {
+                    write: "allow",
+                },
+                "database/main/users": {
+                    write: "deny",
+                },
+            },
+        });
+
+        const result = await engine.evaluate({
+            path: "database/main/users/user-1",
+            operation: "write",
+            server: true,
+        });
+
+        expect(result.allowed).toBe(false);
+        expect(result.rulePath).toBe("database/main/users");
     });
 
     test("evaluates path parameter rules", async () => {
@@ -164,21 +187,21 @@ describe("rules engine", () => {
         const reorderedRules = {
             version: "1",
             rules: {
-                "database/main/table/posts/*": rules.rules["database/main/table/posts/*"],
-                "database/main/table/users/*": rules.rules["database/main/table/users/*"],
-                "database/main/table/**": rules.rules["database/main/table/**"],
-                "database/*/table/*/*": rules.rules["database/*/table/*/*"],
+                "database/main/posts/*": rules.rules["database/main/posts/*"],
+                "database/main/users/*": rules.rules["database/main/users/*"],
+                "database/main/**": rules.rules["database/main/**"],
+                "database/*/*": rules.rules["database/*/*"],
             },
         };
         const engine = new RulesEngine(reorderedRules);
 
         const result = await engine.evaluate({
-            path: "database/main/table/posts/post-1",
+            path: "database/main/posts/post-1",
             operation: "get",
         });
 
         expect(result.allowed).toBe(true);
-        expect(result.rulePath).toBe("database/main/table/posts/*");
+        expect(result.rulePath).toBe("database/main/posts/*");
     });
 
     test("normalizes HTTP methods to rules operations", () => {
@@ -193,7 +216,7 @@ describe("rules engine", () => {
             database: "main",
             table: "users",
             indexKey: "user-1",
-        })).toBe("database/main/table/users/user-1");
+        })).toBe("database/main/users/user-1");
     });
 
     test("builds database rules path", () => {
@@ -215,6 +238,33 @@ describe("rules engine", () => {
             engine,
             database: "main",
             operations: ["read", "write"],
+        });
+
+        expect(access).toMatchObject({
+            authorization: "read-only",
+            readMode: "direct",
+            writeMode: "functions",
+        });
+    });
+
+    test("downgrades database token write mode when a descendant table denies writes", async () => {
+        const engine = new RulesEngine({
+            version: "1",
+            rules: {
+                "database/main": {
+                    read: "allow",
+                    write: "allow",
+                },
+                "database/main/users": {
+                    read: "allow",
+                    write: "deny",
+                },
+            },
+        });
+
+        const access = await resolveDatabaseTokenAccess({
+            engine,
+            database: "main",
         });
 
         expect(access).toMatchObject({

@@ -91,7 +91,7 @@ workers.
       "read": "allow",
       "write": "server"
     },
-    "database/{uid}/table/users/{uid}": {
+    "database/{uid}/users/{uid}": {
       "read": { "type": "path", "param": "uid" },
       "write": { "type": "field", "field": "ownerId", "server": true }
     }
