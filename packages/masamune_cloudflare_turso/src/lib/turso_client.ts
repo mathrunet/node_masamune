@@ -7,7 +7,11 @@ declare const require: (id: string) => {
 declare const process: { env?: Record<string, string | undefined> } | undefined;
 
 export interface TursoResultSet {
+  columns?: string[];
+  columnTypes?: string[];
   rows: unknown[];
+  rowsAffected?: number;
+  lastInsertRowid?: bigint | undefined;
 }
 
 export interface TursoClient {

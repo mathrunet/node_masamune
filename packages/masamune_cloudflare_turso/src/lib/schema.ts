@@ -48,16 +48,45 @@ export function encodeSqlValue(value: unknown): SqlValue {
   return JSON.stringify(value);
 }
 
-export function decodeRow(row: Record<string, unknown>): Record<string, unknown> {
+export function decodeRow(
+  row: unknown,
+  columns: readonly string[] = [],
+): Record<string, unknown> {
   const result: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(row)) {
-    if (typeof value === "bigint") {
-      result[key] = value.toString();
-    } else {
-      result[key] = value;
+  if (columns.length > 0 && isArrayLikeRow(row)) {
+    for (const [index, column] of columns.entries()) {
+      result[column] = decodeSqlValue(row[index]);
     }
+    return result;
+  }
+  if (!row || typeof row !== "object") {
+    return result;
+  }
+  for (const [key, value] of Object.entries(row)) {
+    if (/^\d+$/.test(key)) {
+      continue;
+    }
+    result[key] = decodeSqlValue(value);
   }
   return result;
+}
+
+function isArrayLikeRow(row: unknown): row is { [index: number]: unknown } {
+  if (Array.isArray(row)) {
+    return true;
+  }
+  if (!row || typeof row !== "object") {
+    return false;
+  }
+  const record = row as Record<string, unknown>;
+  return "0" in record || typeof record.length === "number";
+}
+
+function decodeSqlValue(value: unknown): unknown {
+  if (typeof value === "bigint") {
+    return value.toString();
+  }
+  return value;
 }
 
 function buildColumnDefinitions(value: Record<string, unknown>): ColumnDefinition[] {
@@ -152,7 +181,8 @@ async function addMissingColumns(
 async function getColumns(client: TursoClient, table: string): Promise<Map<string, string>> {
   const result = await client.execute(`PRAGMA table_info(${quoteIdentifier(table)})`);
   const columns = new Map<string, string>();
-  for (const row of result.rows as unknown as Record<string, unknown>[]) {
+  for (const rawRow of result.rows) {
+    const row = decodeRow(rawRow, result.columns);
     const name = row.name;
     const type = row.type;
     if (typeof name === "string" && typeof type === "string") {

@@ -28,7 +28,7 @@ const allowRules = {
   },
 } as const;
 
-const originalTursoGroupName = process.env.TURSO_GROUP_NAME;
+const originalTursoGroup = process.env.TURSO_GROUP;
 
 class StaticAuthAdapter extends WorkersAuthAdapterBase {
   constructor(private readonly uid: string) {
@@ -114,11 +114,11 @@ describe("Turso Cloudflare workers", () => {
     jest.clearAllMocks();
     execute.mockResolvedValue({ rows: [] });
     jest.spyOn(globalThis, "fetch").mockRestore?.();
-    process.env.TURSO_GROUP_NAME = originalTursoGroupName;
+    process.env.TURSO_GROUP = originalTursoGroup;
   });
 
   afterAll(() => {
-    process.env.TURSO_GROUP_NAME = originalTursoGroupName;
+    process.env.TURSO_GROUP = originalTursoGroup;
   });
 
   test("exposes WorkersData using the existing Functions pattern", () => {
@@ -235,27 +235,43 @@ describe("Turso Cloudflare workers", () => {
     });
   });
 
+  test("counts rows when Turso returns array rows", async () => {
+    mockExistingDatabase({ url: "libsql://countdb.turso.io" });
+    execute.mockResolvedValueOnce({
+      columns: ["count"],
+      rows: [
+        [2],
+      ],
+    });
+    const app = deploy([Functions.turso(dynamicOptions())]);
+
+    const response = await app.request(
+      "http://localhost/turso/database/countdb/users?count=true",
+    );
+    const body = (await response.json()) as { data: number };
+
+    expect(response.status).toBe(200);
+    expect(body.data).toBe(2);
+  });
+
   test("creates table, migrates missing columns, and inserts rows on POST", async () => {
     mockExistingDatabase({ url: "libsql://postdb.turso.io" });
     execute
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({
+        columns: ["cid", "name", "type", "notnull", "dflt_value", "pk"],
         rows: [
-          { name: "id", type: "TEXT" },
-          { name: "created_at", type: "INTEGER" },
-          { name: "updated_at", type: "INTEGER" },
-          { name: "name", type: "TEXT" },
+          [0, "id", "TEXT", 0, null, 1],
+          [1, "created_at", "INTEGER", 0, null, 0],
+          [2, "updated_at", "INTEGER", 0, null, 0],
+          [3, "name", "TEXT", 0, null, 0],
         ],
       })
       .mockResolvedValueOnce({
+        columns: ["id", "name", "created_at", "updated_at"],
         rows: [
-          {
-            id: "user_1",
-            name: "Alice",
-            created_at: 1,
-            updated_at: 1,
-          },
+          ["user_1", "Alice", 1, 1],
         ],
       });
     const app = deploy([Functions.turso(dynamicOptions())]);
@@ -271,10 +287,17 @@ describe("Turso Cloudflare workers", () => {
         },
       }),
     });
-    const body = (await response.json()) as { data: unknown[] };
+    const body = (await response.json()) as { data: Record<string, unknown>[] };
 
     expect(response.status).toBe(200);
     expect(body.data).toHaveLength(1);
+    expect(body.data[0]).toEqual({
+      id: "user_1",
+      name: "Alice",
+      created_at: 1,
+      updated_at: 1,
+    });
+    expect(body.data[0]["0"]).toBeUndefined();
     expect(execute).toHaveBeenCalledWith(
       expect.stringContaining("CREATE TABLE IF NOT EXISTS"),
     );
@@ -296,11 +319,12 @@ describe("Turso Cloudflare workers", () => {
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({
+        columns: ["cid", "name", "type", "notnull", "dflt_value", "pk"],
         rows: [
-          { name: "id", type: "TEXT" },
-          { name: "created_at", type: "INTEGER" },
-          { name: "updated_at", type: "INTEGER" },
-          { name: "name", type: "TEXT" },
+          [0, "id", "TEXT", 0, null, 1],
+          [1, "created_at", "INTEGER", 0, null, 0],
+          [2, "updated_at", "INTEGER", 0, null, 0],
+          [3, "name", "TEXT", 0, null, 0],
         ],
       })
       .mockResolvedValueOnce({ rows: [] })
@@ -941,15 +965,15 @@ describe("Turso Cloudflare workers", () => {
     expect(body.url).toBe("libsql://tenant-a.turso.io");
   });
 
-  test("uses TURSO_GROUP_NAME from environment when creating databases", async () => {
-    process.env.TURSO_GROUP_NAME = "primary-group";
+  test("uses TURSO_GROUP from environment when creating databases", async () => {
+    process.env.TURSO_GROUP = "primary-group";
     const fetchMock = mockCreatedDatabase({
       url: "libsql://envgroupdb.turso.io",
     });
     const app = deploy([
       Functions.turso(
         dynamicOptions({
-          groupName: undefined,
+          group: undefined,
         }),
       ),
     ]);
@@ -1000,12 +1024,12 @@ describe("Turso Cloudflare workers", () => {
   });
 
   test("returns an access-time error when database group is not configured", async () => {
-    delete process.env.TURSO_GROUP_NAME;
+    delete process.env.TURSO_GROUP;
     const fetchMock = jest.spyOn(globalThis, "fetch");
     const app = deploy([
       Functions.turso(
         dynamicOptions({
-          groupName: undefined,
+          group: undefined,
         }),
       ),
     ]);
@@ -1017,7 +1041,7 @@ describe("Turso Cloudflare workers", () => {
 
     expect(response.status).toBe(500);
     expect(body.error).toBe(
-      "groupName or TURSO_GROUP_NAME is required to create Turso databases.",
+      "group or TURSO_GROUP is required to create Turso databases.",
     );
     expect(fetchMock).not.toHaveBeenCalled();
   });

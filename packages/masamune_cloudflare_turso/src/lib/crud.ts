@@ -61,7 +61,7 @@ async function selectRows(
     sql: `SELECT * FROM ${quoteIdentifier(request.table)}${sql}${orderBy}${limit}`,
     args,
   });
-  return (result.rows as unknown as Record<string, unknown>[]).map(decodeRow);
+  return result.rows.map((row) => decodeRow(row, result.columns));
 }
 
 async function countRows(
@@ -73,7 +73,9 @@ async function countRows(
     sql: `SELECT COUNT(*) AS count FROM ${quoteIdentifier(request.table)}${sql}`,
     args,
   });
-  const row = result.rows[0] as unknown as Record<string, unknown> | undefined;
+  const row = result.rows[0] === undefined
+    ? undefined
+    : decodeRow(result.rows[0], result.columns);
   const count = row?.count;
   return typeof count === "number" ? count : Number(count ?? 0);
 }
@@ -106,7 +108,7 @@ async function insertRow(
       `(${keys.map(quoteIdentifier).join(", ")}) VALUES (${placeholders}) RETURNING *`,
     args: keys.map((key) => encodeSqlValue(row[key])),
   });
-  return (result.rows as unknown as Record<string, unknown>[]).map(decodeRow);
+  return result.rows.map((item) => decodeRow(item, result.columns));
 }
 
 async function updateRows(
@@ -141,7 +143,7 @@ async function updateRows(
     sql: `UPDATE ${quoteIdentifier(request.table)} SET ${setSql}${where.sql} RETURNING *`,
     args,
   });
-  return (result.rows as unknown as Record<string, unknown>[]).map(decodeRow);
+  return result.rows.map((item) => decodeRow(item, result.columns));
 }
 
 async function deleteRows(
