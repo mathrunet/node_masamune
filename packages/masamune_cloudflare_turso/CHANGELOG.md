@@ -1,4 +1,4 @@
-# 3.2.0 (2026-07-01)
+## 3.2.1 (2026-07-01)
 
 
 ### chore
@@ -358,3 +358,6 @@
 * Extend the timeout for the short video generation test. ([9e46c82](https://github.com/mathrunet/node_masamune/commit/9e46c828c791d933b32344842e63830782aa0fa5))
 * Fixes to pass tests. ([a656689](https://github.com/mathrunet/node_masamune/commit/a6566898613d76cd1027a319cda4f605044db151))
 * Test code implementation. ([7f40834](https://github.com/mathrunet/node_masamune/commit/7f40834936b13a1b54b792b1c47f7c1ae2319502))
+
+
+
