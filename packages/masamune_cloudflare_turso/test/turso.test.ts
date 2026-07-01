@@ -71,7 +71,7 @@ function mockExistingDatabase({
     .mockResolvedValueOnce({
       ok: true,
       status: 200,
-      json: async () => ({ database: { hostname: url } }),
+      json: async () => ({ database: { Hostname: url } }),
     } as Response)
     .mockResolvedValueOnce({
       ok: true,
@@ -100,7 +100,7 @@ function mockCreatedDatabase({
     .mockResolvedValueOnce({
       ok: true,
       status: 200,
-      json: async () => ({ database: { hostname: url } }),
+      json: async () => ({ database: { Hostname: url } }),
     } as Response)
     .mockResolvedValueOnce({
       ok: true,
@@ -195,6 +195,22 @@ describe("Turso Cloudflare workers", () => {
         sql: expect.stringContaining('FROM "users"'),
       }),
     );
+  });
+
+  test("normalizes Turso Platform API Hostname to libsql URL", async () => {
+    mockExistingDatabase({ url: "hostname-db-mathru.turso.io" });
+    execute.mockResolvedValueOnce({ rows: [] });
+    const app = deploy([Functions.turso(dynamicOptions())]);
+
+    const response = await app.request(
+      "http://localhost/turso/database/hostname-db/users",
+    );
+
+    expect(response.status).toBe(200);
+    expect(createClient).toHaveBeenCalledWith({
+      url: "libsql://hostname-db-mathru.turso.io",
+      authToken: "database-token",
+    });
   });
 
   test("creates table, migrates missing columns, and inserts rows on POST", async () => {

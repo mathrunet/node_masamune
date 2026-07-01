@@ -175,7 +175,14 @@ function findDatabaseUrl(value: unknown): string | undefined {
   if (typeof value !== "object" || value === null) {
     return undefined;
   }
-  for (const item of Object.values(value as Record<string, unknown>)) {
+  const record = value as Record<string, unknown>;
+  const hostname = record.Hostname ?? record.hostname;
+  if (typeof hostname === "string" && hostname.length > 0) {
+    return hostname.startsWith("libsql://")
+      ? hostname
+      : `libsql://${hostname}`;
+  }
+  for (const item of Object.values(record)) {
     const found = findDatabaseUrl(item);
     if (found) {
       return found;
