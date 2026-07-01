@@ -1,4 +1,4 @@
-import { WorkersData } from "@mathrunet/masamune_cloudflare";
+import { WorkersData, WorkersOptions } from "@mathrunet/masamune_cloudflare";
 import { TursoWorkersOptions } from "./lib/types";
 
 /**
@@ -12,12 +12,12 @@ export const Functions = {
    *
    * TursoデータベースCRUD用のエンドポイントです。
    */
-  turso: (options: TursoWorkersOptions = {}) => new WorkersData({ path: "/turso", func: require("./functions/turso"), options: options }),
+  turso: (options: TursoWorkersOptions = {}) => new WorkersData({ path: "/turso", func: require("./functions/turso"), options: options as unknown as WorkersOptions }),
 
   /**
    * Endpoint for issuing scoped short-lived Turso tokens.
    *
    * スコープされた短命Tursoトークン発行用のエンドポイントです。
    */
-  tursoToken: (options: TursoWorkersOptions = {}) => new WorkersData({ path: "/turso/token", func: require("./functions/turso_token"), options: options }),
+  tursoToken: (options: TursoWorkersOptions = {}) => new WorkersData({ path: "/turso/token", func: require("./functions/turso_token"), options: options as unknown as WorkersOptions }),
 } as const;

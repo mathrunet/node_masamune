@@ -65,6 +65,10 @@ export class RulesEngine {
   }
 }
 
+export function createTursoRulesEngine(config?: RulesConfig | undefined): RulesEngine {
+  return new RulesEngine(config);
+}
+
 export function buildRulesPath({
   database,
   table,
@@ -153,7 +157,7 @@ export async function filterAllowedScope({
           authentication,
         });
       }));
-      if (results.every((result) => result.allowed)) {
+      if (results.every((result: RulesEvaluationResult) => result.allowed)) {
         operations.push(operationKey);
       }
     }

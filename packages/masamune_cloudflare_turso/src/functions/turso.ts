@@ -8,8 +8,8 @@ import { executeCrud, fetchDocumentForRules } from "../lib/crud";
 import { jsonError, parseCrudRequest } from "../lib/request";
 import {
   buildRulesPath,
+  createTursoRulesEngine,
   normalizeHttpMethodToRulesOperation,
-  RulesEngine,
 } from "../lib/rules";
 import {
   createTursoClient,
@@ -37,7 +37,7 @@ async function handleCrud(
     const request = await parseCrudRequest(context);
     const connection = await resolveDatabaseConnection(request.database, options);
     const client = createTursoClient(connection);
-    const engine = new RulesEngine(options.rules);
+    const engine = createTursoRulesEngine(options.rules);
     const authentication = context.get("authentication") as AuthenticationContext | undefined;
     const result = await engine.evaluate({
       path: buildRulesPath({

@@ -5,8 +5,8 @@ import {
 } from "../lib/types";
 import { jsonError, parseTokenRequest } from "../lib/request";
 import {
+  createTursoRulesEngine,
   filterAllowedScope,
-  RulesEngine,
 } from "../lib/rules";
 import { resolveDatabaseConnection } from "../lib/turso_client";
 import { issueScopedToken } from "../lib/token";
@@ -28,7 +28,7 @@ async function handleToken(
     const request = await parseTokenRequest(context);
     await resolveDatabaseConnection(request.database, options);
     const authentication = context.get("authentication") as AuthenticationContext | undefined;
-    const engine = new RulesEngine(options.rules);
+    const engine = createTursoRulesEngine(options.rules);
     const scope = await filterAllowedScope({
       engine,
       database: request.database,

@@ -11,4 +11,12 @@
 export * from "@mathrunet/masamune";
 export * from "@mathrunet/masamune_cloudflare";
 export * from "./functions";
+export type {
+  RulesAccessRule,
+  RulesConfig,
+  RulesEntry,
+  RulesOperation,
+  RulesOperationAlias,
+  RulesOperationKey,
+} from "./lib/types";
 export * from "./lib/types";
