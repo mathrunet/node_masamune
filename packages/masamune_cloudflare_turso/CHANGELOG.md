@@ -1,4 +1,4 @@
-## 3.1.4 (2026-06-29)
+# 3.1.0 (2026-07-01)
 
 
 ### chore
@@ -88,6 +88,7 @@
 * Add CallProcessFunctionBase. ([f5c72ab](https://github.com/mathrunet/node_masamune/commit/f5c72ab340239039e3ae4e63f1babe8cf4953f58))
 * Add comprehensive JSDoc documentation to marketing functions ([7ea0e10](https://github.com/mathrunet/node_masamune/commit/7ea0e109f07440e8a73214650ad67953bb8b3878))
 * Add convertTo methods to remaining TypeScript converters ([36c5630](https://github.com/mathrunet/node_masamune/commit/36c56306e2f1418ec447af29883147854ae49fba))
+* Add Firebase Authentication middleware and related functionality to Cloudflare package ([bf31d7f](https://github.com/mathrunet/node_masamune/commit/bf31d7f857f5a98b06da27b8ba4b593d70317a69))
 * Add Github summary function. ([3320b2e](https://github.com/mathrunet/node_masamune/commit/3320b2e894b7f85e61a5f891b2d3095bf53d79bd))
 * Add GoogleToken. ([953ae3b](https://github.com/mathrunet/node_masamune/commit/953ae3bef001cfbec2eb2795bab727ee7d1c87cf))
 * Add HLS function. ([bfa96e5](https://github.com/mathrunet/node_masamune/commit/bfa96e5b176180e84dafea9b75612bcd68fb3424))
@@ -154,6 +155,7 @@
 * implement Firebase function to generate short video metadata using Vertex AI, including tests and development documentation. ([2251993](https://github.com/mathrunet/node_masamune/commit/22519933c8b1f84fc7ae26a5754c6c02d96b5969))
 * Implement retry mechanism for Vertex AI API calls in ResearchMarket function and enhance error handling ([ac03efe](https://github.com/mathrunet/node_masamune/commit/ac03efe06d7958ad7ebc9a405cf31c351a3b4298))
 * Implementation of data retrieval API. ([df9ad88](https://github.com/mathrunet/node_masamune/commit/df9ad88da46ccb85cea4172ed8c0107ea2c431f7))
+* Initial commit. ([b69ba81](https://github.com/mathrunet/node_masamune/commit/b69ba81f4377d149c313ba40227af4be1d0ba150))
 * Initial commit. ([26b8a08](https://github.com/mathrunet/node_masamune/commit/26b8a08df3582fd80dc7ecc204654f6b7f5c9098))
 * Initial commit. ([5e83638](https://github.com/mathrunet/node_masamune/commit/5e836385d1789fff488396c67ace73d7f55205e8))
 * Initial commit. ([b9200aa](https://github.com/mathrunet/node_masamune/commit/b9200aa75f64e6890a946f7de0a49fd823143651))
@@ -356,6 +358,3 @@
 * Extend the timeout for the short video generation test. ([9e46c82](https://github.com/mathrunet/node_masamune/commit/9e46c828c791d933b32344842e63830782aa0fa5))
 * Fixes to pass tests. ([a656689](https://github.com/mathrunet/node_masamune/commit/a6566898613d76cd1027a319cda4f605044db151))
 * Test code implementation. ([7f40834](https://github.com/mathrunet/node_masamune/commit/7f40834936b13a1b54b792b1c47f7c1ae2319502))
-
-
-
