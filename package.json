@@ -25,7 +25,11 @@
     "packages/masamune_firebase_workflow_sales",
     "packages/masamune_firebase_workflow_marketing",
     "packages/masamune_firebase_asset_pipeline",
-    "packages/masamune_cloudflare"
+    "packages/masamune_cloudflare",
+    "packages/masamune_cloudflare_turso",
+    "packages/masamune_cloudflare_kv",
+    "packages/masamune_cloudflare_tidb",
+    "packages/masamune_cloudflare_storage"
   ],
   "description": "Manages packages for the server portion (NodeJS) of the Masamune framework.",
   "scripts": {
