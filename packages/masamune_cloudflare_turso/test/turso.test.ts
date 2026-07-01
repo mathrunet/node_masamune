@@ -344,6 +344,75 @@ describe("Turso Cloudflare workers", () => {
     );
   });
 
+  test("uses Cloudflare env secret before platformApiToken option", async () => {
+    const fetchMock = mockExistingDatabase({
+      url: "libsql://env-priority-db.turso.io",
+    }).mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({ jwt: "env-priority-token" }),
+    } as Response);
+    const app = deploy([
+      Functions.tursoToken(
+        dynamicOptions({
+          organizationName: "option-org",
+          groupName: "option-group",
+          platformApiToken: "option-token",
+          rules: {
+            version: "1",
+            rules: {
+              "database/env-priority-db": {
+                read: "allow",
+                write: "deny",
+              },
+            },
+          },
+        }),
+      ),
+    ]);
+
+    const response = await app.request(
+      "http://localhost/turso/token/database/env-priority-db",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ttlSeconds: 60,
+        }),
+      },
+      {
+        TURSO_ORGANIZATION_NAME: "env-org",
+        TURSO_GROUP_NAME: "env-group",
+        TURSO_PLATFORM_API_TOKEN: "env-token",
+      },
+    );
+    const body = (await response.json()) as { token: string };
+
+    expect(response.status).toBe(200);
+    expect(body.token).toBe("env-priority-token");
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining("/v1/organizations/env-org/databases/env-priority-db"),
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          Authorization: "Bearer env-token",
+        }),
+      }),
+    );
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "/v1/organizations/env-org/databases/env-priority-db/auth/tokens?expiration=60s&authorization=read-only",
+      ),
+      expect.objectContaining({
+        method: "POST",
+        headers: expect.objectContaining({
+          Authorization: "Bearer env-token",
+        }),
+      }),
+    );
+  });
+
   test("allows database tokens when path parameter matches authenticated user", async () => {
     mockExistingDatabase({
       url: "libsql://user-1.turso.io",

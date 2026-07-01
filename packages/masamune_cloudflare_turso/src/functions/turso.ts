@@ -15,6 +15,7 @@ import {
   createTursoClient,
   resolveDatabaseConnection,
 } from "../lib/turso_client";
+import { resolveTursoWorkersOptionsFromEnv } from "../lib/env";
 
 module.exports = (
   hono: Hono,
@@ -42,10 +43,11 @@ async function handleCrud(
   method: TursoCrudMethod,
 ): Promise<Response> {
   try {
+    const resolvedOptions = resolveTursoWorkersOptionsFromEnv(context, options);
     const request = await parseCrudRequest(context);
-    const connection = await resolveDatabaseConnection(request.database, options);
+    const connection = await resolveDatabaseConnection(request.database, resolvedOptions);
     const client = createTursoClient(connection);
-    const engine = createTursoRulesEngine(options.rules);
+    const engine = createTursoRulesEngine(resolvedOptions.rules);
     const authentication = context.get("authentication") as AuthenticationContext | undefined;
     const result = await engine.evaluate({
       path: buildRulesPath({
@@ -68,8 +70,8 @@ async function handleCrud(
       client,
       method,
       request,
-      autoCreateTable: options.autoCreateTable !== false,
-      autoMigrateAddColumns: options.autoMigrateAddColumns !== false,
+      autoCreateTable: resolvedOptions.autoCreateTable !== false,
+      autoMigrateAddColumns: resolvedOptions.autoMigrateAddColumns !== false,
     });
     return context.json({ data: response });
   } catch (error) {

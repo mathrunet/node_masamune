@@ -51,9 +51,8 @@ import * as m from "@mathrunet/masamune_cloudflare_turso";
 
 export default m.deploy([
   m.Functions.turso({
-    organizationName: TURSO_ORGANIZATION_NAME,
-    groupName: TURSO_GROUP_NAME,
-    platformApiToken: TURSO_PLATFORM_API_TOKEN,
+    organizationName: "xxxx",
+    groupName: "xxxx",
     autoCreateDatabase: true,
     autoCreateTable: true,
     autoMigrateAddColumns: true,
@@ -72,9 +71,8 @@ export default m.deploy([
     },
   }),
   m.Functions.tursoToken({
-    organizationName: TURSO_ORGANIZATION_NAME,
-    groupName: TURSO_GROUP_NAME,
-    platformApiToken: TURSO_PLATFORM_API_TOKEN,
+    organizationName: "xxxx",
+    groupName: "xxxx",
     rules: {
       version: "1",
       rules: {
@@ -86,6 +84,18 @@ export default m.deploy([
     },
   }),
 ]);
+```
+
+Cloudflare bindings are also supported and take precedence over options:
+
+- `TURSO_PLATFORM_API_TOKEN`
+- `TURSO_ORGANIZATION_NAME`
+- `TURSO_GROUP_NAME`
+
+For production, store the Platform API token as a secret:
+
+```bash
+wrangler secret put TURSO_PLATFORM_API_TOKEN
 ```
 
 # Endpoints
