@@ -254,7 +254,7 @@ describe("Turso Cloudflare workers", () => {
     expect(body.data).toBe(2);
   });
 
-  test("creates table, migrates missing columns, and inserts rows on POST", async () => {
+  test("updates rows on POST with path indexKey", async () => {
     mockExistingDatabase({ url: "libsql://postdb.turso.io" });
     execute
       .mockResolvedValueOnce({ rows: [] })
@@ -308,9 +308,106 @@ describe("Turso Cloudflare workers", () => {
     );
     expect(execute).toHaveBeenCalledWith(
       expect.objectContaining({
-        sql: expect.stringContaining("INSERT INTO"),
+        sql: expect.stringContaining("UPDATE"),
       }),
     );
+    expect(execute).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sql: expect.stringContaining('WHERE "id" = ?'),
+      }),
+    );
+  });
+
+  test("checks update rules for POST with path indexKey", async () => {
+    mockExistingDatabase({ url: "libsql://postruledb.turso.io" });
+    execute
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({
+        columns: ["cid", "name", "type", "notnull", "dflt_value", "pk"],
+        rows: [
+          [0, "id", "TEXT", 0, null, 1],
+          [1, "created_at", "INTEGER", 0, null, 0],
+          [2, "updated_at", "INTEGER", 0, null, 0],
+          [3, "name", "TEXT", 0, null, 0],
+        ],
+      })
+      .mockResolvedValueOnce({
+        columns: ["id", "name", "created_at", "updated_at"],
+        rows: [
+          ["user_1", "Alice", 1, 1],
+        ],
+      });
+    const app = deploy([
+      Functions.turso(
+        dynamicOptions({
+          rules: {
+            version: "1",
+            rules: {
+              "database/*/*/*": {
+                create: "deny",
+                update: "allow",
+              },
+            },
+          },
+        }),
+      ),
+    ]);
+
+    const response = await app.request("http://localhost/turso/database/postruledb/users/user_1", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        value: {
+          name: "Alice",
+        },
+      }),
+    });
+
+    expect(response.status).toBe(200);
+    expect(execute).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sql: expect.stringContaining("UPDATE"),
+      }),
+    );
+  });
+
+  test("denies POST with path indexKey when update rules reject it", async () => {
+    mockExistingDatabase({ url: "libsql://postdenieddb.turso.io" });
+    const app = deploy([
+      Functions.turso(
+        dynamicOptions({
+          rules: {
+            version: "1",
+            rules: {
+              "database/*/*/*": {
+                create: "allow",
+                update: "deny",
+              },
+            },
+          },
+        }),
+      ),
+    ]);
+
+    const response = await app.request("http://localhost/turso/database/postdenieddb/users/user_1", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        value: {
+          name: "Alice",
+        },
+      }),
+    });
+    const body = (await response.json()) as { error: string };
+
+    expect(response.status).toBe(403);
+    expect(body.error).toBe("denied");
+    expect(execute).not.toHaveBeenCalled();
   });
 
   test("adds only missing columns during migration", async () => {

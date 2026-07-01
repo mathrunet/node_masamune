@@ -2,6 +2,7 @@ import { Context, Hono } from "hono";
 import {
   AuthenticationContext,
   TursoCrudMethod,
+  RulesOperation,
   TursoWorkersOptions,
 } from "../lib/types";
 import { executeCrud, fetchDocumentForRules } from "../lib/crud";
@@ -55,7 +56,7 @@ async function handleCrud(
         table: request.table,
         indexKey: request.indexKey ?? "*",
       }),
-      operation: normalizeHttpMethodToRulesOperation(method),
+      operation: resolveCrudRulesOperation(method, request),
       authentication,
       fetchDocument: async () => fetchDocumentForRules(client, request),
       server: true,
@@ -77,4 +78,14 @@ async function handleCrud(
   } catch (error) {
     return jsonError(context, error);
   }
+}
+
+function resolveCrudRulesOperation(
+  method: TursoCrudMethod,
+  request: { indexKey?: string | undefined },
+): RulesOperation {
+  if (method === "POST" && request.indexKey) {
+    return "update";
+  }
+  return normalizeHttpMethodToRulesOperation(method);
 }

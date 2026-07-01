@@ -39,6 +39,9 @@ export async function executeCrud({
       }
       return await selectRows(client, request);
     case "POST":
+      if (request.indexKey) {
+        return await updateRows(client, request, autoCreateTable, autoMigrateAddColumns);
+      }
       return await insertRow(client, request, autoCreateTable, autoMigrateAddColumns);
     case "PUT":
       return await updateRows(client, request, autoCreateTable, autoMigrateAddColumns);
