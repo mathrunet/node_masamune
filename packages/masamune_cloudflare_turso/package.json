@@ -1,6 +1,6 @@
 {
   "name": "@mathrunet/masamune_cloudflare_turso",
-  "version": "3.2.5",
+  "version": "3.2.6",
   "description": "Server-side package of the Masamune framework for working with Turso via Cloudflare.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -41,7 +41,7 @@
   "homepage": "https://github.com/mathrunet/node_masamune#readme",
   "dependencies": {
     "@mathrunet/masamune": "^3.10.2",
-    "@mathrunet/masamune_cloudflare": "^3.1.7",
+    "@mathrunet/masamune_cloudflare": "^3.1.8",
     "@tursodatabase/serverless": "^1.2.3",
     "hono": "^4.12.27",
     "typescript": "^5.9.2"

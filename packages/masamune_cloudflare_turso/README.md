@@ -48,42 +48,26 @@ Pass the return value of the `deploy` function to `export default`. It is define
 
 ```typescript
 import * as m from "@mathrunet/masamune_cloudflare_turso";
+import rulesJson from "../rules.json";
 
-export default m.deploy([
-  m.Functions.turso({
-    organizationName: "xxxx",
-    groupName: "xxxx",
-    autoCreateDatabase: true,
-    autoCreateTable: true,
-    autoMigrateAddColumns: true,
-    rules: {
-      version: "1",
-      rules: {
-        "database/*/table/*/*": {
-          read: "deny",
-          write: "deny",
-        },
-        "database/main/table/users/*": {
-          read: "authenticated",
-          write: "authenticated",
-        },
-      },
-    },
-  }),
-  m.Functions.tursoToken({
-    organizationName: "xxxx",
-    groupName: "xxxx",
-    rules: {
-      version: "1",
-      rules: {
-        "database/main": {
-          read: "authenticated",
-          write: "deny",
-        },
-      },
-    },
-  }),
-]);
+export default m.deploy(
+  [
+    m.Functions.turso({
+      organizationName: "xxxx",
+      groupName: "xxxx",
+      autoCreateDatabase: true,
+      autoCreateTable: true,
+      autoMigrateAddColumns: true,
+    }),
+    m.Functions.tursoToken({
+      organizationName: "xxxx",
+      groupName: "xxxx",
+    }),
+  ],
+  {
+    rules: rulesJson,
+  },
+);
 ```
 
 Cloudflare bindings are also supported and take precedence over options:
@@ -195,6 +179,29 @@ CREATE TABLE IF NOT EXISTS table_name (
 
 Objects and arrays are stored as JSON strings.
 
+# Rules
+
+Rules are provided by `@mathrunet/masamune_cloudflare` and are shared with
+other Cloudflare database packages. Pass an imported `rules.json` to
+`WorkersOptions.rules` on `deploy`, or pass the same config to each function
+option.
+
+```json
+{
+  "version": "1",
+  "rules": {
+    "database/main": {
+      "read": "allow",
+      "write": "server"
+    },
+    "database/main/table/users/*": {
+      "read": "authenticated",
+      "write": { "type": "field", "field": "ownerId", "server": true }
+    }
+  }
+}
+```
+
 # Database-scoped short-lived token
 
 Use `/turso/token/database/{database}` to issue a Turso database token after
@@ -225,8 +232,8 @@ Named path parameters can be compared with the authenticated user ID:
   "version": "1",
   "rules": {
     "database/{uid}": {
-      "read": { "type": "pathParamMatch", "param": "uid" },
-      "write": { "type": "pathParamMatch", "param": "uid" }
+      "read": { "type": "path", "param": "uid" },
+      "write": { "type": "path", "param": "uid" }
     }
   }
 }
@@ -243,24 +250,24 @@ issuing only the direct Turso token that is safe for the requested scope:
   "version": "1",
   "rules": {
     "database/{uid}": {
-      "read": { "type": "pathParamMatch", "param": "uid" },
+      "read": { "type": "path", "param": "uid" },
       "write": {
-        "type": "pathParamMatch",
+        "type": "path",
         "param": "uid",
-        "serverOnly": true
+        "server": true
       }
     }
   }
 }
 ```
 
-`serverOnly` can also be used with `read` and `fieldMatch` rules. A
-server-only rule does not grant direct token access for that operation.
+`server` can also be used with `read` and `field` rules. A server-side rule
+does not grant direct token access for that operation.
 
 Table/document rules below the database path are also treated as server-side
 rules for token issuance when they restrict `read` or `write`. This is
 intentional because Turso Platform tokens are database-scoped and cannot enforce
-document-level `fieldMatch` or `pathParamMatch` checks on the client.
+document-level `field` or `path` checks on the client.
 
 For a database-level Turso token, send `operations` without a table:
 

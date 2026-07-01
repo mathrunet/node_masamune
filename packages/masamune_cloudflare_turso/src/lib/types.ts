@@ -1,42 +1,34 @@
-import { WorkersOptions } from "@mathrunet/masamune_cloudflare";
+import {
+  RulesAccessMode,
+  RulesAccessRule,
+  RulesConfig,
+  RulesEntry,
+  RulesOperation,
+  RulesOperationAlias,
+  RulesOperationKey,
+  RulesTokenTargetInput,
+  RulesTokenTargetOutput,
+  WorkersAuthContext,
+  WorkersOptions,
+} from "@mathrunet/masamune_cloudflare";
 
 export type TursoCrudMethod = "GET" | "POST" | "PUT" | "DELETE";
 
-export type RulesOperation = "get" | "create" | "update" | "delete";
-export type RulesOperationAlias = "read" | "write";
-export type RulesOperationKey = RulesOperation | RulesOperationAlias;
-
-export type RulesAccessRule =
-  | "deny"
-  | "allow"
-  | "authenticated"
-  | {
-      type: "serverOnly";
-    }
-  | {
-      type: "fieldMatch";
-      field: string;
-      serverOnly?: boolean | undefined;
-    }
-  | {
-      type: "pathParamMatch";
-      param: string;
-      serverOnly?: boolean | undefined;
-    };
-
-export type RulesEntry = Partial<Record<RulesOperationKey, RulesAccessRule>>;
-
-export interface RulesConfig {
-  version: string;
-  rules: Record<string, RulesEntry>;
-}
+export type {
+  RulesAccessRule,
+  RulesConfig,
+  RulesEntry,
+  RulesOperation,
+  RulesOperationAlias,
+  RulesOperationKey,
+};
 
 export interface TursoDatabaseConnection {
   url: string;
   authToken?: string | undefined;
 }
 
-export interface TursoWorkersOptions extends Omit<WorkersOptions, "rules"> {
+export interface TursoWorkersOptions extends WorkersOptions {
   databaseNamePrefix?: string | undefined;
   organizationName?: string | undefined;
   groupName?: string | undefined;
@@ -45,7 +37,6 @@ export interface TursoWorkersOptions extends Omit<WorkersOptions, "rules"> {
   autoCreateTable?: boolean | undefined;
   autoMigrateAddColumns?: boolean | undefined;
   maxTtlSeconds?: number | undefined;
-  rules?: RulesConfig | undefined;
 }
 
 export interface TursoRequestBody {
@@ -70,17 +61,11 @@ export interface TursoOrderCondition {
   descending?: boolean | undefined;
 }
 
-export interface TursoTokenScopeInput {
-  table: string;
-  operations: RulesOperationKey[];
-}
+export type TursoTokenAccessMode = RulesAccessMode;
 
-export type TursoTokenAccessMode = "none" | "functions" | "direct";
+export type TursoTokenScopeInput = RulesTokenTargetInput;
 
-export interface TursoTokenScopeOutput extends TursoTokenScopeInput {
-  readMode?: TursoTokenAccessMode | undefined;
-  writeMode?: TursoTokenAccessMode | undefined;
-}
+export type TursoTokenScopeOutput = RulesTokenTargetOutput;
 
 export interface TursoTokenRequestBody {
   database?: string | undefined;
@@ -90,7 +75,4 @@ export interface TursoTokenRequestBody {
   ttlSeconds?: number | undefined;
 }
 
-export interface AuthenticationContext {
-  uid?: string | undefined;
-  token?: unknown;
-}
+export type AuthenticationContext = WorkersAuthContext;

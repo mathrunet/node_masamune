@@ -129,6 +129,28 @@ describe("Turso Cloudflare workers", () => {
     expect(tokenWorker.path).toBe("/turso/token");
   });
 
+  test("uses rules config from default WorkersOptions", async () => {
+    mockExistingDatabase({ url: "libsql://default-rules-db.turso.io" });
+    execute.mockResolvedValueOnce({ rows: [] });
+    const app = deploy(
+      [
+        Functions.turso(dynamicOptions({ rules: undefined })),
+      ],
+      { rules: allowRules },
+    );
+
+    const response = await app.request(
+      "http://localhost/turso/database/default-rules-db/users",
+    );
+
+    expect(response.status).toBe(200);
+    expect(execute).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sql: expect.stringContaining('FROM "users"'),
+      }),
+    );
+  });
+
   test("denies access when rules reject the request", async () => {
     mockExistingDatabase({ url: "libsql://denydb.turso.io" });
     const app = deploy([
@@ -178,9 +200,9 @@ describe("Turso Cloudflare workers", () => {
 
     const response = await app.request(
       "http://localhost/turso/database/pathdb/users" +
-        "?where=%5B%7B%22type%22%3A%22equalTo%22%2C%22key%22%3A%22name%22%2C%22value%22%3A%22Alice%22%7D%5D" +
-        "&orderBy=%5B%7B%22key%22%3A%22created_at%22%2C%22descending%22%3Atrue%7D%5D" +
-        "&limit=20",
+      "?where=%5B%7B%22type%22%3A%22equalTo%22%2C%22key%22%3A%22name%22%2C%22value%22%3A%22Alice%22%7D%5D" +
+      "&orderBy=%5B%7B%22key%22%3A%22created_at%22%2C%22descending%22%3Atrue%7D%5D" +
+      "&limit=20",
     );
     const body = (await response.json()) as { data: unknown[] };
 
@@ -450,7 +472,7 @@ describe("Turso Cloudflare workers", () => {
               version: "1",
               rules: {
                 "database/{uid}": {
-                  read: { type: "pathParamMatch", param: "uid" },
+                  read: { type: "path", param: "uid" },
                   write: "deny",
                 },
               },
@@ -486,7 +508,7 @@ describe("Turso Cloudflare workers", () => {
     );
   });
 
-  test("marks database tokens as functions write mode for server-only writes", async () => {
+  test("marks database tokens as functions write mode for server-side writes", async () => {
     mockExistingDatabase({
       url: "libsql://server-write-user.turso.io",
     }).mockResolvedValueOnce({
@@ -502,11 +524,11 @@ describe("Turso Cloudflare workers", () => {
               version: "1",
               rules: {
                 "database/{uid}": {
-                  read: { type: "pathParamMatch", param: "uid" },
+                  read: { type: "path", param: "uid" },
                   write: {
-                    type: "pathParamMatch",
+                    type: "path",
                     param: "uid",
-                    serverOnly: true,
+                    server: true,
                   },
                 },
               },
@@ -547,7 +569,7 @@ describe("Turso Cloudflare workers", () => {
     );
   });
 
-  test("returns functions targets without issuing a token when read and write are server-only", async () => {
+  test("returns functions targets without issuing a token when read and write are server-side", async () => {
     const fetchMock = mockExistingDatabase({
       url: "libsql://server-only-user.turso.io",
     });
@@ -559,12 +581,12 @@ describe("Turso Cloudflare workers", () => {
               version: "1",
               rules: {
                 "database/{uid}": {
-                  read: { type: "serverOnly" },
-                  write: { type: "serverOnly" },
+                  read: "server",
+                  write: "server",
                 },
                 "database/{uid}/table/*/*": {
-                  read: { type: "serverOnly" },
-                  write: { type: "serverOnly" },
+                  read: "server",
+                  write: "server",
                 },
               },
             },
@@ -635,7 +657,7 @@ describe("Turso Cloudflare workers", () => {
                   write: "deny",
                 },
                 "database/field-scope/table/posts/*": {
-                  read: { type: "fieldMatch", field: "ownerId" },
+                  read: { type: "field", field: "ownerId" },
                 },
               },
             },
@@ -698,7 +720,7 @@ describe("Turso Cloudflare workers", () => {
               version: "1",
               rules: {
                 "database/{uid}": {
-                  read: { type: "pathParamMatch", param: "uid" },
+                  read: { type: "path", param: "uid" },
                   write: "deny",
                 },
               },
@@ -726,15 +748,15 @@ describe("Turso Cloudflare workers", () => {
     expect(globalThis.fetch).toHaveBeenCalledTimes(3);
   });
 
-  test("evaluates fieldMatch with serverOnly only on server requests", async () => {
+  test("evaluates field rules with server only on server requests", async () => {
     const engine = createTursoRulesEngine({
       version: "1",
       rules: {
         "database/main/table/posts/*": {
           update: {
-            type: "fieldMatch",
+            type: "field",
             field: "ownerId",
-            serverOnly: true,
+            server: true,
           },
         },
       },
