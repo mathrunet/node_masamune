@@ -17,6 +17,7 @@ module.exports = (
 ) => {
   hono.get("/document/*", async (context) => handleGetDocument(context, options));
   hono.put("/document/*", async (context) => handlePutDocument(context, options));
+  hono.post("/document/*", async (context) => handlePutDocument(context, options));
   hono.delete("/document/*", async (context) => handleDeleteDocument(context, options));
   hono.get("/collection/*", async (context) => handleGetCollection(context, options));
   return hono;
