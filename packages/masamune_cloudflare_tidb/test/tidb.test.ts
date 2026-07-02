@@ -71,6 +71,8 @@ function mockExecute(): void {
         types: {
           id: "VARCHAR",
           name: "TEXT",
+          age: "BIGINT",
+          isActive: "TINYINT",
           created_at: "BIGINT",
           updated_at: "BIGINT",
         },
@@ -78,8 +80,10 @@ function mockExecute(): void {
           {
             id: "user_1",
             name: "Alice",
-            created_at: 1,
-            updated_at: 2,
+            age: "12",
+            isActive: "1",
+            created_at: "1",
+            updated_at: "2",
           },
         ],
         rowCount: 1,
@@ -118,6 +122,16 @@ describe("TiDB Cloudflare workers", () => {
     const body = (await response.json()) as { data: unknown[] };
 
     expect(response.status).toBe(200);
+    expect(body.data).toEqual([
+      {
+        id: "user_1",
+        name: "Alice",
+        age: 12,
+        isActive: true,
+        created_at: 1,
+        updated_at: 2,
+      },
+    ]);
     expect(body.data).toHaveLength(1);
     expect(connect).toHaveBeenCalledWith({
       url: "mysql://backend:backend-password@gateway01.ap-northeast-1.prod.aws.tidbcloud.com:4000/app_db",

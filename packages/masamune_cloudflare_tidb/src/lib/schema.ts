@@ -51,22 +51,26 @@ export function encodeSqlValue(value: unknown): SqlValue {
 export function decodeRow(
   row: unknown,
   columns: readonly string[] = [],
+  columnTypes: readonly string[] = [],
 ): Record<string, unknown> {
   const result: Record<string, unknown> = {};
   if (columns.length > 0 && isArrayLikeRow(row)) {
     for (const [index, column] of columns.entries()) {
-      result[column] = decodeSqlValue(row[index]);
+      result[column] = decodeSqlValue(row[index], columnTypes[index]);
     }
     return result;
   }
   if (!row || typeof row !== "object") {
     return result;
   }
+  const typeByColumn = new Map(
+    columns.map((column, index) => [column, columnTypes[index]]),
+  );
   for (const [key, value] of Object.entries(row)) {
     if (/^\d+$/.test(key)) {
       continue;
     }
-    result[key] = decodeSqlValue(value);
+    result[key] = decodeSqlValue(value, typeByColumn.get(key));
   }
   return result;
 }
@@ -82,11 +86,49 @@ function isArrayLikeRow(row: unknown): row is { [index: number]: unknown } {
   return "0" in record || typeof record.length === "number";
 }
 
-function decodeSqlValue(value: unknown): unknown {
+function decodeSqlValue(value: unknown, columnType?: string): unknown {
   if (typeof value === "bigint") {
-    return value.toString();
+    return toSafeNumberOrString(value.toString());
+  }
+  if (isBooleanColumnType(columnType)) {
+    return toBoolean(value);
+  }
+  if (typeof value === "string" && isNumericColumnType(columnType)) {
+    return toSafeNumberOrString(value);
   }
   return value;
+}
+
+function isBooleanColumnType(columnType?: string): boolean {
+  return columnType !== undefined && /^TINYINT(?:\b|\()/i.test(columnType);
+}
+
+function isNumericColumnType(columnType?: string): boolean {
+  return columnType !== undefined &&
+    /^(?:SMALLINT|MEDIUMINT|INT|INTEGER|BIGINT|FLOAT|DOUBLE|DECIMAL|NUMERIC)(?:\b|\()/i.test(columnType);
+}
+
+function toBoolean(value: unknown): boolean | unknown {
+  if (typeof value === "boolean") {
+    return value;
+  }
+  if (typeof value === "number") {
+    return value !== 0;
+  }
+  if (typeof value === "bigint") {
+    return value !== 0n;
+  }
+  if (typeof value === "string") {
+    return value !== "0" && value.toLowerCase() !== "false";
+  }
+  return value;
+}
+
+function toSafeNumberOrString(value: string): number | string {
+  const parsed = Number(value);
+  return Number.isSafeInteger(parsed) || Number.isFinite(parsed) && value.includes(".")
+    ? parsed
+    : value;
 }
 
 function buildColumnDefinitions(value: Record<string, unknown>): ColumnDefinition[] {
@@ -182,7 +224,7 @@ async function getColumns(client: TidbClient, table: string): Promise<Map<string
   const result = await client.execute(`SHOW COLUMNS FROM ${quoteIdentifier(table)}`);
   const columns = new Map<string, string>();
   for (const rawRow of result.rows) {
-    const row = decodeRow(rawRow, result.columns);
+    const row = decodeRow(rawRow, result.columns, result.columnTypes ?? []);
     const name = row.Field ?? row.field;
     const type = row.Type ?? row.type;
     if (typeof name === "string" && typeof type === "string") {

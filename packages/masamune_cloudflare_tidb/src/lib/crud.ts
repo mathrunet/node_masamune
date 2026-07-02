@@ -61,7 +61,9 @@ async function selectRows(
     sql: `SELECT * FROM ${quoteIdentifier(request.table)}${sql}${orderBy}${limit}`,
     args,
   });
-  return result.rows.map((row) => decodeRow(row, result.columns));
+  return result.rows.map((row) =>
+    decodeRow(row, result.columns, result.columnTypes ?? [])
+  );
 }
 
 async function countRows(
@@ -75,7 +77,7 @@ async function countRows(
   });
   const row = result.rows[0] === undefined
     ? undefined
-    : decodeRow(result.rows[0], result.columns);
+    : decodeRow(result.rows[0], result.columns, result.columnTypes ?? []);
   const count = row?.count;
   return typeof count === "number" ? count : Number(count ?? 0);
 }
