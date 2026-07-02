@@ -52,13 +52,40 @@ import * as m from "@mathrunet/masamune_cloudflare_kv";
 // Define [m.Functions.xxxx] for the functions to be added to Workers.
 //
 // Workersに追加する機能を[m.Functions.xxxx]を定義してください。
-export default m.deploy(
-    [
-        // Worker for Test.
-        m.TestWorkers.test,
-    ],
-);
+export default m.deploy([
+    m.Functions.kv({
+        bindingName: "MASAMUNE_KV",
+    }),
+]);
 ```
+
+Add a KV namespace binding to `wrangler.jsonc`.
+
+```jsonc
+{
+  "kv_namespaces": [
+    {
+      "binding": "MASAMUNE_KV",
+      "id": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    }
+  ]
+}
+```
+
+The endpoint stores one Masamune document per KV key. The document model path is
+used as the KV key without conversion.
+
+```text
+key: config/app
+value: {"maintenance":false,"version":12}
+```
+
+Collection reads are Remote Config compatible pseudo reads. `GET
+/kv/collection/config/app` returns the same document under `__default__`.
+
+Cloudflare KV limits apply. A single value can be up to 25 MiB, and repeated
+writes to the same key are limited. KV is eventually consistent, so use Turso or
+TiDB for data that requires immediate consistency or frequent writes.
 
 # GitHub Sponsors
 
