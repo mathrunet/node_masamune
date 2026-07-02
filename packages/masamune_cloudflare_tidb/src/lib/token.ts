@@ -59,15 +59,58 @@ function resolveUsername(
   writeMode: string,
 ): string {
   if (readMode === "direct" && writeMode === "direct") {
-    return required(options.directReadWriteUsername, "TIDB_DIRECT_READ_WRITE_USERNAME");
+    return resolveTidbCloudUsername(
+      options,
+      required(
+        options.directReadWriteUsername,
+        "TIDB_DIRECT_READ_WRITE_USERNAME",
+      ),
+    );
   }
   if (writeMode === "direct") {
-    return required(options.directWriteUsername, "TIDB_DIRECT_WRITE_USERNAME");
+    return resolveTidbCloudUsername(
+      options,
+      required(options.directWriteUsername, "TIDB_DIRECT_WRITE_USERNAME"),
+    );
   }
   if (readMode === "direct") {
-    return required(options.directReadUsername, "TIDB_DIRECT_READ_USERNAME");
+    return resolveTidbCloudUsername(
+      options,
+      required(options.directReadUsername, "TIDB_DIRECT_READ_USERNAME"),
+    );
   }
   throw new Error("Direct TiDB access is not allowed by rules.");
+}
+
+function resolveTidbCloudUsername(
+  options: TidbWorkersOptions,
+  username: string,
+): string {
+  if (username.includes(".")) {
+    return username;
+  }
+  const prefix = resolveTidbCloudUsernamePrefix(options);
+  return prefix ? `${prefix}.${username}` : username;
+}
+
+function resolveTidbCloudUsernamePrefix(
+  options: TidbWorkersOptions,
+): string | undefined {
+  const connectionUrl = options.connectionUrl;
+  if (!connectionUrl) {
+    return undefined;
+  }
+  try {
+    const url = new URL(connectionUrl);
+    const username = decodeURIComponent(url.username);
+    const separator = username.indexOf(".");
+    if (separator <= 0) {
+      return undefined;
+    }
+    return username.substring(0, separator);
+  } catch (_) {
+    return undefined;
+  }
 }
 
 async function importSigningKey(options: TidbWorkersOptions): Promise<CryptoKey> {

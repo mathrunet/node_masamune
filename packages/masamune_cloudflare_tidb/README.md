@@ -109,9 +109,34 @@ GRANT INSERT, UPDATE, DELETE ON `app_db`.* TO 'client_write';
 GRANT SELECT, INSERT, UPDATE, DELETE ON `app_db`.* TO 'client_read_write';
 ```
 
-The backend connection password in `TIDB_CONNECTION_URL` is never returned to
-clients. The token endpoint returns a short-lived JWT and the direct TiDB
-username selected by rules.
+TiDB Cloud Starter and Essential clusters require a username prefix. If the
+backend connection URL uses a username such as `4M9hEa4vE3S7jAF.root`, create
+the direct users with the same prefix:
+
+```sql
+CREATE USER '4M9hEa4vE3S7jAF.client_read'
+IDENTIFIED WITH 'tidb_auth_token'
+REQUIRE TOKEN_ISSUER 'your-issuer';
+
+CREATE USER '4M9hEa4vE3S7jAF.client_write'
+IDENTIFIED WITH 'tidb_auth_token'
+REQUIRE TOKEN_ISSUER 'your-issuer';
+
+CREATE USER '4M9hEa4vE3S7jAF.client_read_write'
+IDENTIFIED WITH 'tidb_auth_token'
+REQUIRE TOKEN_ISSUER 'your-issuer';
+
+GRANT SELECT ON `app_db`.* TO '4M9hEa4vE3S7jAF.client_read';
+GRANT INSERT, UPDATE, DELETE ON `app_db`.* TO '4M9hEa4vE3S7jAF.client_write';
+GRANT SELECT, INSERT, UPDATE, DELETE ON `app_db`.* TO '4M9hEa4vE3S7jAF.client_read_write';
+```
+
+When `TIDB_CONNECTION_URL` contains a prefixed username, this package
+automatically applies that prefix to `TIDB_DIRECT_READ_USERNAME`,
+`TIDB_DIRECT_WRITE_USERNAME`, and `TIDB_DIRECT_READ_WRITE_USERNAME` if those
+secret values do not already contain a prefix. The root password in
+`TIDB_CONNECTION_URL` is never returned to clients. The token endpoint returns a
+short-lived JWT and the direct TiDB username selected by rules.
 
 ## Katana CLI
 

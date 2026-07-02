@@ -203,16 +203,19 @@ describe("TiDB Cloudflare workers", () => {
   test("issues scoped JWT without leaking backend password.", async () => {
     const app = deploy([Functions.tidbToken(dynamicOptions())]);
 
-    const response = await app.request("http://localhost/tidb/token/database/app_db", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
+    const response = await app.request(
+      "http://localhost/tidb/token/database/app_db",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          operations: ["read"],
+          ttlSeconds: 60,
+        }),
       },
-      body: JSON.stringify({
-        operations: ["read"],
-        ttlSeconds: 60,
-      }),
-    });
+    );
     const body = (await response.json()) as {
       token: string;
       host: string;
@@ -230,6 +233,73 @@ describe("TiDB Cloudflare workers", () => {
     expect(body.database).toBe("app_db");
     expect(body.username).toBe("client_read");
     expect(JSON.stringify(body)).not.toContain("backend-password");
+  });
+
+  test("applies TiDB Cloud username prefix from connection URL.", async () => {
+    const app = deploy([
+      Functions.tidbToken(
+        dynamicOptions({
+          connectionUrl:
+            "mysql://4M9hEa4vE3S7jAF.root:backend-password@gateway01.ap-northeast-1.prod.aws.tidbcloud.com:4000/app_db",
+          directReadUsername: "client_read",
+        }),
+      ),
+    ]);
+
+    const response = await app.request(
+      "http://localhost/tidb/token/database/app_db",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          operations: ["read"],
+          ttlSeconds: 60,
+        }),
+      },
+    );
+    const body = (await response.json()) as {
+      username: string;
+      token: string;
+    };
+
+    expect(response.status).toBe(200);
+    expect(body.token).toBe("signed-read-only");
+    expect(body.username).toBe("4M9hEa4vE3S7jAF.client_read");
+    expect(JSON.stringify(body)).not.toContain("backend-password");
+  });
+
+  test("does not apply TiDB Cloud username prefix twice.", async () => {
+    const app = deploy([
+      Functions.tidbToken(
+        dynamicOptions({
+          connectionUrl:
+            "mysql://4M9hEa4vE3S7jAF.root:backend-password@gateway01.ap-northeast-1.prod.aws.tidbcloud.com:4000/app_db",
+          directReadUsername: "4M9hEa4vE3S7jAF.client_read",
+        }),
+      ),
+    ]);
+
+    const response = await app.request(
+      "http://localhost/tidb/token/database/app_db",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          operations: ["read"],
+          ttlSeconds: 60,
+        }),
+      },
+    );
+    const body = (await response.json()) as {
+      username: string;
+    };
+
+    expect(response.status).toBe(200);
+    expect(body.username).toBe("4M9hEa4vE3S7jAF.client_read");
   });
 
   test("returns 404 when database does not exist.", async () => {
