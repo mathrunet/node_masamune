@@ -1,4 +1,4 @@
-## 3.1.1 (2026-07-02)
+# 3.2.0 (2026-07-02)
 
 
 ### chore
@@ -106,6 +106,7 @@
 * Add PDF creation function. ([de349b3](https://github.com/mathrunet/node_masamune/commit/de349b382bacd325929b2c6fa8330dbe7fe12b98))
 * Add removeOnlyEmoji method to String prototype and update usage in ModelFieldValue class ([dccecf8](https://github.com/mathrunet/node_masamune/commit/dccecf844ad7602e5acedfb4653620ac80c017cb))
 * Add required type. ([d92208c](https://github.com/mathrunet/node_masamune/commit/d92208cdb1e7340d2b9258a6a090123f581bf5d9))
+* add scheduled workers support and enhance deployment functionality ([70ab4d6](https://github.com/mathrunet/node_masamune/commit/70ab4d6856badb8d86420acf757fc75823493aef))
 * add scheduler notification tests and update general test utilities and Firestore tests. ([710e462](https://github.com/mathrunet/node_masamune/commit/710e46287e7eb7fea6dd461e0d5354ce2f1bbfd2))
 * Add short video generation function using Gemini 2.5 Flash and FFmpeg, including tests, documentation, and updated ignore rules for temporary files. ([7e6cde2](https://github.com/mathrunet/node_masamune/commit/7e6cde28f7760c54058cb1e2073c6e97f552d39e))
 * Add SqlApiBase. ([ff6c5b2](https://github.com/mathrunet/node_masamune/commit/ff6c5b28905402f326904eb4052e86db82be4778))
