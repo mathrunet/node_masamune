@@ -1,4 +1,4 @@
-## 3.1.4 (2026-06-29)
+# 3.1.0 (2026-07-02)
 
 
 ### chore
@@ -88,6 +88,7 @@
 * Add CallProcessFunctionBase. ([f5c72ab](https://github.com/mathrunet/node_masamune/commit/f5c72ab340239039e3ae4e63f1babe8cf4953f58))
 * Add comprehensive JSDoc documentation to marketing functions ([7ea0e10](https://github.com/mathrunet/node_masamune/commit/7ea0e109f07440e8a73214650ad67953bb8b3878))
 * Add convertTo methods to remaining TypeScript converters ([36c5630](https://github.com/mathrunet/node_masamune/commit/36c56306e2f1418ec447af29883147854ae49fba))
+* Add Firebase Authentication middleware and related functionality to Cloudflare package ([bf31d7f](https://github.com/mathrunet/node_masamune/commit/bf31d7f857f5a98b06da27b8ba4b593d70317a69))
 * Add Github summary function. ([3320b2e](https://github.com/mathrunet/node_masamune/commit/3320b2e894b7f85e61a5f891b2d3095bf53d79bd))
 * Add GoogleToken. ([953ae3b](https://github.com/mathrunet/node_masamune/commit/953ae3bef001cfbec2eb2795bab727ee7d1c87cf))
 * Add HLS function. ([bfa96e5](https://github.com/mathrunet/node_masamune/commit/bfa96e5b176180e84dafea9b75612bcd68fb3424))
@@ -105,6 +106,7 @@
 * Add PDF creation function. ([de349b3](https://github.com/mathrunet/node_masamune/commit/de349b382bacd325929b2c6fa8330dbe7fe12b98))
 * Add removeOnlyEmoji method to String prototype and update usage in ModelFieldValue class ([dccecf8](https://github.com/mathrunet/node_masamune/commit/dccecf844ad7602e5acedfb4653620ac80c017cb))
 * Add required type. ([d92208c](https://github.com/mathrunet/node_masamune/commit/d92208cdb1e7340d2b9258a6a090123f581bf5d9))
+* add scheduled workers support and enhance deployment functionality ([70ab4d6](https://github.com/mathrunet/node_masamune/commit/70ab4d6856badb8d86420acf757fc75823493aef))
 * add scheduler notification tests and update general test utilities and Firestore tests. ([710e462](https://github.com/mathrunet/node_masamune/commit/710e46287e7eb7fea6dd461e0d5354ce2f1bbfd2))
 * Add short video generation function using Gemini 2.5 Flash and FFmpeg, including tests, documentation, and updated ignore rules for temporary files. ([7e6cde2](https://github.com/mathrunet/node_masamune/commit/7e6cde28f7760c54058cb1e2073c6e97f552d39e))
 * Add SqlApiBase. ([ff6c5b2](https://github.com/mathrunet/node_masamune/commit/ff6c5b28905402f326904eb4052e86db82be4778))
@@ -151,9 +153,11 @@
 * Gmail stopped working, so I deleted it. ([c415079](https://github.com/mathrunet/node_masamune/commit/c4150799abeb996b0a08e3d9b7dccb232a2404f2))
 * Google Play Console data acquisition function implementation ([28ad81f](https://github.com/mathrunet/node_masamune/commit/28ad81ff6451c922ff16c40e52646571d2d39d60))
 * implement broad/detailed research and asset creation functions, alongside new documentation and tests ([0c1c05d](https://github.com/mathrunet/node_masamune/commit/0c1c05da72d25219080ac98809322b13667b047c))
+* implement Cloudflare KV integration with document-oriented model ([b9af783](https://github.com/mathrunet/node_masamune/commit/b9af7834275e36fdf48977f59dec22f41760bcb8))
 * implement Firebase function to generate short video metadata using Vertex AI, including tests and development documentation. ([2251993](https://github.com/mathrunet/node_masamune/commit/22519933c8b1f84fc7ae26a5754c6c02d96b5969))
 * Implement retry mechanism for Vertex AI API calls in ResearchMarket function and enhance error handling ([ac03efe](https://github.com/mathrunet/node_masamune/commit/ac03efe06d7958ad7ebc9a405cf31c351a3b4298))
 * Implementation of data retrieval API. ([df9ad88](https://github.com/mathrunet/node_masamune/commit/df9ad88da46ccb85cea4172ed8c0107ea2c431f7))
+* Initial commit. ([b69ba81](https://github.com/mathrunet/node_masamune/commit/b69ba81f4377d149c313ba40227af4be1d0ba150))
 * Initial commit. ([26b8a08](https://github.com/mathrunet/node_masamune/commit/26b8a08df3582fd80dc7ecc204654f6b7f5c9098))
 * Initial commit. ([5e83638](https://github.com/mathrunet/node_masamune/commit/5e836385d1789fff488396c67ace73d7f55205e8))
 * Initial commit. ([b9200aa](https://github.com/mathrunet/node_masamune/commit/b9200aa75f64e6890a946f7de0a49fd823143651))
