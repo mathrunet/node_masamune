@@ -56,7 +56,7 @@ export function decodeRow(
   const result: Record<string, unknown> = {};
   if (columns.length > 0 && isArrayLikeRow(row)) {
     for (const [index, column] of columns.entries()) {
-      result[column] = decodeSqlValue(row[index], columnTypes[index]);
+      result[column] = decodeSqlValue(row[index], columnTypes[index], column);
     }
     return result;
   }
@@ -70,7 +70,7 @@ export function decodeRow(
     if (/^\d+$/.test(key)) {
       continue;
     }
-    result[key] = decodeSqlValue(value, typeByColumn.get(key));
+    result[key] = decodeSqlValue(value, typeByColumn.get(key), key);
   }
   return result;
 }
@@ -86,12 +86,19 @@ function isArrayLikeRow(row: unknown): row is { [index: number]: unknown } {
   return "0" in record || typeof record.length === "number";
 }
 
-function decodeSqlValue(value: unknown, columnType?: string): unknown {
+function decodeSqlValue(
+  value: unknown,
+  columnType?: string,
+  column?: string,
+): unknown {
   if (typeof value === "bigint") {
     return toSafeNumberOrString(value.toString());
   }
-  if (isBooleanColumnType(columnType)) {
-    return toBoolean(value);
+  if (isBooleanColumnType(columnType) || isBooleanColumn(column)) {
+    const bool = toBoolean(value);
+    if (bool !== undefined) {
+      return bool;
+    }
   }
   if (typeof value === "string" && isNumericColumnType(columnType)) {
     return toSafeNumberOrString(value);
@@ -103,25 +110,35 @@ function isBooleanColumnType(columnType?: string): boolean {
   return columnType !== undefined && /^TINYINT(?:\b|\()/i.test(columnType);
 }
 
+function isBooleanColumn(column?: string): boolean {
+  return column !== undefined &&
+    /^(?:is[A-Z_]|has[A-Z_]|can[A-Z_]|should[A-Z_]|active$)/.test(column);
+}
+
 function isNumericColumnType(columnType?: string): boolean {
   return columnType !== undefined &&
     /^(?:SMALLINT|MEDIUMINT|INT|INTEGER|BIGINT|FLOAT|DOUBLE|DECIMAL|NUMERIC)(?:\b|\()/i.test(columnType);
 }
 
-function toBoolean(value: unknown): boolean | unknown {
+function toBoolean(value: unknown): boolean | undefined {
   if (typeof value === "boolean") {
     return value;
   }
   if (typeof value === "number") {
-    return value !== 0;
+    return value === 0 || value === 1 ? value === 1 : undefined;
   }
   if (typeof value === "bigint") {
-    return value !== 0n;
+    return value === 0n || value === 1n ? value === 1n : undefined;
   }
   if (typeof value === "string") {
-    return value !== "0" && value.toLowerCase() !== "false";
+    if (value === "0" || value.toLowerCase() === "false") {
+      return false;
+    }
+    if (value === "1" || value.toLowerCase() === "true") {
+      return true;
+    }
   }
-  return value;
+  return undefined;
 }
 
 function toSafeNumberOrString(value: string): number | string {
@@ -241,7 +258,14 @@ function isCompatibleType(existing: string, next: string): boolean {
   if (existing === "TEXT") {
     return true;
   }
+  if (isSqlNumericType(existing) && isSqlNumericType(next)) {
+    return true;
+  }
   return false;
+}
+
+function isSqlNumericType(type: string): boolean {
+  return /^(?:TINYINT|SMALLINT|MEDIUMINT|INT|INTEGER|BIGINT|FLOAT|DOUBLE|DECIMAL|NUMERIC)(?:\b|\()/i.test(type);
 }
 
 export function quoteIdentifier(identifier: string): string {

@@ -12,13 +12,19 @@ jest.mock("@tidbcloud/serverless", () => ({
 const allowRules = {
   version: "1",
   rules: {
-    "database/*": {
-      read: "allow",
-      write: "allow",
-    },
-    "database/*/*": {
-      read: "allow",
-      write: "allow",
+    database: {
+      "*": {
+        read: "allow",
+        write: "allow",
+      },
+      "*/*": {
+        read: "allow",
+        write: "allow",
+      },
+      "*/*/*": {
+        read: "allow",
+        write: "allow",
+      },
     },
   },
 } as const;
@@ -51,6 +57,7 @@ function mockExecute(): void {
         rows: [
           { Field: "id", Type: "varchar(255)" },
           { Field: "name", Type: "text" },
+          { Field: "isActive", Type: "bigint" },
         ],
         rowCount: 2,
         rowsAffected: 0,
@@ -72,7 +79,7 @@ function mockExecute(): void {
           id: "VARCHAR",
           name: "TEXT",
           age: "BIGINT",
-          isActive: "TINYINT",
+          isActive: "BIGINT",
           created_at: "BIGINT",
           updated_at: "BIGINT",
         },
@@ -81,7 +88,7 @@ function mockExecute(): void {
             id: "user_1",
             name: "Alice",
             age: "12",
-            isActive: "1",
+            isActive: "0",
             created_at: "1",
             updated_at: "2",
           },
@@ -127,7 +134,7 @@ describe("TiDB Cloudflare workers", () => {
         id: "user_1",
         name: "Alice",
         age: 12,
-        isActive: true,
+        isActive: false,
         created_at: 1,
         updated_at: 2,
       },
@@ -168,6 +175,7 @@ describe("TiDB Cloudflare workers", () => {
         value: {
           id: "user_1",
           name: "Alice",
+          isActive: false,
         },
       }),
     });
