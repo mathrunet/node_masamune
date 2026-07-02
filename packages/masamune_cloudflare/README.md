@@ -80,20 +80,32 @@ export default m.deploy(
 );
 ```
 
-`rules.json` paths use the same normalized format across Turso, TiDB, and KV
-workers.
+`rules.json` groups rules by target. Database rules and storage rules use the
+same path pattern and access rule format.
 
 ```json
 {
   "version": "1",
   "rules": {
-    "database/main": {
-      "read": "allow",
-      "write": "server"
+    "database": {
+      "main": {
+        "read": "allow",
+        "write": "server"
+      },
+      "{uid}/users/{uid}": {
+        "read": { "type": "path", "param": "uid" },
+        "write": { "type": "field", "field": "ownerId", "server": true }
+      }
     },
-    "database/{uid}/users/{uid}": {
-      "read": { "type": "path", "param": "uid" },
-      "write": { "type": "field", "field": "ownerId", "server": true }
+    "storage": {
+      "public/**": {
+        "read": "allow",
+        "write": "authenticated"
+      },
+      "images/{uid}/**": {
+        "read": { "type": "path", "param": "uid" },
+        "write": { "type": "path", "param": "uid", "server": true }
+      }
     }
   }
 }

@@ -5,6 +5,7 @@ import {
     RulesEntry,
     RulesOperation,
     RulesOperationKey,
+    RulesTarget,
     loadRulesConfig,
 } from "./rules_loader";
 import { matchRulePath, sortRulePathMatches } from "./path_matcher";
@@ -16,6 +17,7 @@ import { matchRulePath, sortRulePathMatches } from "./path_matcher";
  */
 export interface RulesEvaluationInput {
     path: string;
+    target?: RulesTarget | undefined;
     operation: RulesOperation | RulesOperationKey;
     authentication?: WorkersAuthContext | undefined;
     fetchDocument?: (() => Promise<Record<string, unknown> | null | undefined>) | undefined;
@@ -41,8 +43,8 @@ export interface RulesEvaluationResult {
  */
 export interface RulesPathArguments {
     database: string;
-    table: string;
-    indexKey: string;
+    table?: string | undefined;
+    indexKey?: string | undefined;
 }
 
 /**
@@ -101,7 +103,7 @@ export class RulesEngine {
         this.config = loadRulesConfig(config);
     }
 
-    private readonly config: RulesConfig;
+    private readonly config: ReturnType<typeof loadRulesConfig>;
 
     /**
      * Evaluate rules for the given path and operation.
@@ -110,8 +112,9 @@ export class RulesEngine {
      */
     async evaluate(input: RulesEvaluationInput): Promise<RulesEvaluationResult> {
         const operation = normalizeRulesOperation(input.operation);
-        const matches = Object.keys(this.config.rules)
-            .map((rulePath) => matchRulePath(rulePath, input.path))
+        const path = normalizeEvaluationPath(input);
+        const matches = Object.keys(this.config.normalizedRules)
+            .map((rulePath) => matchRulePath(rulePath, path))
             .filter((match) => match.matched);
         if (matches.length === 0) {
             return { allowed: false };
@@ -121,7 +124,7 @@ export class RulesEngine {
         const resolved = resolveInheritedRule(sortedMatches.map((match) => {
             return {
                 rulePath: match.rulePath,
-                entry: this.config.rules[match.rulePath],
+                entry: this.config.normalizedRules[match.rulePath],
                 params: match.params,
             };
         }));
@@ -161,7 +164,7 @@ export class RulesEngine {
         operation: RulesOperation | RulesOperationKey;
     }): boolean {
         const normalized = normalizeRulesOperation(operation);
-        for (const [rulePath, entry] of Object.entries(this.config.rules)) {
+        for (const [rulePath, entry] of Object.entries(this.config.normalizedRules)) {
             if (!isRulePathInTableScope(rulePath, database, table)) {
                 continue;
             }
@@ -189,7 +192,7 @@ export class RulesEngine {
         operation: RulesOperation | RulesOperationKey;
     }): boolean {
         const normalized = normalizeRulesOperation(operation);
-        for (const [rulePath, entry] of Object.entries(this.config.rules)) {
+        for (const [rulePath, entry] of Object.entries(this.config.normalizedRules)) {
             if (!isRulePathInTableScope(rulePath, database, table)) {
                 continue;
             }
@@ -214,7 +217,7 @@ export class RulesEngine {
         operation: RulesOperation | RulesOperationKey;
     }): boolean {
         const normalized = normalizeRulesOperation(operation);
-        for (const [rulePath, entry] of Object.entries(this.config.rules)) {
+        for (const [rulePath, entry] of Object.entries(this.config.normalizedRules)) {
             if (!isRulePathInDatabaseScope(rulePath, database)) {
                 continue;
             }
@@ -234,12 +237,7 @@ export class RulesEngine {
  * 正規化されたrulesパスを生成します。
  */
 export function buildRulesPath({ database, table, indexKey }: RulesPathArguments): string {
-    return [
-        "database",
-        encodeRulesPathSegment(database),
-        encodeRulesPathSegment(table),
-        encodeRulesPathSegment(indexKey),
-    ].join("/");
+        return buildDatabaseRulesPath({ database, table, indexKey });
 }
 
 /**
@@ -247,11 +245,24 @@ export function buildRulesPath({ database, table, indexKey }: RulesPathArguments
  *
  * 正規化されたデータベースrulesパスを生成します。
  */
-export function buildDatabaseRulesPath({ database }: { database: string }): string {
+export function buildDatabaseRulesPath({ database, table, indexKey }: RulesPathArguments): string {
     return [
-        "database",
         encodeRulesPathSegment(database),
-    ].join("/");
+        table == null ? undefined : encodeRulesPathSegment(table),
+        indexKey == null ? undefined : encodeRulesPathSegment(indexKey),
+    ].filter((segment): segment is string => typeof segment === "string").join("/");
+}
+
+/**
+ * Build a normalized storage rules path.
+ *
+ * 正規化されたストレージrulesパスを生成します。
+ */
+export function buildStorageRulesPath({ path }: { path: string }): string {
+    return path.trim().split("/")
+        .filter((segment) => segment.length > 0)
+        .map(encodeRulesPathSegment)
+        .join("/");
 }
 
 /**
@@ -340,6 +351,7 @@ export async function filterAllowedScope({
                         table: item.table,
                         indexKey: "*",
                     }),
+                    target: "database",
                     operation,
                     authentication,
                 });
@@ -379,6 +391,7 @@ export async function resolveDatabaseTokenAccess({
     const path = buildDatabaseRulesPath({ database });
     const directRead = await engine.evaluate({
         path,
+        target: "database",
         operation: "read",
         authentication,
         server: false,
@@ -387,6 +400,7 @@ export async function resolveDatabaseTokenAccess({
         ? directRead
         : await engine.evaluate({
             path,
+            target: "database",
             operation: "read",
             authentication,
             server: true,
@@ -655,6 +669,7 @@ async function resolveScopedOperationMode({
     const expanded = expandRulesOperation(operation);
     const direct = await Promise.all(expanded.map((item) => engine.evaluate({
         path,
+        target: "database",
         operation: item,
         authentication,
         server: false,
@@ -678,6 +693,7 @@ async function resolveScopedOperationMode({
     }
     const server = await Promise.all(expanded.map((item) => engine.evaluate({
         path,
+        target: "database",
         operation: item,
         authentication,
         server: true,
@@ -740,6 +756,7 @@ async function evaluateDatabaseWrite({
         expandRulesOperation("write").map((operation) => {
             return engine.evaluate({
                 path,
+                target: "database",
                 operation,
                 authentication,
                 server,
@@ -796,10 +813,19 @@ function splitRulesPath(path: string): string[] {
     return path.split("/");
 }
 
+function normalizeEvaluationPath(input: RulesEvaluationInput): string {
+    if (!input.target) {
+        return input.path;
+    }
+    const path = input.path.trim().replace(/^\/+|\/+$/g, "");
+    return `${input.target}/${path}`;
+}
+
 function parseNamedPathParam(segment: string): string | undefined {
     const match = /^\{([A-Za-z_][A-Za-z0-9_]*)\}$/.exec(segment);
     return match?.[1];
 }
+
 
 function encodeRulesPathSegment(segment: string): string {
     if (segment.length === 0 || segment.includes("/")) {

@@ -20,6 +20,13 @@ export type RulesOperationAlias = "read" | "write";
 export type RulesOperationKey = RulesOperation | RulesOperationAlias;
 
 /**
+ * Rule target names supported by rules.json.
+ *
+ * rules.jsonでサポートする対象名。
+ */
+export type RulesTarget = "database" | "storage";
+
+/**
  * Access rule for an operation.
  *
  * 操作に対するアクセスルール。
@@ -80,13 +87,20 @@ export type RulesEntry = Partial<Record<RulesOperationKey, RulesAccessRule>>;
 export type RulesMap = Record<string, RulesEntry>;
 
 /**
+ * Rule maps grouped by target.
+ *
+ * 対象ごとに分けたルールマップ。
+ */
+export type RulesTargetMap = Partial<Record<RulesTarget, RulesMap>>;
+
+/**
  * rules.json configuration.
  *
  * rules.json設定。
  */
 export interface RulesConfig {
     version: string;
-    rules: RulesMap;
+    rules: RulesTargetMap;
 }
 
 /**
@@ -94,9 +108,12 @@ export interface RulesConfig {
  *
  * rulesの読み込み・検証結果。
  */
-export interface LoadedRulesConfig extends RulesConfig { }
+export interface LoadedRulesConfig extends RulesConfig {
+    normalizedRules: RulesMap;
+}
 
 const allowedAccessValues = new Set(["deny", "allow", "authenticated", "server"]);
+const allowedRulesTargets = new Set(["database", "storage"]);
 const allowedOperationKeys = new Set([
     "get",
     "create",
@@ -119,17 +136,31 @@ export function loadRulesConfig(input: unknown): LoadedRulesConfig {
         throw new Error("Rules config version must be a non-empty string.");
     }
     if (!isRecord(input.rules) || Array.isArray(input.rules)) {
-        throw new Error("Rules config rules must be an object map.");
+        throw new Error("Rules config rules must be an object.");
     }
 
-    const rules: RulesMap = {};
-    for (const [path, entry] of Object.entries(input.rules)) {
-        validateRulePath(path);
-        rules[path] = validateRulesEntry(path, entry);
+    const rules: RulesTargetMap = {};
+    const normalizedRules: RulesMap = {};
+    for (const [target, map] of Object.entries(input.rules)) {
+        if (!allowedRulesTargets.has(target)) {
+            throw new Error(`Unsupported rules target '${target}'.`);
+        }
+        if (!isRecord(map) || Array.isArray(map)) {
+            throw new Error(`Rules target '${target}' must be an object map.`);
+        }
+        const targetRules: RulesMap = {};
+        for (const [path, entry] of Object.entries(map)) {
+            validateRulePath(path);
+            const validated = validateRulesEntry(path, entry);
+            targetRules[path] = validated;
+            normalizedRules[`${target}/${path}`] = validated;
+        }
+        rules[target as RulesTarget] = targetRules;
     }
     return {
         version: input.version,
         rules,
+        normalizedRules,
     };
 }
 

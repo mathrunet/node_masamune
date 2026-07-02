@@ -192,5 +192,10 @@ export function isRulesConfig(
 ): rules is RulesConfig {
     return !!rules && typeof (rules as RulesConfig).version === "string" &&
         typeof (rules as RulesConfig).rules === "object" &&
-        (rules as RulesConfig).rules !== null;
+        (rules as RulesConfig).rules !== null &&
+        !Array.isArray((rules as RulesConfig).rules) &&
+        (
+            typeof (rules as RulesConfig).rules.database === "object" ||
+            typeof (rules as RulesConfig).rules.storage === "object"
+        );
 }
