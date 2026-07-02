@@ -45,7 +45,7 @@ interface R2BucketLike {
   delete(key: string): Promise<void>;
 }
 
-interface StorageWorkerData {
+export interface StorageWorkerData extends WorkersOptions {
   bucketBindingName?: string | undefined;
   publicBaseUrl?: string | undefined;
   downloadUrlSecret?: string | undefined;
