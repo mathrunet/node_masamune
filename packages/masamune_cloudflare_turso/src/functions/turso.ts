@@ -9,7 +9,7 @@ import {
 import { executeCrud, fetchDocumentForRules } from "../lib/crud";
 import { jsonError, parseCrudRequest } from "../lib/request";
 import {
-  buildRulesPath,
+  buildDatabaseRulesPath,
   createTursoRulesEngine,
   normalizeHttpMethodToRulesOperation,
 } from "../lib/rules";
@@ -65,7 +65,8 @@ async function handleCrud(
     const authentication = context.get("authentication") as AuthenticationContext | undefined;
     phase = "rules";
     const result = await engine.evaluate({
-      path: buildRulesPath({
+      target: "database",
+      path: buildDatabaseRulesPath({
         database: crudRequest.database,
         table: crudRequest.table,
         indexKey: crudRequest.indexKey ?? "*",

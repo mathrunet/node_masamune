@@ -17,13 +17,19 @@ jest.mock("@tursodatabase/serverless/compat", () => ({
 const allowRules = {
   version: "1",
   rules: {
-    "database/*": {
-      read: "allow",
-      write: "allow",
-    },
-    "database/*/*": {
-      read: "allow",
-      write: "allow",
+    database: {
+      "*": {
+        read: "allow",
+        write: "allow",
+      },
+      "*/*": {
+        read: "allow",
+        write: "allow",
+      },
+      "*/*/*": {
+        read: "allow",
+        write: "allow",
+      },
     },
   },
 } as const;
@@ -159,9 +165,11 @@ describe("Turso Cloudflare workers", () => {
           rules: {
             version: "1",
             rules: {
-              "database/*/*": {
-                read: "deny",
-                write: "deny",
+              database: {
+                "*/*": {
+                  read: "deny",
+                  write: "deny",
+                },
               },
             },
           },
@@ -389,9 +397,11 @@ describe("Turso Cloudflare workers", () => {
           rules: {
             version: "1",
             rules: {
-              "database/*/*/*": {
-                create: "deny",
-                update: "allow",
+              database: {
+                "*/*/*": {
+                  create: "deny",
+                  update: "allow",
+                },
               },
             },
           },
@@ -427,9 +437,11 @@ describe("Turso Cloudflare workers", () => {
           rules: {
             version: "1",
             rules: {
-              "database/*/*/*": {
-                create: "allow",
-                update: "deny",
+              database: {
+                "*/*/*": {
+                  create: "allow",
+                  update: "deny",
+                },
               },
             },
           },
@@ -509,9 +521,11 @@ describe("Turso Cloudflare workers", () => {
           rules: {
             version: "1",
             rules: {
-              "database/scopedb": {
-                read: "allow",
-                write: "deny",
+              database: {
+                scopedb: {
+                  read: "allow",
+                  write: "deny",
+                },
               },
             },
           },
@@ -567,13 +581,15 @@ describe("Turso Cloudflare workers", () => {
           rules: {
             version: "1",
             rules: {
-              "database/test": {
-                read: "allow",
-                write: "allow",
-              },
-              "database/test/users": {
-                read: "allow",
-                write: "deny",
+              database: {
+                test: {
+                  read: "allow",
+                  write: "allow",
+                },
+                "test/users": {
+                  read: "allow",
+                  write: "deny",
+                },
               },
             },
           },
@@ -627,9 +643,11 @@ describe("Turso Cloudflare workers", () => {
           rules: {
             version: "1",
             rules: {
-              "database/env-priority-db": {
-                read: "allow",
-                write: "deny",
+              database: {
+                "env-priority-db": {
+                  read: "allow",
+                  write: "deny",
+                },
               },
             },
           },
@@ -694,9 +712,11 @@ describe("Turso Cloudflare workers", () => {
             rules: {
               version: "1",
               rules: {
-                "database/{uid}": {
-                  read: { type: "path", param: "uid" },
-                  write: "deny",
+                database: {
+                  "{uid}": {
+                    read: { type: "path", param: "uid" },
+                    write: "deny",
+                  },
                 },
               },
             },
@@ -746,12 +766,14 @@ describe("Turso Cloudflare workers", () => {
             rules: {
               version: "1",
               rules: {
-                "database/{uid}": {
-                  read: { type: "path", param: "uid" },
-                  write: {
-                    type: "path",
-                    param: "uid",
-                    server: true,
+                database: {
+                  "{uid}": {
+                    read: { type: "path", param: "uid" },
+                    write: {
+                      type: "path",
+                      param: "uid",
+                      server: true,
+                    },
                   },
                 },
               },
@@ -803,13 +825,15 @@ describe("Turso Cloudflare workers", () => {
             rules: {
               version: "1",
               rules: {
-                "database/{uid}": {
-                  read: "server",
-                  write: "server",
-                },
-                "database/{uid}/*": {
-                  read: "server",
-                  write: "server",
+                database: {
+                  "{uid}": {
+                    read: "server",
+                    write: "server",
+                  },
+                  "{uid}/*": {
+                    read: "server",
+                    write: "server",
+                  },
                 },
               },
             },
@@ -875,12 +899,14 @@ describe("Turso Cloudflare workers", () => {
             rules: {
               version: "1",
               rules: {
-                "database/field-scope": {
-                  read: "allow",
-                  write: "deny",
-                },
-                "database/field-scope/posts/*": {
-                  read: { type: "field", field: "ownerId" },
+                database: {
+                  "field-scope": {
+                    read: "allow",
+                    write: "deny",
+                  },
+                  "field-scope/posts/*": {
+                    read: { type: "field", field: "ownerId" },
+                  },
                 },
               },
             },
@@ -942,9 +968,11 @@ describe("Turso Cloudflare workers", () => {
             rules: {
               version: "1",
               rules: {
-                "database/{uid}": {
-                  read: { type: "path", param: "uid" },
-                  write: "deny",
+                database: {
+                  "{uid}": {
+                    read: { type: "path", param: "uid" },
+                    write: "deny",
+                  },
                 },
               },
             },
@@ -975,24 +1003,28 @@ describe("Turso Cloudflare workers", () => {
     const engine = createTursoRulesEngine({
       version: "1",
       rules: {
-        "database/main/posts/*": {
-          update: {
-            type: "field",
-            field: "ownerId",
-            server: true,
+        database: {
+          "main/posts/*": {
+            update: {
+              type: "field",
+              field: "ownerId",
+              server: true,
+            },
           },
         },
       },
     });
 
     const direct = await engine.evaluate({
-      path: "database/main/posts/post-1",
+      target: "database",
+      path: "main/posts/post-1",
       operation: "update",
       authentication: { uid: "user-1" },
       fetchDocument: async () => ({ ownerId: "user-1" }),
     });
     const server = await engine.evaluate({
-      path: "database/main/posts/post-1",
+      target: "database",
+      path: "main/posts/post-1",
       operation: "update",
       authentication: { uid: "user-1" },
       fetchDocument: async () => ({ ownerId: "user-1" }),
@@ -1013,9 +1045,11 @@ describe("Turso Cloudflare workers", () => {
           rules: {
             version: "1",
             rules: {
-              "database/denytokendb": {
-                read: "deny",
-                write: "deny",
+              database: {
+                denytokendb: {
+                  read: "deny",
+                  write: "deny",
+                },
               },
             },
           },

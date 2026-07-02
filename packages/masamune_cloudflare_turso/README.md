@@ -190,13 +190,15 @@ option.
 {
   "version": "1",
   "rules": {
-    "database/main": {
-      "read": "allow",
-      "write": "server"
-    },
-    "database/main/users/*": {
-      "read": "authenticated",
-      "write": { "type": "field", "field": "ownerId", "server": true }
+    "database": {
+      "main": {
+        "read": "allow",
+        "write": "server"
+      },
+      "main/users/*": {
+        "read": "authenticated",
+        "write": { "type": "field", "field": "ownerId", "server": true }
+      }
     }
   }
 }
@@ -213,9 +215,11 @@ Token authorization is evaluated against the database path:
 {
   "version": "1",
   "rules": {
-    "database/main": {
-      "read": "authenticated",
-      "write": "deny"
+    "database": {
+      "main": {
+        "read": "authenticated",
+        "write": "deny"
+      }
     }
   }
 }
@@ -231,9 +235,11 @@ Named path parameters can be compared with the authenticated user ID:
 {
   "version": "1",
   "rules": {
-    "database/{uid}": {
-      "read": { "type": "path", "param": "uid" },
-      "write": { "type": "path", "param": "uid" }
+    "database": {
+      "{uid}": {
+        "read": { "type": "path", "param": "uid" },
+        "write": { "type": "path", "param": "uid" }
+      }
     }
   }
 }
@@ -249,12 +255,14 @@ issuing only the direct Turso token that is safe for the requested scope:
 {
   "version": "1",
   "rules": {
-    "database/{uid}": {
-      "read": { "type": "path", "param": "uid" },
-      "write": {
-        "type": "path",
-        "param": "uid",
-        "server": true
+    "database": {
+      "{uid}": {
+        "read": { "type": "path", "param": "uid" },
+        "write": {
+          "type": "path",
+          "param": "uid",
+          "server": true
+        }
       }
     }
   }

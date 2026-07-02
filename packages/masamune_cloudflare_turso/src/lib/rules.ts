@@ -28,9 +28,11 @@ export function createTursoRulesEngine(
   return new RulesEngine(isRulesConfig(config) ? config : {
     version: "1",
     rules: {
-      "database/**": {
-        read: "deny",
-        write: "deny",
+      database: {
+        "**": {
+          read: "deny",
+          write: "deny",
+        },
       },
     },
   });
