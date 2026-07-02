@@ -137,6 +137,7 @@ async function evaluateRules({
   const engine = createCloudflareKvRulesEngine(options.rules);
   const authentication = context.get("authentication") as AuthenticationContext | undefined;
   return await engine.evaluate({
+    target: "database",
     path: key,
     operation,
     authentication,

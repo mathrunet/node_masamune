@@ -5,9 +5,11 @@ import { CloudflareKvWorkersOptions } from "../src/lib/types";
 const allowRules = {
   version: "1",
   rules: {
-    "**": {
-      read: "allow",
-      write: "allow",
+    database: {
+      "**": {
+        read: "allow",
+        write: "allow",
+      },
     },
   },
 } as const;
@@ -15,9 +17,11 @@ const allowRules = {
 const denyRules = {
   version: "1",
   rules: {
-    "**": {
-      read: "deny",
-      write: "deny",
+    database: {
+      "**": {
+        read: "deny",
+        write: "deny",
+      },
     },
   },
 } as const;
