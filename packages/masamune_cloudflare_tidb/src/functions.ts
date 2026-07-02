@@ -14,10 +14,4 @@ export const Functions = {
    */
   tidb: (options: TidbWorkersOptions = {}) => new WorkersData({ path: "/tidb", func: require("./functions/tidb"), options: options as unknown as WorkersOptions }),
 
-  /**
-   * Endpoint for issuing scoped short-lived TiDB JWT tokens.
-   *
-   * スコープされた短命TiDB JWTトークン発行用のエンドポイントです。
-   */
-  tidbToken: (options: TidbWorkersOptions = {}) => new WorkersData({ path: "/tidb/token", func: require("./functions/tidb_token"), options: options as unknown as WorkersOptions }),
 } as const;

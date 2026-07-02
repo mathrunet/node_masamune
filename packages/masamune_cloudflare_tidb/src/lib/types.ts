@@ -1,13 +1,10 @@
 import {
-  RulesAccessMode,
   RulesAccessRule,
   RulesConfig,
   RulesEntry,
   RulesOperation,
   RulesOperationAlias,
   RulesOperationKey,
-  RulesTokenTargetInput,
-  RulesTokenTargetOutput,
   WorkersAuthContext,
   WorkersOptions,
 } from "@mathrunet/masamune_cloudflare";
@@ -35,14 +32,6 @@ export interface TidbWorkersOptions extends WorkersOptions {
   connectionUrl?: string | undefined;
   autoCreateTable?: boolean | undefined;
   autoMigrateAddColumns?: boolean | undefined;
-  maxTtlSeconds?: number | undefined;
-  jwtIssuer?: string | undefined;
-  jwtKid?: string | undefined;
-  jwtPrivateKeyPem?: string | undefined;
-  jwtPrivateKeyJwk?: string | undefined;
-  directReadUsername?: string | undefined;
-  directWriteUsername?: string | undefined;
-  directReadWriteUsername?: string | undefined;
 }
 
 export interface TidbRequestBody {
@@ -65,20 +54,6 @@ export interface TidbWhereCondition {
 export interface TidbOrderCondition {
   key?: string | undefined;
   descending?: boolean | undefined;
-}
-
-export type TidbTokenAccessMode = RulesAccessMode;
-
-export type TidbTokenScopeInput = RulesTokenTargetInput;
-
-export type TidbTokenScopeOutput = RulesTokenTargetOutput;
-
-export interface TidbTokenRequestBody {
-  database?: string | undefined;
-  operations?: RulesOperationKey[] | undefined;
-  targets?: TidbTokenScopeInput[] | undefined;
-  scope?: TidbTokenScopeInput[] | undefined;
-  ttlSeconds?: number | undefined;
 }
 
 export type AuthenticationContext = WorkersAuthContext;

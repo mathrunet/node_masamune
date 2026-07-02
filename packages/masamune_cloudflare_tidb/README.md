@@ -55,7 +55,6 @@ import * as m from "@mathrunet/masamune_cloudflare_tidb";
 export default m.deploy(
     [
         m.Functions.tidb(),
-        m.Functions.tidbToken(),
     ],
 );
 ```
@@ -77,72 +76,15 @@ This package does not create databases automatically. Create the TiDB database
 before using it. Tables and missing columns are created automatically when
 models are saved.
 
-For direct client access, configure TiDB `tidb_auth_token` users and register
-the JWT secrets used by the token endpoint.
-
-```bash
-wrangler secret put TIDB_JWT_ISSUER
-wrangler secret put TIDB_JWT_KID
-wrangler secret put TIDB_JWT_PRIVATE_KEY_PEM
-wrangler secret put TIDB_DIRECT_READ_USERNAME
-wrangler secret put TIDB_DIRECT_WRITE_USERNAME
-wrangler secret put TIDB_DIRECT_READ_WRITE_USERNAME
-```
-
-Example TiDB users:
-
-```sql
-CREATE USER 'client_read'
-IDENTIFIED WITH 'tidb_auth_token'
-REQUIRE TOKEN_ISSUER 'your-issuer';
-
-CREATE USER 'client_write'
-IDENTIFIED WITH 'tidb_auth_token'
-REQUIRE TOKEN_ISSUER 'your-issuer';
-
-CREATE USER 'client_read_write'
-IDENTIFIED WITH 'tidb_auth_token'
-REQUIRE TOKEN_ISSUER 'your-issuer';
-
-GRANT SELECT ON `app_db`.* TO 'client_read';
-GRANT INSERT, UPDATE, DELETE ON `app_db`.* TO 'client_write';
-GRANT SELECT, INSERT, UPDATE, DELETE ON `app_db`.* TO 'client_read_write';
-```
-
-TiDB Cloud Starter and Essential clusters require a username prefix. If the
-backend connection URL uses a username such as `4M9hEa4vE3S7jAF.root`, create
-the direct users with the same prefix:
-
-```sql
-CREATE USER '4M9hEa4vE3S7jAF.client_read'
-IDENTIFIED WITH 'tidb_auth_token'
-REQUIRE TOKEN_ISSUER 'your-issuer';
-
-CREATE USER '4M9hEa4vE3S7jAF.client_write'
-IDENTIFIED WITH 'tidb_auth_token'
-REQUIRE TOKEN_ISSUER 'your-issuer';
-
-CREATE USER '4M9hEa4vE3S7jAF.client_read_write'
-IDENTIFIED WITH 'tidb_auth_token'
-REQUIRE TOKEN_ISSUER 'your-issuer';
-
-GRANT SELECT ON `app_db`.* TO '4M9hEa4vE3S7jAF.client_read';
-GRANT INSERT, UPDATE, DELETE ON `app_db`.* TO '4M9hEa4vE3S7jAF.client_write';
-GRANT SELECT, INSERT, UPDATE, DELETE ON `app_db`.* TO '4M9hEa4vE3S7jAF.client_read_write';
-```
-
-When `TIDB_CONNECTION_URL` contains a prefixed username, this package
-automatically applies that prefix to `TIDB_DIRECT_READ_USERNAME`,
-`TIDB_DIRECT_WRITE_USERNAME`, and `TIDB_DIRECT_READ_WRITE_USERNAME` if those
-secret values do not already contain a prefix. The root password in
-`TIDB_CONNECTION_URL` is never returned to clients. The token endpoint returns a
-short-lived JWT and the direct TiDB username selected by rules.
+All reads and writes go through the Workers CRUD endpoint. The root password in
+`TIDB_CONNECTION_URL` is used only inside Cloudflare Workers and is never
+returned to clients.
 
 ## Katana CLI
 
 When `cloudflare.tidb.enable` is enabled, `katana apply` adds the Workers
-functions, installs the package, generates JWT/direct-user settings into
-`katana_secrets.yaml`, and stores them with `wrangler secret put`.
+functions, installs the package, and stores `TIDB_CONNECTION_URL` with
+`wrangler secret put`.
 
 ```yaml
 cloudflare:

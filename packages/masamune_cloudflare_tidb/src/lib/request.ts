@@ -1,9 +1,7 @@
 import { Context } from "hono";
 import {
-  RulesOperationKey,
   TidbOrderCondition,
   TidbRequestBody,
-  TidbTokenRequestBody,
   TidbWhereCondition,
 } from "./types";
 
@@ -49,35 +47,6 @@ export async function parseCrudRequest(
     limit,
     value,
     count: body.count === true,
-  };
-}
-
-export async function parseTokenRequest(
-  context: Context,
-  defaultDatabase = "main",
-): Promise<Required<Pick<TidbTokenRequestBody, "database">> & TidbTokenRequestBody> {
-  const pathDatabase = optionalParam(context, "database");
-  const body = await parseJsonBody<TidbTokenRequestBody>(context);
-  const database = validateLogicalName(pathDatabase ?? body.database ?? defaultDatabase, "database");
-  const operations = body.operations
-    ? validateOperations(body.operations, "operations")
-    : undefined;
-  const targets = (body.targets ?? body.scope)?.map((item) => {
-    if (!item || typeof item !== "object") {
-      throw new HttpError(400, "targets item must be an object.");
-    }
-    const table = validateIdentifier(requiredString(item.table, "targets.table"), "targets.table");
-    const operations = validateOperations(item.operations, "targets.operations");
-    return {
-      table,
-      operations,
-    };
-  });
-  return {
-    ...body,
-    database,
-    ...(operations ? { operations } : {}),
-    ...(targets ? { targets, scope: targets } : {}),
   };
 }
 
@@ -156,27 +125,6 @@ function requiredString(value: unknown, label: string): string {
   return value;
 }
 
-function validateOperations(
-  operations: unknown,
-  label: string,
-): RulesOperationKey[] {
-  if (!Array.isArray(operations) || operations.length === 0) {
-    throw new HttpError(400, `${label} is required.`);
-  }
-  return operations.map((operation) => {
-    switch (operation) {
-      case "read":
-      case "write":
-      case "get":
-      case "create":
-      case "update":
-      case "delete":
-        return operation;
-      default:
-        throw new HttpError(400, `Unsupported ${label}: ${operation}`);
-    }
-  });
-}
 
 function validateWhere(where: TidbWhereCondition[]): TidbWhereCondition[] {
   if (!Array.isArray(where)) {

@@ -9,32 +9,6 @@ jest.mock("@tidbcloud/serverless", () => ({
   connect,
 }));
 
-jest.mock("jose", () => ({
-  importPKCS8: jest.fn(async () => "private-key"),
-  importJWK: jest.fn(async () => "private-key"),
-  SignJWT: class {
-    constructor(private readonly payload: Record<string, unknown>) {}
-    setProtectedHeader() {
-      return this;
-    }
-    setIssuer() {
-      return this;
-    }
-    setSubject() {
-      return this;
-    }
-    setIssuedAt() {
-      return this;
-    }
-    setExpirationTime() {
-      return this;
-    }
-    async sign() {
-      return `signed-${this.payload.tidb_authorization}`;
-    }
-  },
-}));
-
 const allowRules = {
   version: "1",
   rules: {
@@ -55,12 +29,6 @@ function dynamicOptions(
   return {
     connectionUrl:
       "mysql://backend:backend-password@gateway01.ap-northeast-1.prod.aws.tidbcloud.com:4000/app_db",
-    jwtIssuer: "test-issuer",
-    jwtKid: "test-kid",
-    jwtPrivateKeyPem: "-----BEGIN PRIVATE KEY-----\ntest\n-----END PRIVATE KEY-----",
-    directReadUsername: "client_read",
-    directWriteUsername: "client_write",
-    directReadWriteUsername: "client_read_write",
     rules: allowRules,
     ...options,
   };
@@ -137,10 +105,8 @@ describe("TiDB Cloudflare workers", () => {
 
   test("exposes WorkersData using the existing Functions pattern", () => {
     const worker = Functions.tidb(dynamicOptions());
-    const tokenWorker = Functions.tidbToken(dynamicOptions());
 
     expect(worker.path).toBe("/tidb");
-    expect(tokenWorker.path).toBe("/tidb/token");
   });
 
   test("reads rows from path based GET endpoint.", async () => {
@@ -198,108 +164,6 @@ describe("TiDB Cloudflare workers", () => {
       expect.any(Array),
       { fullResult: true },
     );
-  });
-
-  test("issues scoped JWT without leaking backend password.", async () => {
-    const app = deploy([Functions.tidbToken(dynamicOptions())]);
-
-    const response = await app.request(
-      "http://localhost/tidb/token/database/app_db",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          operations: ["read"],
-          ttlSeconds: 60,
-        }),
-      },
-    );
-    const body = (await response.json()) as {
-      token: string;
-      host: string;
-      port: number;
-      database: string;
-      username: string;
-      url?: string;
-      password?: string;
-    };
-
-    expect(response.status).toBe(200);
-    expect(body.token).toBe("signed-read-only");
-    expect(body.host).toBe("gateway01.ap-northeast-1.prod.aws.tidbcloud.com");
-    expect(body.port).toBe(4000);
-    expect(body.database).toBe("app_db");
-    expect(body.username).toBe("client_read");
-    expect(JSON.stringify(body)).not.toContain("backend-password");
-  });
-
-  test("applies TiDB Cloud username prefix from connection URL.", async () => {
-    const app = deploy([
-      Functions.tidbToken(
-        dynamicOptions({
-          connectionUrl:
-            "mysql://4M9hEa4vE3S7jAF.root:backend-password@gateway01.ap-northeast-1.prod.aws.tidbcloud.com:4000/app_db",
-          directReadUsername: "client_read",
-        }),
-      ),
-    ]);
-
-    const response = await app.request(
-      "http://localhost/tidb/token/database/app_db",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          operations: ["read"],
-          ttlSeconds: 60,
-        }),
-      },
-    );
-    const body = (await response.json()) as {
-      username: string;
-      token: string;
-    };
-
-    expect(response.status).toBe(200);
-    expect(body.token).toBe("signed-read-only");
-    expect(body.username).toBe("4M9hEa4vE3S7jAF.client_read");
-    expect(JSON.stringify(body)).not.toContain("backend-password");
-  });
-
-  test("does not apply TiDB Cloud username prefix twice.", async () => {
-    const app = deploy([
-      Functions.tidbToken(
-        dynamicOptions({
-          connectionUrl:
-            "mysql://4M9hEa4vE3S7jAF.root:backend-password@gateway01.ap-northeast-1.prod.aws.tidbcloud.com:4000/app_db",
-          directReadUsername: "4M9hEa4vE3S7jAF.client_read",
-        }),
-      ),
-    ]);
-
-    const response = await app.request(
-      "http://localhost/tidb/token/database/app_db",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          operations: ["read"],
-          ttlSeconds: 60,
-        }),
-      },
-    );
-    const body = (await response.json()) as {
-      username: string;
-    };
-
-    expect(response.status).toBe(200);
-    expect(body.username).toBe("4M9hEa4vE3S7jAF.client_read");
   });
 
   test("returns 404 when database does not exist.", async () => {
