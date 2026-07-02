@@ -10,6 +10,7 @@
  */
 import * as hono from "hono";
 import { WorkersBase, WorkersOptions } from "./lib/src/workers_base";
+import { ScheduleProcessWorkdersBase } from "./lib/src/schedule_process_workders_base";
 
 export * from "@mathrunet/masamune";
 export * from "./lib/api";
@@ -18,6 +19,7 @@ export * from "./lib/src/workers_auth_adapter_base";
 export * from "./lib/src/workers_rule_adapter_base";
 export * from "./lib/src/workers_data";
 export * from "./lib/src/request_process_workders_base";
+export * from "./lib/src/schedule_process_workders_base";
 export * from "./lib/src/rules/rules_loader";
 export * from "./lib/src/rules/path_matcher";
 export * from "./lib/src/rules/rules_engine";
@@ -41,10 +43,31 @@ export * from "./lib/middlewares";
  * 
  * [Workers]で定義された要素を配列として渡します。渡されたメソッドがデプロイされます。
  */
-export function deploy(deployWorkders: WorkersBase[], options: WorkersOptions = {}): hono.Hono {
+export type WorkersDeployResult = hono.Hono & {
+    scheduled?: (
+        event: ScheduledEvent,
+        env: unknown,
+        ctx: ExecutionContext,
+    ) => Promise<void>;
+};
+
+export function deploy(deployWorkders: WorkersBase[], options: WorkersOptions = {}): WorkersDeployResult {
     const app = new hono.Hono();
+    const scheduleWorkers: ScheduleProcessWorkdersBase[] = [];
     for (const worker of deployWorkders) {
+        if (worker instanceof ScheduleProcessWorkdersBase) {
+            scheduleWorkers.push(worker);
+            continue;
+        }
         app.route(worker.path, worker.build(options));
     }
-    return app;
+    const result = app as WorkersDeployResult;
+    if (scheduleWorkers.length > 0) {
+        result.scheduled = async (event, env, ctx) => {
+            await Promise.all(
+                scheduleWorkers.map((worker) => worker.process(event, env, ctx)),
+            );
+        };
+    }
+    return result;
 }
