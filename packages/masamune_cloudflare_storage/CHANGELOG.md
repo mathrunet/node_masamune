@@ -1,4 +1,4 @@
-# 3.1.0 (2026-07-02)
+## 3.1.1 (2026-07-02)
 
 
 ### chore
@@ -346,6 +346,7 @@
 
 * Remove debug log statements from FirestoreNullConverter ([b110a47](https://github.com/mathrunet/node_masamune/commit/b110a47faac178d79e4810221a0c89a943417f59))
 * Remove various cloud functions and tests, and add new tests for short video generation functionality. ([b5a2f34](https://github.com/mathrunet/node_masamune/commit/b5a2f34d474218c76cb25fdc1f6c0fe3b6c13413))
+* restructure database rules for improved clarity and consistency ([b541875](https://github.com/mathrunet/node_masamune/commit/b5418755495ef5340657e532466659e5f3c8cf82))
 * Save the interface to a separate file. ([141f8bd](https://github.com/mathrunet/node_masamune/commit/141f8bdf6b06538de2512e52b7fedb58366c4e8b))
 
 ### test
