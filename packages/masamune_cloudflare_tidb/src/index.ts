@@ -11,3 +11,23 @@
 export * from "@mathrunet/masamune";
 export * from "@mathrunet/masamune_cloudflare";
 export * from "./functions";
+export {
+  buildDatabaseRulesPath,
+  buildRulesPath,
+  expandRulesOperation,
+  filterAllowedScope,
+  normalizeHttpMethodToRulesOperation,
+  normalizeRulesOperation,
+  resolveDatabaseTokenAccess,
+  resolveDatabaseTokenAuthorization,
+  RulesEngine,
+} from "./lib/rules";
+export type {
+  RulesAccessRule,
+  RulesConfig,
+  RulesEntry,
+  RulesOperation,
+  RulesOperationAlias,
+  RulesOperationKey,
+} from "./lib/types";
+export * from "./lib/types";

@@ -54,10 +54,76 @@ import * as m from "@mathrunet/masamune_cloudflare_tidb";
 // Workersに追加する機能を[m.Functions.xxxx]を定義してください。
 export default m.deploy(
     [
-        // Worker for Test.
-        m.TestWorkers.test,
+        m.Functions.tidb(),
+        m.Functions.tidbToken(),
     ],
 );
+```
+
+## Configuration
+
+Set the TiDB connection URL as a Cloudflare Workers secret. The database in the
+URL is used as the default database.
+
+```bash
+wrangler secret put TIDB_CONNECTION_URL
+```
+
+```text
+mysql://user:password@gateway01.ap-northeast-1.prod.aws.tidbcloud.com:4000/app_db
+```
+
+This package does not create databases automatically. Create the TiDB database
+before using it. Tables and missing columns are created automatically when
+models are saved.
+
+For direct client access, configure TiDB `tidb_auth_token` users and register
+the JWT secrets used by the token endpoint.
+
+```bash
+wrangler secret put TIDB_JWT_ISSUER
+wrangler secret put TIDB_JWT_KID
+wrangler secret put TIDB_JWT_PRIVATE_KEY_PEM
+wrangler secret put TIDB_DIRECT_READ_USERNAME
+wrangler secret put TIDB_DIRECT_WRITE_USERNAME
+wrangler secret put TIDB_DIRECT_READ_WRITE_USERNAME
+```
+
+Example TiDB users:
+
+```sql
+CREATE USER 'client_read'
+IDENTIFIED WITH 'tidb_auth_token'
+REQUIRE TOKEN_ISSUER 'your-issuer';
+
+CREATE USER 'client_write'
+IDENTIFIED WITH 'tidb_auth_token'
+REQUIRE TOKEN_ISSUER 'your-issuer';
+
+CREATE USER 'client_read_write'
+IDENTIFIED WITH 'tidb_auth_token'
+REQUIRE TOKEN_ISSUER 'your-issuer';
+
+GRANT SELECT ON `app_db`.* TO 'client_read';
+GRANT INSERT, UPDATE, DELETE ON `app_db`.* TO 'client_write';
+GRANT SELECT, INSERT, UPDATE, DELETE ON `app_db`.* TO 'client_read_write';
+```
+
+The backend connection password in `TIDB_CONNECTION_URL` is never returned to
+clients. The token endpoint returns a short-lived JWT and the direct TiDB
+username selected by rules.
+
+## Katana CLI
+
+When `cloudflare.tidb.enable` is enabled, `katana apply` adds the Workers
+functions, installs the package, generates JWT/direct-user settings into
+`katana_secrets.yaml`, and stores them with `wrangler secret put`.
+
+```yaml
+cloudflare:
+  tidb:
+    enable: true
+    connection_url: mysql://user:password@gateway01.ap-northeast-1.prod.aws.tidbcloud.com:4000/app_db
 ```
 
 # GitHub Sponsors
