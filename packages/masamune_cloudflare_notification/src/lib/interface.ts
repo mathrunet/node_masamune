@@ -1,8 +1,9 @@
-import { ModelToken } from "@mathrunet/masamune_firebase";
+import { DatabaseAdapterBase, ModelToken } from "@mathrunet/masamune_cloudflare";
+import { FcmClient } from "./fcm";
 
 /**
  * Send notification request interface.
- * 
+ *
  * 通知送信リクエストインターフェース。
  */
 export interface SendNotificationRequest {
@@ -21,14 +22,15 @@ export interface SendNotificationRequest {
     targetWheres?: { [key: string]: any }[] | undefined;
     targetConditions?: { [key: string]: any }[] | undefined;
     responseTokenList?: boolean | undefined | null;
-    firestoreInstance: FirebaseFirestore.Firestore,
+    fcm: FcmClient;
+    database?: DatabaseAdapterBase | undefined;
     showLog?: boolean | undefined | null;
     dryRun?: boolean | undefined | null;
 }
 
 /**
  * Send notification response interface.
- * 
+ *
  * 通知送信レスポンスインターフェース。
  */
 export interface SendNotificationResponse {
