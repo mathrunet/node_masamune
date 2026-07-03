@@ -1,130 +1,136 @@
-import * as admin from "firebase-admin";
-import "@mathrunet/masamune_firebase";
-import * as fs from "fs";
-import * as path from "path";
+import { webcrypto } from "crypto";
+import { MiddlewareHandler } from "hono";
+import {
+    clearGoogleAccessTokenCache,
+    deploy,
+    NoneAuthAdapter,
+    WorkersAuthAdapterBase,
+} from "@mathrunet/masamune_cloudflare";
+import { Functions } from "../src/functions";
 
-const config = require("firebase-functions-test")({
-    storageBucket: "development-for-mathrunet.appspot.com",
-    projectId: "development-for-mathrunet",
-}, "test/development-for-mathrunet-e2c2c84b2167.json");
+if (!(globalThis as { crypto?: Crypto }).crypto) {
+    (globalThis as { crypto?: Crypto }).crypto = webcrypto as unknown as Crypto;
+}
 
-// テスト用にサービスアカウント環境変数を設定
-const serviceAccountPath = path.resolve(__dirname, "development-for-mathrunet-e2c2c84b2167.json");
-const serviceAccountJson = fs.readFileSync(serviceAccountPath, "utf-8");
-process.env.GOOGLE_SERVICE_ACCOUNT = serviceAccountJson;
-
-describe("google_token Function", () => {
-    let testUserId: string | null = null;
-
-    beforeAll(() => {
-        if (admin.apps.length === 0) {
-            admin.initializeApp();
-        }
-    });
-
-    afterAll(async () => {
-        // クリーンアップ: テストユーザーを削除
-        if (testUserId) {
-            try {
-                await admin.auth().deleteUser(testUserId);
-                console.log(`Deleted test user: ${testUserId}`);
-            } catch (e) {
-                // 既に削除済みの場合は無視
-            }
-        }
-    });
-
-    test("正常系: トークン取得成功", async () => {
-        // テストユーザーを作成
-        const testEmail = `test-token-${Date.now()}@example.com`;
-        const userRecord = await admin.auth().createUser({
-            email: testEmail,
-            password: "testPassword123",
-        });
-        testUserId = userRecord.uid;
-        console.log(`Created test user: ${testUserId}`);
-
-        // google_token関数を呼び出し
-        const func = require("../src/functions/google_token");
-        const wrapped = config.wrap(func([], {}, {}));
-        const res = await wrapped({
-            data: {
-                duration: 3600,
-            },
-            auth: {
-                uid: testUserId,
-            },
-            params: {},
-        });
-
-        expect(res.accessToken).toBeDefined();
-        expect(typeof res.accessToken).toBe("string");
-        expect(res.accessToken.length).toBeGreaterThan(0);
-        expect(res.expiresAt).toBeDefined();
-        expect(typeof res.expiresAt).toBe("number");
-        expect(res.expiresAt).toBeGreaterThan(Date.now());
-        console.log(`Token obtained, expires at: ${new Date(res.expiresAt).toISOString()}`);
-    }, 50000);
-
-    test("正常系: duration未指定でもデフォルト値で動作", async () => {
-        // 前のテストで作成したユーザーを再利用
-        if (!testUserId) {
-            const testEmail = `test-token-default-${Date.now()}@example.com`;
-            const userRecord = await admin.auth().createUser({
-                email: testEmail,
-                password: "testPassword123",
+class TestAuthAdapter extends WorkersAuthAdapterBase {
+    build(): MiddlewareHandler {
+        return async (context, next) => {
+            this.setAuthContext(context, {
+                uid: "test-user",
+                token: { uid: "test-user" },
             });
-            testUserId = userRecord.uid;
-        }
+            await next();
+        };
+    }
+}
 
-        const func = require("../src/functions/google_token");
-        const wrapped = config.wrap(func([], {}, {}));
-        const res = await wrapped({
-            data: {},
-            auth: {
-                uid: testUserId,
-            },
-            params: {},
+async function generatePrivateKeyPem(): Promise<string> {
+    const keyPair = await crypto.subtle.generateKey(
+        {
+            name: "RSASSA-PKCS1-v1_5",
+            modulusLength: 2048,
+            publicExponent: new Uint8Array([1, 0, 1]),
+            hash: "SHA-256",
+        },
+        true,
+        ["sign", "verify"],
+    );
+    const pkcs8 = await crypto.subtle.exportKey("pkcs8", keyPair.privateKey);
+    const base64 = Buffer.from(pkcs8).toString("base64");
+    const lines = base64.match(/.{1,64}/g) ?? [];
+    return `-----BEGIN PRIVATE KEY-----\n${lines.join("\n")}\n-----END PRIVATE KEY-----\n`;
+}
+
+describe("masamune_cloudflare_token_google", () => {
+    beforeEach(() => {
+        clearGoogleAccessTokenCache();
+        jest.restoreAllMocks();
+    });
+
+    test("正常系: 認証済みユーザーがアクセストークンを取得", async () => {
+        const privateKeyPem = await generatePrivateKeyPem();
+        const serviceAccount = JSON.stringify({
+            client_email: "test@example.iam.gserviceaccount.com",
+            private_key: privateKeyPem,
+            project_id: "test-project",
         });
+        const fetchMock = jest.fn(async () => ({
+            ok: true,
+            json: async () => ({ access_token: "access-token-1", expires_in: 3600 }),
+        } as unknown as Response));
+        (globalThis as { fetch: typeof fetch }).fetch = fetchMock as unknown as typeof fetch;
+        const app = deploy([
+            Functions.googleToken({
+                auth: new TestAuthAdapter(),
+                serviceAccount: serviceAccount,
+            }),
+        ]);
+        const response = await app.request("http://localhost/google_token", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({}),
+        });
+        expect(response.status).toBe(200);
+        const body = await response.json() as { accessToken: string, expiresAt: number };
+        expect(body.accessToken).toBe("access-token-1");
+        expect(body.expiresAt).toBeGreaterThan(Date.now());
+        const calls = fetchMock.mock.calls as unknown as [string][];
+        expect(calls[0][0]).toBe("https://oauth2.googleapis.com/token");
+    });
 
-        expect(res.accessToken).toBeDefined();
-        expect(res.expiresAt).toBeDefined();
-    }, 50000);
+    test("エラー: 未認証", async () => {
+        const app = deploy([
+            Functions.googleToken({
+                auth: new NoneAuthAdapter(),
+                serviceAccount: "{}",
+            }),
+        ]);
+        const response = await app.request("http://localhost/google_token", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({}),
+        });
+        expect(response.status).toBe(401);
+        expect(await response.json()).toEqual({ error: "Unauthenticated" });
+    });
 
-    test("エラー: 認証なし (auth未指定)", async () => {
-        const func = require("../src/functions/google_token");
-        const wrapped = config.wrap(func([], {}, {}));
-        await expect(wrapped({
-            data: {},
-            params: {},
-        })).rejects.toThrow();
-    }, 50000);
+    test("エラー: サービスアカウント未設定", async () => {
+        const app = deploy([
+            Functions.googleToken({
+                auth: new TestAuthAdapter(),
+            }),
+        ]);
+        const response = await app.request("http://localhost/google_token", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({}),
+        });
+        expect(response.status).toBe(500);
+        expect(await response.json()).toEqual({ error: "Service account is required" });
+    });
 
-    test("エラー: サービスアカウント環境変数未設定", async () => {
-        // 環境変数を一時的に削除
-        const originalEnv = process.env.GOOGLE_SERVICE_ACCOUNT;
-        delete process.env.GOOGLE_SERVICE_ACCOUNT;
-
-        try {
-            // 新しいモジュールインスタンスを取得するためキャッシュをクリア
-            jest.resetModules();
-            const func = require("../src/functions/google_token");
-            const configNew = require("firebase-functions-test")({
-                storageBucket: "development-for-mathrunet.appspot.com",
-                projectId: "development-for-mathrunet",
-            }, "test/development-for-mathrunet-e2c2c84b2167.json");
-            const wrapped = configNew.wrap(func([], {}, {}));
-
-            await expect(wrapped({
-                data: {},
-                auth: {
-                    uid: "test-user",
-                },
-                params: {},
-            })).rejects.toThrow();
-        } finally {
-            // 環境変数を復元
-            process.env.GOOGLE_SERVICE_ACCOUNT = originalEnv;
-        }
-    }, 50000);
+    test("正常系: context.envのGOOGLE_SERVICE_ACCOUNTを使用", async () => {
+        const privateKeyPem = await generatePrivateKeyPem();
+        const serviceAccount = JSON.stringify({
+            client_email: "env@example.iam.gserviceaccount.com",
+            private_key: privateKeyPem,
+        });
+        (globalThis as { fetch: typeof fetch }).fetch = jest.fn(async () => ({
+            ok: true,
+            json: async () => ({ access_token: "env-token", expires_in: 1800 }),
+        } as unknown as Response)) as unknown as typeof fetch;
+        const app = deploy([
+            Functions.googleToken({ auth: new TestAuthAdapter() }),
+        ]);
+        const response = await app.request("http://localhost/google_token", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ duration: 1800 }),
+        }, {
+            GOOGLE_SERVICE_ACCOUNT: serviceAccount,
+        });
+        expect(response.status).toBe(200);
+        const body = await response.json() as { accessToken: string };
+        expect(body.accessToken).toBe("env-token");
+    });
 });

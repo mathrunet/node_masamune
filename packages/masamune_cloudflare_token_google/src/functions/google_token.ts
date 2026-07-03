@@ -1,69 +1,55 @@
-import * as functions from "firebase-functions/v2";
-import { HttpFunctionsOptions } from "@mathrunet/masamune_firebase";
-import { GoogleAuth } from "google-auth-library";
-import { GoogleTokenResponse } from "../lib/interface";
+import { Context, Hono } from "hono";
+import {
+    HttpError,
+    issueGoogleAccessToken,
+    jsonError,
+    parseGoogleServiceAccount,
+    resolveConfig,
+} from "@mathrunet/masamune_cloudflare";
+import { GoogleTokenResponse, GoogleTokenWorkersOptions } from "../lib/interface";
 
 /**
  * A function to get a Google Cloud Platform authentication token.
- * 
+ *
  * Google Cloud Platformの認証トークンを取得するためのFunction。
- * 
- * @param {string} process.env.GOOGLE_SERVICE_ACCOUNT
- * Service account JSON.
- * 
- * サービスアカウントJSON。
+ *
+ * @param {string} GOOGLE_SERVICE_ACCOUNT
+ * Service account JSON. Specify it in [options.serviceAccount] or the `GOOGLE_SERVICE_ACCOUNT` Workers secret.
+ *
+ * サービスアカウントJSON。[options.serviceAccount]または`GOOGLE_SERVICE_ACCOUNT`のWorkersシークレットで指定します。
  */
 module.exports = (
-    regions: string[],
-    options: HttpFunctionsOptions,
-    data: { [key: string]: any }
-) => functions.https.onCall(
-    {
-        region: options.region ?? regions,
-        timeoutSeconds: options.timeoutSeconds,
-        memory: options.memory,
-        minInstances: options.minInstances,
-        concurrency: options.concurrency,
-        maxInstances: options.maxInstances,
-        serviceAccount: options?.serviceAccount ?? undefined,
-        enforceAppCheck: options.enforceAppCheck ?? undefined,
-        consumeAppCheckToken: options.consumeAppCheckToken ?? undefined,
-    },
-    async (query) => {
+    hono: Hono,
+    options: GoogleTokenWorkersOptions,
+    data: { [key: string]: any },
+) => {
+    hono.post("/", async (context: Context) => {
         try {
-            // Firebase Auth で認証チェック
-            if (!query.auth) {
-                throw new Error("Unauthenticated");
+            // 認証ミドルウェアによる認証チェック
+            const authentication = context.get("authentication");
+            if (!authentication) {
+                throw new HttpError(401, "Unauthenticated");
             }
-            const duration = query.data.duration as number | null | undefined ?? 3600;
-            const serviceAccount = process.env.GOOGLE_SERVICE_ACCOUNT as string | null | undefined;
-            if (!serviceAccount) {
-                throw new Error("Service account is required");
+            const body = await context.req.json().catch(() => ({})) as { [key: string]: any };
+            const duration = body.duration as number | null | undefined ?? 3600;
+            const serviceAccountJson = resolveConfig(context, options.serviceAccount, "GOOGLE_SERVICE_ACCOUNT");
+            if (!serviceAccountJson) {
+                throw new HttpError(500, "Service account is required");
             }
-
-            const auth = new GoogleAuth({
-                credentials: JSON.parse(serviceAccount),
-                scopes: ["https://www.googleapis.com/auth/cloud-platform"],
-                clientOptions: {
-                    lifetime: duration
-                }
+            const serviceAccount = parseGoogleServiceAccount(serviceAccountJson);
+            const token = await issueGoogleAccessToken({
+                serviceAccount,
+                scopes: options.scopes ?? ["https://www.googleapis.com/auth/cloud-platform"],
+                lifetimeSeconds: duration,
             });
-
-            const client = await auth.getClient();
-            const token = await client.getAccessToken();
-            const expiresIn = token.res?.data?.expires_in;
-
             const response: GoogleTokenResponse = {
-                accessToken: token.token,
-                expiresAt: expiresIn ? Date.now() + (Number(expiresIn) * 1000) : Date.now() + 3600 * 1000,
+                accessToken: token.accessToken,
+                expiresAt: token.expiresAt,
             };
-            return response;
+            return context.json(response);
         } catch (err) {
-            console.error(err);
-            if (err instanceof functions.https.HttpsError) {
-                throw err;
-            }
-            throw new functions.https.HttpsError("internal", "An error occurred while processing the request.");
+            return jsonError(context, err);
         }
-    }
-);
+    });
+    return hono;
+};
