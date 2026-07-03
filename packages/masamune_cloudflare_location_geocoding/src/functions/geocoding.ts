@@ -1,16 +1,16 @@
-import * as functions from "firebase-functions/v2";
-import { Api, HttpFunctionsOptions } from "@mathrunet/masamune_firebase";
-import { GeocodingResponse } from "../lib/interface";
+import { Context, Hono } from "hono";
+import { HttpError, jsonError, resolveConfig } from "@mathrunet/masamune_cloudflare";
+import { GeocodingResponse, GeocodingWorkersOptions } from "../lib/interface";
 
 /**
  * Get latitude and longitude with GeocodingAPI.
  *
  * GeocodingAPIで緯度経度を取得します。
  *
- * @param {string} process.env.MAP_GEOCODING_APIKEY
- * API key for GoogleMapGeocodingAPI. Follow the steps below to issue it.
+ * @param {string} MAP_GEOCODING_APIKEY
+ * API key for GoogleMapGeocodingAPI. Specify it in [options.apiKey] or the `MAP_GEOCODING_APIKEY` Workers secret. Follow the steps below to issue it.
  * https://mathru.notion.site/Google-Map-API-API-e9a65fba9795450fb9a252ab4e631ace?pvs=4
- * GoogleMapGeocodingAPI用のAPIキー。下記の手順で発行します。
+ * GoogleMapGeocodingAPI用のAPIキー。[options.apiKey]または`MAP_GEOCODING_APIKEY`のWorkersシークレットで指定します。下記の手順で発行します。
  * https://mathru.notion.site/Google-Map-API-API-e9a65fba9795450fb9a252ab4e631ace?pvs=4
  *
  * @param {string} address
@@ -18,41 +18,37 @@ import { GeocodingResponse } from "../lib/interface";
  * アドレスもしくは郵便番号。
  */
 module.exports = (
-    regions: string[],
-    options: HttpFunctionsOptions,
-    data: { [key: string]: any }
-) => functions.https.onCall(
-    {
-        region: options.region ?? regions,
-        timeoutSeconds: options.timeoutSeconds,
-        memory: options.memory,
-        minInstances: options.minInstances,
-        concurrency: options.concurrency,
-        maxInstances: options.maxInstances,
-        serviceAccount: options?.serviceAccount ?? undefined,
-        enforceAppCheck: options.enforceAppCheck ?? undefined,
-        consumeAppCheckToken: options.consumeAppCheckToken ?? undefined,
-    },
-    async (query) => {
+    hono: Hono,
+    options: GeocodingWorkersOptions,
+    data: { [key: string]: any },
+) => {
+    hono.post("/", async (context: Context) => {
         try {
-            const address = query.data.address as string | null | undefined;
-            const apiKey = process.env.MAP_GEOCODING_APIKEY ?? "";
+            const body = await context.req.json() as { [key: string]: any };
+            const address = body.address as string | null | undefined;
+            const apiKey = resolveConfig(context, options.apiKey, "MAP_GEOCODING_APIKEY");
             if (!address) {
-                throw new functions.https.HttpsError("invalid-argument", "Query parameter is invalid.");
+                throw new HttpError(400, "Query parameter is invalid.");
             }
-            const res = await Api.get(
-                `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${apiKey}`
+            if (!apiKey) {
+                throw new HttpError(500, "MAP_GEOCODING_APIKEY is not set.");
+            }
+            const res = await fetch(
+                `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${apiKey}`,
             );
+            if (!res.ok) {
+                throw new HttpError(500, `Failed to request Geocoding API: ${res.status}`);
+            }
             const json = (await res.json()) as { [key: string]: any };
             console.log(json);
             const response: GeocodingResponse = {
                 success: true,
                 ...json,
             };
-            return response;
+            return context.json(response);
         } catch (err) {
-            console.error(err);
-            throw err;
+            return jsonError(context, err);
         }
-    }
-);
+    });
+    return hono;
+};
