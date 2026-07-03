@@ -1,130 +1,104 @@
-import * as functions from "firebase-functions/v2";
+import { Context, Hono } from "hono";
+import { HttpError, jsonError } from "@mathrunet/masamune_cloudflare";
 import * as verifier from "../lib/verify_ios";
 import * as subscription from "../lib/update_subscription";
-import { HttpFunctionsOptions, firestoreLoader } from "@mathrunet/masamune_firebase";
+import { PurchaseWorkersOptions, resolveIOSSharedSecret, resolveSubscriptionPath } from "../lib/options";
 
 /**
- * Verify subscriptions and add data.
- * 
- * サブスクリプションの検証とデータの追加を行います。
- * 
- * @param process.env.PURCHASE_IOS_SHAREDSECRET
+ * Verify IOS subscriptions and save subscription data.
+ *
+ * IOSのサブスクリプションの検証を行いサブスクリプションデータを保存します。
+ *
+ * @param {string} PURCHASE_IOS_SHAREDSECRET
  * SharedSecret for AppStore, obtained from [Apps]->[App Info]->[Shared Secret for App] in the AppStore.
- * 
+ *
  * AppStoreのSharedSecret。AppStoreの[アプリ]->[App情報]->[App用共有シークレット]から取得します。
- * 
- * @param process.env.PURCHASE_SUBSCRIPTIONPATH
+ *
+ * @param {string} PURCHASE_SUBSCRIPTIONPATH
  * Describes the path to the collection of subscriptions.
- * 
+ *
  * サブスクリプションのコレクションのパスを記述します。
- * 
- * @param purchaseId
- * Subscription purchase ID.
- * 
- * サブスクリプションの購入ID。
- * 
- * @param productId
- * Item ID issued by Google Play.
- * 
- * GooglePlayで発行されたアイテムID。
- * 
+ *
  * @param receiptData
- * Receipt data for purchases.
- * 
- * 購入の際のレシートデータ。
- * 
- * @param data
- * Document data to be updated.
- * 
- * 更新するドキュメントデータ。
- * 
+ * Receipt data for purchases (for StoreKit1) or JWT token (for StoreKit2).
+ *
+ * 購入の際のレシートデータ（StoreKit1の場合）またはJWTトークン（StoreKit2の場合）。
+ *
  * @param userId
  * ID of the user who purchased the subscription.
- * 
+ *
  * サブスクリプションを購入したユーザーのID。
  */
 module.exports = (
-    regions: string[],
-    options: HttpFunctionsOptions,
-    data: { [key: string]: any }
-) => functions.https.onCall(
-    {
-        region: options.region ?? regions,
-        timeoutSeconds: options.timeoutSeconds,
-        memory: options.memory,
-        minInstances: options.minInstances,
-        concurrency: options.concurrency,
-        maxInstances: options.maxInstances,
-        serviceAccount: options?.serviceAccount ?? undefined,
-        enforceAppCheck: options.enforceAppCheck ?? undefined,
-        consumeAppCheckToken: options.consumeAppCheckToken ?? undefined,
-    },
-    async (query) => {
+    hono: Hono,
+    options: PurchaseWorkersOptions,
+    data: { [key: string]: any },
+) => {
+    hono.post("/", async (context: Context) => {
         try {
+            const body = await context.req.json() as { [key: string]: any };
             /* ==== IOS検証ここから ==== */
-            if (!query.data.userId) {
-                throw new functions.https.HttpsError("invalid-argument", "User is empty.");
+            if (!body.userId) {
+                throw new HttpError(400, "User is empty.");
             }
             const res = await verifier.verifyIOS({
-                receiptData: query.data.receiptData,
-                password: process.env.PURCHASE_IOS_SHAREDSECRET ?? "",
-                transactionId: query.data.transactionId,
-                storeKitVersion: query.data.storeKitVersion ?? 1,
+                receiptData: body.receiptData,
+                password: resolveIOSSharedSecret(context, options),
+                transactionId: body.transactionId,
+                storeKitVersion: body.storeKitVersion ?? 1,
             });
             const status = res["status"];
             if (status !== 0) {
-                throw new functions.https.HttpsError("not-found", "Illegal receipt.");
+                throw new HttpError(404, "Illegal receipt.");
             }
             const time = new Date().getTime();
             const info = res.latest_receipt_info;
             if (!info) {
-                throw new functions.https.HttpsError("not-found", "Illegal receipt.");
+                throw new HttpError(404, "Illegal receipt.");
             }
-            const pending = res.pending_renewal_info;
             const startTimeMillis = parseInt(info[info.length - 1].purchase_date_ms ?? "0");
             const expiryTimeMillis = parseInt(info[info.length - 1].expires_date_ms ?? "0");
             const currentProductId = info?.[info.length - 1].product_id;
             if (res === null || isNaN(startTimeMillis) || isNaN(expiryTimeMillis) || startTimeMillis <= 0) {
-                throw new functions.https.HttpsError("not-found", "Illegal receipt.");
+                throw new HttpError(404, "Illegal receipt.");
             }
             if (expiryTimeMillis <= time) {
                 info[info.length - 1]["expired"] = true;
             }
             /* ==== ここまでIOS検証 ==== */
-            /* ==== Firestoreの更新ここから ==== */
-            let error: any | null = null;
-            const firestoreDatabaseIds = options.firestoreDatabaseIds ?? [""];
-            for (const databaseId of firestoreDatabaseIds) {
+            /* ==== データベースの更新ここから ==== */
+            const database = options.database;
+            if (database) {
                 try {
-                    const firestoreInstance = firestoreLoader(databaseId);
+                    const targetPath = body.path ?? resolveSubscriptionPath(context, options);
+                    if (!targetPath) {
+                        throw new HttpError(500, "PURCHASE_SUBSCRIPTIONPATH is not set.");
+                    }
                     await subscription.updateSubscription({
-                        targetCollectionPath: query.data.path ?? process.env.PURCHASE_SUBSCRIPTIONPATH,
+                        targetCollectionPath: targetPath,
                         targetDocumentId: info[info.length - 1].original_transaction_id ?? "",
                         data: info[info.length - 1],
-                        additionalData: query.data,
-                        userId: query.data.userId,
+                        additionalData: body,
+                        userId: body.userId,
                         platform: "IOS",
                         orderId: info[info.length - 1].original_transaction_id ?? "",
                         productId: currentProductId ?? "",
-                        purchaseId: query.data.purchaseId,
+                        purchaseId: body.purchaseId,
                         packageName: res.receipt?.bundle_id ?? "",
-                        token: query.data.receiptData,
+                        token: body.receiptData,
                         expiryDate: expiryTimeMillis,
-                        firestoreInstance: firestoreInstance,
+                        database: database,
                     });
                 } catch (err) {
-                    error = err;
+                    console.error(err);
+                    throw new HttpError(500, "Unknown error.");
                 }
             }
-            if (error) {
-                console.error(error);
-                throw new functions.https.HttpsError("unknown", "Unknown error.");
-            }
-            /* ==== ここまでFirestoreの更新 ==== */
-            return res;
+            /* ==== ここまでデータベースの更新 ==== */
+            return context.json(res);
         } catch (err) {
-            console.error(err);
-            throw new functions.https.HttpsError("unknown", "Unknown error.");
+            return jsonError(context, err);
         }
-    }
-);
+    });
+    return hono;
+};

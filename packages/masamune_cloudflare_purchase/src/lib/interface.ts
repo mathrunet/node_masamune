@@ -1,3 +1,5 @@
+import { DatabaseAdapterBase } from "@mathrunet/masamune_cloudflare";
+
 /**
  * Update subscription request interface.
  * 
@@ -16,7 +18,7 @@ export interface UpdateSubscriptionRequest {
     packageName: string;
     token: string;
     expiryDate: number;
-    firestoreInstance: FirebaseFirestore.Firestore;
+    database: DatabaseAdapterBase;
 }
 
 /**
@@ -49,7 +51,7 @@ export interface UpdateUnlockRequest {
     targetDocumentFieldPath: string;
     transactionId: string;
     transactionData: { [key: string]: any };
-    firestoreInstance: FirebaseFirestore.Firestore;
+    database: DatabaseAdapterBase;
 }
 
 /**
@@ -73,7 +75,7 @@ export interface UpdateWalletRequest {
     value: number;
     transactionId: string;
     transactionData: { [key: string]: any };
-    firestoreInstance: FirebaseFirestore.Firestore;
+    database: DatabaseAdapterBase;
 }
 
 /**

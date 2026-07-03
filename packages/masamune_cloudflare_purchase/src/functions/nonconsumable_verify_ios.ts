@@ -1,89 +1,75 @@
-import * as functions from "firebase-functions/v2";
+import { Context, Hono } from "hono";
+import { HttpError, jsonError } from "@mathrunet/masamune_cloudflare";
 import * as verifier from "../lib/verify_ios";
 import * as updater from "../lib/update_unlock";
-import { HttpFunctionsOptions, firestoreLoader } from "@mathrunet/masamune_firebase";
+import { PurchaseWorkersOptions, resolveIOSSharedSecret } from "../lib/options";
 
 /**
- * Performs non-consumable in-app purchases. Unlock by setting the value of the field in the document specified in [path] to `true`.
- * 
- * 非消費型のアプリ内課金を行います。[path]に指定したドキュメント内のフィールドの値を`true`にすることでアンロックを行います。
- * 
- * @param process.env.PURCHASE_IOS_SHAREDSECRET
+ * Performs non-consumable in-app purchases. `true` is written to the document field specified in [path].
+ *
+ * 非消費型のアプリ内課金を行います。[path]に指定したドキュメントのフィールドに`true`が書き込まれます。
+ *
+ * @param {string} PURCHASE_IOS_SHAREDSECRET
  * SharedSecret for AppStore, obtained from [Apps]->[App Info]->[Shared Secret for App] in the AppStore.
- * 
+ *
  * AppStoreのSharedSecret。AppStoreの[アプリ]->[App情報]->[App用共有シークレット]から取得します。
- * 
+ *
  * @param path
  * The path, including the key, of the field in the document where the unlock information is to be stored.
- * 
+ *
  * アンロック情報を保存するドキュメント内のフィールドのキーを含めたパス。
- * 
+ *
  * @param receiptData
  * Receipt data for purchases.
- * 
+ *
  * 購入の際のレシートデータ。
  */
 module.exports = (
-    regions: string[],
-    options: HttpFunctionsOptions,
-    data: { [key: string]: any }
-) => functions.https.onCall(
-    {
-        region: options.region ?? regions,
-        timeoutSeconds: options.timeoutSeconds,
-        memory: options.memory,
-        minInstances: options.minInstances,
-        concurrency: options.concurrency,
-        maxInstances: options.maxInstances,
-        serviceAccount: options?.serviceAccount ?? undefined,
-        enforceAppCheck: options.enforceAppCheck ?? undefined,
-        consumeAppCheckToken: options.consumeAppCheckToken ?? undefined,
-    },
-    async (query) => {
+    hono: Hono,
+    options: PurchaseWorkersOptions,
+    data: { [key: string]: any },
+) => {
+    hono.post("/", async (context: Context) => {
         try {
+            const body = await context.req.json() as { [key: string]: any };
             /* ==== IOS検証ここから ==== */
             const res = await verifier.verifyIOS({
-                receiptData: query.data.receiptData,
-                password: process.env.PURCHASE_IOS_SHAREDSECRET ?? "",
-                transactionId: query.data.transactionId,
-                storeKitVersion: query.data.storeKitVersion ?? 1,
+                receiptData: body.receiptData,
+                password: resolveIOSSharedSecret(context, options),
+                transactionId: body.transactionId,
+                storeKitVersion: body.storeKitVersion ?? 1,
             });
             const status = res["status"];
             if (status !== 0) {
-                throw new functions.https.HttpsError("unauthenticated", "Illegal receipt.");
+                throw new HttpError(401, "Illegal receipt.");
             }
             /* ==== ここまでIOS検証 ==== */
             const info = res["latest_receipt_info"];
-            if (!info || !query.data.path) {
-                throw new functions.https.HttpsError(
-                    "invalid-argument", `The required parameters are not set. path: ${query.data.path}`,
+            if (!info || !body.path) {
+                throw new HttpError(
+                    400, `The required parameters are not set. path: ${body.path}`,
                 );
             }
-            /* ==== Firestoreの更新ここから ==== */
-            let error: any | null = null;
-            const firestoreDatabaseIds = options.firestoreDatabaseIds ?? [""];
-            for (const databaseId of firestoreDatabaseIds) {
+            /* ==== データベースの更新ここから ==== */
+            const database = options.database;
+            if (database) {
                 try {
-                    const firestoreInstance = firestoreLoader(databaseId);
                     await updater.updateUnlock({
-                        targetDocumentFieldPath: query.data.path,
+                        targetDocumentFieldPath: body.path,
                         transactionId: info[info.length - 1].original_transaction_id ?? "",
                         transactionData: info[info.length - 1],
-                        firestoreInstance: firestoreInstance,
+                        database: database,
                     });
                 } catch (err) {
-                    error = err;
+                    console.error(err);
+                    throw new HttpError(500, "Unknown error.");
                 }
             }
-            if (error) {
-                console.error(error);
-                throw new functions.https.HttpsError("unknown", "Unknown error.");
-            }
-            /* ==== ここまでFirestoreの更新 ==== */
-            return res;
+            /* ==== ここまでデータベースの更新 ==== */
+            return context.json(res);
         } catch (err) {
-            console.error(err);
-            throw err;
+            return jsonError(context, err);
         }
-    }
-);
+    });
+    return hono;
+};

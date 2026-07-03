@@ -1,273 +1,456 @@
-import * as admin from "firebase-admin";
-import "@mathrunet/masamune_firebase";
-import * as dotenv from "dotenv";
-import * as path from "path";
+import { webcrypto } from "crypto";
+import {
+    clearGoogleAccessTokenCache,
+    DatabaseAdapterBase,
+    DatabaseDocument,
+    DatabaseIncrement,
+    DatabaseQueryResult,
+    DatabaseWhereCondition,
+    deploy,
+    NoneAuthAdapter,
+} from "@mathrunet/masamune_cloudflare";
+import { Functions } from "../src/functions";
 
-// .envファイルを読み込み
-dotenv.config({ path: path.resolve(__dirname, ".env") });
+if (!(globalThis as { crypto?: Crypto }).crypto) {
+    (globalThis as { crypto?: Crypto }).crypto = webcrypto as unknown as Crypto;
+}
 
-const config = require("firebase-functions-test")({
-    storageBucket: "development-for-mathrunet.appspot.com",
-    projectId: "development-for-mathrunet",
-}, "test/development-for-mathrunet-e2c2c84b2167.json");
+class InMemoryDatabaseAdapter extends DatabaseAdapterBase {
+    documents = new Map<string, { [key: string]: any }>();
 
-describe("Subscription Verify", () => {
-    const testUserId = `test-user-${Date.now()}`;
-    const subscriptionPath = process.env.PURCHASE_SUBSCRIPTIONPATH || "unit/test/subscriptions";
-    let createdDocIds: string[] = [];
+    async getDocument(path: string): Promise<DatabaseDocument | null> {
+        const data = this.documents.get(path);
+        return data ? { path, data } : null;
+    }
 
-    beforeAll(() => {
-        if (admin.apps.length === 0) {
-            admin.initializeApp();
-        }
-    });
-
-    afterAll(async () => {
-        // クリーンアップ: テストで作成されたサブスクリプションドキュメントを削除
-        const firestore = admin.firestore();
-        for (const docId of createdDocIds) {
-            try {
-                await firestore.collection(subscriptionPath).doc(docId).delete();
-                console.log(`Deleted subscription doc: ${subscriptionPath}/${docId}`);
-            } catch (e) {
-                // 既に削除済みの場合は無視
+    async saveDocument(
+        path: string,
+        data: { [key: string]: any },
+        options?: { merge?: boolean | undefined },
+    ): Promise<void> {
+        const existing = this.documents.get(path) ?? {};
+        const next: { [key: string]: any } = options?.merge ? { ...existing } : {};
+        for (const [key, value] of Object.entries(data)) {
+            if (value instanceof DatabaseIncrement) {
+                const current = existing[key];
+                next[key] = (typeof current === "number" ? current : 0) + value.value;
+            } else {
+                next[key] = value;
             }
         }
-    });
+        this.documents.set(path, next);
+    }
 
-    describe("Android (Google Play)", () => {
-        const hasAndroidCredentials = () => {
-            return process.env.PURCHASE_ANDROID_SERVICEACCOUNT_EMAIL &&
-                process.env.PURCHASE_ANDROID_SERVICEACCOUNT_PRIVATE_KEY &&
-                process.env.PURCHASE_ANDROID_PACKAGE_NAME &&
-                process.env.PURCHASE_ANDROID_SUBSCRIPTION_PRODUCT_ID;
-        };
-
-        const hasAndroidTestToken = () => {
-            return process.env.PURCHASE_ANDROID_TEST_TOKEN;
-        };
-
-        test("エラー: userId未指定", async () => {
-            if (!hasAndroidCredentials()) {
-                console.log("Skipping: Android credentials not configured");
-                return;
+    async query(
+        collectionPath: string,
+        options?: {
+            wheres?: DatabaseWhereCondition[] | undefined,
+            limit?: number | undefined,
+            cursor?: string | null | undefined,
+        },
+    ): Promise<DatabaseQueryResult> {
+        const docs: DatabaseDocument[] = [];
+        for (const [path, data] of this.documents.entries()) {
+            if (!path.startsWith(`${collectionPath}/`)) {
+                continue;
             }
-
-            const func = require("../src/functions/subscription_verify_android");
-            const wrapped = config.wrap(func([], {}, {}));
-
-            // userId未指定の場合はエラーがスローされる
-            await expect(wrapped({
-                data: {
-                    packageName: process.env.PURCHASE_ANDROID_PACKAGE_NAME,
-                    productId: process.env.PURCHASE_ANDROID_SUBSCRIPTION_PRODUCT_ID,
-                    purchaseToken: "dummy_token",
-                },
-                params: {},
-            })).rejects.toThrow();
-        }, 50000);
-
-        test("エラー: 無効な購入トークン", async () => {
-            if (!hasAndroidCredentials()) {
-                console.log("Skipping: Android credentials not configured");
-                return;
-            }
-
-            const func = require("../src/functions/subscription_verify_android");
-            const wrapped = config.wrap(func([], {}, {}));
-
-            await expect(wrapped({
-                data: {
-                    userId: testUserId,
-                    packageName: process.env.PURCHASE_ANDROID_PACKAGE_NAME,
-                    productId: process.env.PURCHASE_ANDROID_SUBSCRIPTION_PRODUCT_ID,
-                    purchaseToken: "invalid_token_for_test",
-                    purchaseId: "test-purchase-id",
-                },
-                params: {},
-            })).rejects.toThrow();
-        }, 50000);
-
-        test("正常系: 有効な購入トークンで検証成功", async () => {
-            if (!hasAndroidCredentials() || !hasAndroidTestToken()) {
-                console.log("Skipping: Android test token not configured");
-                console.log("To run this test, set PURCHASE_ANDROID_TEST_TOKEN in .env");
-                return;
-            }
-
-            const func = require("../src/functions/subscription_verify_android");
-            const wrapped = config.wrap(func([], {}, {}));
-
-            const res = await wrapped({
-                data: {
-                    userId: testUserId,
-                    packageName: process.env.PURCHASE_ANDROID_PACKAGE_NAME,
-                    productId: process.env.PURCHASE_ANDROID_SUBSCRIPTION_PRODUCT_ID,
-                    purchaseToken: process.env.PURCHASE_ANDROID_TEST_TOKEN,
-                    purchaseId: `test-purchase-${Date.now()}`,
-                    path: subscriptionPath,
-                },
-                params: {},
+            const matched = (options?.wheres ?? []).every((where) => {
+                if (where.type === "equalTo") {
+                    return data[where.key] === where.value;
+                }
+                return true;
             });
+            if (matched) {
+                docs.push({ path, data });
+            }
+        }
+        return { docs: options?.limit ? docs.slice(0, options.limit) : docs, cursor: null };
+    }
+}
 
-            expect(res).toBeDefined();
-            expect(res.startTimeMillis).toBeDefined();
-            expect(res.expiryTimeMillis).toBeDefined();
-            console.log("Android subscription verified:", JSON.stringify(res, null, 2));
+const googleTokenResponse = {
+    ok: true,
+    json: async () => ({ access_token: "google-access-token", expires_in: 3600 }),
+} as unknown as Response;
 
-            // Firestoreに保存されたことを確認
-            const firestore = admin.firestore();
-            const docs = await firestore.collection(subscriptionPath)
-                .where("userId", "==", testUserId)
-                .get();
+async function generatePrivateKeyPem(): Promise<string> {
+    const keyPair = await crypto.subtle.generateKey(
+        {
+            name: "RSASSA-PKCS1-v1_5",
+            modulusLength: 2048,
+            publicExponent: new Uint8Array([1, 0, 1]),
+            hash: "SHA-256",
+        },
+        true,
+        ["sign", "verify"],
+    );
+    const pkcs8 = await crypto.subtle.exportKey("pkcs8", keyPair.privateKey);
+    const base64 = Buffer.from(pkcs8).toString("base64");
+    const lines = base64.match(/.{1,64}/g) ?? [];
+    return `-----BEGIN PRIVATE KEY-----\n${lines.join("\n")}\n-----END PRIVATE KEY-----\n`;
+}
 
-            expect(docs.empty).toBe(false);
-            console.log(`Found ${docs.size} subscription document(s)`);
-
-            // クリーンアップ用にドキュメントIDを保存
-            docs.forEach(doc => createdDocIds.push(doc.id));
-        }, 60000);
+describe("masamune_cloudflare_purchase", () => {
+    beforeEach(() => {
+        clearGoogleAccessTokenCache();
+        jest.restoreAllMocks();
     });
 
-    describe("iOS (App Store)", () => {
-        const hasIOSCredentials = () => {
-            return process.env.PURCHASE_IOS_SHAREDSECRET &&
-                process.env.PURCHASE_IOS_SUBSCRIPTION_PRODUCT_ID;
-        };
-
-        const hasIOSTestReceipt = () => {
-            return process.env.PURCHASE_IOS_TEST_RECEIPT;
-        };
-
-        test("エラー: userId未指定", async () => {
-            if (!hasIOSCredentials()) {
-                console.log("Skipping: iOS credentials not configured");
-                return;
-            }
-
-            const func = require("../src/functions/subscription_verify_ios");
-            const wrapped = config.wrap(func([], {}, {}));
-
-            // userId未指定の場合はエラーがスローされる
-            await expect(wrapped({
-                data: {
-                    receiptData: "dummy_receipt",
-                    productId: process.env.PURCHASE_IOS_SUBSCRIPTION_PRODUCT_ID,
-                },
-                params: {},
-            })).rejects.toThrow();
-        }, 50000);
-
-        test("エラー: 無効なレシートデータ", async () => {
-            if (!hasIOSCredentials()) {
-                console.log("Skipping: iOS credentials not configured");
-                return;
-            }
-
-            const func = require("../src/functions/subscription_verify_ios");
-            const wrapped = config.wrap(func([], {}, {}));
-
-            await expect(wrapped({
-                data: {
-                    userId: testUserId,
-                    receiptData: "invalid_receipt_for_test",
-                    productId: process.env.PURCHASE_IOS_SUBSCRIPTION_PRODUCT_ID,
-                    purchaseId: "test-purchase-id",
-                },
-                params: {},
-            })).rejects.toThrow();
-        }, 50000);
-
-        test("正常系: 有効なレシートで検証成功", async () => {
-            if (!hasIOSCredentials() || !hasIOSTestReceipt()) {
-                console.log("Skipping: iOS test receipt not configured");
-                console.log("To run this test, set PURCHASE_IOS_TEST_RECEIPT in .env");
-                return;
-            }
-
-            const func = require("../src/functions/subscription_verify_ios");
-            const wrapped = config.wrap(func([], {}, {}));
-
-            const res = await wrapped({
-                data: {
-                    userId: testUserId,
-                    receiptData: process.env.PURCHASE_IOS_TEST_RECEIPT,
-                    transactionId: process.env.PURCHASE_IOS_TEST_TRANSACTION_ID,
-                    productId: process.env.PURCHASE_IOS_SUBSCRIPTION_PRODUCT_ID,
-                    purchaseId: `test-purchase-${Date.now()}`,
-                    path: subscriptionPath,
-                },
-                params: {},
+    describe("consumable_verify_android", () => {
+        test("正常系: 検証成功でウォレットが加算される", async () => {
+            const privateKeyPem = await generatePrivateKeyPem();
+            const database = new InMemoryDatabaseAdapter();
+            database.documents.set("user/user1", { wallet: 100 });
+            const fetchMock = jest.fn(async (url: string) => {
+                if (url === "https://oauth2.googleapis.com/token") {
+                    return googleTokenResponse;
+                }
+                return {
+                    ok: true,
+                    status: 200,
+                    json: async () => ({
+                        purchaseState: 0,
+                        orderId: "order-1",
+                    }),
+                } as unknown as Response;
             });
+            (globalThis as { fetch: typeof fetch }).fetch = fetchMock as unknown as typeof fetch;
+            const app = deploy([
+                Functions.consumableVerifyAndroid({
+                    auth: new NoneAuthAdapter(),
+                    androidServiceAccountEmail: "sa@example.iam.gserviceaccount.com",
+                    androidServiceAccountPrivateKey: privateKeyPem,
+                    database: database,
+                }),
+            ]);
+            const response = await app.request("http://localhost/consumable_verify_android", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    packageName: "net.mathru.app",
+                    productId: "item_100",
+                    purchaseToken: "purchase-token-1",
+                    path: "user/user1/wallet",
+                    value: 120,
+                }),
+            });
+            expect(response.status).toBe(200);
+            const body = await response.json() as { purchaseState: number };
+            expect(body.purchaseState).toBe(0);
+            expect(database.documents.get("user/user1")?.wallet).toBe(220);
+            expect(database.documents.get("user/user1")?.["@uid"]).toBe("user1");
+            expect(database.documents.has("user/user1/transaction/purchase-token-1")).toBe(true);
+            const verifyCall = (fetchMock.mock.calls as unknown as [string][]).find(([url]) =>
+                url.includes("androidpublisher.googleapis.com"));
+            expect(verifyCall?.[0]).toContain(
+                "/applications/net.mathru.app/purchases/products/item_100/tokens/purchase-token-1",
+            );
+        });
 
-            expect(res).toBeDefined();
-            expect(res.status).toBe(0);
-            expect(res.latest_receipt_info).toBeDefined();
-            console.log("iOS subscription verified:", JSON.stringify(res, null, 2));
-
-            // Firestoreに保存されたことを確認
-            const firestore = admin.firestore();
-            const docs = await firestore.collection(subscriptionPath)
-                .where("userId", "==", testUserId)
-                .get();
-
-            expect(docs.empty).toBe(false);
-            console.log(`Found ${docs.size} subscription document(s)`);
-
-            // クリーンアップ用にドキュメントIDを保存
-            docs.forEach(doc => createdDocIds.push(doc.id));
-        }, 60000);
+        test("エラー: purchaseStateが0以外", async () => {
+            const privateKeyPem = await generatePrivateKeyPem();
+            (globalThis as { fetch: typeof fetch }).fetch = jest.fn(async (url: string) => {
+                if (url === "https://oauth2.googleapis.com/token") {
+                    return googleTokenResponse;
+                }
+                return {
+                    ok: true,
+                    status: 200,
+                    json: async () => ({ purchaseState: 1 }),
+                } as unknown as Response;
+            }) as unknown as typeof fetch;
+            const app = deploy([
+                Functions.consumableVerifyAndroid({
+                    auth: new NoneAuthAdapter(),
+                    androidServiceAccountEmail: "sa@example.iam.gserviceaccount.com",
+                    androidServiceAccountPrivateKey: privateKeyPem,
+                    database: new InMemoryDatabaseAdapter(),
+                }),
+            ]);
+            const response = await app.request("http://localhost/consumable_verify_android", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    packageName: "net.mathru.app",
+                    productId: "item_100",
+                    purchaseToken: "purchase-token-1",
+                    path: "user/user1/wallet",
+                    value: 120,
+                }),
+            });
+            expect(response.status).toBe(401);
+        });
     });
 
-    describe("バリデーションのみ（認証情報不要）", () => {
-        test("Android: 環境変数未設定でもエラーハンドリングが動作", async () => {
-            // 一時的に環境変数をクリア
-            const originalEmail = process.env.PURCHASE_ANDROID_SERVICEACCOUNT_EMAIL;
-            const originalKey = process.env.PURCHASE_ANDROID_SERVICEACCOUNT_PRIVATE_KEY;
-            process.env.PURCHASE_ANDROID_SERVICEACCOUNT_EMAIL = "";
-            process.env.PURCHASE_ANDROID_SERVICEACCOUNT_PRIVATE_KEY = "";
+    describe("nonconsumable_verify_ios", () => {
+        test("正常系: StoreKit1レシート検証でアンロックされる", async () => {
+            const database = new InMemoryDatabaseAdapter();
+            (globalThis as { fetch: typeof fetch }).fetch = jest.fn(async (url: string) => {
+                expect(url).toBe("https://buy.itunes.apple.com/verifyReceipt");
+                return {
+                    ok: true,
+                    json: async () => ({
+                        status: 0,
+                        latest_receipt_info: [
+                            {
+                                product_id: "unlock_premium",
+                                original_transaction_id: "tx-1",
+                            },
+                        ],
+                    }),
+                } as unknown as Response;
+            }) as unknown as typeof fetch;
+            const app = deploy([
+                Functions.nonconsumableVerifyIOS({
+                    auth: new NoneAuthAdapter(),
+                    iosSharedSecret: "shared-secret",
+                    database: database,
+                }),
+            ]);
+            const response = await app.request("http://localhost/nonconsumable_verify_ios", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    receiptData: "receipt-data",
+                    path: "user/user1/premium",
+                }),
+            });
+            expect(response.status).toBe(200);
+            expect(database.documents.get("user/user1")?.premium).toBe(true);
+            expect(database.documents.has("user/user1/transaction/tx-1")).toBe(true);
+        });
 
-            try {
-                jest.resetModules();
-                const func = require("../src/functions/subscription_verify_android");
-                const wrapped = config.wrap(func([], {}, {}));
+        test("正常系: 21007でsandboxにフォールバック", async () => {
+            const database = new InMemoryDatabaseAdapter();
+            const fetchMock = jest.fn(async (url: string) => {
+                if (url === "https://buy.itunes.apple.com/verifyReceipt") {
+                    return {
+                        ok: true,
+                        json: async () => ({ status: 21007 }),
+                    } as unknown as Response;
+                }
+                expect(url).toBe("https://sandbox.itunes.apple.com/verifyReceipt");
+                return {
+                    ok: true,
+                    json: async () => ({
+                        status: 0,
+                        latest_receipt_info: [
+                            { original_transaction_id: "tx-sandbox" },
+                        ],
+                    }),
+                } as unknown as Response;
+            });
+            (globalThis as { fetch: typeof fetch }).fetch = fetchMock as unknown as typeof fetch;
+            const app = deploy([
+                Functions.nonconsumableVerifyIOS({
+                    auth: new NoneAuthAdapter(),
+                    iosSharedSecret: "shared-secret",
+                    database: database,
+                }),
+            ]);
+            const response = await app.request("http://localhost/nonconsumable_verify_ios", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    receiptData: "receipt-data",
+                    path: "user/user1/premium",
+                }),
+            });
+            expect(response.status).toBe(200);
+            expect(fetchMock).toHaveBeenCalledTimes(2);
+        });
+    });
 
-                // userId未指定の場合はエラーがスローされる
-                await expect(wrapped({
-                    data: {
-                        packageName: "com.example.app",
-                        productId: "test_product",
-                        purchaseToken: "test_token",
+    describe("subscription_verify_android", () => {
+        test("正常系: サブスクリプションデータが保存される", async () => {
+            const privateKeyPem = await generatePrivateKeyPem();
+            const database = new InMemoryDatabaseAdapter();
+            const expiry = Date.now() + 24 * 60 * 60 * 1000;
+            (globalThis as { fetch: typeof fetch }).fetch = jest.fn(async (url: string) => {
+                if (url === "https://oauth2.googleapis.com/token") {
+                    return googleTokenResponse;
+                }
+                expect(url).toContain("/purchases/subscriptions/");
+                return {
+                    ok: true,
+                    status: 200,
+                    json: async () => ({
+                        startTimeMillis: `${Date.now() - 1000}`,
+                        expiryTimeMillis: `${expiry}`,
+                        orderId: "order-sub-1",
+                    }),
+                } as unknown as Response;
+            }) as unknown as typeof fetch;
+            const app = deploy([
+                Functions.subscriptionVerifyAndroid({
+                    auth: new NoneAuthAdapter(),
+                    androidServiceAccountEmail: "sa@example.iam.gserviceaccount.com",
+                    androidServiceAccountPrivateKey: privateKeyPem,
+                    subscriptionPath: "subscription",
+                    database: database,
+                }),
+            ]);
+            const response = await app.request("http://localhost/subscription_verify_android", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    packageName: "net.mathru.app",
+                    productId: "sub_monthly",
+                    purchaseToken: "sub-token-1",
+                    purchaseId: "purchase-1",
+                    userId: "user1",
+                }),
+            });
+            expect(response.status).toBe(200);
+            const saved = database.documents.get("subscription/sub-token-1");
+            expect(saved).toBeDefined();
+            expect(saved?.token).toBe("sub-token-1");
+            expect(saved?.platform).toBe("Android");
+            expect(saved?.expired).toBe(false);
+            expect(saved?.expiredTime).toBe(expiry);
+            expect(saved?.userId).toBe("user1");
+        });
+    });
+
+    describe("purchase_webhook_android", () => {
+        test("正常系: SUBSCRIPTION_RENEWEDでサブスクリプションが更新される", async () => {
+            const privateKeyPem = await generatePrivateKeyPem();
+            const database = new InMemoryDatabaseAdapter();
+            const expiry = Date.now() + 24 * 60 * 60 * 1000;
+            database.documents.set("subscription/doc1", {
+                token: "sub-token-1",
+                userId: "user1",
+                productId: "sub_monthly",
+                expired: true,
+            });
+            (globalThis as { fetch: typeof fetch }).fetch = jest.fn(async (url: string) => {
+                if (url === "https://oauth2.googleapis.com/token") {
+                    return googleTokenResponse;
+                }
+                return {
+                    ok: true,
+                    status: 200,
+                    json: async () => ({
+                        expiryTimeMillis: `${expiry}`,
+                        orderId: "order-renewed",
+                    }),
+                } as unknown as Response;
+            }) as unknown as typeof fetch;
+            const app = deploy([
+                Functions.purchaseWebhookAndroid({
+                    androidServiceAccountEmail: "sa@example.iam.gserviceaccount.com",
+                    androidServiceAccountPrivateKey: privateKeyPem,
+                    subscriptionPath: "subscription",
+                    database: database,
+                }),
+            ]);
+            const notification = {
+                packageName: "net.mathru.app",
+                subscriptionNotification: {
+                    notificationType: 2,
+                    purchaseToken: "sub-token-1",
+                    subscriptionId: "sub_monthly",
+                },
+            };
+            const response = await app.request("http://localhost/purchase_webhook_android", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    message: {
+                        data: Buffer.from(JSON.stringify(notification)).toString("base64"),
                     },
-                    params: {},
-                })).rejects.toThrow();
-            } finally {
-                process.env.PURCHASE_ANDROID_SERVICEACCOUNT_EMAIL = originalEmail;
-                process.env.PURCHASE_ANDROID_SERVICEACCOUNT_PRIVATE_KEY = originalKey;
-            }
-        }, 50000);
+                    subscription: "projects/test/subscriptions/purchasing",
+                }),
+            });
+            expect(response.status).toBe(200);
+            expect(await response.json()).toEqual({ status: 1 });
+            const saved = database.documents.get("subscription/doc1");
+            expect(saved?.expired).toBe(false);
+            expect(saved?.paused).toBe(false);
+            expect(saved?.expiredTime).toBe(expiry);
+            expect(saved?.orderId).toBe("order-renewed");
+        });
 
-        test("iOS: 環境変数未設定でもエラーハンドリングが動作", async () => {
-            // 一時的に環境変数をクリア
-            const originalSecret = process.env.PURCHASE_IOS_SHAREDSECRET;
-            process.env.PURCHASE_IOS_SHAREDSECRET = "";
-
-            try {
-                jest.resetModules();
-                const func = require("../src/functions/subscription_verify_ios");
-                const wrapped = config.wrap(func([], {}, {}));
-
-                // userId未指定の場合はエラーがスローされる
-                await expect(wrapped({
-                    data: {
-                        receiptData: "test_receipt",
-                        productId: "test_product",
+        test("正常系: 該当データがなくても200を返す（再送ループ防止）", async () => {
+            const privateKeyPem = await generatePrivateKeyPem();
+            (globalThis as { fetch: typeof fetch }).fetch = jest.fn(async (url: string) => {
+                if (url === "https://oauth2.googleapis.com/token") {
+                    return googleTokenResponse;
+                }
+                return {
+                    ok: true,
+                    status: 200,
+                    json: async () => ({ expiryTimeMillis: "0" }),
+                } as unknown as Response;
+            }) as unknown as typeof fetch;
+            const app = deploy([
+                Functions.purchaseWebhookAndroid({
+                    androidServiceAccountEmail: "sa@example.iam.gserviceaccount.com",
+                    androidServiceAccountPrivateKey: privateKeyPem,
+                    subscriptionPath: "subscription",
+                    database: new InMemoryDatabaseAdapter(),
+                }),
+            ]);
+            const notification = {
+                packageName: "net.mathru.app",
+                subscriptionNotification: {
+                    notificationType: 2,
+                    purchaseToken: "unknown-token",
+                    subscriptionId: "sub_monthly",
+                },
+            };
+            const response = await app.request("http://localhost/purchase_webhook_android", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    message: {
+                        data: Buffer.from(JSON.stringify(notification)).toString("base64"),
                     },
-                    params: {},
-                })).rejects.toThrow();
-            } finally {
-                process.env.PURCHASE_IOS_SHAREDSECRET = originalSecret;
-            }
-        }, 50000);
+                }),
+            });
+            expect(response.status).toBe(200);
+        });
+    });
+
+    describe("purchase_webhook_ios", () => {
+        test("正常系: EXPIREDでサブスクリプションが失効する", async () => {
+            const database = new InMemoryDatabaseAdapter();
+            database.documents.set("subscription/original-tx-1", {
+                token: "receipt-data",
+                userId: "user1",
+                productId: "sub_monthly",
+                expired: false,
+            });
+            const app = deploy([
+                Functions.purchaseWebhookIOS({
+                    subscriptionPath: "subscription",
+                    database: database,
+                }),
+            ]);
+            const transactionInfo = {
+                originalTransactionId: "original-tx-1",
+                transactionId: "tx-2",
+                productId: "sub_monthly",
+                expiresDate: `${Date.now() - 1000}`,
+            };
+            const payload = {
+                notificationType: "EXPIRED",
+                data: {
+                    signedTransactionInfo: `header.${Buffer.from(JSON.stringify(transactionInfo)).toString("base64url")}.signature`,
+                },
+            };
+            const signedPayload = `header.${Buffer.from(JSON.stringify(payload)).toString("base64url")}.signature`;
+            const response = await app.request("http://localhost/purchase_webhook_ios", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ signedPayload }),
+            });
+            expect(response.status).toBe(200);
+            expect(await response.json()).toEqual({ status: 1 });
+            const saved = database.documents.get("subscription/original-tx-1");
+            expect(saved?.expired).toBe(true);
+            expect(saved?.paused).toBe(false);
+            expect(saved?.orderId).toBe("tx-2");
+        });
     });
 });

@@ -12,3 +12,5 @@ export * from "@mathrunet/masamune";
 export * from "@mathrunet/masamune_cloudflare";
 export * from "./functions";
 export * from "./lib/interface";
+export * from "./lib/options";
+export * from "./lib/jws";
