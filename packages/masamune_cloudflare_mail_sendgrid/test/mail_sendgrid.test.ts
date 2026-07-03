@@ -1,150 +1,127 @@
-import * as admin from "firebase-admin";
-import "@mathrunet/masamune_firebase";
-import * as dotenv from "dotenv";
-import * as path from "path";
-import { SendGridRequest } from "../src/lib/interface";
+import { deploy, NoneAuthAdapter } from "@mathrunet/masamune_cloudflare";
+import { Functions } from "../src/functions";
 
-// .envファイルを読み込み
-dotenv.config({ path: path.resolve(__dirname, ".env") });
+function createApp() {
+    return deploy([
+        Functions.sendGrid({
+            auth: new NoneAuthAdapter(),
+            apiKey: "test-api-key",
+        }),
+    ]);
+}
 
-const config = require("firebase-functions-test")({
-    storageBucket: "development-for-mathrunet.appspot.com",
-    projectId: "development-for-mathrunet",
-}, "test/development-for-mathrunet-e2c2c84b2167.json");
-
-describe("masamune_mail_sendgrid", () => {
-    // テスト用のメールアドレス（.envから取得）
-    const testEmailFrom = process.env.TEST_EMAIL_FROM ?? "";
-    const testEmailTo = process.env.TEST_EMAIL_TO ?? "";
-
-    beforeAll(() => {
-        if (admin.apps.length === 0) {
-            admin.initializeApp();
-        }
-        // 環境変数のチェック
-        if (!process.env.MAIL_SENDGRID_APIKEY) {
-            console.warn("Warning: MAIL_SENDGRID_APIKEY is not set. Integration tests may fail.");
-        }
-        if (!testEmailFrom || !testEmailTo) {
-            console.warn("Warning: TEST_EMAIL_FROM or TEST_EMAIL_TO is not set. Integration tests may fail.");
-        }
+describe("masamune_cloudflare_mail_sendgrid", () => {
+    beforeEach(() => {
+        jest.restoreAllMocks();
     });
 
-    afterAll(() => {
-        config.cleanup();
+    test("正常系: SendGrid API v3にメール送信リクエストを送る", async () => {
+        const fetchMock = jest.fn(async () => ({
+            ok: true,
+            status: 202,
+        } as unknown as Response));
+        (globalThis as { fetch: typeof fetch }).fetch = fetchMock as unknown as typeof fetch;
+        const app = createApp();
+        const response = await app.request("http://localhost/send_grid", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                from: "sender@example.com",
+                to: "recipient@example.com",
+                title: "テスト件名",
+                content: "テスト本文",
+            }),
+        });
+        expect(response.status).toBe(200);
+        expect(await response.json()).toEqual({ success: true });
+        const calls = fetchMock.mock.calls as unknown as [string, { headers: Record<string, string>, body: string }][];
+        expect(calls[0][0]).toBe("https://api.sendgrid.com/v3/mail/send");
+        expect(calls[0][1].headers["Authorization"]).toBe("Bearer test-api-key");
+        expect(JSON.parse(calls[0][1].body)).toEqual({
+            personalizations: [{ to: [{ email: "recipient@example.com" }] }],
+            from: { email: "sender@example.com" },
+            subject: "テスト件名",
+            content: [{ type: "text/plain", value: "テスト本文" }],
+        });
     });
 
-    // ============================================================
-    // lib/send_grid.ts のテスト（実際のAPI呼び出し）
-    // ============================================================
-    describe("lib/send_grid - send関数（統合テスト）", () => {
-        test("正常系: 実際にSendGrid APIを呼び出してメール送信", async () => {
-            const { send } = require("../src/lib/send_grid");
-
-            // 実際のAPIを呼び出し
-            const content: SendGridRequest = {
-                from: testEmailFrom,
-                to: testEmailTo,
-                subject: "[Test] SendGrid Integration Test - lib/send_grid",
-                text: `This is a test email sent from masamune_mail_sendgrid integration test.\n\nTimestamp: ${new Date().toISOString()}`,
-            };
-            await expect(send(content)).resolves.not.toThrow();
-        }, 30000);
+    test("正常系: context.envのMAIL_SENDGRID_APIKEYを使用", async () => {
+        const fetchMock = jest.fn(async () => ({
+            ok: true,
+            status: 202,
+        } as unknown as Response));
+        (globalThis as { fetch: typeof fetch }).fetch = fetchMock as unknown as typeof fetch;
+        const app = deploy([
+            Functions.sendGrid({ auth: new NoneAuthAdapter() }),
+        ]);
+        const response = await app.request("http://localhost/send_grid", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                from: "sender@example.com",
+                to: "recipient@example.com",
+                title: "件名",
+                content: "本文",
+            }),
+        }, {
+            MAIL_SENDGRID_APIKEY: "env-api-key",
+        });
+        expect(response.status).toBe(200);
+        const calls = fetchMock.mock.calls as unknown as [string, { headers: Record<string, string> }][];
+        expect(calls[0][1].headers["Authorization"]).toBe("Bearer env-api-key");
     });
 
-    // ============================================================
-    // functions/send_grid.ts のテスト（Cloud Function - 実際のAPI呼び出し）
-    // ============================================================
-    describe("functions/send_grid - Cloud Function（統合テスト）", () => {
-        test("正常系: 全パラメータ指定でメール送信成功", async () => {
-            const func = require("../src/functions/send_grid");
-            const wrapped = config.wrap(func([], {}, {}));
+    test("エラー: パラメータ不足", async () => {
+        const app = createApp();
+        const response = await app.request("http://localhost/send_grid", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                from: "sender@example.com",
+                to: "recipient@example.com",
+            }),
+        });
+        expect(response.status).toBe(400);
+        expect(await response.json()).toEqual({ error: "Query parameter is invalid." });
+    });
 
-            const result = await wrapped({
-                data: {
-                    from: testEmailFrom,
-                    to: testEmailTo,
-                    title: "[Test] SendGrid Integration Test - Cloud Function",
-                    content: `This is a test email sent from masamune_mail_sendgrid Cloud Function integration test.\n\nTimestamp: ${new Date().toISOString()}`,
-                },
-            });
+    test("エラー: APIキー未設定", async () => {
+        const app = deploy([
+            Functions.sendGrid({ auth: new NoneAuthAdapter() }),
+        ]);
+        const response = await app.request("http://localhost/send_grid", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                from: "sender@example.com",
+                to: "recipient@example.com",
+                title: "件名",
+                content: "本文",
+            }),
+        });
+        expect(response.status).toBe(500);
+        expect(await response.json()).toEqual({ error: "MAIL_SENDGRID_APIKEY is not set." });
+    });
 
-            expect(result).toEqual({ success: true });
-        }, 30000);
-
-        test("エラー: from未指定", async () => {
-            const func = require("../src/functions/send_grid");
-            const wrapped = config.wrap(func([], {}, {}));
-
-            await expect(wrapped({
-                data: {
-                    to: testEmailTo,
-                    title: "Test Title",
-                    content: "Test Content",
-                },
-            })).rejects.toThrow(/Query parameter is invalid/);
-        }, 30000);
-
-        test("エラー: to未指定", async () => {
-            const func = require("../src/functions/send_grid");
-            const wrapped = config.wrap(func([], {}, {}));
-
-            await expect(wrapped({
-                data: {
-                    from: testEmailFrom,
-                    title: "Test Title",
-                    content: "Test Content",
-                },
-            })).rejects.toThrow(/Query parameter is invalid/);
-        }, 30000);
-
-        test("エラー: title未指定", async () => {
-            const func = require("../src/functions/send_grid");
-            const wrapped = config.wrap(func([], {}, {}));
-
-            await expect(wrapped({
-                data: {
-                    from: testEmailFrom,
-                    to: testEmailTo,
-                    content: "Test Content",
-                },
-            })).rejects.toThrow(/Query parameter is invalid/);
-        }, 30000);
-
-        test("エラー: content未指定", async () => {
-            const func = require("../src/functions/send_grid");
-            const wrapped = config.wrap(func([], {}, {}));
-
-            await expect(wrapped({
-                data: {
-                    from: testEmailFrom,
-                    to: testEmailTo,
-                    title: "Test Title",
-                },
-            })).rejects.toThrow(/Query parameter is invalid/);
-        }, 30000);
-
-        test("エラー: 全パラメータ未指定", async () => {
-            const func = require("../src/functions/send_grid");
-            const wrapped = config.wrap(func([], {}, {}));
-
-            await expect(wrapped({
-                data: {},
-            })).rejects.toThrow(/Query parameter is invalid/);
-        }, 30000);
-
-        test("エラー: 空文字パラメータはエラーになる", async () => {
-            const func = require("../src/functions/send_grid");
-            const wrapped = config.wrap(func([], {}, {}));
-
-            await expect(wrapped({
-                data: {
-                    from: "",
-                    to: testEmailTo,
-                    title: "Test Title",
-                    content: "Test Content",
-                },
-            })).rejects.toThrow(/Query parameter is invalid/);
-        }, 30000);
+    test("エラー: SendGrid APIがエラーを返す", async () => {
+        (globalThis as { fetch: typeof fetch }).fetch = jest.fn(async () => ({
+            ok: false,
+            status: 401,
+            text: async () => "unauthorized",
+        } as unknown as Response)) as unknown as typeof fetch;
+        const app = createApp();
+        const response = await app.request("http://localhost/send_grid", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                from: "sender@example.com",
+                to: "recipient@example.com",
+                title: "件名",
+                content: "本文",
+            }),
+        });
+        expect(response.status).toBe(500);
+        const body = await response.json() as { error: string };
+        expect(body.error).toContain("401");
     });
 });

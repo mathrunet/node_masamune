@@ -1,17 +1,17 @@
-import * as functions from "firebase-functions/v2";
+import { Context, Hono } from "hono";
+import { HttpError, jsonError, resolveConfig } from "@mathrunet/masamune_cloudflare";
 import * as sendgrid from "../lib/send_grid";
-import { HttpFunctionsOptions } from "@mathrunet/masamune_firebase";
-import { SendGridRequest, SendGridResponse } from "../lib/interface";
+import { SendGridRequest, SendGridResponse, SendGridWorkersOptions } from "../lib/interface";
 
 /**
  * Send mail through SendGrid.
  *
  * SendGridでメールを送信します。
  *
- * @param {string} process.env.MAIL_SENDGRID_APIKEY
- * API key for SendGrid. Issue it according to the following procedure.
+ * @param {string} MAIL_SENDGRID_APIKEY
+ * API key for SendGrid. Specify it in [options.apiKey] or the `MAIL_SENDGRID_APIKEY` Workers secret. Issue it according to the following procedure.
  * https://mathru.notion.site/SendGrid-bb87b2ffa8174dbda944812f43856d6c
- * SendGridのAPIキー。下記の手順で発行します。
+ * SendGridのAPIキー。[options.apiKey]または`MAIL_SENDGRID_APIKEY`のWorkersシークレットで指定します。下記の手順で発行します。
  * https://mathru.notion.site/SendGrid-bb87b2ffa8174dbda944812f43856d6c
  *
  * @param {string} from
@@ -31,29 +31,23 @@ import { SendGridRequest, SendGridResponse } from "../lib/interface";
  * メール本文。
  */
 module.exports = (
-    regions: string[],
-    options: HttpFunctionsOptions,
-    data: { [key: string]: any }
-) => functions.https.onCall(
-    {
-        region: options.region ?? regions,
-        timeoutSeconds: options.timeoutSeconds,
-        memory: options.memory,
-        minInstances: options.minInstances,
-        concurrency: options.concurrency,
-        maxInstances: options.maxInstances,
-        serviceAccount: options?.serviceAccount ?? undefined,
-        enforceAppCheck: options.enforceAppCheck ?? undefined,
-        consumeAppCheckToken: options.consumeAppCheckToken ?? undefined,
-    },
-    async (query) => {
+    hono: Hono,
+    options: SendGridWorkersOptions,
+    data: { [key: string]: any },
+) => {
+    hono.post("/", async (context: Context) => {
         try {
-            const from = query.data.from as string | null | undefined;
-            const to = query.data.to as string | null | undefined;
-            const title = query.data.title as string | null | undefined;
-            const content = query.data.content as string | null | undefined;
+            const body = await context.req.json() as { [key: string]: any };
+            const from = body.from as string | null | undefined;
+            const to = body.to as string | null | undefined;
+            const title = body.title as string | null | undefined;
+            const content = body.content as string | null | undefined;
             if (!from || !to || !title || !content) {
-                throw new functions.https.HttpsError("invalid-argument", "Query parameter is invalid.");
+                throw new HttpError(400, "Query parameter is invalid.");
+            }
+            const apiKey = resolveConfig(context, options.apiKey, "MAIL_SENDGRID_APIKEY");
+            if (!apiKey) {
+                throw new HttpError(500, "MAIL_SENDGRID_APIKEY is not set.");
             }
             const request: SendGridRequest = {
                 from: from,
@@ -61,14 +55,14 @@ module.exports = (
                 subject: title,
                 text: content,
             };
-            await sendgrid.send(request);
+            await sendgrid.send({ apiKey, content: request });
             const response: SendGridResponse = {
                 success: true,
             };
-            return response;
+            return context.json(response);
         } catch (err) {
-            console.error(err);
-            throw err;
+            return jsonError(context, err);
         }
-    }
-);
+    });
+    return hono;
+};
