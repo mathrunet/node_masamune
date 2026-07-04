@@ -1,4 +1,4 @@
-# 3.3.0 (2026-07-02)
+## 3.4.1 (2026-07-04)
 
 
 ### chore
@@ -58,6 +58,7 @@
 * Remove comments ([eb83a5f](https://github.com/mathrunet/node_masamune/commit/eb83a5f6fdc1d8c6a03ce691cf11e8d3fbfdb85e))
 * Scrutinize log output ([5eaa4a2](https://github.com/mathrunet/node_masamune/commit/5eaa4a2042f8b714b3f48e44cc44c8f86549212e))
 * Update @mathrunet/katana to version 3.9.1 ([d8e32a1](https://github.com/mathrunet/node_masamune/commit/d8e32a1f238ed3b29003bd83799fde57a054c063))
+* update @mathrunet/masamune dependency version to 3.10.4 across multiple packages ([f62e636](https://github.com/mathrunet/node_masamune/commit/f62e6367ddf48e513c523b8970b4fdc5b4e31152))
 * Update Masamune package to version 3.8.3 ([8e8155e](https://github.com/mathrunet/node_masamune/commit/8e8155e3380f05fb05abdb087c9bfff0b05c1795))
 * Update masamune package version ([f4998d6](https://github.com/mathrunet/node_masamune/commit/f4998d654dee28f2f12c5d2d8b9c861563825dbd))
 * Update Node.js engine to v22 and bump development dependencies across packages. ([d840a0f](https://github.com/mathrunet/node_masamune/commit/d840a0f503230f80edbdf01f9516841cff36798d))
@@ -344,10 +345,17 @@
 
 ### refactor
 
+* enhance Google token functionality for Cloudflare Workers ([bb4b4bc](https://github.com/mathrunet/node_masamune/commit/bb4b4bc7bceec4064c5bcd01066d93b1b636b69f))
+* enhance media processing for Cloudflare Workers ([7d76e68](https://github.com/mathrunet/node_masamune/commit/7d76e68f93f89321492aa1716e778e5f4a869afc))
+* enhance notification functionality for Cloudflare Workers ([04c14c6](https://github.com/mathrunet/node_masamune/commit/04c14c62f0195ab36ccb4df21efebbd410259e84))
+* enhance SendGrid integration for Cloudflare Workers ([60f9976](https://github.com/mathrunet/node_masamune/commit/60f997643c223c74d9f2344d79e91d2337e4018f))
 * Remove debug log statements from FirestoreNullConverter ([b110a47](https://github.com/mathrunet/node_masamune/commit/b110a47faac178d79e4810221a0c89a943417f59))
 * Remove various cloud functions and tests, and add new tests for short video generation functionality. ([b5a2f34](https://github.com/mathrunet/node_masamune/commit/b5a2f34d474218c76cb25fdc1f6c0fe3b6c13413))
 * restructure database rules for improved clarity and consistency ([b541875](https://github.com/mathrunet/node_masamune/commit/b5418755495ef5340657e532466659e5f3c8cf82))
 * Save the interface to a separate file. ([141f8bd](https://github.com/mathrunet/node_masamune/commit/141f8bdf6b06538de2512e52b7fedb58366c4e8b))
+* update Android token functions for Cloudflare Workers integration ([f3d602e](https://github.com/mathrunet/node_masamune/commit/f3d602ec1ac846471217d150ffcf166771f8f247))
+* update Cloudflare purchase functions for improved handling ([f4d1a20](https://github.com/mathrunet/node_masamune/commit/f4d1a2038a15f162d1df6b3558fe8300e09a3d78))
+* update geocoding functionality for Cloudflare Workers ([1398cc6](https://github.com/mathrunet/node_masamune/commit/1398cc6fa73e0474a39c1bd7f1d718398b91367a))
 
 ### test
 
@@ -360,6 +368,7 @@
 * Creating tests. ([2a91c82](https://github.com/mathrunet/node_masamune/commit/2a91c824c4cf584fac10f9ac61d9bf4f103c5196))
 * Extend the timeout for the short video generation test. ([9e46c82](https://github.com/mathrunet/node_masamune/commit/9e46c828c791d933b32344842e63830782aa0fa5))
 * Fixes to pass tests. ([a656689](https://github.com/mathrunet/node_masamune/commit/a6566898613d76cd1027a319cda4f605044db151))
+* refactor media tests for Cloudflare integration ([7b1e581](https://github.com/mathrunet/node_masamune/commit/7b1e5816b297d68ba5c28599b5cfb7fa935a70f4))
 * Test code implementation. ([7f40834](https://github.com/mathrunet/node_masamune/commit/7f40834936b13a1b54b792b1c47f7c1ae2319502))
 
 
