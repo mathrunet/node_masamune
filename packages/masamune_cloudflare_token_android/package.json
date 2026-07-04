@@ -1,6 +1,6 @@
 {
   "name": "@mathrunet/masamune_cloudflare_token_android",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "description": "A Masamune framework plugin package for outputting tokens on Android for Cloudflare Workers.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -41,7 +41,7 @@
   "homepage": "https://github.com/mathrunet/node_masamune#readme",
   "dependencies": {
     "@mathrunet/masamune": "^3.10.4",
-    "@mathrunet/masamune_cloudflare": "^3.3.0",
+    "@mathrunet/masamune_cloudflare": "^3.3.1",
     "hono": "^4.12.27",
     "typescript": "^5.9.2"
   },
