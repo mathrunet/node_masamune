@@ -29,7 +29,7 @@ export * from "./lib/src/rules/rules_engine";
 export * from "./lib/adapters/firebase_auth_adapter";
 export * from "./lib/adapters/none_auth_adapter";
 export * from "./lib/adapters/rules_middleware";
-export * from "./lib/middlewares";
+export * from "./lib/adapters";
 
 /**
  * Methods for deploying to Cloudflare Workers.
