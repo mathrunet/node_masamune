@@ -92,7 +92,7 @@ same path pattern and access rule format.
         "read": "allow",
         "write": "server"
       },
-      "{uid}/users/{uid}": {
+      "private_{uid}/users": {
         "read": { "type": "path", "param": "uid" },
         "write": { "type": "field", "field": "ownerId", "server": true }
       }
@@ -110,6 +110,12 @@ same path pattern and access rule format.
   }
 }
 ```
+
+Named path parameters can occupy a whole segment (`{uid}`) or be embedded in
+one (`private_{uid}` or `prefix_{uid}_suffix`). One parameter is allowed per
+segment, and its extracted value must not be empty. Exact literal segments take
+precedence over embedded parameters, followed by whole-segment parameters, `*`,
+and `**`.
 
 Supported access values are `deny`, `allow`, `authenticated`, `server`,
 `{ "type": "field", "field": "..." }`, and

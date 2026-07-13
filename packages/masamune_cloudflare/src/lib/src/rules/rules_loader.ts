@@ -1,3 +1,5 @@
+import { parseNamedPathParamSegment } from "./path_segment";
+
 /**
  * Operation names supported by rules.json.
  *
@@ -182,13 +184,14 @@ export function validateRulePath(path: string): void {
     }
     const paramNames = new Set<string>();
     for (const segment of segments) {
-        const paramName = parseNamedPathParam(segment);
-        if ((segment.startsWith("{") || segment.endsWith("}")) && !paramName) {
+        const pathParam = parseNamedPathParamSegment(segment);
+        if ((segment.includes("{") || segment.includes("}")) && !pathParam) {
             throw new Error(`Invalid path parameter segment '${segment}' in rule path: ${path}`);
         }
-        if (!paramName) {
+        if (!pathParam) {
             continue;
         }
+        const paramName = pathParam.name;
         if (paramNames.has(paramName)) {
             throw new Error(`Duplicate path parameter '${paramName}' in rule path: ${path}`);
         }
@@ -244,11 +247,6 @@ function validateAccessRule(path: string, operation: string, access: unknown): R
         }
     }
     throw new Error(`Invalid access rule for ${operation} in ${path}.`);
-}
-
-function parseNamedPathParam(segment: string): string | undefined {
-    const match = /^\{([A-Za-z_][A-Za-z0-9_]*)\}$/.exec(segment);
-    return match?.[1];
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

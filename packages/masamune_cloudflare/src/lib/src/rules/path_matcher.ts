@@ -1,4 +1,8 @@
 import { validateRulePath } from "./rules_loader";
+import {
+    matchNamedPathParamSegment,
+    parseNamedPathParamSegment,
+} from "./path_segment";
 
 /**
  * Result of matching a rule path against a request path.
@@ -10,6 +14,7 @@ export interface RulePathMatch {
     rulePath: string;
     params: Record<string, string>;
     literalSegments: number;
+    embeddedLiteralCharacters: number;
     namedWildcardSegments: number;
     wildcardSegments: number;
     deepWildcardSegments: number;
@@ -27,6 +32,7 @@ export function matchRulePath(rulePath: string, requestPath: string): RulePathMa
     const requestSegments = splitPath(requestPath);
     const params: Record<string, string> = {};
     let literalSegments = 0;
+    let embeddedLiteralCharacters = 0;
     let namedWildcardSegments = 0;
     let wildcardSegments = 0;
     let deepWildcardSegments = 0;
@@ -40,6 +46,7 @@ export function matchRulePath(rulePath: string, requestPath: string): RulePathMa
                 rulePath,
                 params,
                 literalSegments,
+                embeddedLiteralCharacters,
                 namedWildcardSegments,
                 wildcardSegments,
                 deepWildcardSegments,
@@ -54,9 +61,14 @@ export function matchRulePath(rulePath: string, requestPath: string): RulePathMa
             wildcardSegments++;
             continue;
         }
-        const paramName = parseNamedPathParam(ruleSegment);
-        if (paramName) {
-            params[paramName] = requestSegment;
+        const pathParam = parseNamedPathParamSegment(ruleSegment);
+        if (pathParam) {
+            const paramMatch = matchNamedPathParamSegment(ruleSegment, requestSegment);
+            if (!paramMatch) {
+                return createUnmatched(rulePath);
+            }
+            params[pathParam.name] = paramMatch.value;
+            embeddedLiteralCharacters += pathParam.prefix.length + pathParam.suffix.length;
             namedWildcardSegments++;
             wildcardSegments++;
             continue;
@@ -74,6 +86,7 @@ export function matchRulePath(rulePath: string, requestPath: string): RulePathMa
         rulePath,
         params,
         literalSegments,
+        embeddedLiteralCharacters,
         namedWildcardSegments,
         wildcardSegments,
         deepWildcardSegments,
@@ -89,6 +102,9 @@ export function matchRulePath(rulePath: string, requestPath: string): RulePathMa
 export function compareRulePathMatch(a: RulePathMatch, b: RulePathMatch): number {
     if (a.literalSegments !== b.literalSegments) {
         return b.literalSegments - a.literalSegments;
+    }
+    if (a.embeddedLiteralCharacters !== b.embeddedLiteralCharacters) {
+        return b.embeddedLiteralCharacters - a.embeddedLiteralCharacters;
     }
     if (a.deepWildcardSegments !== b.deepWildcardSegments) {
         return a.deepWildcardSegments - b.deepWildcardSegments;
@@ -131,14 +147,10 @@ function createUnmatched(rulePath: string): RulePathMatch {
         rulePath,
         params: {},
         literalSegments: 0,
+        embeddedLiteralCharacters: 0,
         namedWildcardSegments: 0,
         wildcardSegments: 0,
         deepWildcardSegments: 0,
         matchedSegments: 0,
     };
-}
-
-function parseNamedPathParam(segment: string): string | undefined {
-    const match = /^\{([A-Za-z_][A-Za-z0-9_]*)\}$/.exec(segment);
-    return match?.[1];
 }

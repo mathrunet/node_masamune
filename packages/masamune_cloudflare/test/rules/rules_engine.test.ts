@@ -186,6 +186,36 @@ describe("rules engine", () => {
         expect(result.params).toEqual({ uid: "user-1" });
     });
 
+    test("evaluates path parameters embedded in a database segment", async () => {
+        const engine = new RulesEngine({
+            version: "1",
+            rules: {
+                database: {
+                    "private_{uid}/table/key": {
+                        read: { type: "path", param: "uid" },
+                    },
+                },
+            },
+        });
+
+        const owner = await engine.evaluate({
+            target: "database",
+            path: "private_user-1/table/key",
+            operation: "read",
+            authentication: { uid: "user-1" },
+        });
+        const other = await engine.evaluate({
+            target: "database",
+            path: "private_user-1/table/key",
+            operation: "read",
+            authentication: { uid: "user-2" },
+        });
+
+        expect(owner.allowed).toBe(true);
+        expect(owner.params).toEqual({ uid: "user-1" });
+        expect(other.allowed).toBe(false);
+    });
+
     test("evaluates server-only rules", async () => {
         const engine = new RulesEngine({
             version: "1",
@@ -341,6 +371,33 @@ describe("rules engine", () => {
             readMode: "direct",
             writeMode: "functions",
         });
+    });
+
+    test("recognizes embedded parameters in database token scope restrictions", async () => {
+        const engine = new RulesEngine({
+            version: "1",
+            rules: {
+                database: {
+                    "private_user-1": {
+                        read: "allow",
+                    },
+                    "private_{uid}/users": {
+                        read: "deny",
+                    },
+                },
+            },
+        });
+
+        const access = await resolveDatabaseTokenAccess({
+            engine,
+            database: "private_user-1",
+            operations: ["read"],
+        });
+
+        expect(access).toMatchObject({
+            readMode: "functions",
+        });
+        expect(access?.authorization).toBeUndefined();
     });
 
     test("validates rules config schema", () => {

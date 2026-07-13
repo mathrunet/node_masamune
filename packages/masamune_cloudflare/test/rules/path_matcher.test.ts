@@ -36,6 +36,38 @@ describe("path matcher", () => {
         expect(result.namedWildcardSegments).toBe(1);
     });
 
+    test("matches named path parameters embedded in a segment", () => {
+        const prefixed = matchRulePath(
+            "database/private_{uid}",
+            "database/private_user-1",
+        );
+        const wrapped = matchRulePath(
+            "database/prefix_{uid}_suffix",
+            "database/prefix_user-1_suffix",
+        );
+
+        expect(prefixed.matched).toBe(true);
+        expect(prefixed.params).toEqual({ uid: "user-1" });
+        expect(prefixed.embeddedLiteralCharacters).toBe("private_".length);
+        expect(wrapped.matched).toBe(true);
+        expect(wrapped.params).toEqual({ uid: "user-1" });
+    });
+
+    test("does not match embedded parameters with different literals or empty values", () => {
+        expect(matchRulePath(
+            "database/prefix_{uid}_suffix",
+            "database/other_user-1_suffix",
+        ).matched).toBe(false);
+        expect(matchRulePath(
+            "database/prefix_{uid}_suffix",
+            "database/prefix_user-1_other",
+        ).matched).toBe(false);
+        expect(matchRulePath(
+            "database/private_{uid}",
+            "database/private_",
+        ).matched).toBe(false);
+    });
+
     test("matches deep wildcard as remaining segments", () => {
         const result = matchRulePath(
             "database/main/**",
@@ -81,6 +113,24 @@ describe("path matcher", () => {
         ]);
     });
 
+    test("sorts embedded parameters between literals and whole-segment parameters", () => {
+        const matches = [
+            matchRulePath("database/*", "database/private_user-1"),
+            matchRulePath("database/{uid}", "database/private_user-1"),
+            matchRulePath("database/private_{uid}", "database/private_user-1"),
+            matchRulePath("database/private_user-1", "database/private_user-1"),
+        ];
+
+        const sorted = sortRulePathMatches(matches);
+
+        expect(sorted.map((match) => match.rulePath)).toEqual([
+            "database/private_user-1",
+            "database/private_{uid}",
+            "database/{uid}",
+            "database/*",
+        ]);
+    });
+
     test("rejects invalid deep wildcard position", () => {
         expect(() => matchRulePath(
             "database/**/users",
@@ -93,12 +143,24 @@ describe("path matcher", () => {
             "database/{invalid-name}",
             "database/main",
         )).toThrow("Invalid path parameter segment");
+        expect(() => matchRulePath(
+            "database/prefix_{uid}_{other}",
+            "database/prefix_user-1_other-1",
+        )).toThrow("Invalid path parameter segment");
+        expect(() => matchRulePath(
+            "database/private_{uid",
+            "database/private_user-1",
+        )).toThrow("Invalid path parameter segment");
     });
 
     test("rejects duplicate named path parameters", () => {
         expect(() => matchRulePath(
             "database/{uid}/users/{uid}",
             "database/user-1/users/user-1",
+        )).toThrow("Duplicate path parameter");
+        expect(() => matchRulePath(
+            "database/private_{uid}/users/owner_{uid}",
+            "database/private_user-1/users/owner_user-1",
         )).toThrow("Duplicate path parameter");
     });
 });

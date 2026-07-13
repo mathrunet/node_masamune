@@ -9,6 +9,7 @@ import {
     loadRulesConfig,
 } from "./rules_loader";
 import { matchRulePath, sortRulePathMatches } from "./path_matcher";
+import { matchNamedPathParamSegment } from "./path_segment";
 
 /**
  * Input for evaluating rules.
@@ -799,7 +800,7 @@ function segmentMatches(ruleSegment: string | undefined, value: string): boolean
     if (ruleSegment === "**") {
         return true;
     }
-    return ruleSegment === "*" || !!parseNamedPathParam(ruleSegment) || ruleSegment === value;
+    return ruleSegment === "*" || !!matchNamedPathParamSegment(ruleSegment, value) || ruleSegment === value;
 }
 
 function isDirectSafeScopeAccess(access: RulesAccessRule): boolean {
@@ -820,12 +821,6 @@ function normalizeEvaluationPath(input: RulesEvaluationInput): string {
     const path = input.path.trim().replace(/^\/+|\/+$/g, "");
     return `${input.target}/${path}`;
 }
-
-function parseNamedPathParam(segment: string): string | undefined {
-    const match = /^\{([A-Za-z_][A-Za-z0-9_]*)\}$/.exec(segment);
-    return match?.[1];
-}
-
 
 function encodeRulesPathSegment(segment: string): string {
     if (segment.length === 0 || segment.includes("/")) {
