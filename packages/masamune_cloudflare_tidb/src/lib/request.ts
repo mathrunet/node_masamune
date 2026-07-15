@@ -18,7 +18,6 @@ export class HttpError extends Error {
 
 export async function parseCrudRequest(
   context: Context,
-  defaultDatabase = "main",
 ): Promise<Required<Pick<TidbRequestBody, "database" | "table">> & TidbRequestBody> {
   const method = context.req.method.toUpperCase();
   const pathDatabase = optionalParam(context, "database");
@@ -27,11 +26,16 @@ export async function parseCrudRequest(
   const body = method === "GET"
     ? parseGetRequest(context)
     : await parseJsonBody<TidbRequestBody>(context);
-  const database = validateLogicalName(pathDatabase ?? body.database ?? defaultDatabase, "database");
-  const table = validateIdentifier(requiredString(pathTable ?? body.table, "table"), "table");
-  const requestedIndexKey = pathIndexKey ?? body.indexKey;
-  const indexKey = requestedIndexKey
-    ? validateIndexKey(requiredString(requestedIndexKey, "indexKey"))
+  const database = validateLogicalName(
+    requiredString(pathDatabase, "database"),
+    "database",
+  );
+  const table = validateIdentifier(
+    requiredString(pathTable, "table"),
+    "table",
+  );
+  const indexKey = pathIndexKey
+    ? validateIndexKey(requiredString(pathIndexKey, "indexKey"))
     : undefined;
   const where = validateWhere(body.where ?? []);
   const orderBy = validateOrderBy(body.orderBy ?? []);
@@ -87,9 +91,6 @@ function parseGetRequest(context: Context): TidbRequestBody {
   const orderBy = query.orderBy ? parseJsonString<TidbOrderCondition[]>(query.orderBy, "orderBy") : undefined;
   const limit = query.limit === undefined ? undefined : Number(query.limit);
   return {
-    database: query.database,
-    table: query.table,
-    indexKey: query.indexKey,
     where,
     orderBy,
     limit,

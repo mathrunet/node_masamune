@@ -109,15 +109,6 @@ export async function waitForDatabaseReady(client: TidbClient): Promise<void> {
   throw lastError;
 }
 
-export function resolveDefaultDatabase(options: TidbWorkersOptions): string {
-  const url = resolveConnectionUrl(options);
-  const database = decodeURIComponent(url.pathname.replace(/^\/+/, ""));
-  if (!database) {
-    throw new HttpError(500, "TIDB_CONNECTION_URL must include database path.");
-  }
-  return validateLogicalName(database, "database");
-}
-
 function resolveDatabaseName(
   database: string,
   options: TidbWorkersOptions,

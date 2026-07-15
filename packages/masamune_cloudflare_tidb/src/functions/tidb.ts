@@ -17,7 +17,6 @@ import {
   clearDatabaseConnectionCache,
   createTidbClient,
   isTransientTidbError,
-  resolveDefaultDatabase,
   resolveDatabaseConnection,
 } from "../lib/tidb_client";
 import { resolveTidbWorkersOptionsFromEnv } from "../lib/env";
@@ -27,16 +26,12 @@ module.exports = (
   options: TidbWorkersOptions,
   data: { [key: string]: unknown },
 ) => {
-  hono.get("/", async (context) => handleCrud(context, options, "GET"));
   hono.get("/database/:database/:table", async (context) => handleCrud(context, options, "GET"));
   hono.get("/database/:database/:table/:indexKey", async (context) => handleCrud(context, options, "GET"));
-  hono.post("/", async (context) => handleCrud(context, options, "POST"));
   hono.post("/database/:database/:table", async (context) => handleCrud(context, options, "POST"));
   hono.post("/database/:database/:table/:indexKey", async (context) => handleCrud(context, options, "POST"));
-  hono.put("/", async (context) => handleCrud(context, options, "PUT"));
   hono.put("/database/:database/:table", async (context) => handleCrud(context, options, "PUT"));
   hono.put("/database/:database/:table/:indexKey", async (context) => handleCrud(context, options, "PUT"));
-  hono.delete("/", async (context) => handleCrud(context, options, "DELETE"));
   hono.delete("/database/:database/:table", async (context) => handleCrud(context, options, "DELETE"));
   hono.delete("/database/:database/:table/:indexKey", async (context) => handleCrud(context, options, "DELETE"));
   return hono;
@@ -55,10 +50,7 @@ async function handleCrud(
   let phase = "parse";
   try {
     resolvedOptions = resolveTidbWorkersOptionsFromEnv(context, options);
-    request = await parseCrudRequest(
-      context,
-      resolveDefaultDatabase(resolvedOptions),
-    );
+    request = await parseCrudRequest(context);
     const crudRequest = request;
     phase = "connect";
     const connection = await resolveDatabaseConnection(crudRequest.database, resolvedOptions);

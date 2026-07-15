@@ -61,8 +61,10 @@ export default m.deploy(
 
 ## Configuration
 
-Set the TiDB connection URL as a Cloudflare Workers secret. The database in the
-URL is used as the default database.
+Set the TiDB connection URL as a Cloudflare Workers secret. Every CRUD request
+must explicitly select its database with the
+`database/<database>/<table>/<document_id>` path. The database in the URL is
+connection metadata only and is never used as an implicit default.
 
 ```bash
 wrangler secret put TIDB_CONNECTION_URL

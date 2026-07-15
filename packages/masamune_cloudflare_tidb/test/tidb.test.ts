@@ -151,16 +151,13 @@ describe("TiDB Cloudflare workers", () => {
     );
   });
 
-  test("uses database path in connection URL as default database.", async () => {
+  test("rejects the legacy root endpoint without a database path.", async () => {
     const app = deploy([Functions.tidb(dynamicOptions())]);
 
     const response = await app.request("http://localhost/tidb?table=users");
 
-    expect(response.status).toBe(200);
-    expect(connect).toHaveBeenCalledWith({
-      url: "mysql://backend:backend-password@gateway01.ap-northeast-1.prod.aws.tidbcloud.com:4000/app_db",
-      fullResult: true,
-    });
+    expect(response.status).toBe(404);
+    expect(connect).not.toHaveBeenCalled();
   });
 
   test("writes with TiDB upsert SQL.", async () => {
