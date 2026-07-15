@@ -12,6 +12,7 @@ export * from "@mathrunet/masamune";
 export * from "@mathrunet/masamune_cloudflare";
 export * from "./functions";
 export * from "./lib/database_adapter";
+export * from "./lib/database_name";
 export type {
   RulesAccessRule,
   RulesConfig,

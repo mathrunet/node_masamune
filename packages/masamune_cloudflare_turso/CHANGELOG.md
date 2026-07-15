@@ -1,3 +1,19 @@
+## 3.4.3 (2026-07-15)
+
+
+### fix
+
+* Align generated physical database names with the Turso Platform API's current 56-character limit.
+* Allow additional propagation time when waiting for a newly created Turso database.
+* Require explicit database paths across Worker adapters, remove the implicit `main` database, and make database auto-creation opt-in.
+
+## 3.4.2 (2026-07-15)
+
+
+### fix
+
+* Map logical database names such as mixed-case Firebase UIDs to Turso-compatible physical names while preserving logical-name rules evaluation.
+
 ## 3.4.1 (2026-07-04)
 
 
@@ -370,6 +386,4 @@
 * Fixes to pass tests. ([a656689](https://github.com/mathrunet/node_masamune/commit/a6566898613d76cd1027a319cda4f605044db151))
 * refactor media tests for Cloudflare integration ([7b1e581](https://github.com/mathrunet/node_masamune/commit/7b1e5816b297d68ba5c28599b5cfb7fa935a70f4))
 * Test code implementation. ([7f40834](https://github.com/mathrunet/node_masamune/commit/7f40834936b13a1b54b792b1c47f7c1ae2319502))
-
-
 

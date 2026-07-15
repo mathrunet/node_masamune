@@ -18,16 +18,27 @@ export class HttpError extends Error {
   }
 }
 
-export async function parseCrudRequest(context: Context): Promise<Required<Pick<TursoRequestBody, "database" | "table">> & TursoRequestBody> {
+export async function parseCrudRequest(
+  context: Context,
+): Promise<
+  Required<Pick<TursoRequestBody, "database" | "table">> & TursoRequestBody
+> {
   const method = context.req.method.toUpperCase();
   const pathDatabase = optionalParam(context, "database");
   const pathTable = optionalParam(context, "table");
   const pathIndexKey = optionalParam(context, "indexKey");
-  const body = method === "GET"
-    ? parseGetRequest(context)
-    : await parseJsonBody<TursoRequestBody>(context);
-  const database = validateLogicalName(pathDatabase ?? body.database ?? "main", "database");
-  const table = validateIdentifier(requiredString(pathTable ?? body.table, "table"), "table");
+  const body =
+    method === "GET"
+      ? parseGetRequest(context)
+      : await parseJsonBody<TursoRequestBody>(context);
+  const database = validateLogicalName(
+    requiredString(pathDatabase ?? body.database, "database"),
+    "database",
+  );
+  const table = validateIdentifier(
+    requiredString(pathTable ?? body.table, "table"),
+    "table",
+  );
   const requestedIndexKey = pathIndexKey ?? body.indexKey;
   const indexKey = requestedIndexKey
     ? validateIndexKey(requiredString(requestedIndexKey, "indexKey"))
@@ -35,7 +46,8 @@ export async function parseCrudRequest(context: Context): Promise<Required<Pick<
   const where = validateWhere(body.where ?? []);
   const orderBy = validateOrderBy(body.orderBy ?? []);
   const limit = validateLimit(body.limit);
-  const value = body.value === undefined ? undefined : validateValue(body.value);
+  const value =
+    body.value === undefined ? undefined : validateValue(body.value);
   return {
     ...body,
     database,
@@ -49,10 +61,17 @@ export async function parseCrudRequest(context: Context): Promise<Required<Pick<
   };
 }
 
-export async function parseTokenRequest(context: Context): Promise<Required<Pick<TursoTokenRequestBody, "database">> & TursoTokenRequestBody> {
+export async function parseTokenRequest(
+  context: Context,
+): Promise<
+  Required<Pick<TursoTokenRequestBody, "database">> & TursoTokenRequestBody
+> {
   const pathDatabase = optionalParam(context, "database");
   const body = await parseJsonBody<TursoTokenRequestBody>(context);
-  const database = validateLogicalName(pathDatabase ?? body.database ?? "main", "database");
+  const database = validateLogicalName(
+    requiredString(pathDatabase ?? body.database, "database"),
+    "database",
+  );
   const operations = body.operations
     ? validateOperations(body.operations, "operations")
     : undefined;
@@ -60,8 +79,14 @@ export async function parseTokenRequest(context: Context): Promise<Required<Pick
     if (!item || typeof item !== "object") {
       throw new HttpError(400, "targets item must be an object.");
     }
-    const table = validateIdentifier(requiredString(item.table, "targets.table"), "targets.table");
-    const operations = validateOperations(item.operations, "targets.operations");
+    const table = validateIdentifier(
+      requiredString(item.table, "targets.table"),
+      "targets.table",
+    );
+    const operations = validateOperations(
+      item.operations,
+      "targets.operations",
+    );
     return {
       table,
       operations,
@@ -108,8 +133,12 @@ export function jsonError(context: Context, error: unknown): Response {
 
 function parseGetRequest(context: Context): TursoRequestBody {
   const query = context.req.query();
-  const where = query.where ? parseJsonString<TursoWhereCondition[]>(query.where, "where") : undefined;
-  const orderBy = query.orderBy ? parseJsonString<TursoOrderCondition[]>(query.orderBy, "orderBy") : undefined;
+  const where = query.where
+    ? parseJsonString<TursoWhereCondition[]>(query.where, "where")
+    : undefined;
+  const orderBy = query.orderBy
+    ? parseJsonString<TursoOrderCondition[]>(query.orderBy, "orderBy")
+    : undefined;
   const limit = query.limit === undefined ? undefined : Number(query.limit);
   return {
     database: query.database,
@@ -197,9 +226,15 @@ function validateWhere(where: TursoWhereCondition[]): TursoWhereCondition[] {
       case "arrayContainsAny":
         break;
       default:
-        throw new HttpError(400, `Unsupported where condition: ${condition.type}`);
+        throw new HttpError(
+          400,
+          `Unsupported where condition: ${condition.type}`,
+        );
     }
-    const key = validateIdentifier(requiredString(condition.key, "where.key"), "where.key");
+    const key = validateIdentifier(
+      requiredString(condition.key, "where.key"),
+      "where.key",
+    );
     return {
       type,
       key,
@@ -208,7 +243,9 @@ function validateWhere(where: TursoWhereCondition[]): TursoWhereCondition[] {
   });
 }
 
-function validateOrderBy(orderBy: TursoOrderCondition[]): TursoOrderCondition[] {
+function validateOrderBy(
+  orderBy: TursoOrderCondition[],
+): TursoOrderCondition[] {
   if (!Array.isArray(orderBy)) {
     throw new HttpError(400, "orderBy must be an array.");
   }
@@ -217,7 +254,10 @@ function validateOrderBy(orderBy: TursoOrderCondition[]): TursoOrderCondition[] 
       throw new HttpError(400, "orderBy condition must be an object.");
     }
     return {
-      key: validateIdentifier(requiredString(condition.key, "orderBy.key"), "orderBy.key"),
+      key: validateIdentifier(
+        requiredString(condition.key, "orderBy.key"),
+        "orderBy.key",
+      ),
       descending: condition.descending === true,
     };
   });
@@ -233,7 +273,9 @@ function validateLimit(limit: number | undefined): number | undefined {
   return limit;
 }
 
-function validateValue(value: Record<string, unknown>): Record<string, unknown> {
+function validateValue(
+  value: Record<string, unknown>,
+): Record<string, unknown> {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
     throw new HttpError(400, "value must be an object.");
   }

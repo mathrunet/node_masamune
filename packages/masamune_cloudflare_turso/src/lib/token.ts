@@ -1,5 +1,6 @@
 import { TursoWorkersOptions } from "./types";
 import type { TursoDatabaseTokenAuthorization } from "./rules";
+import { resolvePhysicalDatabaseName } from "./database_name";
 
 export interface IssuedToken {
   token: string;
@@ -44,7 +45,7 @@ async function issuePlatformDatabaseToken({
   authorization: TursoDatabaseTokenAuthorization;
   options: TursoWorkersOptions;
 }): Promise<string> {
-  const databaseName = `${options.databasePrefix ?? ""}${database}`;
+  const databaseName = await resolvePhysicalDatabaseName(database, options);
   const organizationName = options.organization;
   const platformApiToken = options.platformApiToken;
   if (!organizationName || !platformApiToken) {

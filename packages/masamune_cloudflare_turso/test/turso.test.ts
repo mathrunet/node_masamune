@@ -1,9 +1,7 @@
-import {
-  deploy,
-  WorkersAuthAdapterBase,
-} from "@mathrunet/masamune_cloudflare";
+import { deploy, WorkersAuthAdapterBase } from "@mathrunet/masamune_cloudflare";
 import type { MiddlewareHandler } from "hono";
 import { Functions } from "../src/functions";
+import { resolvePhysicalDatabaseName } from "../src/lib/database_name";
 import { createTursoRulesEngine } from "../src/lib/rules";
 import { TursoWorkersOptions } from "../src/lib/types";
 
@@ -135,13 +133,122 @@ describe("Turso Cloudflare workers", () => {
     expect(tokenWorker.path).toBe("/turso/token");
   });
 
+  test("rejects CRUD requests without an explicit database", async () => {
+    const fetchMock = jest.spyOn(globalThis, "fetch");
+    const app = deploy([Functions.turso(dynamicOptions())]);
+
+    const response = await app.request("http://localhost/turso?table=users");
+    const body = (await response.json()) as { error: string };
+
+    expect(response.status).toBe(400);
+    expect(body.error).toBe("database is required.");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  test("rejects token requests without an explicit database", async () => {
+    const fetchMock = jest.spyOn(globalThis, "fetch");
+    const app = deploy([Functions.tursoToken(dynamicOptions())]);
+
+    const response = await app.request("http://localhost/turso/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ttlSeconds: 60 }),
+    });
+    const body = (await response.json()) as { error: string };
+
+    expect(response.status).toBe(400);
+    expect(body.error).toBe("database is required.");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  test("keeps Turso-compatible database names unchanged", async () => {
+    await expect(resolvePhysicalDatabaseName("user-1")).resolves.toBe("user-1");
+  });
+
+  test("maps unsupported logical database names deterministically", async () => {
+    const firebaseUid = "gWTauHPOCiPCUzeFZOu6RsbdzhB3";
+    const physicalName = await resolvePhysicalDatabaseName(firebaseUid);
+
+    expect(physicalName).toMatch(/^db-[a-f0-9]{53}$/);
+    await expect(resolvePhysicalDatabaseName(firebaseUid)).resolves.toBe(
+      physicalName,
+    );
+    await expect(
+      resolvePhysicalDatabaseName(firebaseUid.toLowerCase()),
+    ).resolves.not.toBe(physicalName);
+    await expect(resolvePhysicalDatabaseName("user_profile")).resolves.toMatch(
+      /^db-[a-f0-9]{53}$/,
+    );
+    await expect(resolvePhysicalDatabaseName("a".repeat(57))).resolves.toMatch(
+      /^db-[a-f0-9]{53}$/,
+    );
+    await expect(
+      resolvePhysicalDatabaseName(firebaseUid, { databasePrefix: "tenant-" }),
+    ).resolves.not.toBe(physicalName);
+  });
+
+  test("uses the physical name while authorizing the original Firebase UID", async () => {
+    const firebaseUid = "gWTauHPOCiPCUzeFZOu6RsbdzhB3";
+    const physicalName = await resolvePhysicalDatabaseName(firebaseUid);
+    const fetchMock = mockExistingDatabase({
+      url: `libsql://${physicalName}.turso.io`,
+    }).mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({ jwt: "firebase-user-token" }),
+    } as Response);
+    const app = deploy(
+      [
+        Functions.tursoToken(
+          dynamicOptions({
+            rules: {
+              version: "1",
+              rules: {
+                database: {
+                  "{uid}": {
+                    read: { type: "path", param: "uid" },
+                    write: "deny",
+                  },
+                },
+              },
+            },
+          }),
+        ),
+      ],
+      { auth: new StaticAuthAdapter(firebaseUid) },
+    );
+
+    const response = await app.request("http://localhost/turso/token", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        database: firebaseUid,
+        ttlSeconds: 60,
+      }),
+    });
+
+    expect(response.status).toBe(200);
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining(
+        `/v1/organizations/example-org/databases/${physicalName}`,
+      ),
+      expect.any(Object),
+    );
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining(
+        `/databases/${physicalName}/auth/tokens?expiration=60s&authorization=read-only`,
+      ),
+      expect.objectContaining({ method: "POST" }),
+    );
+  });
+
   test("uses rules config from default WorkersOptions", async () => {
     mockExistingDatabase({ url: "libsql://default-rules-db.turso.io" });
     execute.mockResolvedValueOnce({ rows: [] });
     const app = deploy(
-      [
-        Functions.turso(dynamicOptions({ rules: undefined })),
-      ],
+      [Functions.turso(dynamicOptions({ rules: undefined }))],
       { rules: allowRules },
     );
 
@@ -208,9 +315,9 @@ describe("Turso Cloudflare workers", () => {
 
     const response = await app.request(
       "http://localhost/turso/database/pathdb/users" +
-      "?where=%5B%7B%22type%22%3A%22equalTo%22%2C%22key%22%3A%22name%22%2C%22value%22%3A%22Alice%22%7D%5D" +
-      "&orderBy=%5B%7B%22key%22%3A%22created_at%22%2C%22descending%22%3Atrue%7D%5D" +
-      "&limit=20",
+        "?where=%5B%7B%22type%22%3A%22equalTo%22%2C%22key%22%3A%22name%22%2C%22value%22%3A%22Alice%22%7D%5D" +
+        "&orderBy=%5B%7B%22key%22%3A%22created_at%22%2C%22descending%22%3Atrue%7D%5D" +
+        "&limit=20",
     );
     const body = (await response.json()) as { data: unknown[] };
 
@@ -247,9 +354,7 @@ describe("Turso Cloudflare workers", () => {
     mockExistingDatabase({ url: "libsql://countdb.turso.io" });
     execute.mockResolvedValueOnce({
       columns: ["count"],
-      rows: [
-        [2],
-      ],
+      rows: [[2]],
     });
     const app = deploy([Functions.turso(dynamicOptions())]);
 
@@ -278,23 +383,24 @@ describe("Turso Cloudflare workers", () => {
       })
       .mockResolvedValueOnce({
         columns: ["id", "name", "created_at", "updated_at"],
-        rows: [
-          ["user_1", "Alice", 1, 1],
-        ],
+        rows: [["user_1", "Alice", 1, 1]],
       });
     const app = deploy([Functions.turso(dynamicOptions())]);
 
-    const response = await app.request("http://localhost/turso/database/postdb/users/user_1", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        value: {
-          name: "Alice",
+    const response = await app.request(
+      "http://localhost/turso/database/postdb/users/user_1",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-      }),
-    });
+        body: JSON.stringify({
+          value: {
+            name: "Alice",
+          },
+        }),
+      },
+    );
     const body = (await response.json()) as { data: Record<string, unknown>[] };
 
     expect(response.status).toBe(200);
@@ -342,24 +448,25 @@ describe("Turso Cloudflare workers", () => {
       })
       .mockResolvedValueOnce({
         columns: ["id", "name", "created_at", "updated_at"],
-        rows: [
-          ["user_1", "Alice", 1, 2],
-        ],
+        rows: [["user_1", "Alice", 1, 2]],
       });
     const app = deploy([Functions.turso(dynamicOptions())]);
 
-    const response = await app.request("http://localhost/turso/database/postupsertdb/users", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        value: {
-          id: "user_1",
-          name: "Alice",
+    const response = await app.request(
+      "http://localhost/turso/database/postupsertdb/users",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-      }),
-    });
+        body: JSON.stringify({
+          value: {
+            id: "user_1",
+            name: "Alice",
+          },
+        }),
+      },
+    );
     const body = (await response.json()) as { data: Record<string, unknown>[] };
 
     expect(response.status).toBe(200);
@@ -387,9 +494,7 @@ describe("Turso Cloudflare workers", () => {
       })
       .mockResolvedValueOnce({
         columns: ["id", "name", "created_at", "updated_at"],
-        rows: [
-          ["user_1", "Alice", 1, 1],
-        ],
+        rows: [["user_1", "Alice", 1, 1]],
       });
     const app = deploy([
       Functions.turso(
@@ -409,17 +514,20 @@ describe("Turso Cloudflare workers", () => {
       ),
     ]);
 
-    const response = await app.request("http://localhost/turso/database/postruledb/users/user_1", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        value: {
-          name: "Alice",
+    const response = await app.request(
+      "http://localhost/turso/database/postruledb/users/user_1",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-      }),
-    });
+        body: JSON.stringify({
+          value: {
+            name: "Alice",
+          },
+        }),
+      },
+    );
 
     expect(response.status).toBe(200);
     expect(execute).toHaveBeenCalledWith(
@@ -449,17 +557,20 @@ describe("Turso Cloudflare workers", () => {
       ),
     ]);
 
-    const response = await app.request("http://localhost/turso/database/postdenieddb/users/user_1", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        value: {
-          name: "Alice",
+    const response = await app.request(
+      "http://localhost/turso/database/postdenieddb/users/user_1",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-      }),
-    });
+        body: JSON.stringify({
+          value: {
+            name: "Alice",
+          },
+        }),
+      },
+    );
     const body = (await response.json()) as { error: string };
 
     expect(response.status).toBe(403);
@@ -533,16 +644,19 @@ describe("Turso Cloudflare workers", () => {
       ),
     ]);
 
-    const response = await app.request("http://localhost/turso/token/database/scopedb", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
+    const response = await app.request(
+      "http://localhost/turso/token/database/scopedb",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ttlSeconds: 60,
+          operations: ["read"],
+        }),
       },
-      body: JSON.stringify({
-        ttlSeconds: 60,
-        operations: ["read"],
-      }),
-    });
+    );
     const body = (await response.json()) as {
       token: string;
       expiresAt: number;
@@ -597,15 +711,18 @@ describe("Turso Cloudflare workers", () => {
       ),
     ]);
 
-    const response = await app.request("http://localhost/turso/token/database/test", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
+    const response = await app.request(
+      "http://localhost/turso/token/database/test",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ttlSeconds: 60,
+        }),
       },
-      body: JSON.stringify({
-        ttlSeconds: 60,
-      }),
-    });
+    );
     const body = (await response.json()) as {
       token: string;
       readMode: string;
@@ -677,7 +794,9 @@ describe("Turso Cloudflare workers", () => {
     expect(response.status).toBe(200);
     expect(body.token).toBe("env-priority-token");
     expect(fetchMock).toHaveBeenCalledWith(
-      expect.stringContaining("/v1/organizations/env-org/databases/env-priority-db"),
+      expect.stringContaining(
+        "/v1/organizations/env-org/databases/env-priority-db",
+      ),
       expect.objectContaining({
         headers: expect.objectContaining({
           Authorization: "Bearer env-token",
@@ -1082,7 +1201,9 @@ describe("Turso Cloudflare workers", () => {
       status: 200,
       json: async () => ({ jwt: "platform-jwt" }),
     } as Response);
-    const app = deploy([Functions.tursoToken(dynamicOptions())]);
+    const app = deploy([
+      Functions.tursoToken(dynamicOptions({ autoCreateDatabase: true })),
+    ]);
 
     const response = await app.request("http://localhost/turso/token", {
       method: "POST",
@@ -1122,7 +1243,9 @@ describe("Turso Cloudflare workers", () => {
       status: 200,
       json: async () => ({ jwt: "scoped-token" }),
     } as Response);
-    const app = deploy([Functions.tursoToken(dynamicOptions())]);
+    const app = deploy([
+      Functions.tursoToken(dynamicOptions({ autoCreateDatabase: true })),
+    ]);
 
     const response = await app.request("http://localhost/turso/token", {
       method: "POST",
@@ -1157,7 +1280,9 @@ describe("Turso Cloudflare workers", () => {
         ),
       )
       .mockResolvedValueOnce({ rows: [] });
-    const app = deploy([Functions.tursoToken(dynamicOptions())]);
+    const app = deploy([
+      Functions.tursoToken(dynamicOptions({ autoCreateDatabase: true })),
+    ]);
 
     const response = await app.request("http://localhost/turso/token", {
       method: "POST",
@@ -1188,6 +1313,7 @@ describe("Turso Cloudflare workers", () => {
       Functions.turso(
         dynamicOptions({
           group: undefined,
+          autoCreateDatabase: true,
         }),
       ),
     ]);
@@ -1217,7 +1343,9 @@ describe("Turso Cloudflare workers", () => {
       .mockRejectedValueOnce(new Error("HTTP error! status: 404"))
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [] });
-    const app = deploy([Functions.turso(dynamicOptions())]);
+    const app = deploy([
+      Functions.turso(dynamicOptions({ autoCreateDatabase: true })),
+    ]);
 
     const response = await app.request(
       "http://localhost/turso/database/readydb/users",
@@ -1234,18 +1362,12 @@ describe("Turso Cloudflare workers", () => {
     );
   });
 
-  test("does not create databases when autoCreateDatabase is false", async () => {
+  test("does not create databases unless autoCreateDatabase is true", async () => {
     const fetchMock = jest.spyOn(globalThis, "fetch").mockResolvedValueOnce({
       ok: false,
       status: 404,
     } as Response);
-    const app = deploy([
-      Functions.turso(
-        dynamicOptions({
-          autoCreateDatabase: false,
-        }),
-      ),
-    ]);
+    const app = deploy([Functions.turso(dynamicOptions())]);
 
     const response = await app.request(
       "http://localhost/turso?database=missingdb&table=users",

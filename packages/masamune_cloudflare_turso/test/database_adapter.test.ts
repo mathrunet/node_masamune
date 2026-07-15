@@ -15,15 +15,16 @@ interface ExecutedStatement {
 
 function createMockClient(
   handler: (statement: ExecutedStatement) => TursoResultSet | undefined,
-): { client: TursoClient, executed: ExecutedStatement[] } {
+): { client: TursoClient; executed: ExecutedStatement[] } {
   const executed: ExecutedStatement[] = [];
   const client = {
     execute: async (
-      statement: string | { sql: string, args?: unknown[] },
+      statement: string | { sql: string; args?: unknown[] },
     ): Promise<TursoResultSet> => {
-      const normalized: ExecutedStatement = typeof statement === "string"
-        ? { sql: statement, args: [] }
-        : { sql: statement.sql, args: statement.args ?? [] };
+      const normalized: ExecutedStatement =
+        typeof statement === "string"
+          ? { sql: statement, args: [] }
+          : { sql: statement.sql, args: statement.args ?? [] };
       executed.push(normalized);
       return handler(normalized) ?? { rows: [] };
     },
@@ -33,7 +34,8 @@ function createMockClient(
 
 describe("path parsing", () => {
   test("parseDocumentPath handles top-level documents", () => {
-    expect(parseDocumentPath("user/abc")).toEqual({
+    expect(parseDocumentPath("database/user-db/user/abc")).toEqual({
+      database: "user-db",
       table: "user",
       id: "abc",
       parentId: "",
@@ -41,7 +43,10 @@ describe("path parsing", () => {
   });
 
   test("parseDocumentPath handles nested documents", () => {
-    expect(parseDocumentPath("user/abc/transaction/t1")).toEqual({
+    expect(
+      parseDocumentPath("database/user-db/user/abc/transaction/t1"),
+    ).toEqual({
+      database: "user-db",
       table: "user__transaction",
       id: "t1",
       parentId: "abc",
@@ -49,25 +54,45 @@ describe("path parsing", () => {
   });
 
   test("parseDocumentPath rejects collection paths", () => {
-    expect(() => parseDocumentPath("user")).toThrow("Invalid document path");
+    expect(() => parseDocumentPath("database/user-db/user")).toThrow(
+      "Invalid document path",
+    );
+  });
+
+  test("parseDocumentPath rejects paths without a database prefix", () => {
+    expect(() => parseDocumentPath("user/abc")).toThrow(
+      "Invalid document path",
+    );
   });
 
   test("parseCollectionPath handles top-level collections", () => {
-    expect(parseCollectionPath("user")).toEqual({
+    expect(parseCollectionPath("database/user-db/user")).toEqual({
+      database: "user-db",
       table: "user",
       parentId: "",
     });
   });
 
   test("parseCollectionPath handles nested collections", () => {
-    expect(parseCollectionPath("user/abc/transaction")).toEqual({
+    expect(
+      parseCollectionPath("database/user-db/user/abc/transaction"),
+    ).toEqual({
+      database: "user-db",
       table: "user__transaction",
       parentId: "abc",
     });
   });
 
   test("parseCollectionPath rejects document paths", () => {
-    expect(() => parseCollectionPath("user/abc")).toThrow("Invalid collection path");
+    expect(() => parseCollectionPath("database/user-db/user/abc")).toThrow(
+      "Invalid collection path",
+    );
+  });
+
+  test("parseCollectionPath rejects paths without a database prefix", () => {
+    expect(() => parseCollectionPath("user")).toThrow(
+      "Invalid collection path",
+    );
   });
 });
 
@@ -90,23 +115,31 @@ describe("TursoDatabaseAdapter", () => {
       throw new Error("no such table: user");
     });
     const adapter = new TursoDatabaseAdapter({ client });
-    expect(await adapter.getDocument("user/abc")).toBeNull();
+    expect(await adapter.getDocument("database/user-db/user/abc")).toBeNull();
   });
 
   test("getDocument decodes row into document data", async () => {
     const { client, executed } = createMockClient((statement) => {
       if (statement.sql.startsWith("SELECT")) {
         return {
-          columns: ["id", "parent_id", "created_at", "updated_at", "name", "mf_at_uid", "meta"],
-          rows: [["abc", "", 1, 2, "John", "abc", "{\"a\":1}"]],
+          columns: [
+            "id",
+            "parent_id",
+            "created_at",
+            "updated_at",
+            "name",
+            "mf_at_uid",
+            "meta",
+          ],
+          rows: [["abc", "", 1, 2, "John", "abc", '{"a":1}']],
         };
       }
       return undefined;
     });
     const adapter = new TursoDatabaseAdapter({ client });
-    const document = await adapter.getDocument("user/abc");
+    const document = await adapter.getDocument("database/user-db/user/abc");
     expect(document).toEqual({
-      path: "user/abc",
+      path: "database/user-db/user/abc",
       data: {
         name: "John",
         "@uid": "abc",
@@ -121,24 +154,42 @@ describe("TursoDatabaseAdapter", () => {
     const { client, executed } = createMockClient((statement) => {
       if (statement.sql.startsWith("SELECT")) {
         return {
-          columns: ["id", "parent_id", "created_at", "updated_at", "wallet", "name"],
+          columns: [
+            "id",
+            "parent_id",
+            "created_at",
+            "updated_at",
+            "wallet",
+            "name",
+          ],
           rows: [["abc", "", 100, 100, 500, "John"]],
         };
       }
       return { rows: [] };
     });
     const adapter = new TursoDatabaseAdapter({ client });
-    await adapter.saveDocument("user/abc", {
-      wallet: new DatabaseIncrement(120),
-      "@uid": "abc",
-    }, { merge: true });
-    const insert = executed.find((statement) => statement.sql.startsWith("INSERT OR REPLACE"));
+    await adapter.saveDocument(
+      "database/user-db/user/abc",
+      {
+        wallet: new DatabaseIncrement(120),
+        "@uid": "abc",
+      },
+      { merge: true },
+    );
+    const insert = executed.find((statement) =>
+      statement.sql.startsWith("INSERT OR REPLACE"),
+    );
     expect(insert).toBeDefined();
-    expect(insert!.sql).toContain("\"wallet\"");
-    expect(insert!.sql).toContain("\"mf_at_uid\"");
-    const keys = insert!.sql.match(/\(([^)]+)\) VALUES/)?.[1]
-      .split(",").map((key) => key.trim().replace(/"/g, "")) ?? [];
-    const values = new Map(keys.map((key, index) => [key, insert!.args[index]]));
+    expect(insert!.sql).toContain('"wallet"');
+    expect(insert!.sql).toContain('"mf_at_uid"');
+    const keys =
+      insert!.sql
+        .match(/\(([^)]+)\) VALUES/)?.[1]
+        .split(",")
+        .map((key) => key.trim().replace(/"/g, "")) ?? [];
+    const values = new Map(
+      keys.map((key, index) => [key, insert!.args[index]]),
+    );
     expect(values.get("wallet")).toBe(620);
     expect(values.get("name")).toBe("John");
     expect(values.get("mf_at_uid")).toBe("abc");
@@ -151,20 +202,38 @@ describe("TursoDatabaseAdapter", () => {
     const { client, executed } = createMockClient((statement) => {
       if (statement.sql.startsWith("SELECT")) {
         return {
-          columns: ["id", "parent_id", "created_at", "updated_at", "wallet", "name"],
+          columns: [
+            "id",
+            "parent_id",
+            "created_at",
+            "updated_at",
+            "wallet",
+            "name",
+          ],
           rows: [["abc", "", 100, 100, 500, "John"]],
         };
       }
       return { rows: [] };
     });
     const adapter = new TursoDatabaseAdapter({ client });
-    await adapter.saveDocument("user/abc", {
-      wallet: new DatabaseIncrement(120),
-    }, { merge: false });
-    const insert = executed.find((statement) => statement.sql.startsWith("INSERT OR REPLACE"));
-    const keys = insert!.sql.match(/\(([^)]+)\) VALUES/)?.[1]
-      .split(",").map((key) => key.trim().replace(/"/g, "")) ?? [];
-    const values = new Map(keys.map((key, index) => [key, insert!.args[index]]));
+    await adapter.saveDocument(
+      "database/user-db/user/abc",
+      {
+        wallet: new DatabaseIncrement(120),
+      },
+      { merge: false },
+    );
+    const insert = executed.find((statement) =>
+      statement.sql.startsWith("INSERT OR REPLACE"),
+    );
+    const keys =
+      insert!.sql
+        .match(/\(([^)]+)\) VALUES/)?.[1]
+        .split(",")
+        .map((key) => key.trim().replace(/"/g, "")) ?? [];
+    const values = new Map(
+      keys.map((key, index) => [key, insert!.args[index]]),
+    );
     // Increment still resolves against the existing value.
     expect(values.get("wallet")).toBe(620);
     // But other fields are not carried over.
@@ -179,15 +248,26 @@ describe("TursoDatabaseAdapter", () => {
       return { rows: [] };
     });
     const adapter = new TursoDatabaseAdapter({ client });
-    await adapter.saveDocument("user/abc/transaction/t1", {
-      amount: new DatabaseIncrement(50),
-      product: "item",
-    }, { merge: true });
-    const insert = executed.find((statement) => statement.sql.startsWith("INSERT OR REPLACE"));
-    expect(insert!.sql).toContain("\"user__transaction\"");
-    const keys = insert!.sql.match(/\(([^)]+)\) VALUES/)?.[1]
-      .split(",").map((key) => key.trim().replace(/"/g, "")) ?? [];
-    const values = new Map(keys.map((key, index) => [key, insert!.args[index]]));
+    await adapter.saveDocument(
+      "database/user-db/user/abc/transaction/t1",
+      {
+        amount: new DatabaseIncrement(50),
+        product: "item",
+      },
+      { merge: true },
+    );
+    const insert = executed.find((statement) =>
+      statement.sql.startsWith("INSERT OR REPLACE"),
+    );
+    expect(insert!.sql).toContain('"user__transaction"');
+    const keys =
+      insert!.sql
+        .match(/\(([^)]+)\) VALUES/)?.[1]
+        .split(",")
+        .map((key) => key.trim().replace(/"/g, "")) ?? [];
+    const values = new Map(
+      keys.map((key, index) => [key, insert!.args[index]]),
+    );
     expect(values.get("amount")).toBe(50);
     expect(values.get("product")).toBe("item");
     expect(values.get("id")).toBe("t1");
@@ -208,16 +288,24 @@ describe("TursoDatabaseAdapter", () => {
       return undefined;
     });
     const adapter = new TursoDatabaseAdapter({ client });
-    const result = await adapter.query("subscription", {
+    const result = await adapter.query("database/user-db/subscription", {
       wheres: [{ type: "equalTo", key: "token", value: "token-1" }],
       limit: 2,
       cursor: "doc0",
     });
-    expect(executed[0].sql).toContain("WHERE parent_id = ? AND \"token\" = ? AND id > ? ORDER BY id ASC LIMIT 2");
+    expect(executed[0].sql).toContain(
+      'WHERE parent_id = ? AND "token" = ? AND id > ? ORDER BY id ASC LIMIT 2',
+    );
     expect(executed[0].args).toEqual(["", "token-1", "doc0"]);
     expect(result.docs).toEqual([
-      { path: "subscription/doc1", data: { token: "token-1" } },
-      { path: "subscription/doc2", data: { token: "token-2" } },
+      {
+        path: "database/user-db/subscription/doc1",
+        data: { token: "token-1" },
+      },
+      {
+        path: "database/user-db/subscription/doc2",
+        data: { token: "token-2" },
+      },
     ]);
     expect(result.cursor).toBe("doc2");
   });
@@ -227,7 +315,7 @@ describe("TursoDatabaseAdapter", () => {
       throw new Error("no such table: subscription");
     });
     const adapter = new TursoDatabaseAdapter({ client });
-    const result = await adapter.query("subscription");
+    const result = await adapter.query("database/user-db/subscription");
     expect(result).toEqual({ docs: [], cursor: null });
   });
 
@@ -242,7 +330,9 @@ describe("TursoDatabaseAdapter", () => {
       return undefined;
     });
     const adapter = new TursoDatabaseAdapter({ client });
-    const result = await adapter.query("subscription", { limit: 10 });
+    const result = await adapter.query("database/user-db/subscription", {
+      limit: 10,
+    });
     expect(result.cursor).toBeNull();
   });
 });

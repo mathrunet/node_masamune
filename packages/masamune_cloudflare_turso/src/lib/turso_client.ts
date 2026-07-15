@@ -1,5 +1,6 @@
 import { TursoDatabaseConnection, TursoWorkersOptions } from "./types";
 import { HttpError, validateLogicalName } from "./request";
+import { resolvePhysicalDatabaseName } from "./database_name";
 
 declare const require: (id: string) => {
   createClient: (config: TursoDatabaseConnection) => TursoClient;
@@ -25,7 +26,7 @@ export type SqlValue =
   null | string | number | bigint | ArrayBuffer | boolean | Uint8Array | Date;
 
 const connectionCache = new Map<string, TursoDatabaseConnection>();
-const readyRetryDelaysMs = [250, 500, 1000, 2000, 4000];
+const readyRetryDelaysMs = [250, 500, 1000, 2000, 4000, 8000];
 
 export function createTursoClient(
   connection: TursoDatabaseConnection,
@@ -42,14 +43,18 @@ export async function resolveDatabaseConnection(
   options: TursoWorkersOptions,
 ): Promise<TursoDatabaseConnection> {
   const normalizedDatabase = validateLogicalName(database, "database");
-  const databaseName = `${options.databasePrefix ?? ""}${normalizedDatabase}`;
-  const cached = connectionCache.get(databaseName);
+  const cacheKey = databaseCacheKey(normalizedDatabase, options);
+  const cached = connectionCache.get(cacheKey);
   if (cached) {
     return {
       ...cached,
       created: false,
     };
   }
+  const databaseName = await resolvePhysicalDatabaseName(
+    normalizedDatabase,
+    options,
+  );
   const created = await ensurePlatformDatabase(databaseName, options);
   if (!created.created) {
     cacheDatabaseConnection(database, options, created);
@@ -63,8 +68,7 @@ export function cacheDatabaseConnection(
   connection: TursoDatabaseConnection,
 ): void {
   const normalizedDatabase = validateLogicalName(database, "database");
-  const databaseName = `${options.databasePrefix ?? ""}${normalizedDatabase}`;
-  connectionCache.set(databaseName, {
+  connectionCache.set(databaseCacheKey(normalizedDatabase, options), {
     url: connection.url,
     authToken: connection.authToken,
     created: false,
@@ -76,8 +80,14 @@ export function clearDatabaseConnectionCache(
   options: TursoWorkersOptions,
 ): void {
   const normalizedDatabase = validateLogicalName(database, "database");
-  const databaseName = `${options.databasePrefix ?? ""}${normalizedDatabase}`;
-  connectionCache.delete(databaseName);
+  connectionCache.delete(databaseCacheKey(normalizedDatabase, options));
+}
+
+function databaseCacheKey(
+  database: string,
+  options: TursoWorkersOptions,
+): string {
+  return `${options.databasePrefix ?? ""}\u0000${database}`;
 }
 
 export async function waitForDatabaseReady(client: TursoClient): Promise<void> {
@@ -126,7 +136,7 @@ async function ensurePlatformDatabase(
     },
   );
   if (existing.status === 404) {
-    if (options.autoCreateDatabase === false) {
+    if (options.autoCreateDatabase !== true) {
       throw new HttpError(404, `Database was not found: ${databaseName}`);
     }
     const response = await fetch(`${baseUrl}/databases`, {
@@ -258,9 +268,7 @@ function findDatabaseUrl(value: unknown): string | undefined {
   const record = value as Record<string, unknown>;
   const hostname = record.Hostname ?? record.hostname;
   if (typeof hostname === "string" && hostname.length > 0) {
-    return hostname.startsWith("libsql://")
-      ? hostname
-      : `libsql://${hostname}`;
+    return hostname.startsWith("libsql://") ? hostname : `libsql://${hostname}`;
   }
   for (const item of Object.values(record)) {
     const found = findDatabaseUrl(item);

@@ -62,6 +62,7 @@ export default m.deploy(
     m.Functions.tursoToken({
       organization: "xxxx",
       group: "xxxx",
+      autoCreateDatabase: true,
     }),
   ],
   {
@@ -135,6 +136,10 @@ The previous query/body style is still accepted for compatibility:
 
 The worker can create Turso databases and tables automatically.
 
+Database creation is disabled by default. Set `autoCreateDatabase: true`
+explicitly on every Turso function or adapter that is allowed to provision a
+database. A missing database otherwise returns `404` and is never created.
+
 ```typescript
 m.Functions.turso({
   organization: TURSO_ORGANIZATION,
@@ -145,6 +150,36 @@ m.Functions.turso({
   autoMigrateAddColumns: true,
 });
 ```
+
+Worker-side integrations such as Purchase and Notification use
+`TursoDatabaseAdapter`. It follows the same full-path contract as the CRUD
+endpoints; the logical database name must be included in every path.
+
+```typescript
+const database = new m.TursoDatabaseAdapter({
+  options: {
+    organization: TURSO_ORGANIZATION,
+    group: TURSO_GROUP,
+    platformApiToken: TURSO_PLATFORM_API_TOKEN,
+    autoCreateDatabase: true,
+  },
+});
+
+await database.getDocument("database/user-1/userProfiles/user-1");
+await database.query("database/user-1/capturedMonsters");
+```
+
+Paths without the `database/{database_name}/` prefix are rejected before a
+Turso connection is resolved. `TursoDatabaseAdapter` has no fixed `database`
+constructor option and never falls back to `main`.
+
+Application database paths use a logical database name. When that name already
+matches Turso's physical naming rules (lower-case letters, numbers, and hyphens,
+up to 56 characters), it is used unchanged. Other logical names, including
+mixed-case Firebase UIDs, are mapped deterministically to a lower-case physical
+name before calling the Turso Platform API. Rules continue to evaluate the
+original logical name, so a rule such as `{"type":"path","param":"uid"}` still
+compares the authenticated Firebase UID without weakening authorization.
 
 `groupName` must point to an existing Turso group. The region/location is set
 when the group is created, not when each database is created.

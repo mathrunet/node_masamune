@@ -29,18 +29,22 @@ async function handleToken(
   context: Context,
   options: TursoWorkersOptions,
 ): Promise<Response> {
+  let phase = "parse";
   try {
     const resolvedOptions = resolveTursoWorkersOptionsFromEnv(context, options);
     const request = await parseTokenRequest(context);
+    phase = "connect";
     const connection = await resolveDatabaseConnection(
       request.database,
       resolvedOptions,
     );
     if (connection.created) {
+      phase = "database-ready";
       const client = createTursoClient(connection);
       await waitForDatabaseReady(client);
       cacheDatabaseConnection(request.database, resolvedOptions, connection);
     }
+    phase = "rules";
     const authentication = context.get("authentication") as AuthenticationContext | undefined;
     const engine = createTursoRulesEngine(resolvedOptions.rules);
     const access = await resolveDatabaseTokenAccess({
@@ -58,6 +62,7 @@ async function handleToken(
         403,
       );
     }
+    phase = "issue-token";
     const token = access.authorization
       ? await issueDatabaseToken({
           database: request.database,
@@ -74,6 +79,10 @@ async function handleToken(
       scopes: access.scopes,
     });
   } catch (error) {
+    console.error("Turso token request failed", {
+      phase,
+      error: error instanceof Error ? error.message : String(error),
+    });
     return jsonError(context, error);
   }
 }
