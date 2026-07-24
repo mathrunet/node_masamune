@@ -26,6 +26,7 @@ export type {
 export interface TursoDatabaseConnection {
   url: string;
   authToken?: string | undefined;
+  authTokenExpiresAt?: number | undefined;
   created?: boolean | undefined;
 }
 
@@ -38,6 +39,7 @@ export interface TursoWorkersOptions extends WorkersOptions {
   autoCreateTable?: boolean | undefined;
   autoMigrateAddColumns?: boolean | undefined;
   maxTtlSeconds?: number | undefined;
+  serverTokenTtlSeconds?: number | undefined;
 }
 
 export interface TursoRequestBody {

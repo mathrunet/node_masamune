@@ -1,3 +1,10 @@
+## 3.4.0 (2026-07-24)
+
+### feat
+
+* Add TiDB Data Service mode with Digest authentication and generated endpoint manifests.
+* Enforce bounded fallback scans and keep direct MySQL mode backward compatible.
+
 ## 3.3.2 (2026-07-16)
 
 
@@ -377,5 +384,4 @@
 * Fixes to pass tests. ([a656689](https://github.com/mathrunet/node_masamune/commit/a6566898613d76cd1027a319cda4f605044db151))
 * refactor media tests for Cloudflare integration ([7b1e581](https://github.com/mathrunet/node_masamune/commit/7b1e5816b297d68ba5c28599b5cfb7fa935a70f4))
 * Test code implementation. ([7f40834](https://github.com/mathrunet/node_masamune/commit/7f40834936b13a1b54b792b1c47f7c1ae2319502))
-
 

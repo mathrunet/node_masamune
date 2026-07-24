@@ -26,7 +26,13 @@ export type SqlValue =
   null | string | number | bigint | ArrayBuffer | boolean | Uint8Array | Date;
 
 const connectionCache = new Map<string, TursoDatabaseConnection>();
+const connectionRefreshes = new Map<
+  string,
+  Promise<TursoDatabaseConnection>
+>();
 const readyRetryDelaysMs = [250, 500, 1000, 2000, 4000, 8000];
+const defaultServerTokenTtlSeconds = 3600;
+const tokenRefreshWindowSeconds = 60;
 
 export function createTursoClient(
   connection: TursoDatabaseConnection,
@@ -46,6 +52,14 @@ export async function resolveDatabaseConnection(
   const cacheKey = databaseCacheKey(normalizedDatabase, options);
   const cached = connectionCache.get(cacheKey);
   if (cached) {
+    if (shouldRefreshAuthToken(cached)) {
+      return refreshDatabaseConnection(
+        normalizedDatabase,
+        cacheKey,
+        cached,
+        options,
+      );
+    }
     return {
       ...cached,
       created: false,
@@ -71,6 +85,7 @@ export function cacheDatabaseConnection(
   connectionCache.set(databaseCacheKey(normalizedDatabase, options), {
     url: connection.url,
     authToken: connection.authToken,
+    authTokenExpiresAt: connection.authTokenExpiresAt,
     created: false,
   });
 }
@@ -181,8 +196,13 @@ async function ensurePlatformDatabase(
       "Turso database URL was not found in Platform API response.",
     );
   }
-  const authToken = await createDatabaseToken(baseUrl, databaseName, headers);
-  if (!authToken) {
+  const authToken = await createDatabaseToken(
+    baseUrl,
+    databaseName,
+    headers,
+    options.serverTokenTtlSeconds,
+  );
+  if (!authToken.token) {
     throw new HttpError(
       500,
       "Turso database auth token was not found in Platform API response.",
@@ -190,7 +210,8 @@ async function ensurePlatformDatabase(
   }
   return {
     url,
-    authToken,
+    authToken: authToken.token,
+    authTokenExpiresAt: authToken.expiresAt,
     created,
   };
 }
@@ -199,13 +220,15 @@ async function createDatabaseToken(
   baseUrl: string,
   databaseName: string,
   headers: Record<string, string>,
-): Promise<string | undefined> {
+  ttlSeconds = defaultServerTokenTtlSeconds,
+): Promise<{ token: string | undefined; expiresAt: number }> {
+  const normalizedTtl = normalizeServerTokenTtl(ttlSeconds);
   const response = await fetch(
-    `${baseUrl}/databases/${encodeURIComponent(databaseName)}/auth/tokens`,
+    `${baseUrl}/databases/${encodeURIComponent(databaseName)}/auth/tokens` +
+      `?expiration=${normalizedTtl}s&authorization=full-access`,
     {
       method: "POST",
       headers,
-      body: JSON.stringify({}),
     },
   );
   if (!response.ok) {
@@ -216,7 +239,87 @@ async function createDatabaseToken(
   }
   const body = (await response.json()) as Record<string, unknown>;
   const token = body.jwt ?? body.token;
-  return typeof token === "string" ? token : undefined;
+  return {
+    token: typeof token === "string" ? token : undefined,
+    expiresAt: Math.floor(Date.now() / 1000) + normalizedTtl,
+  };
+}
+
+async function refreshDatabaseConnection(
+  database: string,
+  cacheKey: string,
+  cached: TursoDatabaseConnection,
+  options: TursoWorkersOptions,
+): Promise<TursoDatabaseConnection> {
+  const refreshing = connectionRefreshes.get(cacheKey);
+  if (refreshing) {
+    return refreshing;
+  }
+  const refresh = (async () => {
+    const organizationName = options.organization;
+    const platformApiToken = options.platformApiToken;
+    if (!organizationName || !platformApiToken) {
+      throw new HttpError(
+        500,
+        "organization and platformApiToken are required to refresh Turso database tokens.",
+      );
+    }
+    const databaseName = await resolvePhysicalDatabaseName(database, options);
+    const baseUrl =
+      `https://api.turso.tech/v1/organizations/${encodeURIComponent(organizationName)}`;
+    const token = await createDatabaseToken(
+      baseUrl,
+      databaseName,
+      {
+        Authorization: `Bearer ${platformApiToken}`,
+        "Content-Type": "application/json",
+      },
+      options.serverTokenTtlSeconds,
+    );
+    if (!token.token) {
+      throw new HttpError(
+        500,
+        "Turso database auth token was not found in Platform API response.",
+      );
+    }
+    const connection: TursoDatabaseConnection = {
+      url: cached.url,
+      authToken: token.token,
+      authTokenExpiresAt: token.expiresAt,
+      created: false,
+    };
+    connectionCache.set(cacheKey, connection);
+    return connection;
+  })();
+  connectionRefreshes.set(cacheKey, refresh);
+  try {
+    return await refresh;
+  } finally {
+    if (connectionRefreshes.get(cacheKey) === refresh) {
+      connectionRefreshes.delete(cacheKey);
+    }
+  }
+}
+
+function shouldRefreshAuthToken(
+  connection: TursoDatabaseConnection,
+): boolean {
+  return (
+    connection.authTokenExpiresAt === undefined ||
+    connection.authTokenExpiresAt - Math.floor(Date.now() / 1000) <=
+      tokenRefreshWindowSeconds
+  );
+}
+
+function normalizeServerTokenTtl(ttlSeconds: number | undefined): number {
+  if (
+    ttlSeconds === undefined ||
+    !Number.isSafeInteger(ttlSeconds) ||
+    ttlSeconds <= tokenRefreshWindowSeconds
+  ) {
+    return defaultServerTokenTtlSeconds;
+  }
+  return ttlSeconds;
 }
 
 function resolveDatabaseGroupName(options: TursoWorkersOptions): string {

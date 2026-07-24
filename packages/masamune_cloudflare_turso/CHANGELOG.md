@@ -1,3 +1,11 @@
+## 3.4.5 (2026-07-24)
+
+### security
+
+* Issue bounded full-access database tokens through the Turso Platform API, refresh them before expiry, and coalesce concurrent refreshes.
+* Re-resolve adapter clients so refreshed credentials are used without retaining clients bound to expired tokens.
+* Add `TURSO_SERVER_TOKEN_TTL_SECONDS` support for explicitly controlling server token lifetime.
+
 ## 3.4.4 (2026-07-15)
 
 
@@ -371,6 +379,5 @@
 * Fixes to pass tests. ([a656689](https://github.com/mathrunet/node_masamune/commit/a6566898613d76cd1027a319cda4f605044db151))
 * refactor media tests for Cloudflare integration ([7b1e581](https://github.com/mathrunet/node_masamune/commit/7b1e5816b297d68ba5c28599b5cfb7fa935a70f4))
 * Test code implementation. ([7f40834](https://github.com/mathrunet/node_masamune/commit/7f40834936b13a1b54b792b1c47f7c1ae2319502))
-
 
 

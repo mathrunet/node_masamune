@@ -1,9 +1,15 @@
 import { deploy, WorkersAuthAdapterBase } from "@mathrunet/masamune_cloudflare";
 import type { MiddlewareHandler } from "hono";
 import { Functions } from "../src/functions";
+import { TursoDatabaseAdapter } from "../src/lib/database_adapter";
 import { resolvePhysicalDatabaseName } from "../src/lib/database_name";
 import { createTursoRulesEngine } from "../src/lib/rules";
 import { TursoWorkersOptions } from "../src/lib/types";
+import {
+  cacheDatabaseConnection,
+  clearDatabaseConnectionCache,
+  resolveDatabaseConnection,
+} from "../src/lib/turso_client";
 
 const execute = jest.fn();
 const createClient = jest.fn(() => ({ execute }));
@@ -242,6 +248,84 @@ describe("Turso Cloudflare workers", () => {
       ),
       expect.objectContaining({ method: "POST" }),
     );
+  });
+
+  test("issues a bounded full-access token for server connections", async () => {
+    const fetchMock = mockExistingDatabase({
+      url: "libsql://bounded-server-token.turso.io",
+    });
+
+    await resolveDatabaseConnection(
+      "bounded-server-token",
+      dynamicOptions({ serverTokenTtlSeconds: 7200 }),
+    );
+
+    expect(fetchMock).toHaveBeenLastCalledWith(
+      expect.stringContaining(
+        "/auth/tokens?expiration=7200s&authorization=full-access",
+      ),
+      expect.objectContaining({ method: "POST" }),
+    );
+  });
+
+  test("refreshes a cached server token once before it expires", async () => {
+    const options = dynamicOptions({ serverTokenTtlSeconds: 3600 });
+    const database = "refresh-server-token";
+    cacheDatabaseConnection(database, options, {
+      url: "libsql://refresh-server-token.turso.io",
+      authToken: "old-token",
+      authTokenExpiresAt: Math.floor(Date.now() / 1000) + 30,
+    });
+    const fetchMock = jest.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ jwt: "new-token" }),
+    } as Response);
+
+    const [first, second] = await Promise.all([
+      resolveDatabaseConnection(database, options),
+      resolveDatabaseConnection(database, options),
+    ]);
+
+    expect(first.authToken).toBe("new-token");
+    expect(second.authToken).toBe("new-token");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "/auth/tokens?expiration=3600s&authorization=full-access",
+      ),
+      expect.objectContaining({ method: "POST" }),
+    );
+    clearDatabaseConnectionCache(database, options);
+  });
+
+  test("database adapter does not retain a stale authenticated client", async () => {
+    const options = dynamicOptions({ serverTokenTtlSeconds: 3600 });
+    const database = "database-adapter-token-refresh";
+    const adapter = new TursoDatabaseAdapter({ options });
+    cacheDatabaseConnection(database, options, {
+      url: "libsql://database-adapter-token-refresh.turso.io",
+      authToken: "first-token",
+      authTokenExpiresAt: Math.floor(Date.now() / 1000) + 3600,
+    });
+
+    await adapter.getDocument(`database/${database}/users/user-1`);
+    cacheDatabaseConnection(database, options, {
+      url: "libsql://database-adapter-token-refresh.turso.io",
+      authToken: "refreshed-token",
+      authTokenExpiresAt: Math.floor(Date.now() / 1000) + 3600,
+    });
+    await adapter.getDocument(`database/${database}/users/user-1`);
+
+    expect(createClient).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ authToken: "first-token" }),
+    );
+    expect(createClient).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ authToken: "refreshed-token" }),
+    );
+    clearDatabaseConnectionCache(database, options);
   });
 
   test("uses rules config from default WorkersOptions", async () => {

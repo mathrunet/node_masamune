@@ -20,6 +20,13 @@ import {
   resolveDatabaseConnection,
 } from "../lib/tidb_client";
 import { resolveTidbWorkersOptionsFromEnv } from "../lib/env";
+import { TidbDataServiceClient } from "../lib/data_service_client";
+import {
+  executeDataServiceCrud,
+  fetchDataServiceDocumentForRules,
+  resolveMaxScanRows,
+} from "../lib/data_service_crud";
+import { TidbClient } from "../lib/tidb_client";
 
 module.exports = (
   hono: Hono,
@@ -53,8 +60,20 @@ async function handleCrud(
     request = await parseCrudRequest(context);
     const crudRequest = request;
     phase = "connect";
-    const connection = await resolveDatabaseConnection(crudRequest.database, resolvedOptions);
-    const client = createTidbClient(connection);
+    const dataServiceMode = resolvedOptions.mode === "data-service";
+    let client: TidbClient | undefined;
+    let dataServiceClient: TidbDataServiceClient | undefined;
+    let maxScanRows = 1000;
+    if (dataServiceMode) {
+      dataServiceClient = new TidbDataServiceClient(resolvedOptions);
+      maxScanRows = resolveMaxScanRows(resolvedOptions.maxScanRows);
+    } else {
+      const connection = await resolveDatabaseConnection(
+        crudRequest.database,
+        resolvedOptions,
+      );
+      client = createTidbClient(connection);
+    }
     const engine = createTidbRulesEngine(resolvedOptions.rules);
     const authentication = context.get("authentication") as AuthenticationContext | undefined;
     phase = "rules";
@@ -67,7 +86,14 @@ async function handleCrud(
       }),
       operation: resolveCrudRulesOperation(method, crudRequest),
       authentication,
-      fetchDocument: async () => fetchDocumentForRules(client, crudRequest),
+      fetchDocument: async () =>
+        dataServiceClient
+          ? fetchDataServiceDocumentForRules(
+            dataServiceClient,
+            crudRequest,
+            maxScanRows,
+          )
+          : fetchDocumentForRules(client!, crudRequest),
       server: true,
     });
     if (!result.allowed) {
@@ -77,16 +103,29 @@ async function handleCrud(
       }, 403);
     }
     phase = method === "POST" ? "create-table-or-insert" : "execute";
-    const response = await executeCrud({
-      client,
-      method,
-      request: crudRequest,
-      autoCreateTable: resolvedOptions.autoCreateTable !== false,
-      autoMigrateAddColumns: resolvedOptions.autoMigrateAddColumns !== false,
-    });
+    const response = dataServiceClient
+      ? await executeDataServiceCrud({
+        client: dataServiceClient,
+        method,
+        request: crudRequest,
+        maxScanRows,
+      })
+      : await executeCrud({
+        client: client!,
+        method,
+        request: crudRequest,
+        autoCreateTable: resolvedOptions.autoCreateTable !== false,
+        autoMigrateAddColumns:
+            resolvedOptions.autoMigrateAddColumns !== false,
+      });
     return context.json({ data: response });
   } catch (error) {
-    if (request && resolvedOptions && isTransientTidbError(error)) {
+    if (
+      request &&
+      resolvedOptions &&
+      resolvedOptions.mode !== "data-service" &&
+      isTransientTidbError(error)
+    ) {
       clearDatabaseConnectionCache(request.database, resolvedOptions);
       return context.json({
         error: error instanceof Error ? error.message : String(error),

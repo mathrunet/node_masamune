@@ -10,6 +10,7 @@ import {
 } from "@mathrunet/masamune_cloudflare";
 
 export type TidbCrudMethod = "GET" | "POST" | "PUT" | "DELETE";
+export type TidbConnectionMode = "direct" | "data-service";
 
 export type {
   RulesAccessRule,
@@ -30,8 +31,43 @@ export interface TidbDatabaseConnection {
 export interface TidbWorkersOptions extends WorkersOptions {
   databasePrefix?: string | undefined;
   connectionUrl?: string | undefined;
+  mode?: TidbConnectionMode | undefined;
+  dataServiceAppId?: string | undefined;
+  dataServiceRegion?: string | undefined;
+  dataServiceBaseUrl?: string | undefined;
+  dataServicePublicKey?: string | undefined;
+  dataServicePrivateKey?: string | undefined;
+  dataServiceManifest?: TidbDataServiceManifest | undefined;
+  maxScanRows?: number | undefined;
   autoCreateTable?: boolean | undefined;
   autoMigrateAddColumns?: boolean | undefined;
+}
+
+export type TidbDataServiceOperation =
+  | "get"
+  | "list"
+  | "count"
+  | "upsert"
+  | "update"
+  | "delete";
+
+export interface TidbDataServiceEndpoint {
+  path: string;
+  method: "GET" | "POST";
+}
+
+export interface TidbDataServiceTableManifest {
+  database: string;
+  table: string;
+  columns: string[];
+  endpoints: Partial<
+    Record<TidbDataServiceOperation, TidbDataServiceEndpoint>
+  >;
+}
+
+export interface TidbDataServiceManifest {
+  version: "1";
+  tables: Record<string, TidbDataServiceTableManifest>;
 }
 
 export interface TidbRequestBody {

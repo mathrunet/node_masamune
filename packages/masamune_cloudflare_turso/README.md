@@ -76,12 +76,25 @@ Cloudflare bindings are also supported and take precedence over options:
 - `TURSO_PLATFORM_API_TOKEN`
 - `TURSO_ORGANIZATION`
 - `TURSO_GROUP`
+- `TURSO_SERVER_TOKEN_TTL_SECONDS` (default: `3600`)
 
 For production, store the Platform API token as a secret:
 
 ```bash
 wrangler secret put TURSO_PLATFORM_API_TOKEN
 ```
+
+Hosted Turso does not accept arbitrary self-signed Ed25519 JWT keys. Both
+client tokens and Worker-side database tokens therefore use the official
+Platform API. Worker-side full-access tokens are always issued with an
+expiration, cached only until 60 seconds before expiry, and refreshed with a
+single in-flight request per database. The old unbounded server token behavior
+is not used.
+
+`katana apply` configures the server TTL with
+`cloudflare.turso.server_token_ttl`. Set
+`cloudflare.turso.rotate_legacy_tokens: true` only when you intentionally want
+to invalidate all previously issued tokens in the Turso group.
 
 # Endpoints
 

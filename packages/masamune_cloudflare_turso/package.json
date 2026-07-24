@@ -1,6 +1,6 @@
 {
   "name": "@mathrunet/masamune_cloudflare_turso",
-  "version": "3.4.3",
+  "version": "3.4.5",
   "description": "Server-side package of the Masamune framework for working with Turso via Cloudflare.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

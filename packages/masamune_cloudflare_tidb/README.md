@@ -82,6 +82,34 @@ All reads and writes go through the Workers CRUD endpoint. The root password in
 `TIDB_CONNECTION_URL` is used only inside Cloudflare Workers and is never
 returned to clients.
 
+The alternative `data-service` mode sends the same Workers CRUD contract to
+TiDB Data Service over HTTPS with Digest authentication. It requires a
+generated runtime manifest and does not open a MySQL connection.
+
+```typescript
+import manifest from "./tidb_data_service_manifest.json";
+
+m.Functions.tidb({
+  mode: "data-service",
+  dataServiceManifest: manifest as m.TidbDataServiceManifest,
+  maxScanRows: 1000,
+});
+```
+
+Data Service bindings:
+
+- `TIDB_MODE=data-service`
+- `TIDB_DATA_SERVICE_APP_ID`
+- `TIDB_DATA_SERVICE_REGION`
+- `TIDB_DATA_SERVICE_PUBLIC_KEY`
+- `TIDB_DATA_SERVICE_PRIVATE_KEY`
+- `TIDB_DATA_SERVICE_MAX_SCAN_ROWS`
+
+Supported equality/range/`whereIn` conditions are mapped to generated endpoint
+parameters. Other filters and ordering are evaluated in Workers after a
+bounded scan. A scan larger than `maxScanRows` fails instead of silently
+returning incomplete data.
+
 ## Katana CLI
 
 When `cloudflare.tidb.enable` is enabled, `katana apply` adds the Workers
@@ -92,8 +120,37 @@ functions, installs the package, and stores `TIDB_CONNECTION_URL` with
 cloudflare:
   tidb:
     enable: true
+    mode: direct
     connection_url: mysql://user:password@gateway01.ap-northeast-1.prod.aws.tidbcloud.com:4000/app_db
 ```
+
+For Data Service, annotate flat Masamune models with `@tidbDataService`, run
+`katana code generate`, and configure the generated official CaC directory:
+
+```yaml
+cloudflare:
+  tidb:
+    enable: true
+    mode: data_service
+    data_service:
+      project_id: "123"
+      cluster_id: "456"
+      app_name: masamune
+      directory: tidb/data_service
+      rate_limit_rpm: 1000
+      max_scan_rows: 1000
+      restrict_mysql: true
+```
+
+Organization API credentials belong in `katana_secrets.yaml` under
+`cloudflare.tidb.management_api.public_key/private_key`. The first
+`katana apply` validates a supported active Starter AWS cluster, applies the
+additive schema, upserts endpoints, deploys them, stores the Data API key, and
+prepares Workers. It intentionally leaves MySQL public access enabled. Run
+`katana cloudflare deploy`, then run `katana apply` again. The second run
+smoke-tests Data Service, disables the TiDB public endpoint, and deletes
+`TIDB_CONNECTION_URL`. API failures preserve the public endpoint and print the
+GitHub CaC fallback path.
 
 # GitHub Sponsors
 

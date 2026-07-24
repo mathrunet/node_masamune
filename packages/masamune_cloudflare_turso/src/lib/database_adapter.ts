@@ -90,23 +90,16 @@ export class TursoDatabaseAdapter extends DatabaseAdapterBase {
   readonly options: TursoWorkersOptions;
 
   private readonly injectedClient: TursoClient | null;
-  private readonly clients = new Map<string, TursoClient>();
 
   private async client(database: string): Promise<TursoClient> {
     if (this.injectedClient) {
       return this.injectedClient;
     }
-    const cached = this.clients.get(database);
-    if (cached) {
-      return cached;
-    }
     const connection = await resolveDatabaseConnection(
       database,
       this.resolveOptions(),
     );
-    const client = createTursoClient(connection);
-    this.clients.set(database, client);
-    return client;
+    return createTursoClient(connection);
   }
 
   // 接続時にオプションを解決します。オプションで指定されていない項目は
