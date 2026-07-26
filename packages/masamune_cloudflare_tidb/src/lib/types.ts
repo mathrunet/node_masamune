@@ -68,6 +68,7 @@ export interface TidbDataServiceTableManifest {
 export interface TidbDataServiceManifest {
   version: "1";
   tables: Record<string, TidbDataServiceTableManifest>;
+  custom_endpoints?: Record<string, TidbDataServiceEndpoint> | undefined;
 }
 
 export interface TidbRequestBody {

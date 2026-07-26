@@ -1,6 +1,7 @@
 import { deploy } from "@mathrunet/masamune_cloudflare";
 import { Functions } from "../src/functions";
 import { fetchWithDigest } from "../src/lib/digest_auth";
+import { TidbDataServiceClient } from "../src/lib/data_service_client";
 import {
   TidbDataServiceManifest,
   TidbWorkersOptions,
@@ -28,6 +29,12 @@ const manifest: TidbDataServiceManifest = {
         update: { path: "/app_db/users/update", method: "POST" },
         delete: { path: "/app_db/users/delete", method: "POST" },
       },
+    },
+  },
+  custom_endpoints: {
+    claim_user: {
+      path: "/internal/claim-user",
+      method: "POST",
     },
   },
 };
@@ -146,6 +153,57 @@ describe("TiDB Data Service", () => {
     expect(fetchMock.mock.calls[0][0]).toContain(
       "/app/app-1/endpoint/app_db/users/get?id=user_1",
     );
+  });
+
+  test("executes a manifest-allowlisted custom endpoint", async () => {
+    const fetchMock = jest
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(
+        new Response("", {
+          status: 401,
+          headers: {
+            "WWW-Authenticate":
+              'Digest realm="tidb", nonce="nonce-custom", algorithm=SHA-256, qop="auth"',
+          },
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            data: {
+              columns: [
+                { col: "id", data_type: "VARCHAR" },
+                { col: "claimed", data_type: "TINYINT" },
+              ],
+              rows: [{ id: "user_1", claimed: "1" }],
+            },
+          }),
+          { status: 200 },
+        ),
+      );
+    const client = new TidbDataServiceClient(options());
+
+    const result = await client.executeCustom({
+      name: "claim_user",
+      parameters: { id: "user_1" },
+    });
+
+    expect(result.rows).toEqual([{ id: "user_1", claimed: true }]);
+    expect(fetchMock.mock.calls[1][0]).toContain(
+      "/app/app-1/endpoint/internal/claim-user",
+    );
+    expect(fetchMock.mock.calls[1][1]).toEqual(expect.objectContaining({
+      method: "POST",
+      body: JSON.stringify({ id: "user_1" }),
+    }));
+  });
+
+  test("rejects custom endpoints missing from the manifest", async () => {
+    const client = new TidbDataServiceClient(options());
+
+    await expect(
+      client.executeCustom({ name: "arbitrary_sql" }),
+    ).rejects.toMatchObject({ status: 404 });
   });
 
   test("converts supported where operators to endpoint parameters", async () => {

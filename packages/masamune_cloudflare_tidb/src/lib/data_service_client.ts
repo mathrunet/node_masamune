@@ -65,15 +65,39 @@ export class TidbDataServiceClient {
   }): Promise<TidbDataServiceResult> {
     const tableManifest = this.table(database, table);
     const endpoint = requireEndpoint(tableManifest, operation);
+    return this.executeEndpoint(endpoint, parameters ?? {});
+  }
+
+  async executeCustom({
+    name,
+    parameters,
+  }: {
+    name: string;
+    parameters?: Record<string, unknown> | undefined;
+  }): Promise<TidbDataServiceResult> {
+    const endpoint = this.manifest.custom_endpoints?.[name];
+    if (!endpoint) {
+      throw new HttpError(
+        404,
+        `TiDB Data Service custom endpoint is not deployed: ${name}`,
+      );
+    }
+    return this.executeEndpoint(endpoint, parameters ?? {});
+  }
+
+  private async executeEndpoint(
+    endpoint: TidbDataServiceEndpoint,
+    parameters: Record<string, unknown>,
+  ): Promise<TidbDataServiceResult> {
     const url = buildEndpointUrl(
       this.baseUrl,
       this.appId,
       endpoint,
-      parameters ?? {},
+      parameters,
     );
     const response = await fetchWithDigest(
       url,
-      buildRequestInit(endpoint, parameters ?? {}),
+      buildRequestInit(endpoint, parameters),
       {
         username: this.publicKey,
         password: this.privateKey,
