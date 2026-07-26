@@ -1,18 +1,4 @@
-## 3.4.0 (2026-07-24)
-
-### feat
-
-* Add TiDB Data Service mode with Digest authentication and generated endpoint manifests.
-* Enforce bounded fallback scans and keep direct MySQL mode backward compatible.
-
-## 3.3.2 (2026-07-16)
-
-
-### fix
-
-* Require explicit `database/{database}/{table}/{key}` CRUD paths and remove the implicit connection-URL database fallback.
-
-## 3.3.1 (2026-07-04)
+# 3.5.0 (2026-07-26)
 
 
 ### chore
@@ -365,6 +351,7 @@
 * enhance SendGrid integration for Cloudflare Workers ([60f9976](https://github.com/mathrunet/node_masamune/commit/60f997643c223c74d9f2344d79e91d2337e4018f))
 * Remove debug log statements from FirestoreNullConverter ([b110a47](https://github.com/mathrunet/node_masamune/commit/b110a47faac178d79e4810221a0c89a943417f59))
 * Remove various cloud functions and tests, and add new tests for short video generation functionality. ([b5a2f34](https://github.com/mathrunet/node_masamune/commit/b5a2f34d474218c76cb25fdc1f6c0fe3b6c13413))
+* reorganize exports by removing middlewares and consolidating adapters ([50b1851](https://github.com/mathrunet/node_masamune/commit/50b185104ed4bd725df81e5854eef1dc6348e781))
 * restructure database rules for improved clarity and consistency ([b541875](https://github.com/mathrunet/node_masamune/commit/b5418755495ef5340657e532466659e5f3c8cf82))
 * Save the interface to a separate file. ([141f8bd](https://github.com/mathrunet/node_masamune/commit/141f8bdf6b06538de2512e52b7fedb58366c4e8b))
 * update Android token functions for Cloudflare Workers integration ([f3d602e](https://github.com/mathrunet/node_masamune/commit/f3d602ec1ac846471217d150ffcf166771f8f247))
@@ -384,4 +371,6 @@
 * Fixes to pass tests. ([a656689](https://github.com/mathrunet/node_masamune/commit/a6566898613d76cd1027a319cda4f605044db151))
 * refactor media tests for Cloudflare integration ([7b1e581](https://github.com/mathrunet/node_masamune/commit/7b1e5816b297d68ba5c28599b5cfb7fa935a70f4))
 * Test code implementation. ([7f40834](https://github.com/mathrunet/node_masamune/commit/7f40834936b13a1b54b792b1c47f7c1ae2319502))
+
+
 
