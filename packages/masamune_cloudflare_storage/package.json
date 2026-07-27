@@ -41,7 +41,7 @@
   "homepage": "https://github.com/mathrunet/node_masamune#readme",
   "dependencies": {
     "@mathrunet/masamune": "^3.10.4",
-    "@mathrunet/masamune_cloudflare": "^3.3.1",
+    "@mathrunet/masamune_cloudflare": "^3.3.3",
     "hono": "^4.12.27",
     "typescript": "^5.9.2"
   },

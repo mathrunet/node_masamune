@@ -11,6 +11,11 @@
 import * as hono from "hono";
 import { WorkersBase, WorkersOptions } from "./lib/src/workers_base";
 import { ScheduleProcessWorkdersBase } from "./lib/src/schedule_process_workders_base";
+import { QueueProcessWorkdersBase } from "./lib/src/queue_process_workders_base";
+import {
+    WorkersQueueExecutionContext,
+    WorkersQueueMessageBatch,
+} from "./lib/src/queue_workers_types";
 
 export * from "@mathrunet/masamune";
 export * from "./lib/api";
@@ -20,6 +25,8 @@ export * from "./lib/src/workers_rule_adapter_base";
 export * from "./lib/src/workers_data";
 export * from "./lib/src/request_process_workders_base";
 export * from "./lib/src/schedule_process_workders_base";
+export * from "./lib/src/queue_process_workders_base";
+export * from "./lib/src/queue_workers_types";
 export * from "./lib/src/http_error";
 export * from "./lib/src/google_auth";
 export * from "./lib/src/database_adapter";
@@ -52,14 +59,24 @@ export type WorkersDeployResult = hono.Hono & {
         env: unknown,
         ctx: ExecutionContext,
     ) => Promise<void>;
+    queue?: (
+        batch: WorkersQueueMessageBatch,
+        env: unknown,
+        ctx: WorkersQueueExecutionContext,
+    ) => Promise<void>;
 };
 
 export function deploy(deployWorkders: WorkersBase[], options: WorkersOptions = {}): WorkersDeployResult {
     const app = new hono.Hono();
     const scheduleWorkers: ScheduleProcessWorkdersBase[] = [];
+    const queueWorkers: QueueProcessWorkdersBase[] = [];
     for (const worker of deployWorkders) {
         if (worker instanceof ScheduleProcessWorkdersBase) {
             scheduleWorkers.push(worker);
+            continue;
+        }
+        if (worker instanceof QueueProcessWorkdersBase) {
+            queueWorkers.push(worker);
             continue;
         }
         app.route(worker.path, worker.build(options));
@@ -69,6 +86,13 @@ export function deploy(deployWorkders: WorkersBase[], options: WorkersOptions = 
         result.scheduled = async (event, env, ctx) => {
             await Promise.all(
                 scheduleWorkers.map((worker) => worker.process(event, env, ctx)),
+            );
+        };
+    }
+    if (queueWorkers.length > 0) {
+        result.queue = async (batch, env, ctx) => {
+            await Promise.all(
+                queueWorkers.map((worker) => worker.process(batch, env, ctx)),
             );
         };
     }

@@ -60,6 +60,44 @@ export default m.deploy(
 );
 ```
 
+# Queue Workers
+
+Extend `QueueProcessWorkdersBase<T>` to add a Cloudflare Queues consumer to the
+same `deploy()` entrypoint as HTTP and scheduled Workers.
+
+```typescript
+import * as m from "@mathrunet/masamune_cloudflare";
+
+interface Job {
+    id: string;
+}
+
+class JobWorker extends m.QueueProcessWorkdersBase<Job> {
+    async process(
+        batch: m.WorkersQueueMessageBatch<Job>,
+        env: unknown,
+        ctx: m.WorkersQueueExecutionContext,
+    ): Promise<void> {
+        for (const message of batch.messages) {
+            try {
+                console.log(message.body.id);
+                message.ack();
+            } catch (_) {
+                message.retry();
+            }
+        }
+    }
+}
+
+export default m.deploy([
+    new JobWorker(),
+]);
+```
+
+Add the Queue consumer to `wrangler.jsonc`. `deploy()` exposes the Queue
+handler only when at least one Queue Worker is registered, and it can coexist
+with HTTP routes and scheduled handlers.
+
 # Rules
 
 `WorkersOptions.rules` accepts a `rules.json` configuration. Import the JSON
