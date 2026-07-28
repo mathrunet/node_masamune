@@ -3,6 +3,10 @@ import type { MiddlewareHandler } from "hono";
 import { Functions } from "../src/functions";
 import { TursoDatabaseAdapter } from "../src/lib/database_adapter";
 import { resolvePhysicalDatabaseName } from "../src/lib/database_name";
+import {
+  applyRequestDatabasePrefix,
+  normalizeDatabasePrefix,
+} from "../src/lib/database_prefix";
 import { createTursoRulesEngine } from "../src/lib/rules";
 import { TursoWorkersOptions } from "../src/lib/types";
 import {
@@ -169,6 +173,33 @@ describe("Turso Cloudflare workers", () => {
 
   test("keeps Turso-compatible database names unchanged", async () => {
     await expect(resolvePhysicalDatabaseName("user-1")).resolves.toBe("user-1");
+  });
+
+  test("normalizes adapter database prefixes", () => {
+    expect(normalizeDatabasePrefix(undefined)).toBeUndefined();
+    expect(normalizeDatabasePrefix("___")).toBeUndefined();
+    expect(normalizeDatabasePrefix(" dev___ ")).toBe("dev_");
+    expect(
+      applyRequestDatabasePrefix(
+        { databasePrefix: "tenant-" },
+        normalizeDatabasePrefix("dev"),
+      ).databasePrefix,
+    ).toBe("tenant-dev_");
+    expect(() => normalizeDatabasePrefix("invalid prefix")).toThrow(
+      "Invalid prefix",
+    );
+  });
+
+  test("rejects invalid CRUD prefix before database access", async () => {
+    const fetchMock = jest.spyOn(globalThis, "fetch");
+    const app = deploy([Functions.turso(dynamicOptions())]);
+
+    const response = await app.request(
+      "http://localhost/turso/database/main/users?prefix=invalid%20prefix",
+    );
+
+    expect(response.status).toBe(400);
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   test("maps unsupported logical database names deterministically", async () => {

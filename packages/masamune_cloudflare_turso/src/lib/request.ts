@@ -6,17 +6,12 @@ import {
   TursoTokenRequestBody,
   TursoWhereCondition,
 } from "./types";
+import { normalizeDatabasePrefix } from "./database_prefix";
+import { HttpError } from "./http_error";
+
+export { HttpError } from "./http_error";
 
 const identifierPattern = /^[A-Za-z_][A-Za-z0-9_]*$/;
-
-export class HttpError extends Error {
-  constructor(
-    readonly status: number,
-    message: string,
-  ) {
-    super(message);
-  }
-}
 
 export async function parseCrudRequest(
   context: Context,
@@ -48,6 +43,7 @@ export async function parseCrudRequest(
   const limit = validateLimit(body.limit);
   const value =
     body.value === undefined ? undefined : validateValue(body.value);
+  const prefix = normalizeDatabasePrefix(body.prefix);
   return {
     ...body,
     database,
@@ -58,6 +54,7 @@ export async function parseCrudRequest(
     limit,
     value,
     count: body.count === true,
+    ...(prefix ? { prefix } : {}),
   };
 }
 
@@ -92,11 +89,13 @@ export async function parseTokenRequest(
       operations,
     };
   });
+  const prefix = normalizeDatabasePrefix(body.prefix);
   return {
     ...body,
     database,
     ...(operations ? { operations } : {}),
     ...(targets ? { targets, scope: targets } : {}),
+    ...(prefix ? { prefix } : {}),
   };
 }
 
@@ -141,6 +140,7 @@ function parseGetRequest(context: Context): TursoRequestBody {
     : undefined;
   const limit = query.limit === undefined ? undefined : Number(query.limit);
   return {
+    prefix: query.prefix,
     database: query.database,
     table: query.table,
     indexKey: query.indexKey,

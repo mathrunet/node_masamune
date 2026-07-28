@@ -124,6 +124,19 @@ Collection queries can pass `where`, `orderBy`, and `limit`.
 /turso/database/main/users?where=[{"type":"equalTo","key":"name","value":"Alice"}]&orderBy=[{"key":"created_at","descending":true}]&limit=20
 ```
 
+Clients may pass `prefix` to select a separate physical database while keeping
+the logical path used by rules unchanged. Prefixes are trimmed, trailing
+underscores are removed, and exactly one underscore is appended.
+
+```text
+/turso/database/main/users?prefix=dev
+```
+
+This request authorizes `main/users` and connects to `dev_main`. The token
+endpoint accepts the same value in its JSON body, so CRUD and direct tokens
+always resolve the same physical database. A missing, empty, or underscore-only
+prefix keeps the existing database name.
+
 Supported `where` types are `equalTo`, `notEqualTo`, `lessThan`,
 `lessThanOrEqualTo`, `greaterThan`, `greaterThanOrEqualTo`, `whereIn`,
 `whereNotIn`, `isNull`, `isNotNull`, and `like`.

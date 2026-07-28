@@ -13,6 +13,7 @@ import {
 } from "../lib/turso_client";
 import { issueDatabaseToken } from "../lib/token";
 import { resolveTursoWorkersOptionsFromEnv } from "../lib/env";
+import { applyRequestDatabasePrefix } from "../lib/database_prefix";
 
 module.exports = (
   hono: Hono,
@@ -33,16 +34,20 @@ async function handleToken(
   try {
     const resolvedOptions = resolveTursoWorkersOptionsFromEnv(context, options);
     const request = await parseTokenRequest(context);
+    const databaseOptions = applyRequestDatabasePrefix(
+      resolvedOptions,
+      request.prefix,
+    );
     phase = "connect";
     const connection = await resolveDatabaseConnection(
       request.database,
-      resolvedOptions,
+      databaseOptions,
     );
     if (connection.created) {
       phase = "database-ready";
       const client = createTursoClient(connection);
       await waitForDatabaseReady(client);
-      cacheDatabaseConnection(request.database, resolvedOptions, connection);
+      cacheDatabaseConnection(request.database, databaseOptions, connection);
     }
     phase = "rules";
     const authentication = context.get("authentication") as AuthenticationContext | undefined;
@@ -68,7 +73,7 @@ async function handleToken(
           database: request.database,
           authorization: access.authorization,
           ttlSeconds: request.ttlSeconds,
-          options: resolvedOptions,
+          options: databaseOptions,
         })
       : undefined;
     return context.json({

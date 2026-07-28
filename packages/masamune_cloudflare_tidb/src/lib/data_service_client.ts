@@ -20,6 +20,7 @@ export class TidbDataServiceClient {
   private readonly publicKey: string;
   private readonly privateKey: string;
   private readonly manifest: TidbDataServiceManifest;
+  private readonly databasePrefix: string;
 
   constructor(options: TidbWorkersOptions) {
     this.appId = requireOption(options.dataServiceAppId, "dataServiceAppId");
@@ -38,15 +39,18 @@ export class TidbDataServiceClient {
       );
     }
     this.manifest = options.dataServiceManifest;
+    this.databasePrefix = options.databasePrefix ?? "";
     this.baseUrl = resolveBaseUrl(options);
   }
 
   table(database: string, table: string): TidbDataServiceTableManifest {
-    const manifest = this.manifest.tables[tableManifestKey(database, table)];
+    const physicalDatabase = `${this.databasePrefix}${database}`;
+    const manifest =
+      this.manifest.tables[tableManifestKey(physicalDatabase, table)];
     if (!manifest) {
       throw new HttpError(
         404,
-        `TiDB Data Service table is not deployed: ${database}.${table}`,
+        `TiDB Data Service table is not deployed: ${physicalDatabase}.${table}`,
       );
     }
     return manifest;

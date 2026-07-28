@@ -27,6 +27,7 @@ import {
   resolveMaxScanRows,
 } from "../lib/data_service_crud";
 import { TidbClient } from "../lib/tidb_client";
+import { applyRequestDatabasePrefix } from "../lib/database_prefix";
 
 module.exports = (
   hono: Hono,
@@ -59,18 +60,22 @@ async function handleCrud(
     resolvedOptions = resolveTidbWorkersOptionsFromEnv(context, options);
     request = await parseCrudRequest(context);
     const crudRequest = request;
+    const databaseOptions = applyRequestDatabasePrefix(
+      resolvedOptions,
+      crudRequest.prefix,
+    );
     phase = "connect";
     const dataServiceMode = resolvedOptions.mode === "data-service";
     let client: TidbClient | undefined;
     let dataServiceClient: TidbDataServiceClient | undefined;
     let maxScanRows = 1000;
     if (dataServiceMode) {
-      dataServiceClient = new TidbDataServiceClient(resolvedOptions);
-      maxScanRows = resolveMaxScanRows(resolvedOptions.maxScanRows);
+      dataServiceClient = new TidbDataServiceClient(databaseOptions);
+      maxScanRows = resolveMaxScanRows(databaseOptions.maxScanRows);
     } else {
       const connection = await resolveDatabaseConnection(
         crudRequest.database,
-        resolvedOptions,
+        databaseOptions,
       );
       client = createTidbClient(connection);
     }
@@ -126,7 +131,10 @@ async function handleCrud(
       resolvedOptions.mode !== "data-service" &&
       isTransientTidbError(error)
     ) {
-      clearDatabaseConnectionCache(request.database, resolvedOptions);
+      clearDatabaseConnectionCache(
+        request.database,
+        applyRequestDatabasePrefix(resolvedOptions, request.prefix),
+      );
       return context.json({
         error: error instanceof Error ? error.message : String(error),
         phase,

@@ -22,6 +22,7 @@ import {
   waitForDatabaseReady,
 } from "../lib/turso_client";
 import { resolveTursoWorkersOptionsFromEnv } from "../lib/env";
+import { applyRequestDatabasePrefix } from "../lib/database_prefix";
 
 module.exports = (
   hono: Hono,
@@ -58,8 +59,15 @@ async function handleCrud(
     resolvedOptions = resolveTursoWorkersOptionsFromEnv(context, options);
     request = await parseCrudRequest(context);
     const crudRequest = request;
+    const databaseOptions = applyRequestDatabasePrefix(
+      resolvedOptions,
+      crudRequest.prefix,
+    );
     phase = "connect";
-    const connection = await resolveDatabaseConnection(crudRequest.database, resolvedOptions);
+    const connection = await resolveDatabaseConnection(
+      crudRequest.database,
+      databaseOptions,
+    );
     const client = createTursoClient(connection);
     const engine = createTursoRulesEngine(resolvedOptions.rules);
     const authentication = context.get("authentication") as AuthenticationContext | undefined;
@@ -85,7 +93,11 @@ async function handleCrud(
     if (connection.created) {
       phase = "database-ready";
       await waitForDatabaseReady(client);
-      cacheDatabaseConnection(crudRequest.database, resolvedOptions, connection);
+      cacheDatabaseConnection(
+        crudRequest.database,
+        databaseOptions,
+        connection,
+      );
     }
     phase = method === "POST" ? "create-table-or-insert" : "execute";
     const response = await executeCrud({
@@ -98,7 +110,10 @@ async function handleCrud(
     return context.json({ data: response });
   } catch (error) {
     if (request && resolvedOptions && isTransientTursoError(error)) {
-      clearDatabaseConnectionCache(request.database, resolvedOptions);
+      clearDatabaseConnectionCache(
+        request.database,
+        applyRequestDatabasePrefix(resolvedOptions, request.prefix),
+      );
       return context.json({
         error: error instanceof Error ? error.message : String(error),
         phase,

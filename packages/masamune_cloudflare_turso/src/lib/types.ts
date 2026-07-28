@@ -45,6 +45,7 @@ export interface TursoWorkersOptions extends WorkersOptions {
 export interface TursoRequestBody {
   database?: string | undefined;
   table?: string | undefined;
+  prefix?: string | undefined;
   indexKey?: string | undefined;
   where?: TursoWhereCondition[] | undefined;
   orderBy?: TursoOrderCondition[] | undefined;
@@ -72,6 +73,7 @@ export type TursoTokenScopeOutput = RulesTokenTargetOutput;
 
 export interface TursoTokenRequestBody {
   database?: string | undefined;
+  prefix?: string | undefined;
   operations?: RulesOperationKey[] | undefined;
   targets?: TursoTokenScopeInput[] | undefined;
   scope?: TursoTokenScopeInput[] | undefined;

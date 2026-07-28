@@ -74,6 +74,7 @@ export interface TidbDataServiceManifest {
 export interface TidbRequestBody {
   database?: string | undefined;
   table?: string | undefined;
+  prefix?: string | undefined;
   indexKey?: string | undefined;
   where?: TidbWhereCondition[] | undefined;
   orderBy?: TidbOrderCondition[] | undefined;

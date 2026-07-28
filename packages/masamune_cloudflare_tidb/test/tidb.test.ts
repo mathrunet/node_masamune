@@ -1,5 +1,9 @@
 import { deploy } from "@mathrunet/masamune_cloudflare";
 import { Functions } from "../src/functions";
+import {
+  applyRequestDatabasePrefix,
+  normalizeDatabasePrefix,
+} from "../src/lib/database_prefix";
 import { TidbWorkersOptions } from "../src/lib/types";
 
 const execute = jest.fn();
@@ -120,6 +124,21 @@ describe("TiDB Cloudflare workers", () => {
     expect(worker.path).toBe("/tidb");
   });
 
+  test("normalizes adapter database prefixes", () => {
+    expect(normalizeDatabasePrefix(undefined)).toBeUndefined();
+    expect(normalizeDatabasePrefix("___")).toBeUndefined();
+    expect(normalizeDatabasePrefix(" dev___ ")).toBe("dev_");
+    expect(
+      applyRequestDatabasePrefix(
+        { databasePrefix: "tenant_" },
+        normalizeDatabasePrefix("dev"),
+      ).databasePrefix,
+    ).toBe("tenant_dev_");
+    expect(() => normalizeDatabasePrefix("invalid prefix")).toThrow(
+      "Invalid prefix",
+    );
+  });
+
   test("reads rows from path based GET endpoint.", async () => {
     const app = deploy([Functions.tidb(dynamicOptions())]);
 
@@ -147,6 +166,25 @@ describe("TiDB Cloudflare workers", () => {
     expect(execute).toHaveBeenCalledWith(
       expect.stringContaining("INFORMATION_SCHEMA.SCHEMATA"),
       ["app_db"],
+      { fullResult: true },
+    );
+  });
+
+  test("reads from the prefixed physical database.", async () => {
+    const app = deploy([Functions.tidb(dynamicOptions())]);
+
+    const response = await app.request(
+      "http://localhost/tidb/database/app_db/users/user_1?prefix=dev___",
+    );
+
+    expect(response.status).toBe(200);
+    expect(connect).toHaveBeenCalledWith({
+      url: "mysql://backend:backend-password@gateway01.ap-northeast-1.prod.aws.tidbcloud.com:4000/dev_app_db",
+      fullResult: true,
+    });
+    expect(execute).toHaveBeenCalledWith(
+      expect.stringContaining("INFORMATION_SCHEMA.SCHEMATA"),
+      ["dev_app_db"],
       { fullResult: true },
     );
   });

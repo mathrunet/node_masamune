@@ -30,6 +30,19 @@ const manifest: TidbDataServiceManifest = {
         delete: { path: "/app_db/users/delete", method: "POST" },
       },
     },
+    "dev_app_db\u0000users": {
+      database: "dev_app_db",
+      table: "users",
+      columns: ["id", "name", "tags", "created_at", "updated_at"],
+      endpoints: {
+        get: { path: "/dev_app_db/users/get", method: "GET" },
+        list: { path: "/dev_app_db/users/list", method: "GET" },
+        count: { path: "/dev_app_db/users/count", method: "GET" },
+        upsert: { path: "/dev_app_db/users/upsert", method: "POST" },
+        update: { path: "/dev_app_db/users/update", method: "POST" },
+        delete: { path: "/dev_app_db/users/delete", method: "POST" },
+      },
+    },
   },
   custom_endpoints: {
     claim_user: {
@@ -152,6 +165,17 @@ describe("TiDB Data Service", () => {
     expect(connect).not.toHaveBeenCalled();
     expect(fetchMock.mock.calls[0][0]).toContain(
       "/app/app-1/endpoint/app_db/users/get?id=user_1",
+    );
+  });
+
+  test("selects a prefixed Data Service manifest table", () => {
+    const client = new TidbDataServiceClient(
+      options({ databasePrefix: "dev_" }),
+    );
+
+    expect(client.table("app_db", "users").database).toBe("dev_app_db");
+    expect(client.table("app_db", "users").endpoints.get?.path).toBe(
+      "/dev_app_db/users/get",
     );
   });
 

@@ -78,6 +78,12 @@ This package does not create databases automatically. Create the TiDB database
 before using it. Tables and missing columns are created automatically when
 models are saved.
 
+CRUD requests may pass `prefix` to select a prefixed physical database while
+rules continue to evaluate the logical database path. For example,
+`database/app_db/users?prefix=dev___` connects to `dev_app_db.users`. Prefixes
+are normalized to exactly one trailing underscore. Missing, empty, and
+underscore-only values keep the unprefixed database.
+
 All reads and writes go through the Workers CRUD endpoint. The root password in
 `TIDB_CONNECTION_URL` is used only inside Cloudflare Workers and is never
 returned to clients.
@@ -126,6 +132,16 @@ cloudflare:
 
 For Data Service, annotate flat Masamune models with `@tidbDataService`, run
 `katana code generate`, and configure the generated official CaC directory:
+
+```dart
+@TidbDataService(prefixes: ["dev"])
+@CollectionModelPath("database/app_db/users")
+abstract class UserModel {}
+```
+
+This generates both `app_db.users` and `dev_app_db.users` endpoints. The
+adapter prefix must have a corresponding generated manifest entry; Data
+Service never falls back to the unprefixed database.
 
 ```yaml
 cloudflare:
