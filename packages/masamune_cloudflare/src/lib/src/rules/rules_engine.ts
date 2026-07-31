@@ -423,25 +423,23 @@ export async function resolveDatabaseTokenAccess({
             authentication,
             server: true,
         });
-    const scopes = await resolveScopeModes({
+    let scopes = await resolveScopeModes({
         engine,
         database,
         scope,
         authentication,
     });
-    const readScopes = scopes.filter((item) => requiresRead(item.operations));
-    const writeScopes = scopes.filter((item) => requiresWrite(item.operations));
     const requestedOperations = operations ?? [];
     const requestsDatabaseRead = requiresRead(requestedOperations);
     const requestsDatabaseWrite = requiresWrite(requestedOperations);
     const hasTargets = scope.length > 0;
-    const restrictedDatabaseRead = !hasTargets && expandRulesOperation("read").some((operation) => {
+    const restrictedDatabaseRead = expandRulesOperation("read").some((operation) => {
         return engine.hasDatabaseScopedRestriction({
             database,
             operation,
         });
     });
-    const restrictedDatabaseWrite = !hasTargets && expandRulesOperation("write").some((operation) => {
+    const restrictedDatabaseWrite = expandRulesOperation("write").some((operation) => {
         return engine.hasDatabaseScopedRestriction({
             database,
             operation,
@@ -453,6 +451,17 @@ export async function resolveDatabaseTokenAccess({
     const databaseWriteMode = restrictedDatabaseWrite
         ? serverDatabaseWrite ? "functions" : "none"
         : directDatabaseWrite ? "direct" : serverDatabaseWrite ? "functions" : "none";
+    scopes = scopes.map((item) => ({
+        ...item,
+        ...(item.readMode === "direct" && databaseReadMode !== "direct"
+            ? { readMode: databaseReadMode }
+            : {}),
+        ...(item.writeMode === "direct" && databaseWriteMode !== "direct"
+            ? { writeMode: databaseWriteMode }
+            : {}),
+    }));
+    const readScopes = scopes.filter((item) => requiresRead(item.operations));
+    const writeScopes = scopes.filter((item) => requiresWrite(item.operations));
     const readMode = resolveOverallMode(
         readScopes.map((item) => item.readMode ?? "none"),
         !hasTargets && (requestedOperations.length === 0 || requestsDatabaseRead)

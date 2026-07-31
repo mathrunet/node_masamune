@@ -81,10 +81,6 @@ function mockExistingDatabase({
     .mockResolvedValueOnce({
       ok: true,
       status: 200,
-    } as Response)
-    .mockResolvedValueOnce({
-      ok: true,
-      status: 200,
       json: async () => ({ database: { Hostname: url } }),
     } as Response)
     .mockResolvedValueOnce({
@@ -549,22 +545,10 @@ describe("Turso Cloudflare workers", () => {
 
   test("upserts rows on POST when value contains an existing id", async () => {
     mockExistingDatabase({ url: "libsql://postupsertdb.turso.io" });
-    execute
-      .mockResolvedValueOnce({ rows: [] })
-      .mockResolvedValueOnce({ rows: [] })
-      .mockResolvedValueOnce({
-        columns: ["cid", "name", "type", "notnull", "dflt_value", "pk"],
-        rows: [
-          [0, "id", "TEXT", 0, null, 1],
-          [1, "created_at", "INTEGER", 0, null, 0],
-          [2, "updated_at", "INTEGER", 0, null, 0],
-          [3, "name", "TEXT", 0, null, 0],
-        ],
-      })
-      .mockResolvedValueOnce({
-        columns: ["id", "name", "created_at", "updated_at"],
-        rows: [["user_1", "Alice", 1, 2]],
-      });
+    execute.mockResolvedValueOnce({
+      columns: ["id", "name", "created_at", "updated_at"],
+      rows: [["user_1", "Alice", 1, 2]],
+    });
     const app = deploy([Functions.turso(dynamicOptions())]);
 
     const response = await app.request(
@@ -591,6 +575,7 @@ describe("Turso Cloudflare workers", () => {
         sql: expect.stringContaining("INSERT OR REPLACE INTO"),
       }),
     );
+    expect(execute).toHaveBeenCalledTimes(1);
   });
 
   test("checks update rules for POST with path indexKey", async () => {
@@ -696,6 +681,9 @@ describe("Turso Cloudflare workers", () => {
   test("adds only missing columns during migration", async () => {
     mockExistingDatabase({ url: "libsql://migrationdb.turso.io" });
     execute
+      .mockRejectedValueOnce(
+        new Error('table "users" has no column named "age"'),
+      )
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({
@@ -736,11 +724,8 @@ describe("Turso Cloudflare workers", () => {
   test("issues read-only database tokens by database rules", async () => {
     mockExistingDatabase({
       url: "libsql://scopedb.turso.io",
-    }).mockResolvedValueOnce({
-      ok: true,
-      status: 200,
-      json: async () => ({ jwt: "scoped-token" }),
-    } as Response);
+      databaseToken: "scoped-token",
+    });
     const app = deploy([
       Functions.tursoToken(
         dynamicOptions({
@@ -799,11 +784,8 @@ describe("Turso Cloudflare workers", () => {
   test("uses functions write mode when descendant table rules deny writes", async () => {
     mockExistingDatabase({
       url: "libsql://test.turso.io",
-    }).mockResolvedValueOnce({
-      ok: true,
-      status: 200,
-      json: async () => ({ jwt: "read-only-token" }),
-    } as Response);
+      databaseToken: "read-only-token",
+    });
     const app = deploy([
       Functions.tursoToken(
         dynamicOptions({
@@ -861,11 +843,8 @@ describe("Turso Cloudflare workers", () => {
   test("uses Cloudflare env secret before platformApiToken option", async () => {
     const fetchMock = mockExistingDatabase({
       url: "libsql://env-priority-db.turso.io",
-    }).mockResolvedValueOnce({
-      ok: true,
-      status: 200,
-      json: async () => ({ jwt: "env-priority-token" }),
-    } as Response);
+      databaseToken: "env-priority-token",
+    });
     const app = deploy([
       Functions.tursoToken(
         dynamicOptions({
@@ -934,11 +913,8 @@ describe("Turso Cloudflare workers", () => {
   test("allows database tokens when path parameter matches authenticated user", async () => {
     mockExistingDatabase({
       url: "libsql://user-1.turso.io",
-    }).mockResolvedValueOnce({
-      ok: true,
-      status: 200,
-      json: async () => ({ jwt: "user-token" }),
-    } as Response);
+      databaseToken: "user-token",
+    });
     const app = deploy(
       [
         Functions.tursoToken(
@@ -988,11 +964,8 @@ describe("Turso Cloudflare workers", () => {
   test("marks database tokens as functions write mode for server-side writes", async () => {
     mockExistingDatabase({
       url: "libsql://server-write-user.turso.io",
-    }).mockResolvedValueOnce({
-      ok: true,
-      status: 200,
-      json: async () => ({ jwt: "server-write-token" }),
-    } as Response);
+      databaseToken: "server-write-token",
+    });
     const app = deploy(
       [
         Functions.tursoToken(
@@ -1119,7 +1092,7 @@ describe("Turso Cloudflare workers", () => {
         writeMode: "functions",
       },
     ]);
-    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   test("switches scoped direct reads to functions when table rules require field matching", async () => {
@@ -1188,7 +1161,7 @@ describe("Turso Cloudflare workers", () => {
         readMode: "functions",
       },
     ]);
-    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   test("denies database tokens when path parameter does not match authenticated user", async () => {
@@ -1230,7 +1203,7 @@ describe("Turso Cloudflare workers", () => {
 
     expect(response.status).toBe(403);
     expect(body.error).toBe("denied");
-    expect(globalThis.fetch).toHaveBeenCalledTimes(3);
+    expect(globalThis.fetch).not.toHaveBeenCalled();
   });
 
   test("evaluates field rules with server only on server requests", async () => {
@@ -1305,17 +1278,14 @@ describe("Turso Cloudflare workers", () => {
 
     expect(response.status).toBe(403);
     expect(body.error).toBe("denied");
-    expect(globalThis.fetch).toHaveBeenCalledTimes(3);
+    expect(globalThis.fetch).not.toHaveBeenCalled();
   });
 
   test("issues Turso database tokens through the Platform API when configured", async () => {
     const fetchMock = mockExistingDatabase({
       url: "libsql://tokendb.turso.io",
-    }).mockResolvedValueOnce({
-      ok: true,
-      status: 200,
-      json: async () => ({ jwt: "platform-jwt" }),
-    } as Response);
+      databaseToken: "platform-jwt",
+    });
     const app = deploy([
       Functions.tursoToken(dynamicOptions({ autoCreateDatabase: true })),
     ]);
@@ -1353,11 +1323,8 @@ describe("Turso Cloudflare workers", () => {
   test("returns resolved database URL when issuing a token for an auto-created database", async () => {
     mockCreatedDatabase({
       url: "libsql://tenant-a.turso.io",
-    }).mockResolvedValueOnce({
-      ok: true,
-      status: 200,
-      json: async () => ({ jwt: "scoped-token" }),
-    } as Response);
+      databaseToken: "scoped-token",
+    });
     const app = deploy([
       Functions.tursoToken(dynamicOptions({ autoCreateDatabase: true })),
     ]);
@@ -1383,11 +1350,8 @@ describe("Turso Cloudflare workers", () => {
   test("waits for an auto-created database to be routable before issuing a direct token", async () => {
     mockCreatedDatabase({
       url: "libsql://tenant-routing.turso.io",
-    }).mockResolvedValueOnce({
-      ok: true,
-      status: 200,
-      json: async () => ({ jwt: "routing-token" }),
-    } as Response);
+      databaseToken: "routing-token",
+    });
     execute
       .mockRejectedValueOnce(
         new Error(

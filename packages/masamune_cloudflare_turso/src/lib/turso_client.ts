@@ -26,6 +26,7 @@ export type SqlValue =
   null | string | number | bigint | ArrayBuffer | boolean | Uint8Array | Date;
 
 const connectionCache = new Map<string, TursoDatabaseConnection>();
+const databaseEndpointCache = new Map<string, string>();
 const connectionRefreshes = new Map<
   string,
   Promise<TursoDatabaseConnection>
@@ -65,15 +66,80 @@ export async function resolveDatabaseConnection(
       created: false,
     };
   }
+  const endpoint = await resolveDatabaseEndpoint(normalizedDatabase, options);
+  const organizationName = options.organization;
+  const platformApiToken = options.platformApiToken;
+  if (!organizationName || !platformApiToken) {
+    throw new HttpError(
+      500,
+      "organization and platformApiToken are required to create Turso database tokens.",
+    );
+  }
   const databaseName = await resolvePhysicalDatabaseName(
     normalizedDatabase,
     options,
   );
-  const created = await ensurePlatformDatabase(databaseName, options);
-  if (!created.created) {
-    cacheDatabaseConnection(database, options, created);
+  const baseUrl =
+    `https://api.turso.tech/v1/organizations/${encodeURIComponent(organizationName)}`;
+  const authToken = await createDatabaseToken(
+    baseUrl,
+    databaseName,
+    {
+      Authorization: `Bearer ${platformApiToken}`,
+      "Content-Type": "application/json",
+    },
+    options.serverTokenTtlSeconds,
+  );
+  if (!authToken.token) {
+    throw new HttpError(
+      500,
+      "Turso database auth token was not found in Platform API response.",
+    );
   }
-  return created;
+  const connection: TursoDatabaseConnection = {
+    url: endpoint.url,
+    authToken: authToken.token,
+    authTokenExpiresAt: authToken.expiresAt,
+    created: endpoint.created,
+  };
+  if (!endpoint.created) {
+    cacheDatabaseConnection(database, options, connection);
+  }
+  return connection;
+}
+
+export async function resolveDatabaseEndpoint(
+  database: string,
+  options: TursoWorkersOptions,
+): Promise<Pick<TursoDatabaseConnection, "url" | "created">> {
+  const normalizedDatabase = validateLogicalName(database, "database");
+  const cacheKey = databaseCacheKey(normalizedDatabase, options);
+  const connected = connectionCache.get(cacheKey);
+  if (connected) {
+    return { url: connected.url, created: false };
+  }
+  const cachedUrl = databaseEndpointCache.get(cacheKey);
+  if (cachedUrl) {
+    return { url: cachedUrl, created: false };
+  }
+  const databaseName = await resolvePhysicalDatabaseName(
+    normalizedDatabase,
+    options,
+  );
+  const endpoint = await ensurePlatformDatabase(databaseName, options);
+  if (!endpoint.created) {
+    databaseEndpointCache.set(cacheKey, endpoint.url);
+  }
+  return endpoint;
+}
+
+export function cacheDatabaseEndpoint(
+  database: string,
+  options: TursoWorkersOptions,
+  url: string,
+): void {
+  const normalizedDatabase = validateLogicalName(database, "database");
+  databaseEndpointCache.set(databaseCacheKey(normalizedDatabase, options), url);
 }
 
 export function cacheDatabaseConnection(
@@ -88,6 +154,10 @@ export function cacheDatabaseConnection(
     authTokenExpiresAt: connection.authTokenExpiresAt,
     created: false,
   });
+  databaseEndpointCache.set(
+    databaseCacheKey(normalizedDatabase, options),
+    connection.url,
+  );
 }
 
 export function clearDatabaseConnectionCache(
@@ -128,7 +198,7 @@ export async function waitForDatabaseReady(client: TursoClient): Promise<void> {
 async function ensurePlatformDatabase(
   databaseName: string,
   options: TursoWorkersOptions,
-): Promise<TursoDatabaseConnection> {
+): Promise<Pick<TursoDatabaseConnection, "url" | "created">> {
   const organizationName = options.organization;
   const platformApiToken = options.platformApiToken;
   if (!organizationName || !platformApiToken) {
@@ -144,6 +214,7 @@ async function ensurePlatformDatabase(
     "Content-Type": "application/json",
   };
   let created = false;
+  let info: Record<string, unknown> | undefined;
   const existing = await fetch(
     `${baseUrl}/databases/${encodeURIComponent(databaseName)}`,
     {
@@ -174,21 +245,25 @@ async function ensurePlatformDatabase(
       500,
       `Failed to get Turso database: ${existing.status}`,
     );
+  } else {
+    info = (await existing.json()) as Record<string, unknown>;
   }
 
-  const infoResponse = await fetch(
-    `${baseUrl}/databases/${encodeURIComponent(databaseName)}`,
-    {
-      headers,
-    },
-  );
-  if (!infoResponse.ok) {
-    throw new HttpError(
-      500,
-      `Failed to resolve Turso database: ${infoResponse.status}`,
+  if (!info) {
+    const infoResponse = await fetch(
+      `${baseUrl}/databases/${encodeURIComponent(databaseName)}`,
+      {
+        headers,
+      },
     );
+    if (!infoResponse.ok) {
+      throw new HttpError(
+        500,
+        `Failed to resolve Turso database: ${infoResponse.status}`,
+      );
+    }
+    info = (await infoResponse.json()) as Record<string, unknown>;
   }
-  const info = (await infoResponse.json()) as Record<string, unknown>;
   const url = findDatabaseUrl(info);
   if (!url) {
     throw new HttpError(
@@ -196,22 +271,8 @@ async function ensurePlatformDatabase(
       "Turso database URL was not found in Platform API response.",
     );
   }
-  const authToken = await createDatabaseToken(
-    baseUrl,
-    databaseName,
-    headers,
-    options.serverTokenTtlSeconds,
-  );
-  if (!authToken.token) {
-    throw new HttpError(
-      500,
-      "Turso database auth token was not found in Platform API response.",
-    );
-  }
   return {
     url,
-    authToken: authToken.token,
-    authTokenExpiresAt: authToken.expiresAt,
     created,
   };
 }

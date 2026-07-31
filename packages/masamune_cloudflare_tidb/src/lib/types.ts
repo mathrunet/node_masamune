@@ -31,6 +31,28 @@ export interface TidbDatabaseConnection {
 export interface TidbWorkersOptions extends WorkersOptions {
   databasePrefix?: string | undefined;
   connectionUrl?: string | undefined;
+  /**
+   * Shared secret that allows a request to be evaluated as a server request.
+   *
+   * When omitted, every CRUD request is evaluated as a client request and
+   * `server` scoped rules are always denied.
+   *
+   * リクエストをサーバーリクエストとして評価することを許可する共有シークレット。
+   *
+   * 未指定の場合、すべてのCRUDリクエストはクライアントリクエストとして評価され、
+   * `server`指定のrulesは常に拒否されます。
+   */
+  serverAccessToken?: string | undefined;
+  /**
+   * Header name used to present [serverAccessToken].
+   *
+   * Defaults to `x-masamune-server-token`.
+   *
+   * [serverAccessToken]を提示するためのヘッダー名。
+   *
+   * 既定値は`x-masamune-server-token`です。
+   */
+  serverAccessHeader?: string | undefined;
   mode?: TidbConnectionMode | undefined;
   dataServiceAppId?: string | undefined;
   dataServiceRegion?: string | undefined;

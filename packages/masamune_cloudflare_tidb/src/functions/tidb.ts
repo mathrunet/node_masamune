@@ -20,6 +20,7 @@ import {
   resolveDatabaseConnection,
 } from "../lib/tidb_client";
 import { resolveTidbWorkersOptionsFromEnv } from "../lib/env";
+import { isTidbServerRequest } from "../lib/server_request";
 import { TidbDataServiceClient } from "../lib/data_service_client";
 import {
   executeDataServiceCrud,
@@ -99,7 +100,7 @@ async function handleCrud(
             maxScanRows,
           )
           : fetchDocumentForRules(client!, crudRequest),
-      server: true,
+      server: isTidbServerRequest(context, resolvedOptions),
     });
     if (!result.allowed) {
       return context.json({

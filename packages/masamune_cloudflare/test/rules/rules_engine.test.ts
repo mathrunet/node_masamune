@@ -373,6 +373,96 @@ describe("rules engine", () => {
         });
     });
 
+    test("does not issue a database token when an unrequested sibling requires server reads", async () => {
+        const engine = new RulesEngine({
+            version: "1",
+            rules: {
+                database: {
+                    main: {
+                        read: "allow",
+                        write: "server",
+                    },
+                    "main/private": {
+                        read: "server",
+                    },
+                },
+            },
+        });
+
+        const access = await resolveDatabaseTokenAccess({
+            engine,
+            database: "main",
+            scope: [
+                {
+                    table: "public",
+                    operations: ["read"],
+                },
+            ],
+        });
+
+        expect(access).toMatchObject({
+            readMode: "functions",
+            writeMode: "none",
+            scopes: [
+                {
+                    table: "public",
+                    operations: ["read"],
+                    readMode: "functions",
+                },
+            ],
+        });
+        expect(access?.authorization).toBeUndefined();
+    });
+
+    test("issues one database token when all descendant read rules are direct safe", async () => {
+        const engine = new RulesEngine({
+            version: "1",
+            rules: {
+                database: {
+                    "{uid}": {
+                        read: { type: "path", param: "uid" },
+                        write: { type: "path", param: "uid", server: true },
+                    },
+                },
+            },
+        });
+
+        const access = await resolveDatabaseTokenAccess({
+            engine,
+            database: "user-1",
+            authentication: { uid: "user-1" },
+            scope: [
+                {
+                    table: "profiles",
+                    operations: ["read", "write"],
+                },
+                {
+                    table: "records",
+                    operations: ["read"],
+                },
+            ],
+        });
+
+        expect(access).toMatchObject({
+            authorization: "read-only",
+            readMode: "direct",
+            writeMode: "functions",
+            scopes: [
+                {
+                    table: "profiles",
+                    operations: ["read", "write"],
+                    readMode: "direct",
+                    writeMode: "functions",
+                },
+                {
+                    table: "records",
+                    operations: ["read"],
+                    readMode: "direct",
+                },
+            ],
+        });
+    });
+
     test("recognizes embedded parameters in database token scope restrictions", async () => {
         const engine = new RulesEngine({
             version: "1",

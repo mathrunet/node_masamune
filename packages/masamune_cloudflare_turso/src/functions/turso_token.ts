@@ -6,9 +6,9 @@ import {
   resolveDatabaseTokenAccess,
 } from "../lib/rules";
 import {
-  cacheDatabaseConnection,
+  cacheDatabaseEndpoint,
   createTursoClient,
-  resolveDatabaseConnection,
+  resolveDatabaseEndpoint,
   waitForDatabaseReady,
 } from "../lib/turso_client";
 import { issueDatabaseToken } from "../lib/token";
@@ -38,17 +38,6 @@ async function handleToken(
       resolvedOptions,
       request.prefix,
     );
-    phase = "connect";
-    const connection = await resolveDatabaseConnection(
-      request.database,
-      databaseOptions,
-    );
-    if (connection.created) {
-      phase = "database-ready";
-      const client = createTursoClient(connection);
-      await waitForDatabaseReady(client);
-      cacheDatabaseConnection(request.database, databaseOptions, connection);
-    }
     phase = "rules";
     const authentication = context.get("authentication") as AuthenticationContext | undefined;
     const engine = createTursoRulesEngine(resolvedOptions.rules);
@@ -67,17 +56,38 @@ async function handleToken(
         403,
       );
     }
+    if (!access.authorization) {
+      return context.json({
+        readMode: access.readMode,
+        writeMode: access.writeMode,
+        targets: access.scopes,
+        scopes: access.scopes,
+      });
+    }
+    phase = "connect";
+    const endpoint = await resolveDatabaseEndpoint(
+      request.database,
+      databaseOptions,
+    );
     phase = "issue-token";
-    const token = access.authorization
-      ? await issueDatabaseToken({
-          database: request.database,
-          authorization: access.authorization,
-          ttlSeconds: request.ttlSeconds,
-          options: databaseOptions,
-        })
-      : undefined;
+    const token = await issueDatabaseToken({
+      database: request.database,
+      authorization: access.authorization,
+      ttlSeconds: request.ttlSeconds,
+      options: databaseOptions,
+    });
+    if (endpoint.created) {
+      phase = "database-ready";
+      const client = createTursoClient({
+        url: endpoint.url,
+        authToken: token.token,
+      });
+      await waitForDatabaseReady(client);
+      cacheDatabaseEndpoint(request.database, databaseOptions, endpoint.url);
+    }
     return context.json({
-      ...(token ? { ...token, url: connection.url } : {}),
+      ...token,
+      url: endpoint.url,
       readMode: access.readMode,
       writeMode: access.writeMode,
       targets: access.scopes,

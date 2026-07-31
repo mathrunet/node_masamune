@@ -10,6 +10,8 @@ interface TidbWorkersEnv {
   TIDB_DATA_SERVICE_PUBLIC_KEY?: string | undefined;
   TIDB_DATA_SERVICE_PRIVATE_KEY?: string | undefined;
   TIDB_DATA_SERVICE_MAX_SCAN_ROWS?: string | undefined;
+  TIDB_SERVER_ACCESS_TOKEN?: string | undefined;
+  TIDB_SERVER_ACCESS_HEADER?: string | undefined;
 }
 
 export function resolveTidbWorkersOptionsFromEnv(
@@ -44,6 +46,14 @@ export function resolveTidbWorkersOptionsFromEnv(
     maxScanRows: firstPositiveInteger(
       env.TIDB_DATA_SERVICE_MAX_SCAN_ROWS,
       options.maxScanRows,
+    ),
+    serverAccessToken: firstNonEmpty(
+      env.TIDB_SERVER_ACCESS_TOKEN,
+      options.serverAccessToken,
+    ),
+    serverAccessHeader: firstNonEmpty(
+      env.TIDB_SERVER_ACCESS_HEADER,
+      options.serverAccessHeader,
     ),
   };
 }

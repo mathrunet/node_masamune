@@ -31,5 +31,6 @@ export type {
   RulesOperationKey,
 } from "./lib/types";
 export * from "./lib/types";
+export * from "./lib/server_request";
 export * from "./lib/data_service_client";
 export * from "./lib/digest_auth";

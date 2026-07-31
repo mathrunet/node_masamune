@@ -1,4 +1,8 @@
-import { deploy } from "@mathrunet/masamune_cloudflare";
+import {
+  deploy,
+  WorkersAuthAdapterBase,
+} from "@mathrunet/masamune_cloudflare";
+import { MiddlewareHandler } from "hono";
 import { Functions } from "../src/functions";
 import {
   applyRequestDatabasePrefix,
@@ -33,6 +37,42 @@ const allowRules = {
   },
 } as const;
 
+const serverScopedRules = {
+  version: "1",
+  rules: {
+    database: {
+      "app_db/generationResults/*": {
+        read: "server",
+        write: "server",
+      },
+      "app_db/users/*": {
+        read: "authenticated",
+        write: "server",
+      },
+    },
+  },
+} as const;
+
+/**
+ * Authentication adapter that emulates a signed in client without server
+ * credentials.
+ */
+class ClientAuthAdapter extends WorkersAuthAdapterBase {
+  constructor(uid: string) {
+    super();
+    this.uid = uid;
+  }
+
+  private readonly uid: string;
+
+  build(): MiddlewareHandler {
+    return async (context, next) => {
+      this.setAuthContext(context, { uid: this.uid });
+      await next();
+    };
+  }
+}
+
 function dynamicOptions(
   options: Partial<TidbWorkersOptions> = {},
 ): TidbWorkersOptions {
@@ -42,6 +82,16 @@ function dynamicOptions(
     rules: allowRules,
     ...options,
   };
+}
+
+function clientOptions(
+  options: Partial<TidbWorkersOptions> = {},
+): TidbWorkersOptions {
+  return dynamicOptions({
+    rules: serverScopedRules,
+    auth: new ClientAuthAdapter("user_1"),
+    ...options,
+  });
 }
 
 function mockExecute(): void {
@@ -251,5 +301,140 @@ describe("TiDB Cloudflare workers", () => {
 
     expect(response.status).toBe(404);
     expect(body.error).toContain("Database was not found");
+  });
+
+  test.each([
+    ["GET", "http://localhost/tidb/database/app_db/generationResults", undefined],
+    ["GET", "http://localhost/tidb/database/app_db/generationResults/result_1", undefined],
+    [
+      "POST",
+      "http://localhost/tidb/database/app_db/generationResults",
+      JSON.stringify({ value: { id: "result_1", name: "Alice" } }),
+    ],
+    [
+      "PUT",
+      "http://localhost/tidb/database/app_db/generationResults/result_1",
+      JSON.stringify({ value: { name: "Alice" } }),
+    ],
+    [
+      "DELETE",
+      "http://localhost/tidb/database/app_db/generationResults/result_1",
+      JSON.stringify({}),
+    ],
+  ])(
+    "denies %s from a client for server scoped rules.",
+    async (method, url, body) => {
+      const app = deploy([Functions.tidb(clientOptions())]);
+
+      const response = await app.request(url, {
+        method,
+        ...(body
+          ? {
+            headers: { "Content-Type": "application/json" },
+            body,
+          }
+          : {}),
+      });
+      const payload = (await response.json()) as { error: string };
+
+      expect(response.status).toBe(403);
+      expect(payload.error).toBe("denied");
+      expect(execute).not.toHaveBeenCalledWith(
+        expect.stringContaining("DELETE FROM"),
+        expect.anything(),
+        expect.anything(),
+      );
+      expect(execute).not.toHaveBeenCalledWith(
+        expect.stringContaining("ON DUPLICATE KEY UPDATE"),
+        expect.anything(),
+        expect.anything(),
+      );
+    },
+  );
+
+  test("allows authenticated reads while denying client writes.", async () => {
+    const app = deploy([Functions.tidb(clientOptions())]);
+
+    const read = await app.request(
+      "http://localhost/tidb/database/app_db/users/user_1",
+    );
+    const write = await app.request(
+      "http://localhost/tidb/database/app_db/users/user_1",
+      {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      },
+    );
+    const denied = (await write.json()) as { error: string };
+
+    expect(read.status).toBe(200);
+    expect(write.status).toBe(403);
+    expect(denied.error).toBe("denied");
+  });
+
+  test("denies reads without authentication for authenticated rules.", async () => {
+    const app = deploy([
+      Functions.tidb(dynamicOptions({ rules: serverScopedRules })),
+    ]);
+
+    const response = await app.request(
+      "http://localhost/tidb/database/app_db/users/user_1",
+    );
+    const payload = (await response.json()) as { error: string };
+
+    expect(response.status).toBe(403);
+    expect(payload.error).toBe("denied");
+  });
+
+  test("evaluates server scoped rules with the server access token.", async () => {
+    const app = deploy([
+      Functions.tidb(clientOptions({ serverAccessToken: "server-token" })),
+    ]);
+
+    const response = await app.request(
+      "http://localhost/tidb/database/app_db/generationResults/result_1",
+      {
+        headers: { "x-masamune-server-token": "server-token" },
+      },
+    );
+
+    expect(response.status).toBe(200);
+  });
+
+  test("denies server scoped rules with an invalid server access token.", async () => {
+    const app = deploy([
+      Functions.tidb(clientOptions({ serverAccessToken: "server-token" })),
+    ]);
+
+    const response = await app.request(
+      "http://localhost/tidb/database/app_db/generationResults/result_1",
+      {
+        headers: { "x-masamune-server-token": "server-token-invalid" },
+      },
+    );
+    const payload = (await response.json()) as { error: string };
+
+    expect(response.status).toBe(403);
+    expect(payload.error).toBe("denied");
+  });
+
+  test("uses the configured server access header name.", async () => {
+    const options = clientOptions({
+      serverAccessToken: "server-token",
+      serverAccessHeader: "x-internal-token",
+    });
+
+    const allowed = await deploy([Functions.tidb(options)]).request(
+      "http://localhost/tidb/database/app_db/generationResults/result_1",
+      { headers: { "x-internal-token": "server-token" } },
+    );
+    const denied = await deploy([Functions.tidb(options)]).request(
+      "http://localhost/tidb/database/app_db/generationResults/result_1",
+      { headers: { "x-masamune-server-token": "server-token" } },
+    );
+
+    expect(allowed.status).toBe(200);
+    expect(denied.status).toBe(403);
   });
 });

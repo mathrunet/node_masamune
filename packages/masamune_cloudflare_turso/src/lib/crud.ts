@@ -97,21 +97,36 @@ async function insertRow(
     created_at: value.created_at ?? now,
     updated_at: value.updated_at ?? now,
   };
-  await ensureTableSchema({
-    client,
-    table: request.table,
-    value: row,
-    autoCreateTable,
-    autoMigrateAddColumns,
-  });
   const keys = Object.keys(row).map((key) => validateIdentifier(key, "column"));
   const placeholders = keys.map(() => "?").join(", ");
-  const result = await client.execute({
+  const statement = {
     sql: `INSERT OR REPLACE INTO ${quoteIdentifier(request.table)} ` +
       `(${keys.map(quoteIdentifier).join(", ")}) VALUES (${placeholders}) RETURNING *`,
     args: keys.map((key) => encodeSqlValue(row[key])),
-  });
+  };
+  let result;
+  try {
+    result = await client.execute(statement);
+  } catch (error) {
+    if (!isMissingTursoSchemaError(error)) {
+      throw error;
+    }
+    await ensureTableSchema({
+      client,
+      table: request.table,
+      value: row,
+      autoCreateTable,
+      autoMigrateAddColumns,
+    });
+    result = await client.execute(statement);
+  }
   return result.rows.map((item) => decodeRow(item, result.columns));
+}
+
+function isMissingTursoSchemaError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return /(?:no such table|has no column named|no column named|unknown column)/i
+    .test(message);
 }
 
 async function updateRows(

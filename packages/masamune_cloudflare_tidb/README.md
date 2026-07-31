@@ -88,6 +88,35 @@ All reads and writes go through the Workers CRUD endpoint. The root password in
 `TIDB_CONNECTION_URL` is used only inside Cloudflare Workers and is never
 returned to clients.
 
+### Server scoped rules
+
+The CRUD endpoint is called directly from clients, so rules are evaluated as a
+client request. `"server"` access rules, and rules that set `"server": true`,
+are always denied unless the request proves that it comes from a trusted
+backend. To allow a backend to be evaluated as a server request, configure a
+shared secret and send it in a header.
+
+```bash
+wrangler secret put TIDB_SERVER_ACCESS_TOKEN
+```
+
+```typescript
+m.Functions.tidb({
+  // Optional. Defaults to `x-masamune-server-token`.
+  serverAccessHeader: "x-masamune-server-token",
+});
+```
+
+```text
+x-masamune-server-token: <TIDB_SERVER_ACCESS_TOKEN>
+```
+
+Never ship this token to clients. Without `TIDB_SERVER_ACCESS_TOKEN` (or
+`serverAccessToken`), every request stays a client request. Note that a rule
+such as `{"type": "path", "param": "uid", "server": true}` denies owner access
+from clients as well. Remove `"server": true` from such rules when the owner
+must be able to read or write from the app.
+
 The alternative `data-service` mode sends the same Workers CRUD contract to
 TiDB Data Service over HTTPS with Digest authentication. It requires a
 generated runtime manifest and does not open a MySQL connection.
