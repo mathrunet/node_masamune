@@ -1,4 +1,4 @@
-## 3.5.2 (2026-07-31)
+## 3.5.3 (2026-08-04)
 
 
 ### chore
@@ -79,6 +79,7 @@
 * Move development, requirements, and setup guide documents to masamune_asset_pipeline package. ([1aa4ccb](https://github.com/mathrunet/node_masamune/commit/1aa4ccb995791c34de7901e98554aaca80bf22cc))
 * ReadMe changes. ([8e55b7d](https://github.com/mathrunet/node_masamune/commit/8e55b7d10d6d3f8f61ff09541fafbfb9ea52b73a))
 * ReadMe creation. ([6f91ba9](https://github.com/mathrunet/node_masamune/commit/6f91ba97d8c8e3f7d41a6299d95e51a69b90fe1c))
+* update README with TursoDB deployment instructions and clarify database creation process; refactor Turso client to support concurrent writes and improve error handling; enhance tests for database validation and error scenarios ([fdc42da](https://github.com/mathrunet/node_masamune/commit/fdc42da0deb25907cdedd9aa84fabaac62b2161c))
 
 ### feat
 
