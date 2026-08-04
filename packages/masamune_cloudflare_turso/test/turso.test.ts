@@ -14,6 +14,7 @@ import {
   clearDatabaseConnectionCache,
   isTursoDatabaseId,
   resolveDatabaseConnection,
+  resolveDatabaseEndpoint,
 } from "../src/lib/turso_client";
 
 const execute = jest.fn();
@@ -129,6 +130,75 @@ function mockCreatedDatabase({
       status: 200,
       json: async () => ({ jwt: databaseToken }),
     } as Response);
+}
+
+/// Answers the Platform API by request shape instead of by call order.
+///
+/// The `mockResolvedValueOnce` helpers above cannot express a concurrency test,
+/// where the point of the assertion is that a given request is issued exactly
+/// once no matter how many callers ask for it.
+function mockPlatformApi({
+  url,
+  databaseToken = "database-token",
+}: {
+  url: string;
+  databaseToken?: string;
+}): jest.SpiedFunction<typeof fetch> {
+  return jest.spyOn(globalThis, "fetch").mockImplementation((async (
+    input: RequestInfo | URL,
+    init?: RequestInit,
+  ) => {
+    if (init?.method === "POST" && String(input).includes("/auth/tokens")) {
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({ jwt: databaseToken }),
+      } as Response;
+    }
+    return {
+      ok: true,
+      status: 200,
+      json: async () => ({
+        database: { DbId: tursoDatabaseId, Hostname: url },
+      }),
+    } as Response;
+  }) as unknown as typeof fetch);
+}
+
+/// Answers the Platform API for a database that does not exist yet.
+function mockCreatedPlatformApi({
+  url,
+  databaseToken = "database-token",
+}: {
+  url: string;
+  databaseToken?: string;
+}): jest.SpiedFunction<typeof fetch> {
+  let getCount = 0;
+  return jest.spyOn(globalThis, "fetch").mockImplementation((async (
+    input: RequestInfo | URL,
+    init?: RequestInit,
+  ) => {
+    if (init?.method === "POST") {
+      return String(input).includes("/auth/tokens")
+        ? ({
+          ok: true,
+          status: 200,
+          json: async () => ({ jwt: databaseToken }),
+        } as Response)
+        : ({ ok: true, status: 200 } as Response);
+    }
+    getCount += 1;
+    if (getCount === 1) {
+      return { ok: false, status: 404 } as Response;
+    }
+    return {
+      ok: true,
+      status: 200,
+      json: async () => ({
+        database: { DbId: tursoDatabaseId, Hostname: url },
+      }),
+    } as Response;
+  }) as unknown as typeof fetch);
 }
 
 describe("Turso Cloudflare workers", () => {
@@ -335,6 +405,121 @@ describe("Turso Cloudflare workers", () => {
       ),
       expect.objectContaining({ method: "POST" }),
     );
+    clearDatabaseConnectionCache(database, options);
+  });
+
+  test("resolves a cold endpoint once for concurrent callers", async () => {
+    const options = dynamicOptions();
+    const database = "concurrent-cold-endpoint";
+    const url = "libsql://concurrent-cold-endpoint.turso.io";
+    const physicalName = await resolvePhysicalDatabaseName(database, options);
+    const fetchMock = mockPlatformApi({ url });
+
+    const results = await Promise.all([
+      resolveDatabaseEndpoint(database, options),
+      resolveDatabaseEndpoint(database, options),
+      resolveDatabaseEndpoint(database, options),
+      resolveDatabaseEndpoint(database, options),
+    ]);
+
+    for (const result of results) {
+      expect(result.url).toBe(url);
+      expect(result.created).toBe(false);
+    }
+    expect(
+      fetchMock.mock.calls.filter(([target]) =>
+        String(target).includes(`/databases/${physicalName}`)
+      ),
+    ).toHaveLength(1);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  test("resolves a cold connection once for concurrent callers", async () => {
+    const options = dynamicOptions({ serverTokenTtlSeconds: 3600 });
+    const database = "concurrent-cold-connection";
+    const url = "libsql://concurrent-cold-connection.turso.io";
+    const fetchMock = mockPlatformApi({ url, databaseToken: "shared-token" });
+
+    const results = await Promise.all([
+      resolveDatabaseConnection(database, options),
+      resolveDatabaseConnection(database, options),
+      resolveDatabaseConnection(database, options),
+      resolveDatabaseConnection(database, options),
+    ]);
+
+    for (const result of results) {
+      expect(result.url).toBe(url);
+      expect(result.authToken).toBe("shared-token");
+    }
+    // One GET for the database plus one POST for the token, shared by all four.
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    clearDatabaseConnectionCache(database, options);
+  });
+
+  test("gives every joiner the created verdict of one resolution", async () => {
+    const options = dynamicOptions({ autoCreateDatabase: true });
+    const database = "concurrent-created-endpoint";
+    const url = "libsql://concurrent-created-endpoint.turso.io";
+    const fetchMock = mockCreatedPlatformApi({ url });
+
+    const results = await Promise.all([
+      resolveDatabaseEndpoint(database, options),
+      resolveDatabaseEndpoint(database, options),
+      resolveDatabaseEndpoint(database, options),
+    ]);
+
+    // A joiner must never see `created: false` for a database that was just
+    // created, or it would skip `waitForDatabaseReady` and query too early.
+    for (const result of results) {
+      expect(result.url).toBe(url);
+      expect(result.created).toBe(true);
+    }
+    // 404 GET, POST create, GET info — issued once, not once per caller.
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
+
+  test("does not retain a failed cold resolution", async () => {
+    const options = dynamicOptions();
+    const database = "concurrent-failed-endpoint";
+    const fetchMock = jest
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue({ ok: false, status: 500 } as Response);
+
+    const settled = await Promise.allSettled([
+      resolveDatabaseEndpoint(database, options),
+      resolveDatabaseEndpoint(database, options),
+      resolveDatabaseEndpoint(database, options),
+    ]);
+
+    expect(settled.map((result) => result.status)).toEqual([
+      "rejected",
+      "rejected",
+      "rejected",
+    ]);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    // A later retry must start fresh rather than replay the cached rejection.
+    await expect(resolveDatabaseEndpoint(database, options)).rejects.toThrow();
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  test("does not let an in-flight resolution undo a cache clear", async () => {
+    const options = dynamicOptions({ serverTokenTtlSeconds: 3600 });
+    const database = "concurrent-cleared-connection";
+    const url = "libsql://concurrent-cleared-connection.turso.io";
+    const fetchMock = mockPlatformApi({ url, databaseToken: "first-token" });
+
+    const pending = resolveDatabaseConnection(database, options);
+    clearDatabaseConnectionCache(database, options);
+    await pending;
+
+    // The clear must win: the next caller re-issues a token instead of reusing
+    // the connection that was resolved before the clear.
+    const callsBeforeReresolve = fetchMock.mock.calls.length;
+    const reresolved = await resolveDatabaseConnection(database, options);
+
+    expect(reresolved.authToken).toBe("first-token");
+    expect(fetchMock.mock.calls.length).toBeGreaterThan(callsBeforeReresolve);
     clearDatabaseConnectionCache(database, options);
   });
 

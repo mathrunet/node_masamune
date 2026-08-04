@@ -41,6 +41,26 @@ const connectionRefreshes = new Map<
   string,
   Promise<TursoDatabaseConnection>
 >();
+// In-flight cold resolutions, de-duplicated per database.
+//
+// Resolving a database that is not cached yet costs 2〜4 sequential round trips
+// to the Turso Platform API. A client that loads several tables of the same
+// database concurrently on a cold isolate would otherwise repeat that whole
+// sequence once per caller, multiplying external latency by the number of
+// concurrent loads. Callers arriving while a resolution is running share it.
+const connectionResolutions = new Map<
+  string,
+  Promise<TursoDatabaseConnection>
+>();
+const endpointResolutions = new Map<
+  string,
+  Promise<Pick<TursoDatabaseConnection, "url" | "created">>
+>();
+// Guards a cache write issued by a resolution that started before a cache
+// clear. Without this, a resolution already in flight would repopulate
+// [connectionCache] immediately after [clearDatabaseConnectionCache] emptied
+// it, resurrecting the connection the caller asked to discard.
+const connectionCacheEpochs = new Map<string, number>();
 const readyRetryDelaysMs = [250, 500, 1000, 2000, 4000, 8000];
 const writeRetryDelaysMs = [10, 25, 50, 100, 250, 500];
 const defaultServerTokenTtlSeconds = 3600;
@@ -92,6 +112,38 @@ export async function resolveDatabaseConnection(
       created: false,
     };
   }
+  // Share a single cold resolution with every concurrent caller. A joiner
+  // receives the leader's `created` verdict unchanged, so a freshly created
+  // database still instructs every caller to wait for readiness before use.
+  const inFlight = connectionResolutions.get(cacheKey);
+  if (inFlight) {
+    return inFlight;
+  }
+  const resolution = resolveColdDatabaseConnection(
+    database,
+    normalizedDatabase,
+    cacheKey,
+    options,
+  );
+  connectionResolutions.set(cacheKey, resolution);
+  try {
+    return await resolution;
+  } finally {
+    // Never retain a settled promise. A rejection therefore reaches every
+    // joiner while a later retry starts a fresh resolution.
+    if (connectionResolutions.get(cacheKey) === resolution) {
+      connectionResolutions.delete(cacheKey);
+    }
+  }
+}
+
+async function resolveColdDatabaseConnection(
+  database: string,
+  normalizedDatabase: string,
+  cacheKey: string,
+  options: TursoWorkersOptions,
+): Promise<TursoDatabaseConnection> {
+  const epoch = connectionCacheEpoch(cacheKey);
   const endpoint = await resolveDatabaseEndpoint(normalizedDatabase, options);
   const organizationName = options.organization;
   const platformApiToken = options.platformApiToken;
@@ -128,7 +180,7 @@ export async function resolveDatabaseConnection(
     authTokenExpiresAt: authToken.expiresAt,
     created: endpoint.created,
   };
-  if (!endpoint.created) {
+  if (!endpoint.created && epoch === connectionCacheEpoch(cacheKey)) {
     cacheDatabaseConnection(database, options, connection);
   }
   return connection;
@@ -148,6 +200,32 @@ export async function resolveDatabaseEndpoint(
   if (cachedUrl) {
     return { url: cachedUrl, created: false };
   }
+  // The token endpoint resolves here on every cold client request, so this is
+  // the hot path for a client that loads several tables concurrently at boot.
+  const inFlight = endpointResolutions.get(cacheKey);
+  if (inFlight) {
+    return inFlight;
+  }
+  const resolution = resolveColdDatabaseEndpoint(
+    normalizedDatabase,
+    cacheKey,
+    options,
+  );
+  endpointResolutions.set(cacheKey, resolution);
+  try {
+    return await resolution;
+  } finally {
+    if (endpointResolutions.get(cacheKey) === resolution) {
+      endpointResolutions.delete(cacheKey);
+    }
+  }
+}
+
+async function resolveColdDatabaseEndpoint(
+  normalizedDatabase: string,
+  cacheKey: string,
+  options: TursoWorkersOptions,
+): Promise<Pick<TursoDatabaseConnection, "url" | "created">> {
   const databaseName = await resolvePhysicalDatabaseName(
     normalizedDatabase,
     options,
@@ -191,7 +269,19 @@ export function clearDatabaseConnectionCache(
   options: TursoWorkersOptions,
 ): void {
   const normalizedDatabase = validateLogicalName(database, "database");
-  connectionCache.delete(databaseCacheKey(normalizedDatabase, options));
+  const cacheKey = databaseCacheKey(normalizedDatabase, options);
+  connectionCache.delete(cacheKey);
+  // Abandon in-flight work so the next caller resolves a fresh connection, and
+  // invalidate the epoch so a resolution or refresh that is already running
+  // cannot write its result back over this clear. The endpoint cache is left
+  // untouched on purpose: a transient error invalidates the token, not the URL.
+  connectionResolutions.delete(cacheKey);
+  connectionRefreshes.delete(cacheKey);
+  connectionCacheEpochs.set(cacheKey, connectionCacheEpoch(cacheKey) + 1);
+}
+
+function connectionCacheEpoch(cacheKey: string): number {
+  return connectionCacheEpochs.get(cacheKey) ?? 0;
 }
 
 function databaseCacheKey(
@@ -421,6 +511,7 @@ async function refreshDatabaseConnection(
   if (refreshing) {
     return refreshing;
   }
+  const epoch = connectionCacheEpoch(cacheKey);
   const refresh = (async () => {
     const organizationName = options.organization;
     const platformApiToken = options.platformApiToken;
@@ -454,7 +545,9 @@ async function refreshDatabaseConnection(
       authTokenExpiresAt: token.expiresAt,
       created: false,
     };
-    connectionCache.set(cacheKey, connection);
+    if (epoch === connectionCacheEpoch(cacheKey)) {
+      connectionCache.set(cacheKey, connection);
+    }
     return connection;
   })();
   connectionRefreshes.set(cacheKey, refresh);
