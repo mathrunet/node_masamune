@@ -44,6 +44,10 @@ npm install @mathrunet/masamune_cloudflare_turso
 
 # Implementation
 
+Before deploying, enable **Concurrent Writes** in Turso Dashboard under
+`Settings > General`. Masamune provisions only the new TursoDB (MVCC) engine;
+it never silently falls back to the legacy SQLite engine.
+
 Pass the return value of the `deploy` function to `export default`. It is defined by passing various Workers to the `deploy` function.
 
 ```typescript
@@ -160,7 +164,18 @@ The previous query/body style is still accepted for compatibility:
 
 # Database and schema management
 
-The worker can create Turso databases and tables automatically.
+The worker can create TursoDB databases and tables automatically. Platform API
+creation requests always include `use_tursodb: true`.
+
+If a database with the requested name already exists, its database ID is
+validated using the same TursoDB marker as the Turso CLI. A legacy SQLite
+database, or a response whose engine cannot be verified, is rejected. Existing
+SQLite databases cannot be converted in place; create a replacement and migrate
+the data before using the same logical database path.
+
+```bash
+turso db create --tursodb <new-database-name>
+```
 
 Database creation is disabled by default. Set `autoCreateDatabase: true`
 explicitly on every Turso function or adapter that is allowed to provision a
@@ -226,6 +241,12 @@ Automatic migration is intentionally limited to additive field changes.
 - Existing fields are not migrated when their inferred type changes.
 - Field rename, field deletion, primary key changes, unique constraints, and foreign keys are not automatically migrated.
 - `PUT` and `DELETE` require `indexKey` or `where` to avoid accidental full-table changes.
+
+Worker-side `POST`, `PUT`, and `DELETE` operations use the native
+`@tursodatabase/serverless` connection API and a `BEGIN CONCURRENT`
+transaction. Row conflicts and `SQLITE_BUSY` at commit are rolled back and
+retried with bounded backoff; constraints and other SQL errors are returned
+without retrying.
 
 The default table shape is:
 

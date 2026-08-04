@@ -82,7 +82,11 @@ async function handleToken(
         url: endpoint.url,
         authToken: token.token,
       });
-      await waitForDatabaseReady(client);
+      try {
+        await waitForDatabaseReady(client);
+      } finally {
+        await client.close();
+      }
       cacheDatabaseEndpoint(request.database, databaseOptions, endpoint.url);
     }
     return context.json({

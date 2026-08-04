@@ -2,8 +2,16 @@ import { TursoDatabaseConnection, TursoWorkersOptions } from "./types";
 import { HttpError, validateLogicalName } from "./request";
 import { resolvePhysicalDatabaseName } from "./database_name";
 
+interface TursoNativeConnection {
+  execute(sql: string, args?: SqlValue[]): Promise<TursoResultSet>;
+  transaction<T>(callback: () => Promise<T>): {
+    concurrent(): Promise<T>;
+  };
+  close(): Promise<void>;
+}
+
 declare const require: (id: string) => {
-  createClient: (config: TursoDatabaseConnection) => TursoClient;
+  connect: (config: TursoDatabaseConnection) => TursoNativeConnection;
 };
 declare const process: { env?: Record<string, string | undefined> } | undefined;
 
@@ -20,6 +28,8 @@ export interface TursoClient {
     statement: string | { sql: string; args?: SqlValue[] },
   ): Promise<TursoResultSet>;
   execute(sql: string, args?: SqlValue[]): Promise<TursoResultSet>;
+  concurrent<T>(callback: () => Promise<T>): Promise<T>;
+  close(): Promise<void>;
 }
 
 export type SqlValue =
@@ -32,17 +42,33 @@ const connectionRefreshes = new Map<
   Promise<TursoDatabaseConnection>
 >();
 const readyRetryDelaysMs = [250, 500, 1000, 2000, 4000, 8000];
+const writeRetryDelaysMs = [10, 25, 50, 100, 250, 500];
 const defaultServerTokenTtlSeconds = 3600;
 const tokenRefreshWindowSeconds = 60;
 
 export function createTursoClient(
   connection: TursoDatabaseConnection,
 ): TursoClient {
-  const { createClient } = require("@tursodatabase/serverless/compat");
-  return createClient({
+  const { connect } = require("@tursodatabase/serverless");
+  const client = connect({
     url: connection.url,
     authToken: connection.authToken,
   });
+  return {
+    execute: (
+      statement: string | { sql: string; args?: SqlValue[] },
+      args?: SqlValue[],
+    ) => typeof statement === "string"
+      ? args === undefined
+        ? client.execute(statement)
+        : client.execute(statement, args)
+      : statement.args === undefined
+        ? client.execute(statement.sql)
+        : client.execute(statement.sql, statement.args),
+    concurrent: <T>(callback: () => Promise<T>) =>
+      client.transaction(callback).concurrent(),
+    close: () => client.close(),
+  };
 }
 
 export async function resolveDatabaseConnection(
@@ -195,6 +221,25 @@ export async function waitForDatabaseReady(client: TursoClient): Promise<void> {
   throw lastError;
 }
 
+export async function executeConcurrentWrite<T>(
+  client: TursoClient,
+  callback: () => Promise<T>,
+): Promise<T> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt <= writeRetryDelaysMs.length; attempt++) {
+    try {
+      return await client.concurrent(callback);
+    } catch (error) {
+      lastError = error;
+      if (!isTursoWriteConflict(error) || attempt === writeRetryDelaysMs.length) {
+        throw error;
+      }
+      await sleep(writeRetryDelaysMs[attempt]);
+    }
+  }
+  throw lastError;
+}
+
 async function ensurePlatformDatabase(
   databaseName: string,
   options: TursoWorkersOptions,
@@ -231,12 +276,15 @@ async function ensurePlatformDatabase(
       body: JSON.stringify({
         name: databaseName,
         group: groupName,
+        use_tursodb: true,
       }),
     });
     if (!response.ok) {
+      const detail = await readPlatformError(response);
       throw new HttpError(
         500,
-        `Failed to create Turso database: ${response.status}`,
+        `Failed to create TursoDB database: ${response.status}${detail}. ` +
+          "Enable Concurrent Writes in Turso Dashboard Settings > General before creating databases.",
       );
     }
     created = true;
@@ -264,6 +312,7 @@ async function ensurePlatformDatabase(
     }
     info = (await infoResponse.json()) as Record<string, unknown>;
   }
+  assertTursoDatabase(info, databaseName);
   const url = findDatabaseUrl(info);
   if (!url) {
     throw new HttpError(
@@ -275,6 +324,62 @@ async function ensurePlatformDatabase(
     url,
     created,
   };
+}
+
+function assertTursoDatabase(
+  info: Record<string, unknown>,
+  databaseName: string,
+): void {
+  const databaseId = findDatabaseId(info);
+  if (!databaseId) {
+    throw new HttpError(
+      500,
+      `Could not verify that database is TursoDB: ${databaseName}. ` +
+        "Refusing to fall back to a SQLite database.",
+    );
+  }
+  if (!isTursoDatabaseId(databaseId)) {
+    throw new HttpError(
+      409,
+      `Database is a legacy SQLite database, not TursoDB: ${databaseName}. ` +
+        "Create a new database with `turso db create --tursodb <name>` and migrate the data.",
+    );
+  }
+}
+
+export function isTursoDatabaseId(databaseId: string): boolean {
+  const hex = databaseId.replaceAll("-", "");
+  if (!/^[0-9a-fA-F]{32}$/.test(hex)) {
+    return false;
+  }
+  return Number.parseInt(hex.slice(10, 12), 16) === 0x10;
+}
+
+function findDatabaseId(value: unknown): string | undefined {
+  if (typeof value !== "object" || value === null) {
+    return undefined;
+  }
+  const record = value as Record<string, unknown>;
+  const id = record.DbId ?? record.dbId ?? record.id ?? record.ID;
+  if (typeof id === "string" && id.length > 0) {
+    return id;
+  }
+  for (const item of Object.values(record)) {
+    const found = findDatabaseId(item);
+    if (found) {
+      return found;
+    }
+  }
+  return undefined;
+}
+
+async function readPlatformError(response: Response): Promise<string> {
+  try {
+    const body = await response.clone().text();
+    return body.trim().length > 0 ? `: ${body.trim()}` : "";
+  } catch (_) {
+    return "";
+  }
 }
 
 async function createDatabaseToken(
@@ -416,6 +521,12 @@ export function isTransientTursoError(error: unknown): boolean {
     /status=?(404|409|425|429|500|502|503|504)\b/.test(message) ||
     /no route configured for host/i.test(message)
   );
+}
+
+export function isTursoWriteConflict(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return /(?:SQLITE_BUSY|SQLITE_BUSY_SNAPSHOT|write conflict|transaction conflict|conflict at commit|database is locked)/i
+    .test(message);
 }
 
 function sleep(milliseconds: number): Promise<void> {

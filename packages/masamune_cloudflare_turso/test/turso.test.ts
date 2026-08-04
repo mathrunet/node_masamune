@@ -12,15 +12,23 @@ import { TursoWorkersOptions } from "../src/lib/types";
 import {
   cacheDatabaseConnection,
   clearDatabaseConnectionCache,
+  isTursoDatabaseId,
   resolveDatabaseConnection,
 } from "../src/lib/turso_client";
 
 const execute = jest.fn();
-const createClient = jest.fn(() => ({ execute }));
-
-jest.mock("@tursodatabase/serverless/compat", () => ({
-  createClient,
+const close = jest.fn();
+const concurrent = jest.fn(async (callback: () => Promise<unknown>) => callback());
+const transaction = jest.fn((callback: () => Promise<unknown>) => ({
+  concurrent: () => concurrent(callback),
 }));
+const connect = jest.fn(() => ({ execute, transaction, close }));
+
+jest.mock("@tursodatabase/serverless", () => ({
+  connect,
+}));
+
+const tursoDatabaseId = "00000000-0010-4000-8000-000000000000";
 
 const allowRules = {
   version: "1",
@@ -81,7 +89,9 @@ function mockExistingDatabase({
     .mockResolvedValueOnce({
       ok: true,
       status: 200,
-      json: async () => ({ database: { Hostname: url } }),
+      json: async () => ({
+        database: { DbId: tursoDatabaseId, Hostname: url },
+      }),
     } as Response)
     .mockResolvedValueOnce({
       ok: true,
@@ -110,7 +120,9 @@ function mockCreatedDatabase({
     .mockResolvedValueOnce({
       ok: true,
       status: 200,
-      json: async () => ({ database: { Hostname: url } }),
+      json: async () => ({
+        database: { DbId: tursoDatabaseId, Hostname: url },
+      }),
     } as Response)
     .mockResolvedValueOnce({
       ok: true,
@@ -344,11 +356,11 @@ describe("Turso Cloudflare workers", () => {
     });
     await adapter.getDocument(`database/${database}/users/user-1`);
 
-    expect(createClient).toHaveBeenNthCalledWith(
+    expect(connect).toHaveBeenNthCalledWith(
       1,
       expect.objectContaining({ authToken: "first-token" }),
     );
-    expect(createClient).toHaveBeenNthCalledWith(
+    expect(connect).toHaveBeenNthCalledWith(
       2,
       expect.objectContaining({ authToken: "refreshed-token" }),
     );
@@ -369,9 +381,8 @@ describe("Turso Cloudflare workers", () => {
 
     expect(response.status).toBe(200);
     expect(execute).toHaveBeenCalledWith(
-      expect.objectContaining({
-        sql: expect.stringContaining('FROM "users"'),
-      }),
+      expect.stringContaining('FROM "users"'),
+      expect.any(Array),
     );
   });
 
@@ -402,8 +413,8 @@ describe("Turso Cloudflare workers", () => {
 
     expect(response.status).toBe(403);
     expect(body.error).toBe("denied");
-    expect(createClient).toHaveBeenCalledTimes(1);
-    expect(createClient).toHaveBeenCalledWith({
+    expect(connect).toHaveBeenCalledTimes(1);
+    expect(connect).toHaveBeenCalledWith({
       url: "libsql://denydb.turso.io",
       authToken: "database-token",
     });
@@ -434,14 +445,13 @@ describe("Turso Cloudflare workers", () => {
 
     expect(response.status).toBe(200);
     expect(body.data).toHaveLength(1);
-    expect(createClient).toHaveBeenCalledWith({
+    expect(connect).toHaveBeenCalledWith({
       url: "libsql://pathdb.turso.io",
       authToken: "database-token",
     });
     expect(execute).toHaveBeenCalledWith(
-      expect.objectContaining({
-        sql: expect.stringContaining('FROM "users"'),
-      }),
+      expect.stringContaining('FROM "users"'),
+      expect.any(Array),
     );
   });
 
@@ -455,7 +465,7 @@ describe("Turso Cloudflare workers", () => {
     );
 
     expect(response.status).toBe(200);
-    expect(createClient).toHaveBeenCalledWith({
+    expect(connect).toHaveBeenCalledWith({
       url: "libsql://hostname-db-mathru.turso.io",
       authToken: "database-token",
     });
@@ -532,14 +542,12 @@ describe("Turso Cloudflare workers", () => {
       ),
     );
     expect(execute).toHaveBeenCalledWith(
-      expect.objectContaining({
-        sql: expect.stringContaining("UPDATE"),
-      }),
+      expect.stringContaining("UPDATE"),
+      expect.any(Array),
     );
     expect(execute).toHaveBeenCalledWith(
-      expect.objectContaining({
-        sql: expect.stringContaining('WHERE "id" = ?'),
-      }),
+      expect.stringContaining('WHERE "id" = ?'),
+      expect.any(Array),
     );
   });
 
@@ -571,9 +579,8 @@ describe("Turso Cloudflare workers", () => {
     expect(response.status).toBe(200);
     expect(body.data).toHaveLength(1);
     expect(execute).toHaveBeenCalledWith(
-      expect.objectContaining({
-        sql: expect.stringContaining("INSERT OR REPLACE INTO"),
-      }),
+      expect.stringContaining("INSERT OR REPLACE INTO"),
+      expect.any(Array),
     );
     expect(execute).toHaveBeenCalledTimes(1);
   });
@@ -631,9 +638,8 @@ describe("Turso Cloudflare workers", () => {
 
     expect(response.status).toBe(200);
     expect(execute).toHaveBeenCalledWith(
-      expect.objectContaining({
-        sql: expect.stringContaining("UPDATE"),
-      }),
+      expect.stringContaining("UPDATE"),
+      expect.any(Array),
     );
   });
 
@@ -1409,6 +1415,7 @@ describe("Turso Cloudflare workers", () => {
         body: JSON.stringify({
           name: "envgroupdb",
           group: "primary-group",
+          use_tursodb: true,
         }),
       }),
     );
@@ -1435,9 +1442,8 @@ describe("Turso Cloudflare workers", () => {
     expect(execute).toHaveBeenNthCalledWith(2, "SELECT 1");
     expect(execute).toHaveBeenNthCalledWith(
       3,
-      expect.objectContaining({
-        sql: expect.stringContaining('SELECT * FROM "users"'),
-      }),
+      expect.stringContaining('SELECT * FROM "users"'),
+      expect.any(Array),
     );
   });
 
@@ -1461,6 +1467,98 @@ describe("Turso Cloudflare workers", () => {
         method: "POST",
       }),
     );
+  });
+
+  test("recognizes the TursoDB UUID marker used by the Turso CLI", () => {
+    expect(isTursoDatabaseId(tursoDatabaseId)).toBe(true);
+    expect(isTursoDatabaseId("00000000-0000-4000-8000-000000000000"))
+      .toBe(false);
+    expect(isTursoDatabaseId("invalid-id")).toBe(false);
+  });
+
+  test("rejects an existing legacy SQLite database", async () => {
+    jest.spyOn(globalThis, "fetch").mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        database: {
+          DbId: "00000000-0000-4000-8000-000000000000",
+          Hostname: "legacy-sqlite.turso.io",
+        },
+      }),
+    } as Response);
+    const app = deploy([Functions.turso(dynamicOptions())]);
+
+    const response = await app.request(
+      "http://localhost/turso/database/legacy-sqlite/users",
+    );
+    const body = (await response.json()) as { error: string };
+
+    expect(response.status).toBe(409);
+    expect(body.error).toContain("legacy SQLite database, not TursoDB");
+    expect(connect).not.toHaveBeenCalled();
+  });
+
+  test("refuses a database whose engine cannot be verified", async () => {
+    jest.spyOn(globalThis, "fetch").mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        database: { Hostname: "unknown-engine.turso.io" },
+      }),
+    } as Response);
+    const app = deploy([Functions.turso(dynamicOptions())]);
+
+    const response = await app.request(
+      "http://localhost/turso/database/unknown-engine/users",
+    );
+    const body = (await response.json()) as { error: string };
+
+    expect(response.status).toBe(500);
+    expect(body.error).toContain("Could not verify that database is TursoDB");
+  });
+
+  test("explains how to enable Concurrent Writes when creation fails", async () => {
+    jest
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(new Response(null, { status: 404 }))
+      .mockResolvedValueOnce(
+        new Response("TursoDB preview is not enabled", { status: 400 }),
+      );
+    const app = deploy([
+      Functions.turso(dynamicOptions({ autoCreateDatabase: true })),
+    ]);
+
+    const response = await app.request(
+      "http://localhost/turso/database/preview-disabled/users",
+    );
+    const body = (await response.json()) as { error: string };
+
+    expect(response.status).toBe(500);
+    expect(body.error).toContain("TursoDB preview is not enabled");
+    expect(body.error).toContain("Settings > General");
+  });
+
+  test("retries a concurrent write after a row conflict", async () => {
+    mockExistingDatabase({ url: "libsql://conflict-db.turso.io" });
+    execute
+      .mockRejectedValueOnce(new Error("SQLITE_BUSY: conflict at commit"))
+      .mockResolvedValueOnce({ rows: [] });
+    const app = deploy([Functions.turso(dynamicOptions())]);
+
+    const response = await app.request(
+      "http://localhost/turso/database/conflict-db/users/user-1",
+      {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: "{}",
+      },
+    );
+
+    expect(response.status).toBe(200);
+    expect(concurrent).toHaveBeenCalledTimes(2);
+    expect(execute).toHaveBeenCalledTimes(2);
+    expect(close).toHaveBeenCalledTimes(1);
   });
 
   test("returns an access-time error when database group is not configured", async () => {

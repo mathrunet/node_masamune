@@ -17,8 +17,10 @@ import {
   cacheDatabaseConnection,
   clearDatabaseConnectionCache,
   createTursoClient,
+  executeConcurrentWrite,
   isTransientTursoError,
   resolveDatabaseConnection,
+  TursoClient,
   waitForDatabaseReady,
 } from "../lib/turso_client";
 import { resolveTursoWorkersOptionsFromEnv } from "../lib/env";
@@ -54,6 +56,7 @@ async function handleCrud(
         TursoRequestBody)
     | undefined;
   let resolvedOptions: TursoWorkersOptions | undefined;
+  let client: TursoClient | undefined;
   let phase = "parse";
   try {
     resolvedOptions = resolveTursoWorkersOptionsFromEnv(context, options);
@@ -68,7 +71,8 @@ async function handleCrud(
       crudRequest.database,
       databaseOptions,
     );
-    const client = createTursoClient(connection);
+    const connectedClient = createTursoClient(connection);
+    client = connectedClient;
     const engine = createTursoRulesEngine(resolvedOptions.rules);
     const authentication = context.get("authentication") as AuthenticationContext | undefined;
     phase = "rules";
@@ -81,7 +85,7 @@ async function handleCrud(
       }),
       operation: resolveCrudRulesOperation(method, crudRequest),
       authentication,
-      fetchDocument: async () => fetchDocumentForRules(client, crudRequest),
+      fetchDocument: async () => fetchDocumentForRules(connectedClient, crudRequest),
       server: true,
     });
     if (!result.allowed) {
@@ -100,13 +104,16 @@ async function handleCrud(
       );
     }
     phase = method === "POST" ? "create-table-or-insert" : "execute";
-    const response = await executeCrud({
-      client,
+    const execute = () => executeCrud({
+      client: connectedClient,
       method,
       request: crudRequest,
-      autoCreateTable: resolvedOptions.autoCreateTable !== false,
-      autoMigrateAddColumns: resolvedOptions.autoMigrateAddColumns !== false,
+      autoCreateTable: resolvedOptions!.autoCreateTable !== false,
+      autoMigrateAddColumns: resolvedOptions!.autoMigrateAddColumns !== false,
     });
+    const response = method === "GET"
+      ? await execute()
+      : await executeConcurrentWrite(connectedClient, execute);
     return context.json({ data: response });
   } catch (error) {
     if (request && resolvedOptions && isTransientTursoError(error)) {
@@ -122,6 +129,12 @@ async function handleCrud(
       }, 503);
     }
     return jsonError(context, error);
+  } finally {
+    try {
+      await client?.close();
+    } catch (_) {
+      // The request result is authoritative; closing a completed stream is best effort.
+    }
   }
 }
 
