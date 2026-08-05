@@ -1685,6 +1685,7 @@ describe("Turso Cloudflare workers", () => {
   });
 
   test("refuses a database whose engine cannot be verified", async () => {
+    const errorLog = jest.spyOn(console, "error").mockImplementation();
     jest.spyOn(globalThis, "fetch").mockResolvedValueOnce({
       ok: true,
       status: 200,
@@ -1701,6 +1702,45 @@ describe("Turso Cloudflare workers", () => {
 
     expect(response.status).toBe(500);
     expect(body.error).toContain("Could not verify that database is TursoDB");
+    expect(errorLog).toHaveBeenCalledWith(
+      "Turso request failed",
+      expect.objectContaining({
+        status: 500,
+        operation: "crud",
+        phase: "connect",
+        method: "GET",
+        database: "unknown-engine",
+        table: "users",
+        error: expect.stringContaining("Could not verify that database is TursoDB"),
+      }),
+    );
+    errorLog.mockRestore();
+  });
+
+  test("logs retryable Turso failures before returning 503", async () => {
+    const errorLog = jest.spyOn(console, "error").mockImplementation();
+    mockExistingDatabase({ url: "libsql://temporary-failure.turso.io" });
+    execute.mockRejectedValueOnce(new Error("Turso database: 503"));
+    const app = deploy([Functions.turso(dynamicOptions())]);
+
+    const response = await app.request(
+      "http://localhost/turso/database/temporary-failure/users",
+    );
+
+    expect(response.status).toBe(503);
+    expect(errorLog).toHaveBeenCalledWith(
+      "Turso request failed",
+      expect.objectContaining({
+        status: 503,
+        operation: "crud",
+        phase: "execute",
+        method: "GET",
+        database: "temporary-failure",
+        table: "users",
+        error: "Turso database: 503",
+      }),
+    );
+    errorLog.mockRestore();
   });
 
   test("explains how to enable Concurrent Writes when creation fails", async () => {

@@ -7,7 +7,11 @@ import {
   TursoWorkersOptions,
 } from "../lib/types";
 import { executeCrud, fetchDocumentForRules } from "../lib/crud";
-import { jsonError, parseCrudRequest } from "../lib/request";
+import {
+  jsonError,
+  logServerError,
+  parseCrudRequest,
+} from "../lib/request";
 import {
   buildDatabaseRulesPath,
   createTursoRulesEngine,
@@ -121,6 +125,13 @@ async function handleCrud(
         request.database,
         applyRequestDatabasePrefix(resolvedOptions, request.prefix),
       );
+      logServerError(error, 503, {
+        operation: "crud",
+        phase,
+        method,
+        database: request.database,
+        table: request.table,
+      });
       return context.json({
         error: error instanceof Error ? error.message : String(error),
         phase,
@@ -128,7 +139,13 @@ async function handleCrud(
         table: request.table,
       }, 503);
     }
-    return jsonError(context, error);
+    return jsonError(context, error, {
+      operation: "crud",
+      phase,
+      method,
+      database: request?.database,
+      table: request?.table,
+    });
   } finally {
     try {
       await client?.close();

@@ -31,9 +31,11 @@ async function handleToken(
   options: TursoWorkersOptions,
 ): Promise<Response> {
   let phase = "parse";
+  let database: string | undefined;
   try {
     const resolvedOptions = resolveTursoWorkersOptionsFromEnv(context, options);
     const request = await parseTokenRequest(context);
+    database = request.database;
     const databaseOptions = applyRequestDatabasePrefix(
       resolvedOptions,
       request.prefix,
@@ -98,10 +100,11 @@ async function handleToken(
       scopes: access.scopes,
     });
   } catch (error) {
-    console.error("Turso token request failed", {
+    return jsonError(context, error, {
+      operation: "token",
       phase,
-      error: error instanceof Error ? error.message : String(error),
+      method: "POST",
+      database,
     });
-    return jsonError(context, error);
   }
 }

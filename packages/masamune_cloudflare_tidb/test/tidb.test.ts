@@ -303,6 +303,58 @@ describe("TiDB Cloudflare workers", () => {
     expect(body.error).toContain("Database was not found");
   });
 
+  test("logs unexpected TiDB failures before returning 500", async () => {
+    const errorLog = jest.spyOn(console, "error").mockImplementation();
+    connect.mockImplementationOnce(() => {
+      throw new Error("TiDB connection failed");
+    });
+    const app = deploy([Functions.tidb(dynamicOptions())]);
+
+    const response = await app.request(
+      "http://localhost/tidb/database/app_db/users",
+    );
+
+    expect(response.status).toBe(500);
+    expect(errorLog).toHaveBeenCalledWith(
+      "TiDB request failed",
+      expect.objectContaining({
+        status: 500,
+        operation: "crud",
+        phase: "connect",
+        method: "GET",
+        database: "app_db",
+        table: "users",
+        error: "TiDB connection failed",
+      }),
+    );
+    errorLog.mockRestore();
+  });
+
+  test("logs retryable TiDB failures before returning 503", async () => {
+    const errorLog = jest.spyOn(console, "error").mockImplementation();
+    execute.mockRejectedValueOnce(new Error("TiDB database: 503"));
+    const app = deploy([Functions.tidb(dynamicOptions())]);
+
+    const response = await app.request(
+      "http://localhost/tidb/database/app_db/users",
+    );
+
+    expect(response.status).toBe(503);
+    expect(errorLog).toHaveBeenCalledWith(
+      "TiDB request failed",
+      expect.objectContaining({
+        status: 503,
+        operation: "crud",
+        phase: "execute",
+        method: "GET",
+        database: "app_db",
+        table: "users",
+        error: "TiDB database: 503",
+      }),
+    );
+    errorLog.mockRestore();
+  });
+
   test.each([
     ["GET", "http://localhost/tidb/database/app_db/generationResults", undefined],
     ["GET", "http://localhost/tidb/database/app_db/generationResults/result_1", undefined],

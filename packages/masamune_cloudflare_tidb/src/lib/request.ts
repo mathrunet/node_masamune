@@ -11,6 +11,14 @@ export { HttpError } from "./http_error";
 
 const identifierPattern = /^[A-Za-z_][A-Za-z0-9_]*$/;
 
+export type TidbServerErrorLogDetails = Readonly<{
+  operation?: string;
+  phase?: string;
+  method?: string;
+  database?: string;
+  table?: string;
+}>;
+
 export async function parseCrudRequest(
   context: Context,
 ): Promise<Required<Pick<TidbRequestBody, "database" | "table">> & TidbRequestBody> {
@@ -72,13 +80,36 @@ export function validateIndexKey(value: string): string {
   return value;
 }
 
-export function jsonError(context: Context, error: unknown): Response {
+export function logServerError(
+  error: unknown,
+  status: number,
+  details: TidbServerErrorLogDetails = {},
+): void {
+  if (status < 500) {
+    return;
+  }
+  console.error("TiDB request failed", {
+    status,
+    ...details,
+    error: error instanceof Error ? error.message : String(error),
+    ...(error instanceof Error && error.stack ? { stack: error.stack } : {}),
+  });
+}
+
+export function jsonError(
+  context: Context,
+  error: unknown,
+  details: TidbServerErrorLogDetails = {},
+): Response {
   if (error instanceof HttpError) {
+    logServerError(error, error.status, details);
     return context.json({ error: error.message }, error.status as 400);
   }
   if (error instanceof Error) {
+    logServerError(error, 500, details);
     return context.json({ error: error.message }, 500);
   }
+  logServerError(error, 500, details);
   return context.json({ error: "Internal Server Error" }, 500);
 }
 
