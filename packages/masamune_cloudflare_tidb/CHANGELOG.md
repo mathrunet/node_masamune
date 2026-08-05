@@ -1,4 +1,4 @@
-## 3.5.2 (2026-07-31)
+## 3.5.3 (2026-08-05)
 
 
 ### chore
@@ -79,6 +79,8 @@
 * Move development, requirements, and setup guide documents to masamune_asset_pipeline package. ([1aa4ccb](https://github.com/mathrunet/node_masamune/commit/1aa4ccb995791c34de7901e98554aaca80bf22cc))
 * ReadMe changes. ([8e55b7d](https://github.com/mathrunet/node_masamune/commit/8e55b7d10d6d3f8f61ff09541fafbfb9ea52b73a))
 * ReadMe creation. ([6f91ba9](https://github.com/mathrunet/node_masamune/commit/6f91ba97d8c8e3f7d41a6299d95e51a69b90fe1c))
+* update README links to include masamune_functions_cloudflare for server-side function execution across multiple packages ([d3f8c32](https://github.com/mathrunet/node_masamune/commit/d3f8c322180fbdb8d8d65d2f93942cf82efcefff))
+* update README with TursoDB deployment instructions and clarify database creation process; refactor Turso client to support concurrent writes and improve error handling; enhance tests for database validation and error scenarios ([fdc42da](https://github.com/mathrunet/node_masamune/commit/fdc42da0deb25907cdedd9aa84fabaac62b2161c))
 
 ### feat
 
@@ -102,6 +104,7 @@
 * Add Markdown Report ([38506ac](https://github.com/mathrunet/node_masamune/commit/38506ac023a481163fed0154a6b90f372a4d9539))
 * Add Market Research Action ([a41d85b](https://github.com/mathrunet/node_masamune/commit/a41d85bee88fe9d23952f281b3ca8d5390bbb15c))
 * add marketing pipeline for data collection and scheduling, and update short video generation tests to include narration and BGM. ([4020466](https://github.com/mathrunet/node_masamune/commit/402046616c18ae3c65fe0eb43e1a103a95f1cc04))
+* add masamune_cloudflare_auth package for Firebase Authentication support; includes functions for user deletion, configuration files, and initial tests ([db58e70](https://github.com/mathrunet/node_masamune/commit/db58e708b76c09d099b748a1c4a87810069408a6))
 * Add masamune_store_asset. ([9f6e45f](https://github.com/mathrunet/node_masamune/commit/9f6e45febae9330196978e4e04218a78fdcaf547))
 * Add multimodal text generation and related workflows for image, video, and music generation ([875acbc](https://github.com/mathrunet/node_masamune/commit/875acbc906cb8f6cf31dfb39168195d097b4bab2))
 * Add PDF creation function. ([de349b3](https://github.com/mathrunet/node_masamune/commit/de349b382bacd325929b2c6fa8330dbe7fe12b98))
@@ -338,6 +341,7 @@
 * Update Android adaptive icon size to 1024px for foreground and background generation. ([62b23d0](https://github.com/mathrunet/node_masamune/commit/62b23d05e2289053819cbe9002ca0edf50934075))
 * Update converter implementations to use a single result variable instead of an object for storing results ([3dd647f](https://github.com/mathrunet/node_masamune/commit/3dd647fccc5656346f93584b9161438ec2d0eb57))
 * Update dependency versions for `@mathrunet/katana` ([d4a9aea](https://github.com/mathrunet/node_masamune/commit/d4a9aeadb6541d808618098c5a4b2eaf72bf7d50))
+* update README links to masamune_functions_cloudflare; enhance error logging in TiDB and Turso functions for better debugging and response handling ([97dd4a6](https://github.com/mathrunet/node_masamune/commit/97dd4a65e7677d185de895dcb38ad4645623abd6))
 * Update test environment variable files and .gitignore for asset generation ([03a1979](https://github.com/mathrunet/node_masamune/commit/03a1979dedae29c33f420cd2d6dcfbff92a9321f))
 * Update version to 3.9.9 and add ModelFieldValueConvert class for data conversion with geoHash functionality ([c1f3265](https://github.com/mathrunet/node_masamune/commit/c1f3265fb063df1c303e9e96b7bad372964f19be))
 * ver.1.6.5. ([33bb2ec](https://github.com/mathrunet/node_masamune/commit/33bb2ec9f27c208926b093699d65d1c74ad854e7))
