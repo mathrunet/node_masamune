@@ -32,7 +32,7 @@
 
 Masamune framework plugin package for building a scheduler that periodically executes processes.
 
-Also, [katana_functions_firebase](https://pub.dev/packages/katana_functions_firebase/score) can be used to execute server-side functions from methods defined on the client side, allowing for safe implementation.
+Also, [katana_functions_firebase](https://pub.dev/packages/katana_functions_firebase) can be used to execute server-side functions from methods defined on the client side, allowing for safe implementation.
 
 # Installation
 
