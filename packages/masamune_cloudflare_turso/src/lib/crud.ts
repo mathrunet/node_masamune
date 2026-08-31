@@ -3,10 +3,13 @@ import {
   decodeRow,
   encodeSqlValue,
   ensureTableSchema,
+  ColumnDefinition,
   quoteIdentifier,
 } from "./schema";
 import { SqlValue, TursoClient } from "./turso_client";
 import { TursoOrderCondition, TursoRequestBody, TursoWhereCondition } from "./types";
+
+const declaredSchemaApplications = new Map<string, Promise<void>>();
 
 export async function fetchDocumentForRules(
   client: TursoClient,
@@ -25,13 +28,39 @@ export async function executeCrud({
   request,
   autoCreateTable,
   autoMigrateAddColumns,
+  declaredSchema,
+  schemaCacheKey,
 }: {
   client: TursoClient;
   method: "GET" | "POST" | "PUT" | "DELETE";
   request: Required<Pick<TursoRequestBody, "database" | "table">> & TursoRequestBody;
   autoCreateTable: boolean;
   autoMigrateAddColumns: boolean;
+  declaredSchema?: { columns: ColumnDefinition[]; version: string } | undefined;
+  schemaCacheKey?: string | undefined;
 }): Promise<unknown> {
+  if (declaredSchema) {
+    const cacheKey = `${schemaCacheKey ?? request.database}\u0000${request.table}\u0000${declaredSchema.version}`;
+    let application = declaredSchemaApplications.get(cacheKey);
+    if (!application) {
+      application = ensureTableSchema({
+        client,
+        table: request.table,
+        value: {},
+        autoCreateTable,
+        autoMigrateAddColumns,
+        declaredColumns: declaredSchema.columns,
+        schemaVersion: declaredSchema.version,
+      });
+      declaredSchemaApplications.set(cacheKey, application);
+    }
+    try {
+      await application;
+    } catch (error) {
+      declaredSchemaApplications.delete(cacheKey);
+      throw error;
+    }
+  }
   switch (method) {
     case "GET":
       if (request.count) {
@@ -40,11 +69,11 @@ export async function executeCrud({
       return await selectRows(client, request);
     case "POST":
       if (request.indexKey) {
-        return await updateRows(client, request, autoCreateTable, autoMigrateAddColumns);
+        return await updateRows(client, request, autoCreateTable, autoMigrateAddColumns, declaredSchema);
       }
-      return await insertRow(client, request, autoCreateTable, autoMigrateAddColumns);
+      return await insertRow(client, request, autoCreateTable, autoMigrateAddColumns, declaredSchema);
     case "PUT":
-      return await updateRows(client, request, autoCreateTable, autoMigrateAddColumns);
+      return await updateRows(client, request, autoCreateTable, autoMigrateAddColumns, declaredSchema);
     case "DELETE":
       await deleteRows(client, request);
       return [];
@@ -88,6 +117,7 @@ async function insertRow(
   request: Required<Pick<TursoRequestBody, "database" | "table">> & TursoRequestBody,
   autoCreateTable: boolean,
   autoMigrateAddColumns: boolean,
+  declaredSchema?: { columns: ColumnDefinition[]; version: string } | undefined,
 ): Promise<Record<string, unknown>[]> {
   const value = requireValue(request.value);
   const now = Date.now();
@@ -117,6 +147,8 @@ async function insertRow(
       value: row,
       autoCreateTable,
       autoMigrateAddColumns,
+      declaredColumns: declaredSchema?.columns,
+      schemaVersion: declaredSchema?.version,
     });
     result = await client.execute(statement);
   }
@@ -134,6 +166,7 @@ async function updateRows(
   request: Required<Pick<TursoRequestBody, "database" | "table">> & TursoRequestBody,
   autoCreateTable: boolean,
   autoMigrateAddColumns: boolean,
+  declaredSchema?: { columns: ColumnDefinition[]; version: string } | undefined,
 ): Promise<Record<string, unknown>[]> {
   const value = requireValue(request.value);
   const row: Record<string, unknown> = {
@@ -146,6 +179,8 @@ async function updateRows(
     value: row,
     autoCreateTable,
     autoMigrateAddColumns,
+    declaredColumns: declaredSchema?.columns,
+    schemaVersion: declaredSchema?.version,
   });
   const where = buildWhereClause(request);
   if (!where.sql) {

@@ -29,6 +29,7 @@ import {
 } from "../lib/turso_client";
 import { resolveTursoWorkersOptionsFromEnv } from "../lib/env";
 import { applyRequestDatabasePrefix } from "../lib/database_prefix";
+import { resolveTursoSchema } from "../lib/schema";
 
 module.exports = (
   hono: Hono,
@@ -114,6 +115,12 @@ async function handleCrud(
       request: crudRequest,
       autoCreateTable: resolvedOptions!.autoCreateTable !== false,
       autoMigrateAddColumns: resolvedOptions!.autoMigrateAddColumns !== false,
+      declaredSchema: resolveTursoSchema(
+        resolvedOptions!.schemaManifest,
+        crudRequest.database,
+        crudRequest.table,
+      ),
+      schemaCacheKey: connection.url,
     });
     const response = method === "GET"
       ? await execute()

@@ -912,6 +912,124 @@ describe("Turso Cloudflare workers", () => {
     );
   });
 
+  test("applies a declared schema before a read uses a new column", async () => {
+    mockExistingDatabase({ url: "libsql://read-migration.turso.io" });
+    let hasAge = false;
+    let schemaInspections = 0;
+    execute.mockImplementation(async (statement: string | { sql: string }) => {
+      const sql = typeof statement === "string" ? statement : statement.sql;
+      if (sql.startsWith("PRAGMA table_info")) {
+        schemaInspections++;
+        return {
+          columns: ["cid", "name", "type", "notnull", "dflt_value", "pk"],
+          rows: [
+            [0, "id", "TEXT", 0, null, 1],
+            [1, "name", "TEXT", 0, null, 0],
+            ...(hasAge ? [[2, "age", "INTEGER", 0, null, 0]] : []),
+          ],
+        };
+      }
+      if (sql.includes('ADD COLUMN "age"')) {
+        hasAge = true;
+        return { rows: [] };
+      }
+      if (sql.startsWith("SELECT *")) {
+        if (!hasAge) {
+          throw new Error("no such column: age");
+        }
+        return {
+          columns: ["id", "name", "age"],
+          rows: [["user_1", "Alice", 20]],
+        };
+      }
+      return { rows: [] };
+    });
+    const app = deploy([
+      Functions.turso(dynamicOptions({
+        schemaManifest: {
+          version: "release-2",
+          tables: {
+            users: {
+              database: "*",
+              table: "users",
+              columns: [
+                { name: "name", type: "TEXT" },
+                { name: "age", type: "INTEGER" },
+              ],
+            },
+          },
+        },
+      } as Partial<TursoWorkersOptions>)),
+    ]);
+    const where = encodeURIComponent(JSON.stringify([
+      { type: "greaterThanOrEqualTo", key: "age", value: 18 },
+    ]));
+
+    const response = await app.request(
+      `http://localhost/turso/database/read-migration/users?where=${where}`,
+    );
+    const secondResponse = await app.request(
+      `http://localhost/turso/database/read-migration/users?where=${where}`,
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      data: [{ id: "user_1", name: "Alice", age: 20 }],
+    });
+    expect(hasAge).toBe(true);
+    expect(secondResponse.status).toBe(200);
+    expect(schemaInspections).toBe(1);
+  });
+
+  test("applies a declared schema before issuing a direct-read token", async () => {
+    mockPlatformApi({ url: "libsql://direct-read-schema.turso.io" });
+    let hasAge = false;
+    execute.mockImplementation(async (statement: string | { sql: string }) => {
+      const sql = typeof statement === "string" ? statement : statement.sql;
+      if (sql.startsWith("PRAGMA table_info")) {
+        return {
+          columns: ["cid", "name", "type", "notnull", "dflt_value", "pk"],
+          rows: [
+            [0, "id", "TEXT", 0, null, 1],
+            ...(hasAge ? [[1, "age", "INTEGER", 0, null, 0]] : []),
+          ],
+        };
+      }
+      if (sql.includes('ADD COLUMN "age"')) {
+        hasAge = true;
+      }
+      return { rows: [] };
+    });
+    const app = deploy([
+      Functions.tursoToken(dynamicOptions({
+        schemaManifest: {
+          version: "release-token-2",
+          tables: {
+            users: {
+              database: "*",
+              table: "users",
+              columns: [{ name: "age", type: "INTEGER" }],
+            },
+          },
+        },
+      })),
+    ]);
+
+    const response = await app.request(
+      "http://localhost/turso/token/database/direct-read-schema",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          targets: [{ table: "users", operations: ["read"] }],
+        }),
+      },
+    );
+
+    expect(response.status).toBe(200);
+    expect(hasAge).toBe(true);
+  });
+
   test("issues read-only database tokens by database rules", async () => {
     mockExistingDatabase({
       url: "libsql://scopedb.turso.io",

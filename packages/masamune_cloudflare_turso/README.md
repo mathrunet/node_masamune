@@ -238,6 +238,14 @@ error.
 Automatic migration is intentionally limited to additive field changes.
 
 - New fields in `value` are added with `ALTER TABLE ADD COLUMN`.
+- A `schemaManifest` applies all declared columns before reads as well as writes,
+  so a newly released filter/order does not race the first write.
+- Direct-read token issuance applies the requested tables first, so Flutter
+  direct reads cannot bypass the migration.
+- Concurrent `ADD COLUMN` attempts are idempotent; a duplicate-column result is
+  re-read and accepted only when the resulting type is compatible.
+- A missing column whose first value is `null` is rejected instead of being
+  permanently inferred as `TEXT`. Supply a generated schema manifest first.
 - Existing fields are not migrated when their inferred type changes.
 - Field rename, field deletion, primary key changes, unique constraints, and foreign keys are not automatically migrated.
 - `PUT` and `DELETE` require `indexKey` or `where` to avoid accidental full-table changes.
@@ -260,6 +268,31 @@ CREATE TABLE IF NOT EXISTS table_name (
 ```
 
 Objects and arrays are stored as JSON strings.
+
+Generated manifests have the following shape. `database` accepts an exact
+logical database, `*`, or a `:parameter` pattern for per-user Turso databases.
+
+```ts
+turso.Functions.turso({
+  schemaManifest: {
+    version: "1-a1b2c3d4",
+    tables: {
+      users: {
+        database: "*",
+        table: "users",
+        columns: [
+          { name: "name", type: "TEXT" },
+          { name: "age", type: "BIGINT" },
+        ],
+      },
+    },
+  },
+});
+```
+
+For releases, add nullable columns first, deploy the schema-aware Worker, then
+release the app. Renames and required/type changes use dual-write, backfill,
+read cutover, and delayed cleanup; automatic migration never drops columns.
 
 # Rules
 

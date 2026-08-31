@@ -8,12 +8,16 @@ import {
 import {
   cacheDatabaseEndpoint,
   createTursoClient,
+  resolveDatabaseConnection,
   resolveDatabaseEndpoint,
   waitForDatabaseReady,
 } from "../lib/turso_client";
 import { issueDatabaseToken } from "../lib/token";
 import { resolveTursoWorkersOptionsFromEnv } from "../lib/env";
 import { applyRequestDatabasePrefix } from "../lib/database_prefix";
+import { ensureTableSchema, resolveTursoSchema } from "../lib/schema";
+
+const tokenSchemaApplications = new Map<string, Promise<void>>();
 
 module.exports = (
   hono: Hono,
@@ -67,10 +71,66 @@ async function handleToken(
       });
     }
     phase = "connect";
-    const endpoint = await resolveDatabaseEndpoint(
-      request.database,
-      databaseOptions,
-    );
+    const declaredSchemas = access.scopes
+      .filter((scope) => scope.readMode === "direct" || scope.writeMode === "direct")
+      .map((scope) => ({
+        table: scope.table,
+        schema: resolveTursoSchema(
+          resolvedOptions.schemaManifest,
+          request.database,
+          scope.table,
+        ),
+      }))
+      .filter((item) => item.schema !== undefined);
+    let endpoint: { url: string; created?: boolean | undefined };
+    if (declaredSchemas.length > 0) {
+      phase = "schema";
+      const connection = await resolveDatabaseConnection(
+        request.database,
+        databaseOptions,
+      );
+      const schemaClient = createTursoClient(connection);
+      try {
+        if (connection.created) {
+          await waitForDatabaseReady(schemaClient);
+        }
+        for (const item of declaredSchemas) {
+          const schema = item.schema!;
+          const cacheKey = `${connection.url}\u0000${item.table}\u0000${schema.version}`;
+          let application = tokenSchemaApplications.get(cacheKey);
+          if (!application) {
+            application = ensureTableSchema({
+              client: schemaClient,
+              table: item.table,
+              value: {},
+              autoCreateTable: resolvedOptions.autoCreateTable !== false,
+              autoMigrateAddColumns:
+                resolvedOptions.autoMigrateAddColumns !== false,
+              declaredColumns: schema.columns,
+              schemaVersion: schema.version,
+            });
+            tokenSchemaApplications.set(cacheKey, application);
+          }
+          try {
+            await application;
+          } catch (error) {
+            tokenSchemaApplications.delete(cacheKey);
+            throw error;
+          }
+        }
+      } finally {
+        await schemaClient.close();
+      }
+      endpoint = { url: connection.url, created: connection.created };
+      if (connection.created) {
+        cacheDatabaseEndpoint(request.database, databaseOptions, connection.url);
+      }
+    } else {
+      endpoint = await resolveDatabaseEndpoint(
+        request.database,
+        databaseOptions,
+      );
+    }
     phase = "issue-token";
     const token = await issueDatabaseToken({
       database: request.database,
@@ -78,7 +138,7 @@ async function handleToken(
       ttlSeconds: request.ttlSeconds,
       options: databaseOptions,
     });
-    if (endpoint.created) {
+    if (endpoint.created && declaredSchemas.length === 0) {
       phase = "database-ready";
       const client = createTursoClient({
         url: endpoint.url,

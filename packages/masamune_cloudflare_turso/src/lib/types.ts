@@ -38,8 +38,25 @@ export interface TursoWorkersOptions extends WorkersOptions {
   autoCreateDatabase?: boolean | undefined;
   autoCreateTable?: boolean | undefined;
   autoMigrateAddColumns?: boolean | undefined;
+  schemaManifest?: TursoSchemaManifest | undefined;
   maxTtlSeconds?: number | undefined;
   serverTokenTtlSeconds?: number | undefined;
+}
+
+export interface TursoSchemaColumn {
+  name: string;
+  type: string;
+}
+
+export interface TursoSchemaTable {
+  database: string;
+  table: string;
+  columns: TursoSchemaColumn[];
+}
+
+export interface TursoSchemaManifest {
+  version: string;
+  tables: Record<string, TursoSchemaTable>;
 }
 
 export interface TursoRequestBody {
