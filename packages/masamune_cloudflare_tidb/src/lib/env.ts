@@ -2,8 +2,6 @@ import { Context } from "hono";
 import { TidbWorkersOptions } from "./types";
 
 interface TidbWorkersEnv {
-  TIDB_CONNECTION_URL?: string | undefined;
-  TIDB_MODE?: string | undefined;
   TIDB_DATA_SERVICE_APP_ID?: string | undefined;
   TIDB_DATA_SERVICE_REGION?: string | undefined;
   TIDB_DATA_SERVICE_BASE_URL?: string | undefined;
@@ -21,8 +19,6 @@ export function resolveTidbWorkersOptionsFromEnv(
   const env = (context.env ?? {}) as TidbWorkersEnv;
   return {
     ...options,
-    connectionUrl: firstNonEmpty(env.TIDB_CONNECTION_URL, options.connectionUrl),
-    mode: resolveMode(env.TIDB_MODE, options.mode),
     dataServiceAppId: firstNonEmpty(
       env.TIDB_DATA_SERVICE_APP_ID,
       options.dataServiceAppId,
@@ -62,17 +58,6 @@ function firstNonEmpty(
   ...values: (string | undefined)[]
 ): string | undefined {
   return values.find((value) => typeof value === "string" && value.length > 0);
-}
-
-function resolveMode(
-  envValue: string | undefined,
-  optionValue: TidbWorkersOptions["mode"],
-): TidbWorkersOptions["mode"] {
-  const value = firstNonEmpty(envValue, optionValue);
-  if (value === "data-service" || value === "data_service") {
-    return "data-service";
-  }
-  return "direct";
 }
 
 function firstPositiveInteger(

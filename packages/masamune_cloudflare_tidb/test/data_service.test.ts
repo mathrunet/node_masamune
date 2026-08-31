@@ -7,13 +7,6 @@ import {
   TidbWorkersOptions,
 } from "../src/lib/types";
 
-const execute = jest.fn();
-const connect = jest.fn(() => ({ execute }));
-
-jest.mock("@tidbcloud/serverless", () => ({
-  connect,
-}));
-
 const manifest: TidbDataServiceManifest = {
   version: "1",
   tables: {
@@ -66,7 +59,6 @@ function options(
   values: Partial<TidbWorkersOptions> = {},
 ): TidbWorkersOptions {
   return {
-    mode: "data-service",
     dataServiceAppId: "app-1",
     dataServiceBaseUrl: "https://data-service-test.example/api/v1beta",
     dataServicePublicKey: "public-key",
@@ -142,6 +134,7 @@ describe("TiDB Data Service", () => {
                 score: "42",
                 active: "1",
               }],
+              result: { code: 200, message: "Query OK!", row_count: 1 },
             },
           }),
           { status: 200 },
@@ -162,7 +155,6 @@ describe("TiDB Data Service", () => {
         active: true,
       }],
     });
-    expect(connect).not.toHaveBeenCalled();
     expect(fetchMock.mock.calls[0][0]).toContain(
       "/app/app-1/endpoint/app_db/users/get?id=user_1",
     );
@@ -200,6 +192,7 @@ describe("TiDB Data Service", () => {
                 { col: "claimed", data_type: "TINYINT" },
               ],
               rows: [{ id: "user_1", claimed: "1" }],
+              result: { code: 200, message: "Query OK!", row_count: 1 },
             },
           }),
           { status: 200 },
@@ -222,6 +215,92 @@ describe("TiDB Data Service", () => {
     }));
   });
 
+  test("treats a SQL error in an HTTP 200 response as an error", async () => {
+    jest.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          data: {
+            columns: [],
+            rows: [],
+            result: {
+              code: 1146,
+              message: "table not found",
+              row_count: 0,
+              row_affect: 0,
+            },
+          },
+        }),
+        { status: 200 },
+      ),
+    );
+    const errorLog = jest.spyOn(console, "error").mockImplementation();
+    const app = deploy([Functions.tidb(options())]);
+
+    try {
+      const response = await app.request(
+        "http://localhost/tidb/database/app_db/users/user_1",
+      );
+
+      expect(response.status).toBe(502);
+      await expect(response.json()).resolves.toEqual({
+        error:
+          "TiDB Data Service SQL execution failed (code 1146): table not found",
+      });
+    } finally {
+      errorLog.mockRestore();
+    }
+  });
+
+  test("accepts a successful response with no affected rows", async () => {
+    jest.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          data: {
+            columns: [],
+            rows: [],
+            result: {
+              code: 200,
+              message: "Query OK, 0 rows affected",
+              row_count: 0,
+              row_affect: 0,
+            },
+          },
+        }),
+        { status: 200 },
+      ),
+    );
+    const client = new TidbDataServiceClient(options());
+
+    const result = await client.executeCustom({
+      name: "claim_user",
+      parameters: { id: "missing_user" },
+    });
+
+    expect(result.rows).toEqual([]);
+    expect(result.result).toEqual(expect.objectContaining({
+      code: 200,
+      row_affect: 0,
+    }));
+  });
+
+  test("rejects a successful HTTP response without a result code", async () => {
+    jest.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({ data: { columns: [], rows: [] } }),
+        { status: 200 },
+      ),
+    );
+    const client = new TidbDataServiceClient(options());
+
+    await expect(client.executeCustom({
+      name: "claim_user",
+    })).rejects.toMatchObject({
+      status: 502,
+      message:
+        "TiDB Data Service response did not include a valid result code.",
+    });
+  });
+
   test("rejects custom endpoints missing from the manifest", async () => {
     const client = new TidbDataServiceClient(options());
 
@@ -234,7 +313,11 @@ describe("TiDB Data Service", () => {
     const fetchMock = jest.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(
         JSON.stringify({
-          data: { columns: [{ name: "id" }], rows: [] },
+          data: {
+            columns: [{ name: "id" }],
+            rows: [],
+            result: { code: 200, message: "Query OK!", row_count: 0 },
+          },
         }),
         { status: 200 },
       ),
@@ -253,6 +336,7 @@ describe("TiDB Data Service", () => {
     );
 
     expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({ data: [] });
     const requestedUrl = new URL(String(fetchMock.mock.calls[0][0]));
     expect(requestedUrl.searchParams.get("created_at_gte")).toBe("100");
     expect(requestedUrl.searchParams.get("name_in")).toBe("Alice,Bob");
@@ -270,6 +354,7 @@ describe("TiDB Data Service", () => {
               ["2", "[\"b\"]"],
               ["3", "[\"a\",\"b\"]"],
             ],
+            result: { code: 200, message: "Query OK!", row_count: 3 },
           },
         }),
         { status: 200 },
@@ -310,6 +395,7 @@ describe("TiDB Data Service", () => {
                 created_at: "1",
                 updated_at: "2",
               }],
+              result: { code: 200, message: "Query OK!", row_count: 1 },
             },
           }),
           { status: 200 },
@@ -317,7 +403,17 @@ describe("TiDB Data Service", () => {
       )
       .mockResolvedValueOnce(
         new Response(
-          JSON.stringify({ data: { columns: [], rows: [], result: {} } }),
+          JSON.stringify({
+            data: {
+              columns: [],
+              rows: [],
+              result: {
+                code: 200,
+                message: "Query OK, 1 row affected",
+                row_affect: 1,
+              },
+            },
+          }),
           { status: 200 },
         ),
       );

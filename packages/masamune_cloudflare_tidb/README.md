@@ -61,22 +61,10 @@ export default m.deploy(
 
 ## Configuration
 
-Set the TiDB connection URL as a Cloudflare Workers secret. Every CRUD request
-must explicitly select its database with the
-`database/<database>/<table>/<document_id>` path. The database in the URL is
-connection metadata only and is never used as an implicit default.
-
-```bash
-wrangler secret put TIDB_CONNECTION_URL
-```
-
-```text
-mysql://user:password@gateway01.ap-northeast-1.prod.aws.tidbcloud.com:4000/app_db
-```
-
-This package does not create databases automatically. Create the TiDB database
-before using it. Tables and missing columns are created automatically when
-models are saved.
+This package uses TiDB Data Service over HTTPS with Digest authentication.
+Every CRUD request explicitly selects its database with the
+`database/<database>/<table>/<document_id>` path. A generated runtime manifest
+maps the Masamune CRUD contract to Data Service endpoints.
 
 CRUD requests may pass `prefix` to select a prefixed physical database while
 rules continue to evaluate the logical database path. For example,
@@ -84,9 +72,8 @@ rules continue to evaluate the logical database path. For example,
 are normalized to exactly one trailing underscore. Missing, empty, and
 underscore-only values keep the unprefixed database.
 
-All reads and writes go through the Workers CRUD endpoint. The root password in
-`TIDB_CONNECTION_URL` is used only inside Cloudflare Workers and is never
-returned to clients.
+All reads and writes go through the Workers CRUD endpoint. Flutter clients
+never receive Data Service credentials.
 
 ### Server scoped rules
 
@@ -117,15 +104,10 @@ such as `{"type": "path", "param": "uid", "server": true}` denies owner access
 from clients as well. Remove `"server": true` from such rules when the owner
 must be able to read or write from the app.
 
-The alternative `data-service` mode sends the same Workers CRUD contract to
-TiDB Data Service over HTTPS with Digest authentication. It requires a
-generated runtime manifest and does not open a MySQL connection.
-
 ```typescript
 import manifest from "./tidb_data_service_manifest.json";
 
 m.Functions.tidb({
-  mode: "data-service",
   dataServiceManifest: manifest as m.TidbDataServiceManifest,
   maxScanRows: 1000,
 });
@@ -133,7 +115,6 @@ m.Functions.tidb({
 
 Data Service bindings:
 
-- `TIDB_MODE=data-service`
 - `TIDB_DATA_SERVICE_APP_ID`
 - `TIDB_DATA_SERVICE_REGION`
 - `TIDB_DATA_SERVICE_PUBLIC_KEY`
@@ -147,19 +128,7 @@ returning incomplete data.
 
 ## Katana CLI
 
-When `cloudflare.tidb.enable` is enabled, `katana apply` adds the Workers
-functions, installs the package, and stores `TIDB_CONNECTION_URL` with
-`wrangler secret put`.
-
-```yaml
-cloudflare:
-  tidb:
-    enable: true
-    mode: direct
-    connection_url: mysql://user:password@gateway01.ap-northeast-1.prod.aws.tidbcloud.com:4000/app_db
-```
-
-For Data Service, annotate flat Masamune models with `@tidbDataService`, run
+Annotate flat Masamune models with `@tidbDataService`, run
 `katana code generate`, and configure the generated official CaC directory:
 
 ```dart
@@ -176,26 +145,20 @@ Service never falls back to the unprefixed database.
 cloudflare:
   tidb:
     enable: true
-    mode: data_service
-    data_service:
-      project_id: "123"
-      cluster_id: "456"
-      app_name: masamune
-      directory: tidb/data_service
-      rate_limit_rpm: 1000
-      max_scan_rows: 1000
-      restrict_mysql: true
+    project_id: "123"
+    cluster_id: "456"
 ```
 
 Organization API credentials belong in `katana_secrets.yaml` under
 `cloudflare.tidb.management_api.public_key/private_key`. The first
 `katana apply` validates a supported active Starter AWS cluster, applies the
-additive schema, upserts endpoints, deploys them, stores the Data API key, and
-prepares Workers. It intentionally leaves MySQL public access enabled. Run
+additive schema, upserts endpoints, deploys them, stores generated state in
+`cloudflare/tidb.yaml`, and prepares Workers. The managed state file is added
+to `cloudflare/.gitignore` because it contains the generated Data API private
+key. The first apply intentionally leaves MySQL public access enabled. Run
 `katana cloudflare deploy`, then run `katana apply` again. The second run
-smoke-tests Data Service, disables the TiDB public endpoint, and deletes
-`TIDB_CONNECTION_URL`. API failures preserve the public endpoint and print the
-GitHub CaC fallback path.
+smoke-tests Data Service and disables the TiDB public endpoint. API failures
+preserve the public endpoint and print the GitHub CaC fallback path.
 
 # GitHub Sponsors
 

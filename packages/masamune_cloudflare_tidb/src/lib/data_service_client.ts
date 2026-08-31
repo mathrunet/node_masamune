@@ -1,6 +1,6 @@
 import { fetchWithDigest } from "./digest_auth";
 import { HttpError } from "./request";
-import { decodeRow } from "./schema";
+import { decodeRow } from "./row_decoder";
 import {
   TidbDataServiceEndpoint,
   TidbDataServiceManifest,
@@ -224,8 +224,30 @@ async function readJson(response: Response): Promise<unknown> {
 function normalizeDataServiceResponse(body: unknown): TidbDataServiceResult {
   const record = asRecord(body);
   const data = asRecord(record?.data);
-  const rawRows = Array.isArray(data?.rows) ? data.rows : [];
-  const rawColumns = Array.isArray(data?.columns) ? data.columns : [];
+  const result = asRecord(data?.result);
+  if (!data || !Array.isArray(data.rows) || !Array.isArray(data.columns)) {
+    throw new HttpError(
+      502,
+      "TiDB Data Service returned an invalid response body.",
+    );
+  }
+  if (!result || typeof result.code !== "number") {
+    throw new HttpError(
+      502,
+      "TiDB Data Service response did not include a valid result code.",
+    );
+  }
+  if (result.code !== 200) {
+    const message = typeof result.message === "string"
+      ? `: ${result.message}`
+      : "";
+    throw new HttpError(
+      502,
+      `TiDB Data Service SQL execution failed (code ${result.code})${message}`,
+    );
+  }
+  const rawRows = data.rows;
+  const rawColumns = data.columns;
   const columnNames = rawColumns.map((column, index) => {
     if (typeof column === "string") {
       return column;
@@ -251,7 +273,7 @@ function normalizeDataServiceResponse(body: unknown): TidbDataServiceResult {
   });
   return {
     rows,
-    result: asRecord(data?.result),
+    result,
   };
 }
 
@@ -281,7 +303,9 @@ function decodeValue(value: unknown): unknown {
 function findErrorMessage(body: unknown): string | undefined {
   const record = asRecord(body);
   const error = asRecord(record?.error);
-  const value = error?.message ?? record?.message;
+  const data = asRecord(record?.data);
+  const result = asRecord(data?.result);
+  const value = error?.message ?? result?.message ?? record?.message;
   return typeof value === "string" ? value : undefined;
 }
 

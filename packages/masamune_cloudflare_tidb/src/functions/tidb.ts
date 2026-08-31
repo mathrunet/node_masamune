@@ -6,10 +6,8 @@ import {
   RulesOperation,
   TidbWorkersOptions,
 } from "../lib/types";
-import { executeCrud, fetchDocumentForRules } from "../lib/crud";
 import {
   jsonError,
-  logServerError,
   parseCrudRequest,
 } from "../lib/request";
 import {
@@ -17,12 +15,6 @@ import {
   createTidbRulesEngine,
   normalizeHttpMethodToRulesOperation,
 } from "../lib/rules";
-import {
-  clearDatabaseConnectionCache,
-  createTidbClient,
-  isTransientTidbError,
-  resolveDatabaseConnection,
-} from "../lib/tidb_client";
 import { resolveTidbWorkersOptionsFromEnv } from "../lib/env";
 import { isTidbServerRequest } from "../lib/server_request";
 import { TidbDataServiceClient } from "../lib/data_service_client";
@@ -31,7 +23,6 @@ import {
   fetchDataServiceDocumentForRules,
   resolveMaxScanRows,
 } from "../lib/data_service_crud";
-import { TidbClient } from "../lib/tidb_client";
 import { applyRequestDatabasePrefix } from "../lib/database_prefix";
 
 module.exports = (
@@ -70,20 +61,8 @@ async function handleCrud(
       crudRequest.prefix,
     );
     phase = "connect";
-    const dataServiceMode = resolvedOptions.mode === "data-service";
-    let client: TidbClient | undefined;
-    let dataServiceClient: TidbDataServiceClient | undefined;
-    let maxScanRows = 1000;
-    if (dataServiceMode) {
-      dataServiceClient = new TidbDataServiceClient(databaseOptions);
-      maxScanRows = resolveMaxScanRows(databaseOptions.maxScanRows);
-    } else {
-      const connection = await resolveDatabaseConnection(
-        crudRequest.database,
-        databaseOptions,
-      );
-      client = createTidbClient(connection);
-    }
+    const dataServiceClient = new TidbDataServiceClient(databaseOptions);
+    const maxScanRows = resolveMaxScanRows(databaseOptions.maxScanRows);
     const engine = createTidbRulesEngine(resolvedOptions.rules);
     const authentication = context.get("authentication") as AuthenticationContext | undefined;
     phase = "rules";
@@ -97,13 +76,11 @@ async function handleCrud(
       operation: resolveCrudRulesOperation(method, crudRequest),
       authentication,
       fetchDocument: async () =>
-        dataServiceClient
-          ? fetchDataServiceDocumentForRules(
-            dataServiceClient,
-            crudRequest,
-            maxScanRows,
-          )
-          : fetchDocumentForRules(client!, crudRequest),
+        fetchDataServiceDocumentForRules(
+          dataServiceClient,
+          crudRequest,
+          maxScanRows,
+        ),
       server: isTidbServerRequest(context, resolvedOptions),
     });
     if (!result.allowed) {
@@ -113,47 +90,14 @@ async function handleCrud(
       }, 403);
     }
     phase = method === "POST" ? "create-table-or-insert" : "execute";
-    const response = dataServiceClient
-      ? await executeDataServiceCrud({
-        client: dataServiceClient,
-        method,
-        request: crudRequest,
-        maxScanRows,
-      })
-      : await executeCrud({
-        client: client!,
-        method,
-        request: crudRequest,
-        autoCreateTable: resolvedOptions.autoCreateTable !== false,
-        autoMigrateAddColumns:
-            resolvedOptions.autoMigrateAddColumns !== false,
-      });
+    const response = await executeDataServiceCrud({
+      client: dataServiceClient,
+      method,
+      request: crudRequest,
+      maxScanRows,
+    });
     return context.json({ data: response });
   } catch (error) {
-    if (
-      request &&
-      resolvedOptions &&
-      resolvedOptions.mode !== "data-service" &&
-      isTransientTidbError(error)
-    ) {
-      clearDatabaseConnectionCache(
-        request.database,
-        applyRequestDatabasePrefix(resolvedOptions, request.prefix),
-      );
-      logServerError(error, 503, {
-        operation: "crud",
-        phase,
-        method,
-        database: request.database,
-        table: request.table,
-      });
-      return context.json({
-        error: error instanceof Error ? error.message : String(error),
-        phase,
-        database: request.database,
-        table: request.table,
-      }, 503);
-    }
     return jsonError(context, error, {
       operation: "crud",
       phase,

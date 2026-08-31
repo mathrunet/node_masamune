@@ -10,7 +10,6 @@ import {
 } from "@mathrunet/masamune_cloudflare";
 
 export type TidbCrudMethod = "GET" | "POST" | "PUT" | "DELETE";
-export type TidbConnectionMode = "direct" | "data-service";
 
 export type {
   RulesAccessRule,
@@ -21,16 +20,8 @@ export type {
   RulesOperationKey,
 };
 
-export interface TidbDatabaseConnection {
-  url: string;
-  database: string;
-  host: string;
-  port: number;
-}
-
 export interface TidbWorkersOptions extends WorkersOptions {
   databasePrefix?: string | undefined;
-  connectionUrl?: string | undefined;
   /**
    * Shared secret that allows a request to be evaluated as a server request.
    *
@@ -53,7 +44,6 @@ export interface TidbWorkersOptions extends WorkersOptions {
    * 既定値は`x-masamune-server-token`です。
    */
   serverAccessHeader?: string | undefined;
-  mode?: TidbConnectionMode | undefined;
   dataServiceAppId?: string | undefined;
   dataServiceRegion?: string | undefined;
   dataServiceBaseUrl?: string | undefined;
@@ -61,8 +51,6 @@ export interface TidbWorkersOptions extends WorkersOptions {
   dataServicePrivateKey?: string | undefined;
   dataServiceManifest?: TidbDataServiceManifest | undefined;
   maxScanRows?: number | undefined;
-  autoCreateTable?: boolean | undefined;
-  autoMigrateAddColumns?: boolean | undefined;
 }
 
 export type TidbDataServiceOperation =
