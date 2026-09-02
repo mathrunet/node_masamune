@@ -23,7 +23,7 @@ import {
   fetchDataServiceDocumentForRules,
   resolveMaxScanRows,
 } from "../lib/data_service_crud";
-import { applyRequestDatabasePrefix } from "../lib/database_prefix";
+import { resolveWorkerDatabasePrefix } from "../lib/database_prefix";
 
 module.exports = (
   hono: Hono,
@@ -56,9 +56,10 @@ async function handleCrud(
     resolvedOptions = resolveTidbWorkersOptionsFromEnv(context, options);
     request = await parseCrudRequest(context);
     const crudRequest = request;
-    const databaseOptions = applyRequestDatabasePrefix(
+    const databaseOptions = resolveWorkerDatabasePrefix(
       resolvedOptions,
       crudRequest.prefix,
+      (context.env as { FLAVOR?: unknown } | undefined)?.FLAVOR,
     );
     phase = "connect";
     const dataServiceClient = new TidbDataServiceClient(databaseOptions);

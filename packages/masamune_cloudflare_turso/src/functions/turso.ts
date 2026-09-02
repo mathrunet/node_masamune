@@ -28,7 +28,7 @@ import {
   waitForDatabaseReady,
 } from "../lib/turso_client";
 import { resolveTursoWorkersOptionsFromEnv } from "../lib/env";
-import { applyRequestDatabasePrefix } from "../lib/database_prefix";
+import { resolveWorkerDatabasePrefix } from "../lib/database_prefix";
 import { resolveTursoSchema } from "../lib/schema";
 
 module.exports = (
@@ -67,9 +67,10 @@ async function handleCrud(
     resolvedOptions = resolveTursoWorkersOptionsFromEnv(context, options);
     request = await parseCrudRequest(context);
     const crudRequest = request;
-    const databaseOptions = applyRequestDatabasePrefix(
+    const databaseOptions = resolveWorkerDatabasePrefix(
       resolvedOptions,
       crudRequest.prefix,
+      (context.env as { FLAVOR?: unknown } | undefined)?.FLAVOR,
     );
     phase = "connect";
     const connection = await resolveDatabaseConnection(
@@ -130,7 +131,11 @@ async function handleCrud(
     if (request && resolvedOptions && isTransientTursoError(error)) {
       clearDatabaseConnectionCache(
         request.database,
-        applyRequestDatabasePrefix(resolvedOptions, request.prefix),
+        resolveWorkerDatabasePrefix(
+          resolvedOptions,
+          request.prefix,
+          (context.env as { FLAVOR?: unknown } | undefined)?.FLAVOR,
+        ),
       );
       logServerError(error, 503, {
         operation: "crud",

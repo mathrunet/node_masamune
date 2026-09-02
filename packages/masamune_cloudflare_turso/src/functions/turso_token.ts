@@ -14,7 +14,7 @@ import {
 } from "../lib/turso_client";
 import { issueDatabaseToken } from "../lib/token";
 import { resolveTursoWorkersOptionsFromEnv } from "../lib/env";
-import { applyRequestDatabasePrefix } from "../lib/database_prefix";
+import { resolveWorkerDatabasePrefix } from "../lib/database_prefix";
 import { ensureTableSchema, resolveTursoSchema } from "../lib/schema";
 
 const tokenSchemaApplications = new Map<string, Promise<void>>();
@@ -40,9 +40,10 @@ async function handleToken(
     const resolvedOptions = resolveTursoWorkersOptionsFromEnv(context, options);
     const request = await parseTokenRequest(context);
     database = request.database;
-    const databaseOptions = applyRequestDatabasePrefix(
+    const databaseOptions = resolveWorkerDatabasePrefix(
       resolvedOptions,
       request.prefix,
+      (context.env as { FLAVOR?: unknown } | undefined)?.FLAVOR,
     );
     phase = "rules";
     const authentication = context.get("authentication") as AuthenticationContext | undefined;

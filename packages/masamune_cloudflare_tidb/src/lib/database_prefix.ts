@@ -32,3 +32,32 @@ export function applyRequestDatabasePrefix(
     databasePrefix: `${options.databasePrefix ?? ""}${prefix}`,
   };
 }
+
+export function resolveWorkerDatabasePrefix(
+  options: TidbWorkersOptions,
+  requestPrefix: string | undefined,
+  flavor: unknown,
+): TidbWorkersOptions {
+  const resolvedFlavor = flavor === undefined ? "prod" : flavor;
+  if (resolvedFlavor !== "dev" && resolvedFlavor !== "prod") {
+    throw new HttpError(500, "Worker FLAVOR must be dev or prod.");
+  }
+  const expectedPrefix = resolvedFlavor === "dev" ? "dev_" : undefined;
+  if (requestPrefix !== expectedPrefix) {
+    throw new HttpError(
+      400,
+      `Request prefix does not match FLAVOR=${resolvedFlavor}.`,
+    );
+  }
+  if (options.databasePrefix !== undefined &&
+      options.databasePrefix !== expectedPrefix) {
+    throw new HttpError(
+      500,
+      `Server prefix does not match FLAVOR=${resolvedFlavor}.`,
+    );
+  }
+  return {
+    ...options,
+    databasePrefix: expectedPrefix,
+  };
+}
