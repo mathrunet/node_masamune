@@ -1904,6 +1904,113 @@ describe("Turso Cloudflare workers", () => {
     expect(close).toHaveBeenCalledTimes(1);
   });
 
+  test("retries a concurrent write after the libsql connection cap fires", async () => {
+    mockExistingDatabase({ url: "libsql://connection-cap-db.turso.io" });
+    execute
+      .mockRejectedValueOnce(
+        new Error("Database connections limit exceeded, try to reduce concurrency"),
+      )
+      .mockResolvedValueOnce({ rows: [] });
+    const app = deploy([Functions.turso(dynamicOptions())]);
+
+    const response = await app.request(
+      "http://localhost/turso/database/connection-cap-db/users/user-1",
+      {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: "{}",
+      },
+    );
+
+    expect(response.status).toBe(200);
+    expect(concurrent).toHaveBeenCalledTimes(2);
+    expect(execute).toHaveBeenCalledTimes(2);
+  });
+
+  test("retries a concurrent write after a stray rollback surfaces", async () => {
+    mockExistingDatabase({ url: "libsql://rollback-race-db.turso.io" });
+    execute
+      .mockRejectedValueOnce(
+        new Error(
+          "Tursodb error: Transaction error: cannot rollback - no transaction is active",
+        ),
+      )
+      .mockResolvedValueOnce({ rows: [] });
+    const app = deploy([Functions.turso(dynamicOptions())]);
+
+    const response = await app.request(
+      "http://localhost/turso/database/rollback-race-db/users/user-1",
+      {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: "{}",
+      },
+    );
+
+    expect(response.status).toBe(200);
+    expect(concurrent).toHaveBeenCalledTimes(2);
+    expect(execute).toHaveBeenCalledTimes(2);
+  });
+
+  test("applies declared DDL outside a concurrent write transaction", async () => {
+    mockExistingDatabase({ url: "libsql://ddl-before-write.turso.io" });
+    let insideConcurrentTransaction = false;
+    concurrent.mockImplementationOnce(async (callback: () => Promise<unknown>) => {
+      insideConcurrentTransaction = true;
+      try {
+        return await callback();
+      } finally {
+        insideConcurrentTransaction = false;
+      }
+    });
+    execute.mockImplementation(async (statement: string | { sql: string }) => {
+      const sql = typeof statement === "string" ? statement : statement.sql;
+      if (/^(?:CREATE|ALTER)\b/.test(sql) && insideConcurrentTransaction) {
+        throw new Error(
+          "DDL statements require an exclusive transaction (use BEGIN instead of BEGIN CONCURRENT)",
+        );
+      }
+      if (sql.startsWith("PRAGMA table_info")) {
+        return {
+          columns: ["cid", "name", "type", "notnull", "dflt_value", "pk"],
+          rows: [
+            [0, "id", "TEXT", 0, null, 1],
+            [1, "created_at", "INTEGER", 0, null, 0],
+            [2, "updated_at", "INTEGER", 0, null, 0],
+            [3, "name", "TEXT", 0, null, 0],
+          ],
+        };
+      }
+      return { columns: [], rows: [] };
+    });
+    const app = deploy([
+      Functions.turso(dynamicOptions({
+        schemaManifest: {
+          version: "ddl-before-write-v1",
+          tables: {
+            users: {
+              database: "ddl-before-write",
+              table: "users",
+              columns: [{ name: "name", type: "TEXT" }],
+            },
+          },
+        },
+      })),
+    ]);
+
+    const response = await app.request(
+      "http://localhost/turso/database/ddl-before-write/users/user-1",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ value: { name: "Alice" } }),
+      },
+    );
+
+    expect(response.status).toBe(200);
+    expect(concurrent).toHaveBeenCalledTimes(1);
+  });
+
   test("returns an access-time error when database group is not configured", async () => {
     delete process.env.TURSO_GROUP;
     const fetchMock = jest.spyOn(globalThis, "fetch");

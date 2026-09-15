@@ -62,7 +62,13 @@ const endpointResolutions = new Map<
 // it, resurrecting the connection the caller asked to discard.
 const connectionCacheEpochs = new Map<string, number>();
 const readyRetryDelaysMs = [250, 500, 1000, 2000, 4000, 8000];
-const writeRetryDelaysMs = [10, 25, 50, 100, 250, 500];
+// The write retry ladder must cover both fast row conflicts (a few tens of
+// milliseconds) and slower connection-pressure recoveries. When 50 sibling
+// requests hit the same libsql database in the same isolate burst, Turso can
+// return "Database connections limit exceeded" until earlier sessions close,
+// which routinely takes hundreds of milliseconds. Extending the tail lets a
+// single burst drain without escalating to a 500 for latecomers.
+const writeRetryDelaysMs = [10, 25, 50, 100, 250, 500, 1000, 2000, 4000];
 const defaultServerTokenTtlSeconds = 3600;
 const tokenRefreshWindowSeconds = 60;
 
@@ -324,7 +330,12 @@ export async function executeConcurrentWrite<T>(
       if (!isTursoWriteConflict(error) || attempt === writeRetryDelaysMs.length) {
         throw error;
       }
-      await sleep(writeRetryDelaysMs[attempt]);
+      // Full jitter avoids a thundering herd. When a burst of concurrent
+      // callers all fire retries on the same fixed ladder, they retry in
+      // lockstep and immediately re-hit the same connection cap. Spreading
+      // each caller across [0, delay) lets sessions drain.
+      const base = writeRetryDelaysMs[attempt];
+      await sleep(Math.floor(Math.random() * base) + Math.floor(base / 4));
     }
   }
   throw lastError;
@@ -618,7 +629,12 @@ export function isTransientTursoError(error: unknown): boolean {
 
 export function isTursoWriteConflict(error: unknown): boolean {
   const message = error instanceof Error ? error.message : String(error);
-  return /(?:SQLITE_BUSY|SQLITE_BUSY_SNAPSHOT|write conflict|transaction conflict|conflict at commit|database is locked)/i
+  // Row/transaction conflicts and connection-pool pressure are both retryable
+  // for the same reason: the caller must back off and let sibling writes drain
+  // before it can succeed. "cannot rollback - no transaction is active" is the
+  // symptom Turso surfaces when a session dies mid-BEGIN under pressure, so it
+  // rides the same retry ladder.
+  return /(?:SQLITE_BUSY|SQLITE_BUSY_SNAPSHOT|write conflict|transaction conflict|conflict at commit|database is locked|Database connections limit exceeded|cannot rollback - no transaction is active)/i
     .test(message);
 }
 
