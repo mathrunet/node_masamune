@@ -1,6 +1,6 @@
 <p align="center">
   <a href="https://mathru.net">
-    <img width="240px" src="https://raw.githubusercontent.com/mathrunet/node_masamune/main/.github/images/icon.png" alt="Masamune logo" style="border-radius: 32px"s><br/>
+    <img width="240px" src="https://raw.githubusercontent.com/mathrunet/node_masamune/main/.github/images/icon.png" alt="Masamune logo" style="border-radius: 32px"><br/>
   </a>
   <h1 align="center">Cloudflare Storage(R2) for Cloudflare Workers</h1>
 </p>
@@ -50,8 +50,6 @@ Pass the return value of the `deploy` function to `export default`. It is define
 import * as m from "@mathrunet/masamune_cloudflare_storage";
 
 // Define [m.Functions.xxxx] for the functions to be added to Workers.
-//
-// Workersに追加する機能を[m.Functions.xxxx]を定義してください。
 export default m.deploy(
     [
         m.Functions.storageCloudflare(),
