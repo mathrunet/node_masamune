@@ -1,3 +1,9 @@
+## 3.3.0 (2026-09-21)
+
+- Rebuild dist before publishing and limit published files to runtime code, type declarations, and documentation.
+
+- Add Vectorize nearest-neighbor search with a persistent intent coordinator, alarm retries, generation and KV value checks, and per-candidate rule evaluation.
+
 ## 3.2.1 (2026-07-04)
 
 
@@ -66,7 +72,7 @@
 * Update. ([370300f](https://github.com/mathrunet/node_masamune/commit/370300f93798fe50af3ed6ee60c04d37585ab869))
 * Upgrade `@mathrunet/katana` to `3.9.4` and update `@mathrunet/masamune` dependencies. ([4eb3e8f](https://github.com/mathrunet/node_masamune/commit/4eb3e8ffcd17334eb380ea780605eb1f925b8eea))
 * Workflow base class completed. ([04b3da4](https://github.com/mathrunet/node_masamune/commit/04b3da430a997861e8d8409b115f7205bc0f5b7e))
-* コメントを削除 ([900f3b9](https://github.com/mathrunet/node_masamune/commit/900f3b98417ebe17c9d9f481223d493db4892d13))
+* Remove comments ([900f3b9](https://github.com/mathrunet/node_masamune/commit/900f3b98417ebe17c9d9f481223d493db4892d13))
 
 ### docs
 
@@ -167,7 +173,7 @@
 * ModelFieldValue specification change. ([148f423](https://github.com/mathrunet/node_masamune/commit/148f4236d835707280870f5b8ddc5a51577699bd))
 * Package separation. And monorepo management. ([2647952](https://github.com/mathrunet/node_masamune/commit/2647952ad48823ac0c3d578a366f4af0bf60bcc1))
 * Package Update. ([f66513b](https://github.com/mathrunet/node_masamune/commit/f66513bf5b510e1f9acdab0942d1a243705c9056))
-* ProcessFunctionBaseを作成 ([ecc5da7](https://github.com/mathrunet/node_masamune/commit/ecc5da70f3f7e687309511923ba6156022ebb951))
+* Create ProcessFunctionBase ([ecc5da7](https://github.com/mathrunet/node_masamune/commit/ecc5da70f3f7e687309511923ba6156022ebb951))
 * refactor short video BGM handling to use `bgmTracks` array and introduce `masamune_marketing_pipeline`. ([6fe3878](https://github.com/mathrunet/node_masamune/commit/6fe3878bf02ecc40008a3aa7f10dd13a78a028e7))
 * Support for sending multiple tokens. ([6d16257](https://github.com/mathrunet/node_masamune/commit/6d16257242a9ad9d8b0709992c30892eb80fdb10))
 * Supports iOS StoreKit 2 validation. ([62450c5](https://github.com/mathrunet/node_masamune/commit/62450c566e33f97b0112bb55b1e3f34ea0d3a25e))
@@ -370,6 +376,4 @@
 * Fixes to pass tests. ([a656689](https://github.com/mathrunet/node_masamune/commit/a6566898613d76cd1027a319cda4f605044db151))
 * refactor media tests for Cloudflare integration ([7b1e581](https://github.com/mathrunet/node_masamune/commit/7b1e5816b297d68ba5c28599b5cfb7fa935a70f4))
 * Test code implementation. ([7f40834](https://github.com/mathrunet/node_masamune/commit/7f40834936b13a1b54b792b1c47f7c1ae2319502))
-
-
 
