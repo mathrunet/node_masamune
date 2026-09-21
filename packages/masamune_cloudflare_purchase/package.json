@@ -1,6 +1,6 @@
 {
   "name": "@mathrunet/masamune_cloudflare_purchase",
-  "version": "3.10.0",
+  "version": "3.10.1",
   "description": "Masamune framework plugin package for performing mobile billing checks and managing subscriptions.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

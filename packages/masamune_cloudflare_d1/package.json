@@ -1,6 +1,6 @@
 {
   "name": "@mathrunet/masamune_cloudflare_d1",
-  "version": "3.1.0",
+  "version": "3.2.0",
   "description": "Cloudflare D1用のMasamune ModelAdapterサーバー",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

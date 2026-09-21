@@ -1,6 +1,6 @@
 {
   "name": "@mathrunet/masamune_cloudflare_notification",
-  "version": "3.1.0",
+  "version": "3.1.1",
   "description": "Masamune framework package plugin for sending Push Notifications for Cloudflare Workers.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
