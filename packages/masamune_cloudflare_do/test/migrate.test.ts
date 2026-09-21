@@ -1,0 +1,10 @@
+import { mkdtemp, mkdir, writeFile, readFile, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { runMigrate } from '../src/migrate';
+let root:string;
+beforeEach(async()=>{root=await mkdtemp(path.join(tmpdir(),'do-migration-test-'));await writeFile(path.join(root,'schema.json'),JSON.stringify({version:'1',dialect:'sqlite',tables:[{database:'main',table:'items',primaryKey:['id'],vectorFields:[],columns:[{name:'id',sqlType:'TEXT',nullable:false}]}]}));});
+afterEach(async()=>{await rm(root,{recursive:true,force:true});});
+const request=()=>({root,command:'generate',schemaPath:'schema.json',directory:'migrations',approvedPath:'approved.json',database:'main',environment:'prod',version:'20260920_initial'});
+test('generate→dry-run→承認は実適用と分離し、hash改ざんを拒否',async()=>{await runMigrate(request());const dry=await runMigrate({...request(),command:'apply'}) as any;expect(dry.dryRun).toBe(true);expect(dry.requiresDeploy).toBe(true);await expect(readFile(path.join(root,'approved.json'))).rejects.toThrow();await runMigrate({...request(),command:'apply',apply:true});const state=await runMigrate({...request(),command:'status'}) as any;expect(state.pending).toEqual([]);expect(state.actual).toBeNull();const file=path.join(root,'migrations/20260920_initial.json');const data=JSON.parse(await readFile(file,'utf8'));data.sql=['DROP TABLE items'];await writeFile(file,JSON.stringify(data));await expect(runMigrate({...request(),command:'status'})).rejects.toThrow();});
+test('環境不一致とproject外パスを拒否',async()=>{await expect(runMigrate({...request(),environment:'dev'})).rejects.toThrow();await expect(runMigrate({...request(),directory:'../outside'})).rejects.toThrow();});
