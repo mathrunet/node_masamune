@@ -1,0 +1,19 @@
+{
+    "moduleNameMapper": {},
+    "moduleDirectories": [
+        "src",
+        "node_modules"
+    ],
+    "moduleFileExtensions": [
+        "js",
+        "ts"
+    ],
+    "preset": "ts-jest",
+    "testEnvironment": "node",
+    "roots": [
+        "<rootDir>/test"
+    ],
+    "transform": {
+        "^.+\\.(ts|tsx)$": "ts-jest"
+    }
+}
