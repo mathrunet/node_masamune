@@ -1,13 +1,13 @@
-# generate_short_videoの不具合
+# generate_short_video Issues
 
-[x] 画像の動きが途中で止まる。10秒シーンがあるのであれば、パンやズーム等のアニメーションは10秒きっちり動かし続けるようにして
-  - ２枚目の画像が5秒ぐらい止まってから動き出した。アニメーションはシーン中動き続けるようにして
-  - 原因: AI生成画像が1920x1080でない場合、zoompan座標計算が範囲外になり動きがクランプされていた
-  - 修正1: zoompan適用前にscale+cropフィルターで画像を正確に1920x1080にリサイズ
-  - 修正2: パン移動範囲を画面幅の15-30%に増加（旧: 8-18% → 新: 15-30%）で動きがより目立つように改善
-[x] 画像の上下に余白がある。パンやズームを行うときに余白を画面内に表示させないように制御して
-[x] 2枚目の画像がアニメーションしない。画像を用いる場合は必ずアニメーションするようにして
-  - パン移動範囲を画面幅の8-18%に増加（旧: 15-35ピクセル → 新: 154-346ピクセル）
-[x] 画像がグリーンスクリーンになる
-  - 原因: fluent-ffmpegがフィルター配列を正しく処理しなかった
-  - 修正: `.videoFilters([scaleFilter, effect])`を`.videoFilters(combinedFilter)`に変更（単一の文字列に結合）
+[x] Image motion stops midway. For a 10-second scene, pan and zoom animations must keep moving for the full 10 seconds.
+  - The second image remained still for about 5 seconds before moving. Keep the animation moving throughout the scene.
+  - Cause: When AI-generated images were not 1920x1080, zoompan coordinate calculations went out of bounds and motion was clamped.
+  - Fix 1: Resize images to exactly 1920x1080 with scale+crop filters before applying zoompan.
+  - Fix 2: Increase the pan range to 15–30% of the screen width (previously 8–18%) to make motion more visible.
+[x] Images have margins above and below. Keep margins outside the visible frame while panning or zooming.
+[x] The second image does not animate. Always animate images when using them.
+  - Increase the pan range to 8–18% of the screen width (previously 15–35 pixels; now 154–346 pixels).
+[x] Images turn into a green screen.
+  - Cause: fluent-ffmpeg did not process the filter array correctly.
+  - Fix: Replace `.videoFilters([scaleFilter, effect])` with `.videoFilters(combinedFilter)` (combine filters into one string).

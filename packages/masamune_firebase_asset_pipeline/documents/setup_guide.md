@@ -1,148 +1,151 @@
-# API登録・設定詳細ガイド
+# API Registration and Configuration Guide
 
-本システムの開発に必要な各種APIの登録手順とキーの取得方法をステップごとに解説します。
+This guide explains how to register the APIs required for development and obtain their keys, step by step.
 
 ---
 
 ## 1. Google Cloud Platform (GCP) / Firebase
 
-### 1-1. プロジェクト作成と課金有効化
-1. [Google Cloud Console](https://console.cloud.google.com/) にアクセスします。
-2. 左上のプロジェクト選択プルダウンから「新しいプロジェクト」をクリックします。
-3. プロジェクト名（例: `masamune-asset-creator`）を入力し、「作成」をクリックします。
-4. 作成したプロジェクトを選択します。
-5. 左側メニューの「お支払い」から、請求先アカウントをリンクして課金を有効化します（Vertex AIやCloud Functionsの使用に必須です）。
+### 1-1. Create a Project and Enable Billing
+1. Open the [Google Cloud Console](https://console.cloud.google.com/).
+2. In the project selector at the top left, click "New Project".
+3. Enter a project name (for example, `masamune-asset-creator`) and click "Create".
+4. Select the project you created.
+5. Open "Billing" in the left menu and link a billing account to enable billing (required for Vertex AI and Cloud Functions).
 
-### 1-2. 必須APIの有効化
-1. 上部の検索バーで「API and Services」を検索し、ダッシュボードを開きます。
-2. 「APIとサービスの有効化」をクリックします。
-3. 以下のAPIを順に検索し、「有効にする」をクリックします。
+### 1-2. Enable Required APIs
+1. Search for "API and Services" in the top search bar and open the dashboard.
+2. Click "Enable APIs and Services".
+3. Search for each of the following APIs and click "Enable".
     - **Cloud Functions API**
     - **Cloud Firestore API**
     - **Cloud Storage API**
-    - **Vertex AI API**# FFmpeg (動画合成・エフェクト処理用)
-# Cloud Functions (第2世代) にはFFmpegがプリインストールされていますが、
-# バージョン固定やローカル開発の利便性のため `ffmpeg-static` と `fluent-ffmpeg` を使用します。
-# npm install fluent-ffmpeg ffmpeg-static
-        - **Grounding with Google Search** を有効にする必要があります（DeepResearch用）。
-    - **Cloud Text-to-Speech API** (ナレーション生成用)
+    - **Vertex AI API**
+        - Enable **Grounding with Google Search** for DeepResearch.
+    - **Cloud Text-to-Speech API** (for narration generation)
     - **YouTube Data API v3**
 
-### 1-3. サービスアカウントキーの取得 (開発用)
-1. 「IAMと管理」 > 「サービスアカウント」を開きます。
-2. `App Engine default service account` または新規作成したアカウントの「操作」（︙）をクリックし、「鍵を管理」を選択します。
-3. 「鍵を追加」 > 「新しい鍵を作成」を選択します。
-4. キーのタイプで「JSON」を選択し、「作成」をクリックします。
-5. 自動的にダウンロードされるJSONファイルを `service-account.json` として保存し、プロジェクトの安全な場所に配置します（Gitにはコミットしないでください）。
+FFmpeg handles video composition and effects. Cloud Functions (2nd Gen) includes FFmpeg, but this project uses `ffmpeg-static` and `fluent-ffmpeg` for version pinning and convenient local development.
+
+```bash
+npm install fluent-ffmpeg ffmpeg-static
+```
+
+### 1-3. Obtain a Service Account Key (Development)
+1. Open "IAM & Admin" > "Service Accounts".
+2. For the `App Engine default service account` or a newly created account, open the actions menu and select "Manage keys".
+3. Select "Add key" > "Create new key".
+4. Select "JSON" as the key type and click "Create".
+5. Save the downloaded JSON as `service-account.json` in a secure project location (do not commit it to Git).
 
 ---
 
-## 2. Google Custom Search API (Web検索)
+## 2. Google Custom Search API (Web Search)
 
-*GeminiのGrounding with Google Search機能を利用するため、別途Custom Search APIの設定は不要になりました。*
+*Separate Custom Search API configuration is no longer required because the system uses Gemini's Grounding with Google Search.*
 
 ---
 
 ## 3. YouTube Data API
 
-### 3-1. OAuth同意画面の設定
-1. GCP Consoleの「APIとサービス」 > 「OAuth同意画面」を開きます。
-2. User Typeで「外部」を選択し、「作成」をクリックします。
-3. アプリ名、ユーザーサポートメール等を入力し、保存して次へ進みます。
-4. 「スコープ」で `../auth/youtube.upload` や `../auth/youtube` などを追加します。
-5. 「テストユーザー」に、開発に使用するGoogleアカウントのメールアドレスを追加します。
+### 3-1. Configure the OAuth Consent Screen
+1. In the GCP Console, open "APIs & Services" > "OAuth consent screen".
+2. Select "External" as the user type and click "Create".
+3. Enter the app name, user support email, and other details, then save and continue.
+4. Under "Scopes", add scopes such as `../auth/youtube.upload` and `../auth/youtube`.
+5. Under "Test users", add the email address of the Google account used for development.
 
-### 3-2. OAuthクライアントIDの作成
-1. 「認証情報」 > 「認証情報を作成」 > 「OAuth クライアント ID」を選択します。
-2. アプリケーションの種類: 「Web アプリケーション」を選択します。
-3. **承認済みのリダイレクト URI**: `https://developers.google.com/oauthplayground` を追加します（リフレッシュトークン取得用）。
-4. 作成後、**クライアント ID** と **クライアント シークレット** をコピーします。
+### 3-2. Create an OAuth Client ID
+1. Select "Credentials" > "Create Credentials" > "OAuth client ID".
+2. Select "Web application" as the application type.
+3. Add `https://developers.google.com/oauthplayground` under **Authorized redirect URIs** to obtain a refresh token.
+4. Copy the **Client ID** and **Client Secret** after creation.
 
-### 3-3. リフレッシュトークンの取得
-1. [OAuth 2.0 Playground](https://developers.google.com/oauthplayground/) にアクセスします。
-2. 右上の歯車アイコンをクリックし、"Use your own OAuth credentials" にチェックを入れ、取得したクライアントIDとシークレットを入力します。
-3. 左側のStep 1で `YouTube Data API v3` を探し、`https://www.googleapis.com/auth/youtube.upload` 等の権限を選択して "Authorize APIs" をクリックします。
-4. Googleアカウントでログインし、許可を与えます。
-5. Step 2で "Exchange authorization code for tokens" をクリックします。
-6. 表示された **Refresh Token** をコピーします。
+### 3-3. Obtain a Refresh Token
+1. Open the [OAuth 2.0 Playground](https://developers.google.com/oauthplayground/).
+2. Click the gear icon at the top right, enable "Use your own OAuth credentials", and enter the client ID and secret.
+3. In Step 1 on the left, find `YouTube Data API v3`, select permissions such as `https://www.googleapis.com/auth/youtube.upload`, and click "Authorize APIs".
+4. Sign in with your Google account and grant permission.
+5. In Step 2, click "Exchange authorization code for tokens".
+6. Copy the displayed **Refresh Token**.
 
 ---
 
 ## 4. Instagram (Meta for Developers)
 
-### 4-1. アプリの作成
-1. [Meta for Developers](https://developers.facebook.com/) にアクセスし、ログインします。
-2. 「マイアプリ」 > 「アプリを作成」をクリックします。
-3. アプリのタイプとして「ビジネス」などを選択し、次へ進みます。
-4. アプリ名を入力し、アプリを作成します。
+### 4-1. Create an App
+1. Open [Meta for Developers](https://developers.facebook.com/) and sign in.
+2. Click "My Apps" > "Create App".
+3. Select an app type such as "Business" and continue.
+4. Enter the app name and create the app.
 
-### 4-2. Instagram Graph APIの設定
-1. アプリのダッシュボードで「製品を追加」から「Instagram Graph API」の「設定」をクリックします。
-2. 左メニューの「設定」 > 「ベーシック」を開き、**アプリID** と **app secret** を取得します。
+### 4-2. Configure the Instagram Graph API
+1. In the app dashboard, open "Add Product" and click "Set Up" for "Instagram Graph API".
+2. Open "Settings" > "Basic" in the left menu and obtain the **App ID** and **app secret**.
 
-### 4-3. InstagramプロアカウントとFacebookページのリンク
-1. Instagramアプリで、アカウントを「プロアカウント（ビジネスまたはクリエイター）」に切り替えます。
-2. Facebookページを作成し、Instagramアカウントとリンクさせます。
+### 4-3. Link an Instagram Professional Account to a Facebook Page
+1. In the Instagram app, switch the account to a professional account (business or creator).
+2. Create a Facebook Page and link it to the Instagram account.
 
-### 4-4. アクセストークンの取得
-1. 「ツール」 > 「グラフAPIエクスプローラ」を開きます。
-2. Facebookページとリンク済みのユーザーでトークンを生成します。
-3. 必要な権限 (`instagram_basic`, `instagram_content_publish` 等) を追加してトークンを生成します。
-4. 生成された短期トークンを、デバッガーツール等を使って長期トークン（Long-lived Access Token）に変換します。
+### 4-4. Obtain an Access Token
+1. Open "Tools" > "Graph API Explorer".
+2. Generate a token for a user linked to the Facebook Page.
+3. Add the required permissions (such as `instagram_basic` and `instagram_content_publish`) and generate the token.
+4. Convert the short-lived token to a long-lived access token using the debugger or a similar tool.
 
 ---
 
 ## 5. TikTok for Developers
 
-### 5-1. アプリの登録
-1. [TikTok for Developers](https://developers.tiktok.com/) にアクセスし、登録します。
-2. 「Manage apps」 > 「Create an app」をクリックします。
-3. 必要な情報を入力し、アプリを作成します。
-4. **Client Key** と **Client Secret** を取得します。
+### 5-1. Register an App
+1. Open [TikTok for Developers](https://developers.tiktok.com/) and register.
+2. Click "Manage apps" > "Create an app".
+3. Enter the required information and create the app.
+4. Obtain the **Client Key** and **Client Secret**.
 
-### 5-2. 権限申請
-1. アプリの設定画面で「Products」から「Content Posting API」などを追加し、審査を申請します（審査には時間がかかる場合があります）。
+### 5-2. Request Permissions
+1. In the app settings, add products such as "Content Posting API" and submit for review (review may take time).
 
 ---
 
 ## 6. X (Twitter) Developer Platform
 
-### 6-1. プロジェクトとアプリの作成
-1. [X Developer Portal](https://developer.twitter.com/en/portal/dashboard) にアクセスします。
-2. Basicプラン（またはPro）以上の契約が必要になる場合があります（Freeプランは書き込み制限が厳しいです）。
-3. プロジェクトとアプリを作成します。
+### 6-1. Create a Project and App
+1. Open the [X Developer Portal](https://developer.twitter.com/en/portal/dashboard).
+2. A Basic plan (or Pro) or higher may be required; the Free plan has strict write limits.
+3. Create a project and app.
 
-### 6-2. キーとトークンの取得
-1. アプリの「Keys and tokens」タブを開きます。
-2. **API Key** と **API Key Secret** を生成・保存します。
-3. **Access Token** と **Access Token Secret** を生成・保存します。
-    - ※ 生成時に権限が "Read and Write" になっていることを確認してください。なっていなければ「Settings」 > 「User authentication settings」でOAuth 1.0aをオンにし、権限を変更してから再生成します。
+### 6-2. Obtain Keys and Tokens
+1. Open the app's "Keys and tokens" tab.
+2. Generate and save the **API Key** and **API Key Secret**.
+3. Generate and save the **Access Token** and **Access Token Secret**.
+    - Ensure permissions are set to "Read and Write" when generating tokens. Otherwise, enable OAuth 1.0a under "Settings" > "User authentication settings", change permissions, and regenerate the tokens.
 
 ---
 
 ## 7. Adobe Stock API
 
-### 7-1. 統合機能の作成
-1. [Adobe Developer Console](https://developer.adobe.com/console/home) にアクセスします。
-2. 「新しいプロジェクトを作成」をクリックします。
-3. 「APIを追加」をクリックし、「Adobe Stock」を選択します。
-4. 認証方式（OAuth Server-to-Server等）を選択し、設定を完了します。
-5. **Client ID (API Key)** と **Client Secret** を取得します。
+### 7-1. Create an Integration
+1. Open the [Adobe Developer Console](https://developer.adobe.com/console/home).
+2. Click "Create new project".
+3. Click "Add API" and select "Adobe Stock".
+4. Select an authentication method such as OAuth Server-to-Server and complete configuration.
+5. Obtain the **Client ID (API Key)** and **Client Secret**.
 
 ---
 
 ## 8. Suzuri API
 
-### 8-1. APIキーの生成
-1. Suzuriにログインし、[設定画面](https://suzuri.jp/settings/apps)（アプリ連携設定など）にアクセスします。
-2. 新規アプリケーションを作成、またはAPI利用設定からキーを生成します。
-3. **API Key** を取得します。
+### 8-1. Generate an API Key
+1. Sign in to Suzuri and open [Settings](https://suzuri.jp/settings/apps), such as the app integration settings.
+2. Create an application or generate a key through the API settings.
+3. Obtain the **API Key**.
 
 ---
 
-## 9. 環境変数への反映
+## 9. Configure Environment Variables
 
-取得したキーは、プロジェクトルートの `.env` ファイル（`.env.example` をコピーして作成）に以下のように記述して管理します。
+Manage the acquired keys in a `.env` file at the project root (created by copying `.env.example`), as shown below.
 
 ```bash
 # .env
@@ -151,7 +154,7 @@
 GCP_PROJECT_ID=masamune-asset-creator
 GCP_REGION=asia-northeast1
 
-# Google Custom Search (不要)
+# Google Custom Search (not required)
 # GOOGLE_CUSTOM_SEARCH_API_KEY=...
 # GOOGLE_CUSTOM_SEARCH_CX=...
 

@@ -8,6 +8,8 @@ import {
   normalizeDatabasePrefix,
 } from "../src/lib/database_prefix";
 import { createTursoRulesEngine } from "../src/lib/rules";
+import { resolveTursoCreationGroup, resolveTursoWorkersOptionsFromEnv } from "../src/lib/env";
+import { Context } from "hono";
 import { TursoWorkersOptions } from "../src/lib/types";
 import {
   cacheDatabaseConnection,
@@ -2011,13 +2013,52 @@ describe("Turso Cloudflare workers", () => {
     expect(concurrent).toHaveBeenCalledTimes(1);
   });
 
+  test("retries declared DDL after the libsql connection cap fires", async () => {
+    mockExistingDatabase({ url: "libsql://ddl-retry.turso.io" });
+    execute
+      .mockRejectedValueOnce(
+        new Error("Database connections limit exceeded, try to reduce concurrency"),
+      )
+      .mockResolvedValue({ columns: [], rows: [] });
+    const app = deploy([
+      Functions.turso(dynamicOptions({
+        schemaManifest: {
+          version: "ddl-retry-v1",
+          tables: {
+            users: {
+              database: "ddl-retry",
+              table: "users",
+              columns: [{ name: "name", type: "TEXT" }],
+            },
+          },
+        },
+      })),
+    ]);
+
+    const response = await app.request(
+      "http://localhost/turso/database/ddl-retry/users",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ value: { id: "user-1", name: "Alice" } }),
+      },
+    );
+
+    expect(response.status).toBe(200);
+    expect(execute).toHaveBeenCalledTimes(7);
+    expect(concurrent).toHaveBeenCalledTimes(1);
+  });
+
   test("returns an access-time error when database group is not configured", async () => {
     delete process.env.TURSO_GROUP;
-    const fetchMock = jest.spyOn(globalThis, "fetch");
+    const fetchMock = jest.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      new Response(null, { status: 404 }),
+    );
     const app = deploy([
       Functions.turso(
         dynamicOptions({
           group: undefined,
+          autoCreateDatabase: true,
         }),
       ),
     ]);
@@ -2031,6 +2072,211 @@ describe("Turso Cloudflare workers", () => {
     expect(body.error).toBe(
       "group or TURSO_GROUP is required to create Turso databases.",
     );
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+});
+
+
+describe("Turso接続設定の分離", () => {
+  beforeEach(() => jest.restoreAllMocks());
+  afterEach(() => jest.restoreAllMocks());
+
+  test("同じDB名でも別組織の接続を再利用しない", async () => {
+    const database = "region-org-isolation";
+    const first = dynamicOptions({ organization: "region-org-a" });
+    const second = dynamicOptions({ organization: "region-org-b" });
+    cacheDatabaseConnection(database, first, {
+      url: "libsql://region-org-a.turso.io",
+      authToken: "a-token",
+      authTokenExpiresAt: Math.floor(Date.now() / 1000) + 3600,
+    });
+    const api = mockExistingDatabase({ url: "libsql://region-org-b.turso.io" });
+    const connection = await resolveDatabaseConnection(database, second);
+    expect(connection.url).toBe("libsql://region-org-b.turso.io");
+    expect(api).toHaveBeenCalledTimes(2);
+  });
+
+  test("資格情報を変更したら同じ組織でも接続を再検証する", async () => {
+    const database = "region-credential-isolation";
+    const first = dynamicOptions({ platformApiToken: "old-credential" });
+    cacheDatabaseConnection(database, first, {
+      url: "libsql://old-credential.turso.io",
+      authToken: "old-token",
+      authTokenExpiresAt: Math.floor(Date.now() / 1000) + 3600,
+    });
+    const api = mockExistingDatabase({ url: "libsql://new-credential.turso.io" });
+    const connection = await resolveDatabaseConnection(database,
+      dynamicOptions({ platformApiToken: "new-credential" }));
+    expect(connection.url).toBe("libsql://new-credential.turso.io");
+    expect(api).toHaveBeenCalledTimes(2);
+  });
+});
+
+
+describe("Tursoリージョン配置", () => {
+  const groups = [
+    { name: "prod-apac", continents: ["AS", "OC"], countries: ["JP"] },
+    { name: "prod-us", continents: ["NA", "SA"] },
+    { name: "prod-eu", continents: ["EU", "AF"] },
+  ];
+  let sequence = 0;
+  const options = (extra: Partial<TursoWorkersOptions> = {}): TursoWorkersOptions =>
+    dynamicOptions({ group: "prod-apac", groups, autoCreateDatabase: true, ...extra });
+  const database = () => `region-${++sequence}`;
+
+  beforeEach(() => {
+    jest.restoreAllMocks();
+    execute.mockReset().mockResolvedValue({ columns: [], rows: [] });
+    close.mockReset();
+    // テストから外部へ接続しないよう、各ケースの設定漏れも拒否します。
+    jest.spyOn(globalThis, "fetch").mockRejectedValue(new Error("Unmocked Platform API"));
+  });
+  afterEach(() => jest.restoreAllMocks());
+
+  function platform(existingGroup?: string, conflict = false) {
+    let storedGroup = existingGroup;
+    return jest.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
+      if (String(input).includes("/auth/tokens")) {
+        return Response.json({ jwt: "region-db-token" });
+      }
+      if (init?.method === "POST") {
+        const body = JSON.parse(String(init.body));
+        storedGroup = conflict ? "prod-eu" : body.group;
+        return conflict
+          ? Response.json({ error: "database with name example already exists" }, { status: 409 })
+          : Response.json({});
+      }
+      if (!storedGroup) return new Response(null, { status: 404 });
+      return Response.json({ database: {
+        DbId: tursoDatabaseId, Hostname: "region-test.turso.io",
+        group: storedGroup, primaryRegion: "verified-primary",
+      } });
+    });
+  }
+
+  test.each([
+    ["JP", "AS", "prod-apac"], ["US", "NA", "prod-us"],
+    ["DE", "EU", "prod-eu"], [undefined, undefined, "prod-apac"],
+  ])("作成時の自動選択 %s/%s → %s", async (country, continent, expected) => {
+    const api = platform();
+    const endpoint = await resolveDatabaseEndpoint(database(), options(), { country, continent });
+    const creation = api.mock.calls.find(([, init]) => init?.method === "POST");
+    expect(JSON.parse(String(creation?.[1]?.body))).toMatchObject({ group: expected, use_tursodb: true });
+    expect(endpoint).toMatchObject({ group: expected, primaryRegion: "verified-primary", created: true });
+  });
+
+  test("resolver、希望値、国、大陸、既定値の優先順位", async () => {
+    const context = { requestedGroup: "prod-us", country: "JP", continent: "EU", authentication: { uid: "alice" } };
+    const resolver = jest.fn(async () => "prod-eu");
+    expect(await resolveTursoCreationGroup("alice", options({ resolveGroup: resolver }), context)).toBe("prod-eu");
+    expect(resolver).toHaveBeenCalledWith(expect.objectContaining({ database: "alice", authentication: { uid: "alice" } }));
+    expect(await resolveTursoCreationGroup("alice", options(), context)).toBe("prod-us");
+    expect(await resolveTursoCreationGroup("alice", options(), { country: "JP", continent: "EU" })).toBe("prod-apac");
+    expect(await resolveTursoCreationGroup("alice", options({ group: undefined }))).toBe("prod-apac");
+    await expect(resolveTursoCreationGroup("alice", options({ resolveGroup: () => "unknown" }))).rejects.toThrow("included in groups");
+  });
+
+  test("既存DBは別地域・別希望値でも所属先を維持しresolverを呼ばない", async () => {
+    const api = platform("prod-eu");
+    const resolver = jest.fn(() => "prod-us");
+    const db = database();
+    const config = options({ resolveGroup: resolver });
+    const first = await resolveDatabaseEndpoint(db, config, { continent: "AS" });
+    const second = await resolveDatabaseEndpoint(db, config, { continent: "NA", requestedGroup: "prod-us" });
+    expect(first.group).toBe("prod-eu");
+    expect(second).toEqual(first);
+    expect(resolver).not.toHaveBeenCalled();
+    expect(api).toHaveBeenCalledTimes(1);
+  });
+
+  test("グループ未設定でも既存DBを利用できる", async () => {
+    platform("prod-eu");
+    expect((await resolveDatabaseEndpoint(database(), dynamicOptions({ group: undefined }))).group).toBe("prod-eu");
+  });
+
+  test("未許可の希望値は外部API呼び出し前に拒否する", async () => {
+    const api = platform();
+    await expect(resolveDatabaseEndpoint(database(), options(), { requestedGroup: "unknown" })).rejects.toThrow("not allowed");
+    await expect(resolveDatabaseEndpoint(database(), options(), { requestedGroup: "" })).rejects.toThrow("Invalid group");
+    await expect(resolveDatabaseEndpoint(database(), dynamicOptions(), { requestedGroup: "primary-group" })).rejects.toThrow("not allowed");
+    expect(api).not.toHaveBeenCalled();
+  });
+
+  test("キャッシュ経由も所属先の許可リストを再検証する", async () => {
+    platform("prod-eu");
+    const db = database();
+    await resolveDatabaseConnection(db, options());
+    await expect(resolveDatabaseEndpoint(db, options({ groups: [groups[0]] }))).rejects.toThrow("not allowed");
+    await expect(resolveDatabaseConnection(db, options({ groups: [groups[0]] }))).rejects.toThrow("not allowed");
+  });
+
+  test("同時初回作成は地域が違っても1件に集約する", async () => {
+    const api = platform();
+    const db = database();
+    const result = await Promise.all([
+      resolveDatabaseEndpoint(db, options(), { continent: "AS" }),
+      resolveDatabaseEndpoint(db, options(), { continent: "EU" }),
+    ]);
+    expect(result[0].group).toBe("prod-apac");
+    expect(result[1]).toEqual(result[0]);
+    expect(api.mock.calls.filter(([, init]) => init?.method === "POST")).toHaveLength(1);
+  });
+
+  test("別Workerとの作成競合は勝者の配置を採用する", async () => {
+    const api = platform(undefined, true);
+    const endpoint = await resolveDatabaseEndpoint(database(), options(), { continent: "AS" });
+    expect(endpoint.group).toBe("prod-eu");
+    expect(endpoint.created).toBe(true); // 作成直後なのでready確認が必要です。
+    expect(api).toHaveBeenCalledTimes(3);
+  });
+
+  test("同時解決に合流した呼び出し元も独自の許可リストを検証する", async () => {
+    platform("prod-eu");
+    const db = database();
+    const result = await Promise.allSettled([
+      resolveDatabaseEndpoint(db, options()),
+      resolveDatabaseEndpoint(db, options({ groups: [groups[0]] })),
+    ]);
+    expect(result[0].status).toBe("fulfilled");
+    expect(result[1].status).toBe("rejected");
+  });
+
+  test("所属情報がないAPI応答は複数グループ設定時に拒否する", async () => {
+    mockExistingDatabase({ url: "region-missing-group.turso.io" });
+    await expect(resolveDatabaseEndpoint(database(), options())).rejects.toThrow("could not be verified");
+  });
+
+  test("旧環境変数は自動選択を上書きしない", async () => {
+    const config = resolveTursoWorkersOptionsFromEnv({ env: {
+      TURSO_GROUP: "prod-apac", TURSO_GROUPS: JSON.stringify(groups),
+    } } as unknown as Context, options());
+    expect(await resolveTursoCreationGroup("alice", config, { continent: "EU" })).toBe("prod-eu");
+  });
+
+  test.each(["crud", "token"])("Workerの%s経路がrequest.cfから自動配置する", async (kind) => {
+    const api = platform();
+    const db = database();
+    const app = deploy([Functions.turso(options()), Functions.tursoToken(options())]);
+    const request = new Request(kind === "token"
+      ? `http://localhost/turso/token/database/${db}`
+      : `http://localhost/turso/database/${db}/items`, kind === "token" ? {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ operations: ["read"] }),
+      } : undefined);
+    Object.defineProperty(request, "cf", { value: { country: "DE", continent: "EU" } });
+    const response = await app.fetch(request);
+    expect(response.status).toBe(200);
+    const body = await response.json() as Record<string, unknown>;
+    if (kind === "token") expect(body).toMatchObject({ group: "prod-eu", primaryRegion: "verified-primary" });
+    const creation = api.mock.calls.find(([url, init]) => init?.method === "POST" && !String(url).includes("/auth/tokens"));
+    expect(JSON.parse(String(creation?.[1]?.body)).group).toBe("prod-eu");
+  });
+
+  test("HTTP外のNodeアダプターも共通resolverで作成する", async () => {
+    const api = platform();
+    const adapter = new TursoDatabaseAdapter({ options: options(), groupContext: { continent: "NA" } });
+    await adapter.getDocument(`database/${database()}/items/one`);
+    const creation = api.mock.calls.find(([url, init]) => init?.method === "POST" && !String(url).includes("/auth/tokens"));
+    expect(JSON.parse(String(creation?.[1]?.body)).group).toBe("prod-us");
   });
 });

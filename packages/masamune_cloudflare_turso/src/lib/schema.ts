@@ -1,3 +1,4 @@
+import { nativeVectorSpec, normalizeVectorValue, isUnloadedVector } from "@mathrunet/masamune_cloudflare";
 import { HttpError, validateIdentifier } from "./request";
 import { SqlValue, TursoClient } from "./turso_client";
 import type { TursoSchemaManifest } from "./types";
@@ -5,9 +6,10 @@ import type { TursoSchemaManifest } from "./types";
 export interface ColumnDefinition {
   name: string;
   type: string;
+  vectorMetric?: "cosine" | "euclidean";
 }
 
-const reservedFields = new Set(["id", "created_at", "updated_at"]);
+export const reservedFields = new Set(["id", "created_at", "updated_at"]);
 
 export async function ensureTableSchema({
   client,
@@ -129,6 +131,7 @@ function normalizeDeclaredType(type: string): string {
   if (/^(?:TEXT|CHAR|VARCHAR|JSON)(?:\b|\()/i.test(normalized)) {
     return "TEXT";
   }
+  if (nativeVectorSpec("", normalized)) return normalized.replace(/^VECTOR/, "F32_BLOB");
   if (normalized === "BLOB") {
     return normalized;
   }
@@ -276,6 +279,17 @@ async function getColumns(client: TursoClient, table: string): Promise<Map<strin
       columns.set(name, type.toUpperCase());
     }
   }
+  if ([...columns.values()].includes("F32_BLOB")) {
+    // TursoDBのPRAGMAは型の括弧部分を省略するためDDL原文も照合する。
+    const ddl = await client.execute({ sql: "SELECT sql FROM sqlite_schema WHERE type = 'table' AND name = ?", args: [table] });
+    const source = String(decodeRow(ddl.rows[0], ddl.columns).sql ?? "");
+    for (const [name, type] of columns) {
+      if (type !== "F32_BLOB") continue;
+      validateIdentifier(name, "column");
+      const match = new RegExp(`(?:["\x60]${name}["\x60]|\\b${name})\\s+F32_BLOB\\s*\\(\\s*([1-9][0-9]*)\\s*\\)`, "i").exec(source);
+      if (match) columns.set(name, `F32_BLOB(${match[1]})`);
+    }
+  }
   return columns;
 }
 
@@ -283,6 +297,7 @@ function isCompatibleType(existing: string, next: string): boolean {
   if (existing === next) {
     return true;
   }
+  if (nativeVectorSpec("", next) || nativeVectorSpec("", existing)) return false;
   if (existing === "TEXT") {
     return true;
   }
@@ -291,4 +306,45 @@ function isCompatibleType(existing: string, next: string): boolean {
 
 export function quoteIdentifier(identifier: string): string {
   return `"${validateIdentifier(identifier, "identifier").replace(/"/g, "\"\"")}"`;
+}
+
+
+export function vectorColumns(columns: readonly ColumnDefinition[] = []) {
+  return columns.flatMap(c => nativeVectorSpec(c.name, c.type, c.vectorMetric) ?? []);
+}
+
+export function vectorWriteValue(value: Record<string, unknown>, columns: readonly ColumnDefinition[] = []) {
+  const result = { ...value };
+  for (const spec of vectorColumns(columns)) {
+    if (!Object.hasOwn(result, spec.field)) continue;
+    const raw = result[spec.field];
+    if (isUnloadedVector(raw)) { delete result[spec.field]; continue; }
+    if (raw === null) continue;
+    try { result[spec.field] = normalizeVectorValue(raw, spec); }
+    catch (error) { throw new HttpError(400, String(error)); }
+  }
+  return result;
+}
+
+export function decodeVectorRow(row: unknown, names: readonly string[] | undefined, columns: readonly ColumnDefinition[] = []) {
+  const result = decodeRow(row, names);
+  for (const spec of vectorColumns(columns)) {
+    const alias = `${spec.field}.@vector`;
+    const raw = Object.hasOwn(result, alias) ? result[alias] : result[spec.field];
+    delete result[alias];
+    if (raw == null) { result[spec.field] = raw; continue; }
+    try { result[spec.field] = { "@type": "ModelVectorValue", "@source": "server", "@vector": normalizeVectorValue(raw, spec), "@measure": spec.metric }; }
+    catch { throw new HttpError(502, "Invalid stored vector."); }
+  }
+  return result;
+}
+
+/** vector列はDBでJSONへ変換し、SDKごとのBLOB表現差をHTTPへ漏らさない。 */
+export function vectorProjection(columns: readonly ColumnDefinition[] = []): string {
+  if (!vectorColumns(columns).length) return "*";
+  // 通常列をすべて保持する。ドット付き別名は利用者の列名として許可されない。
+  return "*, " + vectorColumns(columns).map(spec => {
+    const field = quoteIdentifier(spec.field);
+    return `CASE WHEN ${field} IS NULL THEN NULL ELSE vector_extract(${field}) END AS "${spec.field}.@vector"`;
+  }).join(", ");
 }

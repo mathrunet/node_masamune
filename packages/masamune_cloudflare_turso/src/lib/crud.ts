@@ -1,3 +1,5 @@
+import { nativeNearest } from "@mathrunet/masamune_cloudflare";
+import { vectorColumns, vectorWriteValue, vectorProjection, decodeVectorRow } from "./schema";
 import { HttpError, validateIdentifier } from "./request";
 import {
   decodeRow,
@@ -5,6 +7,7 @@ import {
   ensureTableSchema,
   ColumnDefinition,
   quoteIdentifier,
+  reservedFields,
 } from "./schema";
 import { SqlValue, TursoClient } from "./turso_client";
 import { TursoOrderCondition, TursoRequestBody, TursoWhereCondition } from "./types";
@@ -18,6 +21,7 @@ export async function fetchDocumentForRules(
   const rows = await selectRows(client, {
     ...request,
     count: false,
+    nearest: undefined,
   }, true);
   return rows[0] ?? null;
 }
@@ -30,6 +34,7 @@ export async function executeCrud({
   autoMigrateAddColumns,
   declaredSchema,
   schemaCacheKey,
+  schemaPrepared = false,
 }: {
   client: TursoClient;
   method: "GET" | "POST" | "PUT" | "DELETE";
@@ -38,45 +43,160 @@ export async function executeCrud({
   autoMigrateAddColumns: boolean;
   declaredSchema?: { columns: ColumnDefinition[]; version: string } | undefined;
   schemaCacheKey?: string | undefined;
+  schemaPrepared?: boolean | undefined;
 }): Promise<unknown> {
-  if (declaredSchema) {
-    const cacheKey = `${schemaCacheKey ?? request.database}\u0000${request.table}\u0000${declaredSchema.version}`;
-    let application = declaredSchemaApplications.get(cacheKey);
-    if (!application) {
-      application = ensureTableSchema({
-        client,
-        table: request.table,
-        value: {},
-        autoCreateTable,
-        autoMigrateAddColumns,
-        declaredColumns: declaredSchema.columns,
-        schemaVersion: declaredSchema.version,
-      });
-      declaredSchemaApplications.set(cacheKey, application);
-    }
-    try {
-      await application;
-    } catch (error) {
-      declaredSchemaApplications.delete(cacheKey);
-      throw error;
-    }
+  if (!schemaPrepared && declaredSchema) {
+    await applyDeclaredSchema({
+      client,
+      request,
+      autoCreateTable,
+      autoMigrateAddColumns,
+      declaredSchema,
+      schemaCacheKey,
+    });
   }
+  if (request.nearest !== undefined && (method !== "GET" || request.count)) throw new HttpError(400, "nearest is read-only and cannot count.");
   switch (method) {
     case "GET":
       if (request.count) {
         return await countRows(client, request);
       }
-      return await selectRows(client, request);
+      return await selectRows(client, request, false, declaredSchema?.columns);
     case "POST":
       if (request.indexKey) {
-        return await updateRows(client, request, autoCreateTable, autoMigrateAddColumns, declaredSchema);
+        return await updateRows(client, request, autoCreateTable, autoMigrateAddColumns, declaredSchema, schemaPrepared);
       }
       return await insertRow(client, request, autoCreateTable, autoMigrateAddColumns, declaredSchema);
     case "PUT":
-      return await updateRows(client, request, autoCreateTable, autoMigrateAddColumns, declaredSchema);
+      return await updateRows(client, request, autoCreateTable, autoMigrateAddColumns, declaredSchema, schemaPrepared);
     case "DELETE":
       await deleteRows(client, request);
       return [];
+  }
+}
+
+export async function prepareCrudWriteSchema({
+  client,
+  request,
+  autoCreateTable,
+  autoMigrateAddColumns,
+  declaredSchema,
+  schemaCacheKey,
+}: {
+  client: TursoClient;
+  request: Required<Pick<TursoRequestBody, "database" | "table">> & TursoRequestBody;
+  autoCreateTable: boolean;
+  autoMigrateAddColumns: boolean;
+  declaredSchema?: { columns: ColumnDefinition[]; version: string } | undefined;
+  schemaCacheKey?: string | undefined;
+}): Promise<void> {
+  if (declaredSchema) {
+    await applyDeclaredSchema({
+      client,
+      request,
+      autoCreateTable,
+      autoMigrateAddColumns,
+      declaredSchema,
+      schemaCacheKey,
+    });
+    // The declared schema only guarantees the columns listed in the manifest.
+    // A write payload may legitimately carry columns beyond it (e.g. an
+    // extended model saved into a table whose manifest is intentionally
+    // partial). Reconcile those extra columns here, OUTSIDE the concurrent
+    // write transaction. Skipping this would defer the ALTER TABLE to the
+    // in-transaction recovery inside insertRow, where DDL after a failed
+    // INSERT aborts the transaction and surfaces as an HTTP 500.
+    await ensureUndeclaredValueColumns({
+      client,
+      request,
+      autoCreateTable,
+      autoMigrateAddColumns,
+      declaredSchema,
+    });
+    return;
+  }
+  await ensureTableSchema({
+    client,
+    table: request.table,
+    value: requireValue(request.value),
+    autoCreateTable,
+    autoMigrateAddColumns,
+  });
+}
+
+// Ensures any payload columns absent from the declared schema exist before the
+// concurrent write runs. When the declared schema already covers the payload
+// (the common case) this inspects the payload keys only and issues no database
+// call, so the hot write path is unaffected.
+async function ensureUndeclaredValueColumns({
+  client,
+  request,
+  autoCreateTable,
+  autoMigrateAddColumns,
+  declaredSchema,
+}: {
+  client: TursoClient;
+  request: Required<Pick<TursoRequestBody, "database" | "table">> & TursoRequestBody;
+  autoCreateTable: boolean;
+  autoMigrateAddColumns: boolean;
+  declaredSchema: { columns: ColumnDefinition[]; version: string };
+}): Promise<void> {
+  const value = request.value;
+  if (!value || typeof value !== "object") {
+    return;
+  }
+  const declaredNames = new Set(declaredSchema.columns.map((column) => column.name));
+  const hasUndeclaredColumn = Object.keys(value).some(
+    (key) => !reservedFields.has(key) && !declaredNames.has(key),
+  );
+  if (!hasUndeclaredColumn) {
+    return;
+  }
+  await ensureTableSchema({
+    client,
+    table: request.table,
+    value,
+    autoCreateTable,
+    autoMigrateAddColumns,
+    declaredColumns: declaredSchema.columns,
+    schemaVersion: declaredSchema.version,
+  });
+}
+
+async function applyDeclaredSchema({
+  client,
+  request,
+  autoCreateTable,
+  autoMigrateAddColumns,
+  declaredSchema,
+  schemaCacheKey,
+}: {
+  client: TursoClient;
+  request: Required<Pick<TursoRequestBody, "database" | "table">> & TursoRequestBody;
+  autoCreateTable: boolean;
+  autoMigrateAddColumns: boolean;
+  declaredSchema: { columns: ColumnDefinition[]; version: string };
+  schemaCacheKey?: string | undefined;
+}): Promise<void> {
+  const cacheKey = `${schemaCacheKey ?? request.database}\u0000${request.table}\u0000${declaredSchema.version}\u0000${JSON.stringify(declaredSchema.columns)}`;
+  let application = declaredSchemaApplications.get(cacheKey);
+  if (!application) {
+    application = ensureTableSchema({
+      client,
+      table: request.table,
+      value: {},
+      autoCreateTable,
+      autoMigrateAddColumns,
+      declaredColumns: declaredSchema.columns,
+      schemaVersion: declaredSchema.version,
+    });
+    declaredSchemaApplications.set(cacheKey, application);
+  }
+  try {
+    await application;
+  } catch (error) {
+    declaredSchemaApplications.delete(cacheKey);
+    throw error;
   }
 }
 
@@ -84,16 +204,29 @@ async function selectRows(
   client: TursoClient,
   request: Required<Pick<TursoRequestBody, "database" | "table">> & TursoRequestBody,
   single = false,
+  columns: readonly ColumnDefinition[] = [],
 ): Promise<Record<string, unknown>[]> {
   const { sql, args } = buildWhereClause(request);
+  let nearest;
+  try { nearest = nativeNearest(request, vectorColumns(columns)); }
+  catch (error) { throw new HttpError(400, String(error)); }
+  if (nearest) {
+    const field = quoteIdentifier(nearest.spec.field);
+    const fn = nearest.spec.metric === "euclidean" ? "vector_distance_l2" : "vector_distance_cos";
+    const result = await client.execute({
+      sql: `SELECT ${vectorProjection(columns)} FROM ${quoteIdentifier(request.table)}${sql}${sql ? " AND " : " WHERE "}${field} IS NOT NULL ORDER BY ${fn}(${field}, vector32(?)) ASC, "id" ASC LIMIT ?`,
+      args: [...args, JSON.stringify(nearest.value), nearest.limit],
+    });
+    return result.rows.map(row => decodeVectorRow(row, result.columns, columns));
+  }
   const orderBy = buildOrderByClause(request.orderBy ?? []);
   const limitValue = request.limit && request.limit > 0 ? request.limit : undefined;
   const limit = single ? " LIMIT 1" : limitValue ? ` LIMIT ${limitValue}` : "";
   const result = await client.execute({
-    sql: `SELECT * FROM ${quoteIdentifier(request.table)}${sql}${orderBy}${limit}`,
+    sql: `SELECT ${vectorProjection(columns)} FROM ${quoteIdentifier(request.table)}${sql}${orderBy}${limit}`,
     args,
   });
-  return result.rows.map((row) => decodeRow(row, result.columns));
+  return result.rows.map((row) => decodeVectorRow(row, result.columns, columns));
 }
 
 async function countRows(
@@ -119,7 +252,7 @@ async function insertRow(
   autoMigrateAddColumns: boolean,
   declaredSchema?: { columns: ColumnDefinition[]; version: string } | undefined,
 ): Promise<Record<string, unknown>[]> {
-  const value = requireValue(request.value);
+  const value = vectorWriteValue(requireValue(request.value), declaredSchema?.columns);
   const now = Date.now();
   const row: Record<string, unknown> = {
     ...value,
@@ -128,10 +261,14 @@ async function insertRow(
     updated_at: value.updated_at ?? now,
   };
   const keys = Object.keys(row).map((key) => validateIdentifier(key, "column"));
-  const placeholders = keys.map(() => "?").join(", ");
+  const vectors = new Set(vectorColumns(declaredSchema?.columns).map(s => s.field));
+  const placeholders = keys.map(key => vectors.has(key) && row[key] != null ? "vector32(?)" : "?").join(", ");
   const statement = {
-    sql: `INSERT OR REPLACE INTO ${quoteIdentifier(request.table)} ` +
-      `(${keys.map(quoteIdentifier).join(", ")}) VALUES (${placeholders}) RETURNING *`,
+    sql: vectors.size ? `INSERT INTO ${quoteIdentifier(request.table)} ` +
+      `(${keys.map(quoteIdentifier).join(", ")}) VALUES (${placeholders}) ON CONFLICT(id) DO UPDATE SET ` +
+      keys.filter(k => k !== "id" && k !== "created_at").map(k => `${quoteIdentifier(k)} = excluded.${quoteIdentifier(k)}`).join(", ") +
+      ` RETURNING ${vectorProjection(declaredSchema?.columns)}` :
+      `INSERT OR REPLACE INTO ${quoteIdentifier(request.table)} (${keys.map(quoteIdentifier).join(", ")}) VALUES (${placeholders}) RETURNING *`,
     args: keys.map((key) => encodeSqlValue(row[key])),
   };
   let result;
@@ -152,7 +289,7 @@ async function insertRow(
     });
     result = await client.execute(statement);
   }
-  return result.rows.map((item) => decodeRow(item, result.columns));
+  return result.rows.map((item) => decodeVectorRow(item, result.columns, declaredSchema?.columns));
 }
 
 function isMissingTursoSchemaError(error: unknown): boolean {
@@ -167,36 +304,40 @@ async function updateRows(
   autoCreateTable: boolean,
   autoMigrateAddColumns: boolean,
   declaredSchema?: { columns: ColumnDefinition[]; version: string } | undefined,
+  schemaPrepared = false,
 ): Promise<Record<string, unknown>[]> {
-  const value = requireValue(request.value);
+  const value = vectorWriteValue(requireValue(request.value), declaredSchema?.columns);
   const row: Record<string, unknown> = {
     ...value,
     updated_at: value.updated_at ?? Date.now(),
   };
-  await ensureTableSchema({
-    client,
-    table: request.table,
-    value: row,
-    autoCreateTable,
-    autoMigrateAddColumns,
-    declaredColumns: declaredSchema?.columns,
-    schemaVersion: declaredSchema?.version,
-  });
+  if (!schemaPrepared) {
+    await ensureTableSchema({
+      client,
+      table: request.table,
+      value: row,
+      autoCreateTable,
+      autoMigrateAddColumns,
+      declaredColumns: declaredSchema?.columns,
+      schemaVersion: declaredSchema?.version,
+    });
+  }
   const where = buildWhereClause(request);
   if (!where.sql) {
     throw new HttpError(400, "PUT requires indexKey or where.");
   }
   const keys = Object.keys(row).map((key) => validateIdentifier(key, "column"));
-  const setSql = keys.map((key) => `${quoteIdentifier(key)} = ?`).join(", ");
+  const vectors = new Set(vectorColumns(declaredSchema?.columns).map(s => s.field));
+  const setSql = keys.map((key) => `${quoteIdentifier(key)} = ${vectors.has(key) && row[key] != null ? "vector32(?)" : "?"}`).join(", ");
   const args = [
     ...keys.map((key) => encodeSqlValue(row[key])),
     ...where.args,
   ];
   const result = await client.execute({
-    sql: `UPDATE ${quoteIdentifier(request.table)} SET ${setSql}${where.sql} RETURNING *`,
+    sql: `UPDATE ${quoteIdentifier(request.table)} SET ${setSql}${where.sql} RETURNING ${vectorProjection(declaredSchema?.columns)}`,
     args,
   });
-  return result.rows.map((item) => decodeRow(item, result.columns));
+  return result.rows.map((item) => decodeVectorRow(item, result.columns, declaredSchema?.columns));
 }
 
 async function deleteRows(

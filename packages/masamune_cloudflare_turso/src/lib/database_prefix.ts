@@ -42,22 +42,28 @@ export function resolveWorkerDatabasePrefix(
   if (resolvedFlavor !== "dev" && resolvedFlavor !== "prod") {
     throw new HttpError(500, "Worker FLAVOR must be dev or prod.");
   }
-  const expectedPrefix = resolvedFlavor === "dev" ? "dev_" : undefined;
-  if (requestPrefix !== expectedPrefix) {
-    throw new HttpError(
-      400,
-      `Request prefix does not match FLAVOR=${resolvedFlavor}.`,
-    );
+  const boundary = resolvedFlavor === "dev" ? "dev_" : "";
+  const serverPrefix = options.databasePrefix;
+  if (serverPrefix !== undefined && serverPrefix !== "") {
+    if (boundary === "") {
+      throw new HttpError(
+        500,
+        `Server prefix does not match FLAVOR=${resolvedFlavor}.`,
+      );
+    }
+    if (serverPrefix !== boundary && !serverPrefix.startsWith(boundary)) {
+      throw new HttpError(
+        500,
+        `Server prefix does not match FLAVOR=${resolvedFlavor}.`,
+      );
+    }
   }
-  if (options.databasePrefix !== undefined &&
-      options.databasePrefix !== expectedPrefix) {
-    throw new HttpError(
-      500,
-      `Server prefix does not match FLAVOR=${resolvedFlavor}.`,
-    );
-  }
+  const serverSuffix =
+    serverPrefix === undefined ? "" : serverPrefix.slice(boundary.length);
+  const request = requestPrefix ?? "";
+  const combined = `${boundary}${serverSuffix}${request}`;
   return {
     ...options,
-    databasePrefix: expectedPrefix,
+    databasePrefix: combined.length === 0 ? undefined : combined,
   };
 }

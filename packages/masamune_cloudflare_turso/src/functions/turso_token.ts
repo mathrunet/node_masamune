@@ -11,9 +11,10 @@ import {
   resolveDatabaseConnection,
   resolveDatabaseEndpoint,
   waitForDatabaseReady,
+  TursoDatabaseEndpoint,
 } from "../lib/turso_client";
 import { issueDatabaseToken } from "../lib/token";
-import { resolveTursoWorkersOptionsFromEnv } from "../lib/env";
+import { resolveTursoWorkersOptionsFromEnv, tursoGroupContext, validateTursoGroupRequest } from "../lib/env";
 import { resolveWorkerDatabasePrefix } from "../lib/database_prefix";
 import { ensureTableSchema, resolveTursoSchema } from "../lib/schema";
 
@@ -45,6 +46,8 @@ async function handleToken(
       request.prefix,
       (context.env as { FLAVOR?: unknown } | undefined)?.FLAVOR,
     );
+    const groupContext = tursoGroupContext(context, request.group);
+    validateTursoGroupRequest(databaseOptions, groupContext);
     phase = "rules";
     const authentication = context.get("authentication") as AuthenticationContext | undefined;
     const engine = createTursoRulesEngine(resolvedOptions.rules);
@@ -83,12 +86,13 @@ async function handleToken(
         ),
       }))
       .filter((item) => item.schema !== undefined);
-    let endpoint: { url: string; created?: boolean | undefined };
+    let endpoint: TursoDatabaseEndpoint;
     if (declaredSchemas.length > 0) {
       phase = "schema";
       const connection = await resolveDatabaseConnection(
         request.database,
         databaseOptions,
+        groupContext,
       );
       const schemaClient = createTursoClient(connection);
       try {
@@ -122,14 +126,15 @@ async function handleToken(
       } finally {
         await schemaClient.close();
       }
-      endpoint = { url: connection.url, created: connection.created };
+      endpoint = { url: connection.url, created: connection.created, group: connection.group, primaryRegion: connection.primaryRegion };
       if (connection.created) {
-        cacheDatabaseEndpoint(request.database, databaseOptions, connection.url);
+        cacheDatabaseEndpoint(request.database, databaseOptions, endpoint);
       }
     } else {
       endpoint = await resolveDatabaseEndpoint(
         request.database,
         databaseOptions,
+        groupContext,
       );
     }
     phase = "issue-token";
@@ -150,11 +155,13 @@ async function handleToken(
       } finally {
         await client.close();
       }
-      cacheDatabaseEndpoint(request.database, databaseOptions, endpoint.url);
+      cacheDatabaseEndpoint(request.database, databaseOptions, endpoint);
     }
     return context.json({
       ...token,
       url: endpoint.url,
+      group: endpoint.group,
+      primaryRegion: endpoint.primaryRegion,
       readMode: access.readMode,
       writeMode: access.writeMode,
       targets: access.scopes,

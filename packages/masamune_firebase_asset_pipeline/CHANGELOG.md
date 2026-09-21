@@ -40,7 +40,7 @@
 
 ### chore
 
-* コメントを削除 ([900f3b9](https://github.com/mathrunet/node_masamune/commit/900f3b98417ebe17c9d9f481223d493db4892d13))
+* Remove comments ([900f3b9](https://github.com/mathrunet/node_masamune/commit/900f3b98417ebe17c9d9f481223d493db4892d13))
 
 ### fix
 
@@ -1316,7 +1316,7 @@
 ### feat
 
 * Create a SendNotificationSchedule. ([681a05e](https://github.com/mathrunet/node_masamune/commit/681a05e8f3c4546e0eff070462e364eb974a693d))
-* ProcessFunctionBaseを作成 ([ecc5da7](https://github.com/mathrunet/node_masamune/commit/ecc5da70f3f7e687309511923ba6156022ebb951))
+* Create ProcessFunctionBase ([ecc5da7](https://github.com/mathrunet/node_masamune/commit/ecc5da70f3f7e687309511923ba6156022ebb951))
 
 
 
@@ -1640,6 +1640,5 @@
 ### fix
 
 * README modifications. ([f2ae4c4](https://github.com/mathrunet/node_masamune/commit/f2ae4c4dc9b3f0ea9ac26e59d49ea86858942d4e))
-
 
 

@@ -1,6 +1,9 @@
-import { TursoDatabaseConnection, TursoWorkersOptions } from "./types";
+import { TursoDatabaseConnection, TursoGroupContext, TursoWorkersOptions } from "./types";
 import { HttpError, validateLogicalName } from "./request";
 import { resolvePhysicalDatabaseName } from "./database_name";
+import { resolveTursoCreationGroup, validateTursoDatabaseGroup, validateTursoGroupRequest } from "./env";
+
+export type TursoDatabaseEndpoint = Pick<TursoDatabaseConnection, "url" | "created" | "group" | "primaryRegion">;
 
 interface TursoNativeConnection {
   execute(sql: string, args?: SqlValue[]): Promise<TursoResultSet>;
@@ -13,7 +16,6 @@ interface TursoNativeConnection {
 declare const require: (id: string) => {
   connect: (config: TursoDatabaseConnection) => TursoNativeConnection;
 };
-declare const process: { env?: Record<string, string | undefined> } | undefined;
 
 export interface TursoResultSet {
   columns?: string[];
@@ -36,7 +38,7 @@ export type SqlValue =
   null | string | number | bigint | ArrayBuffer | boolean | Uint8Array | Date;
 
 const connectionCache = new Map<string, TursoDatabaseConnection>();
-const databaseEndpointCache = new Map<string, string>();
+const databaseEndpointCache = new Map<string, TursoDatabaseEndpoint>();
 const connectionRefreshes = new Map<
   string,
   Promise<TursoDatabaseConnection>
@@ -54,7 +56,7 @@ const connectionResolutions = new Map<
 >();
 const endpointResolutions = new Map<
   string,
-  Promise<Pick<TursoDatabaseConnection, "url" | "created">>
+  Promise<TursoDatabaseEndpoint>
 >();
 // Guards a cache write issued by a resolution that started before a cache
 // clear. Without this, a resolution already in flight would repopulate
@@ -100,11 +102,14 @@ export function createTursoClient(
 export async function resolveDatabaseConnection(
   database: string,
   options: TursoWorkersOptions,
+  context: TursoGroupContext = {},
 ): Promise<TursoDatabaseConnection> {
+  validateTursoGroupRequest(options, context);
   const normalizedDatabase = validateLogicalName(database, "database");
   const cacheKey = databaseCacheKey(normalizedDatabase, options);
   const cached = connectionCache.get(cacheKey);
   if (cached) {
+    validateTursoDatabaseGroup(cached, options);
     if (shouldRefreshAuthToken(cached)) {
       return refreshDatabaseConnection(
         normalizedDatabase,
@@ -123,17 +128,18 @@ export async function resolveDatabaseConnection(
   // database still instructs every caller to wait for readiness before use.
   const inFlight = connectionResolutions.get(cacheKey);
   if (inFlight) {
-    return inFlight;
+    return validateTursoDatabaseGroup(await inFlight, options);
   }
   const resolution = resolveColdDatabaseConnection(
     database,
     normalizedDatabase,
     cacheKey,
     options,
+    context,
   );
   connectionResolutions.set(cacheKey, resolution);
   try {
-    return await resolution;
+    return validateTursoDatabaseGroup(await resolution, options);
   } finally {
     // Never retain a settled promise. A rejection therefore reaches every
     // joiner while a later retry starts a fresh resolution.
@@ -148,9 +154,10 @@ async function resolveColdDatabaseConnection(
   normalizedDatabase: string,
   cacheKey: string,
   options: TursoWorkersOptions,
+  context: TursoGroupContext,
 ): Promise<TursoDatabaseConnection> {
   const epoch = connectionCacheEpoch(cacheKey);
-  const endpoint = await resolveDatabaseEndpoint(normalizedDatabase, options);
+  const endpoint = await resolveDatabaseEndpoint(normalizedDatabase, options, context);
   const organizationName = options.organization;
   const platformApiToken = options.platformApiToken;
   if (!organizationName || !platformApiToken) {
@@ -185,6 +192,8 @@ async function resolveColdDatabaseConnection(
     authToken: authToken.token,
     authTokenExpiresAt: authToken.expiresAt,
     created: endpoint.created,
+    group: endpoint.group,
+    primaryRegion: endpoint.primaryRegion,
   };
   if (!endpoint.created && epoch === connectionCacheEpoch(cacheKey)) {
     cacheDatabaseConnection(database, options, connection);
@@ -195,31 +204,34 @@ async function resolveColdDatabaseConnection(
 export async function resolveDatabaseEndpoint(
   database: string,
   options: TursoWorkersOptions,
-): Promise<Pick<TursoDatabaseConnection, "url" | "created">> {
+  context: TursoGroupContext = {},
+): Promise<TursoDatabaseEndpoint> {
+  validateTursoGroupRequest(options, context);
   const normalizedDatabase = validateLogicalName(database, "database");
   const cacheKey = databaseCacheKey(normalizedDatabase, options);
   const connected = connectionCache.get(cacheKey);
   if (connected) {
-    return { url: connected.url, created: false };
+    return validateTursoDatabaseGroup({ url: connected.url, group: connected.group, primaryRegion: connected.primaryRegion, created: false }, options);
   }
   const cachedUrl = databaseEndpointCache.get(cacheKey);
   if (cachedUrl) {
-    return { url: cachedUrl, created: false };
+    return validateTursoDatabaseGroup({ ...cachedUrl, created: false }, options);
   }
   // The token endpoint resolves here on every cold client request, so this is
   // the hot path for a client that loads several tables concurrently at boot.
   const inFlight = endpointResolutions.get(cacheKey);
   if (inFlight) {
-    return inFlight;
+    return validateTursoDatabaseGroup(await inFlight, options);
   }
   const resolution = resolveColdDatabaseEndpoint(
     normalizedDatabase,
     cacheKey,
     options,
+    context,
   );
   endpointResolutions.set(cacheKey, resolution);
   try {
-    return await resolution;
+    return validateTursoDatabaseGroup(await resolution, options);
   } finally {
     if (endpointResolutions.get(cacheKey) === resolution) {
       endpointResolutions.delete(cacheKey);
@@ -231,14 +243,15 @@ async function resolveColdDatabaseEndpoint(
   normalizedDatabase: string,
   cacheKey: string,
   options: TursoWorkersOptions,
-): Promise<Pick<TursoDatabaseConnection, "url" | "created">> {
+  context: TursoGroupContext,
+): Promise<TursoDatabaseEndpoint> {
   const databaseName = await resolvePhysicalDatabaseName(
     normalizedDatabase,
     options,
   );
-  const endpoint = await ensurePlatformDatabase(databaseName, options);
+  const endpoint = await ensurePlatformDatabase(databaseName, options, { ...context, database: normalizedDatabase });
   if (!endpoint.created) {
-    databaseEndpointCache.set(cacheKey, endpoint.url);
+    databaseEndpointCache.set(cacheKey, endpoint);
   }
   return endpoint;
 }
@@ -246,10 +259,12 @@ async function resolveColdDatabaseEndpoint(
 export function cacheDatabaseEndpoint(
   database: string,
   options: TursoWorkersOptions,
-  url: string,
+  endpoint: string | TursoDatabaseEndpoint,
 ): void {
   const normalizedDatabase = validateLogicalName(database, "database");
-  databaseEndpointCache.set(databaseCacheKey(normalizedDatabase, options), url);
+  const value = typeof endpoint === "string" ? { url: endpoint } : endpoint;
+  validateTursoDatabaseGroup(value, options);
+  databaseEndpointCache.set(databaseCacheKey(normalizedDatabase, options), { ...value, created: false });
 }
 
 export function cacheDatabaseConnection(
@@ -258,15 +273,18 @@ export function cacheDatabaseConnection(
   connection: TursoDatabaseConnection,
 ): void {
   const normalizedDatabase = validateLogicalName(database, "database");
+  validateTursoDatabaseGroup(connection, options);
   connectionCache.set(databaseCacheKey(normalizedDatabase, options), {
     url: connection.url,
+    group: connection.group,
+    primaryRegion: connection.primaryRegion,
     authToken: connection.authToken,
     authTokenExpiresAt: connection.authTokenExpiresAt,
     created: false,
   });
   databaseEndpointCache.set(
     databaseCacheKey(normalizedDatabase, options),
-    connection.url,
+    { url: connection.url, group: connection.group, primaryRegion: connection.primaryRegion, created: false },
   );
 }
 
@@ -294,7 +312,11 @@ function databaseCacheKey(
   database: string,
   options: TursoWorkersOptions,
 ): string {
-  return `${options.databasePrefix ?? ""}\u0000${database}`;
+  return JSON.stringify([
+    options.organization ?? "", options.platformApiToken ?? "",
+    options.databasePrefix ?? "", database,
+    normalizeServerTokenTtl(options.serverTokenTtlSeconds),
+  ]);
 }
 
 export async function waitForDatabaseReady(client: TursoClient): Promise<void> {
@@ -321,10 +343,16 @@ export async function executeConcurrentWrite<T>(
   client: TursoClient,
   callback: () => Promise<T>,
 ): Promise<T> {
+  return executeRetriableWrite(() => client.concurrent(callback));
+}
+
+export async function executeRetriableWrite<T>(
+  callback: () => Promise<T>,
+): Promise<T> {
   let lastError: unknown;
   for (let attempt = 0; attempt <= writeRetryDelaysMs.length; attempt++) {
     try {
-      return await client.concurrent(callback);
+      return await callback();
     } catch (error) {
       lastError = error;
       if (!isTursoWriteConflict(error) || attempt === writeRetryDelaysMs.length) {
@@ -344,7 +372,8 @@ export async function executeConcurrentWrite<T>(
 async function ensurePlatformDatabase(
   databaseName: string,
   options: TursoWorkersOptions,
-): Promise<Pick<TursoDatabaseConnection, "url" | "created">> {
+  context: TursoGroupContext & { database: string },
+): Promise<TursoDatabaseEndpoint> {
   const organizationName = options.organization;
   const platformApiToken = options.platformApiToken;
   if (!organizationName || !platformApiToken) {
@@ -353,7 +382,6 @@ async function ensurePlatformDatabase(
       "organization and platformApiToken are required to create Turso databases.",
     );
   }
-  const groupName = resolveDatabaseGroupName(options);
   const baseUrl = `https://api.turso.tech/v1/organizations/${encodeURIComponent(organizationName)}`;
   const headers = {
     Authorization: `Bearer ${platformApiToken}`,
@@ -371,6 +399,7 @@ async function ensurePlatformDatabase(
     if (options.autoCreateDatabase !== true) {
       throw new HttpError(404, `Database was not found: ${databaseName}`);
     }
+    const groupName = await resolveTursoCreationGroup(context.database, options, context);
     const response = await fetch(`${baseUrl}/databases`, {
       method: "POST",
       headers,
@@ -382,11 +411,14 @@ async function ensurePlatformDatabase(
     });
     if (!response.ok) {
       const detail = await readPlatformError(response);
-      throw new HttpError(
-        500,
-        `Failed to create TursoDB database: ${response.status}${detail}. ` +
-          "Enable Concurrent Writes in Turso Dashboard Settings > General before creating databases.",
-      );
+      // 別Workerが同じDBを先に作成した場合は確定した配置を再取得します。
+      if (!(response.status === 409 && /database.*already exists/i.test(detail))) {
+        throw new HttpError(
+          500,
+          `Failed to create TursoDB database: ${response.status}${detail}. ` +
+            "Enable Concurrent Writes in Turso Dashboard Settings > General before creating databases.",
+        );
+      }
     }
     created = true;
   } else if (!existing.ok) {
@@ -421,10 +453,12 @@ async function ensurePlatformDatabase(
       "Turso database URL was not found in Platform API response.",
     );
   }
-  return {
-    url,
-    created,
-  };
+  const metadata = (info.database ?? info) as Record<string, unknown>;
+  return validateTursoDatabaseGroup({
+    url, created,
+    group: typeof metadata.group === "string" ? metadata.group : undefined,
+    primaryRegion: typeof metadata.primaryRegion === "string" ? metadata.primaryRegion : undefined,
+  }, options);
 }
 
 function assertTursoDatabase(
@@ -552,6 +586,8 @@ async function refreshDatabaseConnection(
     }
     const connection: TursoDatabaseConnection = {
       url: cached.url,
+      group: cached.group,
+      primaryRegion: cached.primaryRegion,
       authToken: token.token,
       authTokenExpiresAt: token.expiresAt,
       created: false,
@@ -592,30 +628,6 @@ function normalizeServerTokenTtl(ttlSeconds: number | undefined): number {
   return ttlSeconds;
 }
 
-function resolveDatabaseGroupName(options: TursoWorkersOptions): string {
-  const groupName = firstNonEmpty(
-    options.group,
-    typeof process !== "undefined" ? process.env?.TURSO_GROUP : undefined,
-  );
-  if (!groupName) {
-    throw new HttpError(
-      500,
-      "group or TURSO_GROUP is required to create Turso databases.",
-    );
-  }
-  return groupName;
-}
-
-function firstNonEmpty(...values: (string | undefined)[]): string | undefined {
-  for (const value of values) {
-    const trimmed = value?.trim();
-    if (trimmed) {
-      return trimmed;
-    }
-  }
-  return undefined;
-}
-
 export function isTransientTursoError(error: unknown): boolean {
   const message = error instanceof Error ? error.message : String(error);
   return (
@@ -634,7 +646,7 @@ export function isTursoWriteConflict(error: unknown): boolean {
   // before it can succeed. "cannot rollback - no transaction is active" is the
   // symptom Turso surfaces when a session dies mid-BEGIN under pressure, so it
   // rides the same retry ladder.
-  return /(?:SQLITE_BUSY|SQLITE_BUSY_SNAPSHOT|write conflict|transaction conflict|conflict at commit|database is locked|Database connections limit exceeded|cannot rollback - no transaction is active)/i
+  return /(?:SQLITE_BUSY|SQLITE_BUSY_SNAPSHOT|write conflict|transaction conflict|conflict at commit|database is (?:locked|busy)|Database connections limit exceeded|cannot rollback - no transaction is active)/i
     .test(message);
 }
 

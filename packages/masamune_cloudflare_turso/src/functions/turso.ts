@@ -6,7 +6,11 @@ import {
   RulesOperation,
   TursoWorkersOptions,
 } from "../lib/types";
-import { executeCrud, fetchDocumentForRules } from "../lib/crud";
+import {
+  executeCrud,
+  fetchDocumentForRules,
+  prepareCrudWriteSchema,
+} from "../lib/crud";
 import {
   jsonError,
   logServerError,
@@ -22,12 +26,13 @@ import {
   clearDatabaseConnectionCache,
   createTursoClient,
   executeConcurrentWrite,
+  executeRetriableWrite,
   isTransientTursoError,
   resolveDatabaseConnection,
   TursoClient,
   waitForDatabaseReady,
 } from "../lib/turso_client";
-import { resolveTursoWorkersOptionsFromEnv } from "../lib/env";
+import { resolveTursoWorkersOptionsFromEnv, tursoGroupContext, validateTursoGroupRequest } from "../lib/env";
 import { resolveWorkerDatabasePrefix } from "../lib/database_prefix";
 import { resolveTursoSchema } from "../lib/schema";
 
@@ -72,10 +77,13 @@ async function handleCrud(
       crudRequest.prefix,
       (context.env as { FLAVOR?: unknown } | undefined)?.FLAVOR,
     );
+    const groupContext = tursoGroupContext(context, request.group);
+    validateTursoGroupRequest(databaseOptions, groupContext);
     phase = "connect";
     const connection = await resolveDatabaseConnection(
       crudRequest.database,
       databaseOptions,
+      groupContext,
     );
     const connectedClient = createTursoClient(connection);
     client = connectedClient;
@@ -110,22 +118,50 @@ async function handleCrud(
       );
     }
     phase = method === "POST" ? "create-table-or-insert" : "execute";
-    const execute = () => executeCrud({
+    const declaredSchema = resolveTursoSchema(
+      resolvedOptions!.schemaManifest,
+      crudRequest.database,
+      crudRequest.table,
+    );
+    const crudOptions = {
       client: connectedClient,
       method,
       request: crudRequest,
       autoCreateTable: resolvedOptions!.autoCreateTable !== false,
       autoMigrateAddColumns: resolvedOptions!.autoMigrateAddColumns !== false,
-      declaredSchema: resolveTursoSchema(
-        resolvedOptions!.schemaManifest,
-        crudRequest.database,
-        crudRequest.table,
-      ),
+      declaredSchema,
       schemaCacheKey: connection.url,
-    });
-    const response = method === "GET"
-      ? await execute()
-      : await executeConcurrentWrite(connectedClient, execute);
+    };
+    let response: unknown;
+    const preparesSchemaBeforeConcurrentWrite = declaredSchema !== undefined ||
+      method === "PUT" ||
+      (method === "POST" && crudRequest.indexKey !== undefined);
+    if (method === "GET" || !preparesSchemaBeforeConcurrentWrite) {
+      response = method === "GET"
+        ? await executeCrud(crudOptions)
+        : await executeConcurrentWrite(
+          connectedClient,
+          () => executeCrud(crudOptions),
+        );
+    } else {
+      await executeRetriableWrite(() => prepareCrudWriteSchema(crudOptions));
+      response = await executeConcurrentWrite(
+        connectedClient,
+        () => executeCrud({ ...crudOptions, schemaPrepared: true }),
+      );
+    }
+    if (method === "GET" && crudRequest.nearest && Array.isArray(response)) {
+      const allowed = [];
+      for (const row of response) {
+        if (typeof row.id !== "string") continue;
+        const permission = await engine.evaluate({
+          target: "database", path: buildDatabaseRulesPath({ database: crudRequest.database, table: crudRequest.table, indexKey: row.id }),
+          operation: "get", authentication, server: true, fetchDocument: async () => row,
+        });
+        if (permission.allowed) allowed.push(row);
+      }
+      response = allowed;
+    }
     return context.json({ data: response });
   } catch (error) {
     if (request && resolvedOptions && isTransientTursoError(error)) {

@@ -1,65 +1,95 @@
-# Store Assets Generator
+<p align="center">
+  <a href="https://mathru.net">
+    <img width="240px" src="https://raw.githubusercontent.com/mathrunet/node_masamune/main/.github/images/icon.png" alt="Masamune logo" style="border-radius: 32px"><br/>
+  </a>
+  <h1 align="center">Store Assets Generator</h1>
+</p>
 
-YAMLファイルから、App StoreやGoogle Play用のアセット（アイコン、スクリーンショット、フィーチャーグラフィック）を生成するCLIツールです。日本語フォントに完全対応しています。
+<p align="center">
+  <a href="https://github.com/mathrunet">
+    <img src="https://img.shields.io/static/v1?label=GitHub&message=Follow&logo=GitHub&color=333333&link=https://github.com/mathrunet" alt="Follow on GitHub" />
+  </a>
+  <a href="https://x.com/mathru">
+    <img src="https://img.shields.io/static/v1?label=@mathru&message=Follow&logo=X&color=0F1419&link=https://x.com/mathru" alt="Follow on X" />
+  </a>
+  <a href="https://www.youtube.com/c/mathrunetchannel">
+    <img src="https://img.shields.io/static/v1?label=YouTube&message=Follow&logo=YouTube&color=FF0000&link=https://www.youtube.com/c/mathrunetchannel" alt="Follow on YouTube" />
+  </a>
+  <a href="https://github.com/invertase/melos">
+    <img src="https://img.shields.io/static/v1?label=maintained%20with&message=melos&color=FF1493&link=https://github.com/invertase/melos" alt="Maintained with Melos" />
+  </a>
+</p>
 
-## 特徴
+<p align="center">
+  <a href="https://github.com/sponsors/mathrunet"><img src="https://img.shields.io/static/v1?label=Sponsor&message=%E2%9D%A4&logo=GitHub&color=ff69b4&link=https://github.com/sponsors/mathrunet" alt="GitHub Sponsor" /></a>
+</p>
 
-- 📱 **複数サイズ対応**: アイコン（512px、1024px、2048px）、スクリーンショット（iPhone/iPad）を自動生成
-- 🌍 **多言語対応**: 設定ファイルで複数言語のテキストとフォントを指定可能
-- 🎨 **グラデーション背景**: 線形・放射状グラデーションをサポート
-- 🔤 **日本語フォント対応**: カスタムTTFフォントを使用した日本語テキスト描画
-- 🤖 **Androidアダプティブアイコン**: foreground（透過PNG）とbackgroundを自動生成
-- ⚙️ **YAML設定**: シンプルで読みやすいYAML形式の設定ファイル
+---
 
-## インストール
+[[GitHub]](https://github.com/mathrunet) | [[YouTube]](https://www.youtube.com/c/mathrunetchannel) | [[Packages]](https://pub.dev/publishers/mathru.net/packages) | [[X]](https://x.com/mathru) | [[LinkedIn]](https://www.linkedin.com/in/mathrunet/) | [[mathru.net]](https://mathru.net)
 
-### ローカルでの使用
+---
+
+A CLI tool that generates App Store and Google Play assets (icons, screenshots, and feature graphics) from YAML files, with full support for Japanese fonts.
+
+## Features
+
+- 📱 **Multiple sizes**: Automatically generate icons (512px, 1024px, 2048px) and screenshots (iPhone/iPad)
+- 🌍 **Multiple languages**: Specify text and fonts for multiple languages in the configuration file
+- 🎨 **Gradient backgrounds**: Support for linear and radial gradients
+- 🔤 **Japanese font support**: Render Japanese text using custom TTF fonts
+- 🤖 **Android adaptive icons**: Automatically generate a foreground (transparent PNG) and background
+- ⚙️ **YAML configuration**: Simple, readable YAML configuration files
+
+# Installation
+
+### Local Usage
 
 ```bash
-# リポジトリをクローン
+# Clone the repository
 git clone https://github.com/yourusername/store_information_generator.git
 cd store_information_generator
 
-# 依存パッケージをインストール
+# Install dependencies
 npm install
 ```
 
-### npmパッケージとして（将来的に公開予定）
+### As an npm Package (Planned for Future Publication)
 
 ```bash
-# グローバルインストール
+# Install globally
 npm install -g masamune_store_asset
 
-# ローカルインストール
+# Install locally
 npm install masamune_store_asset
 
-# npxで直接実行
+# Run directly with npx
 npx masamune_store_asset --config config.yaml
 ```
 
-## 使い方
+# Implementation
 
-### 1. 設定ファイルを作成
+### 1. Create a Configuration File
 
-`config.yaml`を作成します。サンプルは[templates/config.example.yaml](templates/config.example.yaml)を参照してください。
+Create `config.yaml`. See [templates/config.example.yaml](templates/config.example.yaml) for an example.
 
 ```yaml
-# 基本設定
+# Basic settings
 project_name: "MyApp"
 output_dir: "./output"
 
-# フォント設定
+# Font settings
 fonts:
   - family: "Noto Sans JP"
     path: "./fonts/NotoSansJP-Regular.ttf"
     weight: normal
 
-# 言語設定
+# Language settings
 locales:
   - ja
   - en
 
-# アイコン設定
+# Icon settings
 icon:
   foreground:
     path: "./assets/icon_foreground.png"
@@ -72,20 +102,20 @@ icon:
       angle: 135
 ```
 
-### 2. アセットを生成
+### 2. Generate Assets
 
 ```bash
-# ローカルでの実行
+# Run locally
 npm run generate -- --config config.yaml
 
-# または直接nodeコマンドで
+# Or run directly with node
 node bin/generate-assets.js --config config.yaml
 
-# グローバルインストール後
+# After global installation
 katanaasset --config config.yaml
 ```
 
-### コマンドラインオプション
+### Command-Line Options
 
 ```bash
 katanaasset [config] [options]
@@ -101,51 +131,51 @@ Options:
   -V, --version         Display version
 ```
 
-### 使用例
+### Examples
 
 ```bash
-# 基本的な使い方
+# Basic usage
 npm run generate -- --config config.yaml
 
-# 特定言語のみ生成
+# Generate for a specific language only
 npm run generate -- --config config.yaml --locale ja
 
-# 特定タイプのみ生成
+# Generate a specific asset type only
 npm run generate -- --config config.yaml --type icon
 
-# 出力先指定
+# Specify the output directory
 npm run generate -- --config config.yaml --output ./my-assets
 ```
 
-## 生成されるアセット
+## Generated Assets
 
-### アイコン
+### Icons
 - `icon_512.png` (512×512px)
 - `icon_1024.png` (1024×1024px)
 - `icon_2048.png` (2048×2048px)
-- `android_adaptive_foreground.png` (透過PNG、512×512px)
+- `android_adaptive_foreground.png` (transparent PNG, 512×512px)
 - `android_adaptive_background.png` (512×512px)
 
-### フィーチャーグラフィック（Google Play）
+### Feature Graphic (Google Play)
 - `feature_graphic.png` (1024×500px)
-- アイコン/ロゴのオーバーレイ配置対応（9つの位置から選択可能）
+- Supports icon/logo overlays with nine alignment options
 
-### スクリーンショット
-- **iPhone 6.9インチ** (iPhone 16 Pro Max)
-  - 縦: 1290×2796px
-  - 横: 2796×1290px
-- **iPad Pro 12.9インチ**
-  - 縦: 2048×2732px
-  - 横: 2732×2048px
+### Screenshots
+- **6.9-inch iPhone** (iPhone 16 Pro Max)
+  - Portrait: 1290×2796px
+  - Landscape: 2796×1290px
+- **12.9-inch iPad Pro**
+  - Portrait: 2048×2732px
+  - Landscape: 2732×2048px
 
-各言語・向きごとに5枚ずつ生成されます。
+Generates five screenshots for each language and orientation.
 
-### ロゴ
+### Logo
 - `logo.png`
 
-## 設定ファイルの詳細
+## Configuration Details
 
-### フォント設定
+### Font Settings
 
 ```yaml
 fonts:
@@ -157,39 +187,39 @@ fonts:
     weight: bold
 ```
 
-### アイコン設定
+### Icon Settings
 
 ```yaml
 icon:
   foreground:
     path: "./assets/icon_foreground.png"
-    scale: 1  # オプション: スケール調整
+    scale: 1  # Optional: adjust scale
   background:
-    # パターン1: 画像
+    # Option 1: Image
     path: "./assets/icon_background.png"
 
-    # パターン2: 単色
+    # Option 2: Solid color
     # color: "#FF6B6B"
 
-    # パターン3: グラデーション
+    # Option 3: Gradient
     # gradient:
     #   type: linear  # linear or radial
     #   colors:
     #     - "#667eea"
     #     - "#764ba2"
-    #   angle: 135  # 0-360度
+    #   angle: 135  # 0–360 degrees
 ```
 
-### フィーチャーグラフィック設定（新機能）
+### Feature Graphic Settings (New Feature)
 
 ```yaml
 feature_graphic:
-  # 既存のフォアグラウンド（中央配置）
+  # Existing foreground (centered)
   foreground:
     path: "./assets/feature_foreground.png"
     scale: 1
 
-  # 背景設定
+  # Background settings
   background:
     gradient:
       type: linear
@@ -198,55 +228,55 @@ feature_graphic:
         - "#764ba2"
       angle: 135
 
-  # 新機能: アイコンのオーバーレイ配置
+  # New: Icon overlay
   icon:
     path: "./assets/icon.png"
-    align: "bottom-right"  # 配置位置（9つのオプション）
-    scale: 0.2            # サイズ調整
-    marginX: 20           # X軸余白
-    marginY: 20           # Y軸余白
+    align: "bottom-right"  # Alignment (nine options)
+    scale: 0.2            # Size adjustment
+    marginX: 20           # Horizontal margin
+    marginY: 20           # Vertical margin
 
-  # 新機能: ロゴのオーバーレイ配置
+  # New: Logo overlay
   logo:
     path: "./assets/logo.png"
-    align: "bottom-right"  # 配置位置
+    align: "bottom-right"  # Alignment
     scale: 0.15
     marginX: 20
-    marginY: 80           # iconの上に配置する場合は調整
+    marginY: 80           # Adjust to position above the icon
 ```
 
-#### 利用可能な配置位置（align）
+#### Available Alignment Options (align)
 
-- `top-left` - 左上
-- `top-center` - 上中央
-- `top-right` - 右上
-- `left-center` - 左中央
-- `center` - 中央
-- `right-center` - 右中央
-- `bottom-left` - 左下
-- `bottom-center` - 下中央
-- `bottom-right` - 右下（デフォルト）
+- `top-left` - Top left
+- `top-center` - Top center
+- `top-right` - Top right
+- `left-center` - Left center
+- `center` - Center
+- `right-center` - Right center
+- `bottom-left` - Bottom left
+- `bottom-center` - Bottom center
+- `bottom-right` - Bottom right (default)
 
-#### テキストからのロゴ/アイコン生成
+#### Generating Logos and Icons from Text
 
-feature_graphicのlogoとiconは、画像ファイルの代わりにテキストから動的に生成できます：
+The logo and icon in feature_graphic can be generated dynamically from text instead of image files:
 
 ```yaml
 feature_graphic:
-  # テキストからロゴを生成
+  # Generate a logo from text
   logo:
-    text: "MyApp"           # 表示するテキスト
-    font_family: "Noto Sans JP"  # フォント（fonts設定で登録済み）
-    font_size: 60           # フォントサイズ
-    font_weight: "bold"     # フォントウェイト
-    color: "#FFFFFF"        # テキスト色
-    background_color: "rgba(0,0,0,0.8)"  # 背景色（オプション）
-    width: 200              # 生成画像の幅
-    height: 100             # 生成画像の高さ
-    align: "bottom-right"   # 配置位置
-    scale: 0.15             # 拡大縮小率
+    text: "MyApp"           # Text to display
+    font_family: "Noto Sans JP"  # Font registered in fonts
+    font_size: 60           # Font size
+    font_weight: "bold"     # Font weight
+    color: "#FFFFFF"        # Text color
+    background_color: "rgba(0,0,0,0.8)"  # Background color (optional)
+    width: 200              # Generated image width
+    height: 100             # Generated image height
+    align: "bottom-right"   # Alignment
+    scale: 0.15             # Scale factor
 
-  # テキストからアイコンを生成（例：単一文字）
+  # Generate an icon from text (for example, a single character)
   icon:
     text: "A"
     font_family: "Arial"
@@ -260,7 +290,7 @@ feature_graphic:
     scale: 0.2
 ```
 
-### スクリーンショット設定
+### Screenshot Settings
 
 ```yaml
 screenshots:
@@ -274,7 +304,7 @@ screenshots:
 
   portrait:
     - title:
-        ja: "素晴らしい機能"
+        ja: "Amazing Feature"
         en: "Amazing Feature"
       font_family:
         ja: "Noto Sans JP"
@@ -285,58 +315,64 @@ screenshots:
         en: "./assets/screenshots/en/screen1.png"
 ```
 
-## システム要件
+## System Requirements
 
-- Node.js v18以上
-- macOS、Linux、またはWindows（WSL推奨）
+- Node.js v18 or later
+- macOS, Linux, or Windows (WSL recommended)
 
-### 依存ライブラリ
+### Dependencies
 
-- `canvas`: 画像生成エンジン（Cairo）
-- `js-yaml`: YAML設定読み込み
-- `commander`: CLI構築
-- `chalk`: カラー出力
-- `ora`: プログレスインジケーター
+- `canvas`: Image rendering engine (Cairo)
+- `js-yaml`: YAML configuration loading
+- `commander`: CLI framework
+- `chalk`: Colored output
+- `ora`: Progress indicators
 
-### macOSでの追加要件
+### Additional Requirements on macOS
 
 ```bash
 brew install pkg-config cairo pango libpng jpeg giflib librsvg pixman
 ```
 
-## トラブルシューティング
+## Troubleshooting
 
-### canvasパッケージのインストールエラー
+### canvas Installation Errors
 
-macOSの場合、以下のコマンドで必要な依存関係をインストールしてください：
+On macOS, install the required dependencies with the following commands:
 
 ```bash
 brew install pkg-config cairo pango libpng jpeg giflib librsvg pixman
 npm install
 ```
 
-### フォントが見つからないエラー
+### Font Not Found
 
-設定ファイル内のフォントパスが正しいか確認してください。相対パスは設定ファイルの位置を基準に解決されます。
+Check that font paths in the configuration file are correct. Relative paths are resolved from the configuration file's location.
 
-## 開発
+## Development
 
 ```bash
-# 依存関係インストール
+# Install dependencies
 npm install
 
-# コードを修正後、テスト実行
+# Run a test after modifying the code
 npm run generate -- --config templates/config.example.yaml
 
-# npm linkでローカルテスト
+# Test locally with npm link
 npm link
 katanaasset --config config.yaml
 ```
 
-## ライセンス
+## License
 
 MIT
 
-## 貢献
+## Contributing
 
-プルリクエストを歓迎します！バグ報告や機能リクエストは、Issuesでお願いします。
+Pull requests are welcome! Please use Issues for bug reports and feature requests.
+
+# GitHub Sponsors
+
+Sponsors are always welcome. Thank you for your support!
+
+[https://github.com/sponsors/mathrunet](https://github.com/sponsors/mathrunet)

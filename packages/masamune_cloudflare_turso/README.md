@@ -1,6 +1,6 @@
 <p align="center">
   <a href="https://mathru.net">
-    <img width="240px" src="https://raw.githubusercontent.com/mathrunet/node_masamune/main/.github/images/icon.png" alt="Masamune logo" style="border-radius: 32px"s><br/>
+    <img width="240px" src="https://raw.githubusercontent.com/mathrunet/node_masamune/main/.github/images/icon.png" alt="Masamune logo" style="border-radius: 32px"><br/>
   </a>
   <h1 align="center">Turso for Cloudflare Workers</h1>
 </p>
@@ -80,6 +80,7 @@ Cloudflare bindings are also supported and take precedence over options:
 - `TURSO_PLATFORM_API_TOKEN`
 - `TURSO_ORGANIZATION`
 - `TURSO_GROUP`
+- `TURSO_GROUPS` (a JSON array of multiple groups)
 - `TURSO_SERVER_TOKEN_TTL_SECONDS` (default: `3600`)
 
 For production, store the Platform API token as a secret:
@@ -99,6 +100,93 @@ is not used.
 `cloudflare.turso.server_token_ttl`. Set
 `cloudflare.turso.rotate_legacy_tokens: true` only when you intentionally want
 to invalidate all previously issued tokens in the Turso group.
+
+# Multiple groups and automatic region selection
+
+Register existing Turso groups for each region to let the Worker choose where to create a new database without requiring Flutter to specify a group. This does not create or move groups. The Platform API token must allow retrieving and creating databases and issuing database-scoped tokens for every configured group.
+
+```typescript
+import * as turso from "@mathrunet/masamune_cloudflare_turso";
+import rulesJson from "../rules.json";
+
+const tursoOptions: turso.TursoWorkersOptions = {
+  organization: "my-organization",
+  group: "prod-apac", // Default for unknown regions; otherwise the first entry in groups.
+  groups: [
+    { name: "prod-apac", countries: ["JP"], continents: ["AS", "OC"] },
+    { name: "prod-us", continents: ["NA", "SA"] },
+    { name: "prod-eu", continents: ["EU", "AF"] },
+  ],
+  autoCreateDatabase: true,
+};
+
+export default turso.deploy([
+  turso.Functions.turso(tursoOptions),
+  turso.Functions.tursoToken(tursoOptions),
+], { rules: rulesJson });
+```
+
+Placement uses the following priority order. Region information comes from Cloudflare-provided `request.cf.country` and `request.cf.continent`.
+
+1. The group returned by the server's `resolveGroup` callback
+2. The client's `group` preference (only values listed in `groups` are allowed)
+3. A match in `countries`
+4. A match in `continents`
+5. The default `group`, or the first entry in `groups` when omitted
+
+Selection uses configured region mappings; it does not measure latency on every request. Assigning the same country or continent to multiple groups is rejected. A country match takes precedence over a continent match.
+
+Existing databases are resolved by organization and physical database name, using the group and connection URL returned by the API. They are not moved or duplicated when a user travels or requests another group. Paths such as `database/user-abc/items/one` work unchanged for databases in different groups. Groups do not namespace database names: physical names still derive from the prefix and logical database name. This does not provide queries or transactions across groups.
+
+When `groups` is configured, it also acts as an allowlist for the actual group of existing databases, including cached connections and concurrent resolution. Legacy configurations with only `group` retain a single creation destination and do not permit clients to override it.
+
+## Custom placement policies and non-HTTP calls
+
+```typescript
+const options: turso.TursoWorkersOptions = {
+  ...tursoOptions,
+  resolveGroup: async ({ database, databasePrefix, authentication, requestedGroup, country, continent, groups }) => {
+    // Return a name in groups according to the app's placement constraints.
+    // Return undefined to continue with client preference, region mapping, and defaults.
+    return undefined;
+  },
+};
+const adapter = new turso.TursoDatabaseAdapter({
+  options,
+  groupContext: { country: "JP", continent: "AS" },
+});
+```
+
+The resolver runs only when creating a new database. Authorize existing databases using rules and the group allowlist. Non-HTTP calls without region information fall back to the default. A validated client preference remains a placement hint, not authorization data.
+
+Direct-connection token responses include `group` and `primaryRegion` when available. They are omitted from responses that do not resolve a database, such as functions-only responses. Only database-scoped tokens are returned for direct connections.
+
+## Katana CLI configuration
+
+```yaml
+cloudflare:
+  turso:
+    enable: true
+    organization: my-organization
+    group:
+      dev: dev-apac
+      prod: prod-apac
+    groups:
+      dev:
+        - name: dev-apac
+          continents: [AS, OC, NA, SA, EU, AF]
+      prod:
+        - name: prod-apac
+          continents: [AS, OC]
+        - name: prod-us
+          continents: [NA, SA]
+        - name: prod-eu
+          continents: [EU, AF]
+```
+
+`katana apply` writes environment-specific `TURSO_GROUPS` (a JSON string) to Wrangler. `TURSO_GROUPS` takes precedence over `options.groups`. `TURSO_GROUP` overrides only the default, not region selection or the resolver. With multiple groups, the default must also appear in the list. Configuring only `groups` is supported.
+
+Reapplying preserves custom options and references to shared configuration in `index.ts`. When passing all options through a variable, as in `turso.Functions.turso(sharedOptions)`, manage `autoCreateDatabase` and `schemaManifest` in that variable as well. Setting `rotate_legacy_tokens: true` targets all configured groups.
 
 # Endpoints
 
@@ -471,6 +559,17 @@ Tokens are generated with the Turso Platform API:
 ```text
 POST /v1/organizations/{organizationSlug}/databases/{databaseName}/auth/tokens
 ```
+
+## Native vectors
+
+Fixed-dimension vectors declared in the schema support saves, updates, deletes, and `nearest` queries. Supported metrics are `cosine` (default) and `euclidean`, dimensions range from 1 to 16383, and query limits range from 1 to 100 (default 10). Values must be finite float32 numbers and match the declared dimensions and metric. Zero vectors are rejected for cosine distance.
+
+The GET `nearest` parameter is a JSON string such as `{"key":"embedding","value":[1,0,0]}`. The database applies ordinary `where` conditions and sorts by distance, breaking ties by ID. Document rules are reevaluated for each candidate. Authorization filtering can produce fewer results than the limit. Combining `nearest` with `count`, `orderBy`, or a document ID is rejected, as is `nearest` on mutation requests.
+
+Writes accept arrays or `ModelVectorValue` JSON; reads return `@type`, `@source`, `@vector`, and `@measure`. An unloaded value represented by `@vector: []`, or an omitted vector column, preserves the existing value. Explicit `null` clears it. Existing TEXT columns are not implicitly converted to native vectors. Plan a separate column migration and data conversion first.
+
+TursoDB manifests use `type: "F32_BLOB(3)"` and optionally `vectorMetric: "euclidean"`. Queries use `vector32`, `vector_extract`, and `vector_distance_cos` or `vector_distance_l2`. This integration uses an exact scan because the target TursoDB implementation does not support vector indexes; it does not use legacy libSQL `vector_top_k` or `libsql_vector_idx`. Flutter routes all CRUD through the schema-aware Worker with `nativeVectors: true`. CRUD, authorization, and rollback have been verified against a real TursoDB instance through a Worker.
+
 
 # GitHub Sponsors
 

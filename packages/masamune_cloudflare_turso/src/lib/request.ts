@@ -33,7 +33,7 @@ export async function parseCrudRequest(
   const body =
     method === "GET"
       ? parseGetRequest(context)
-      : await parseJsonBody<TursoRequestBody>(context);
+      : await parseJsonBody<TursoRequestBody>(context, method === "DELETE");
   const database = validateLogicalName(
     requiredString(pathDatabase ?? body.database, "database"),
     "database",
@@ -46,6 +46,7 @@ export async function parseCrudRequest(
   const indexKey = requestedIndexKey
     ? validateIndexKey(requiredString(requestedIndexKey, "indexKey"))
     : undefined;
+  if (body.nearest !== undefined && method !== "GET") throw new HttpError(400, "nearest is read-only.");
   const where = validateWhere(body.where ?? []);
   const orderBy = validateOrderBy(body.orderBy ?? []);
   const limit = validateLimit(body.limit);
@@ -172,12 +173,14 @@ function parseGetRequest(context: Context): TursoRequestBody {
   const limit = query.limit === undefined ? undefined : Number(query.limit);
   return {
     prefix: query.prefix,
+    group: query.group,
     database: query.database,
     table: query.table,
     indexKey: query.indexKey,
     where,
     orderBy,
     limit,
+    nearest: query.nearest ? parseJsonString(query.nearest, "nearest") : undefined,
     count: query.count === "true",
   };
 }
@@ -187,9 +190,13 @@ function optionalParam(context: Context, name: string): string | undefined {
   return value && value.length > 0 ? value : undefined;
 }
 
-async function parseJsonBody<T>(context: Context): Promise<T> {
+async function parseJsonBody<T>(context: Context, allowEmpty = false): Promise<T> {
   try {
-    return await context.req.json<T>();
+    const body = await context.req.text();
+    if (allowEmpty && body.length === 0) return {} as T;
+    const parsed = JSON.parse(body);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("object required");
+    return parsed as T;
   } catch (_) {
     throw new HttpError(400, "Request body must be JSON.");
   }

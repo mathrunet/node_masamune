@@ -1,229 +1,229 @@
-# 自立して動くアセット作成システム
+# Autonomous Asset Creation System
 
-# コンセプト
+# Concept
 
-CloudFunctions for Firebase（第２世代）側で動作
+Runs on Cloud Functions for Firebase (2nd Gen).
 
-与えられたテーマやアセットに対して十分な調査や検証を経た後、映像、画像を生成し
+After thoroughly researching and validating a supplied theme or asset, the application generates videos and images
 
-それを自動でYouTubeやInstagram、Tiktok、AdobeStockなどのストックフォトにアップロードするアプリケーション。
+and automatically uploads them to YouTube, Instagram, TikTok, and stock media services such as AdobeStock.
 
-- 内容は予め与えられているテーマ（チャンネルテーマ）やアセットから複数の映像、画像を随時作成
-    - 予め短い文言でテーマが与えられるか、１枚画像、短い映像、音楽などアセットが与えられることもある。
-    - １つのテーマから広く調査し複数の映像や画像を作成する
-- 内容はDeepResearchもしくはそれに付随するレベルでの調査を経て決定
-    - ２段階での調査
-        1. 与えられたチャンネルテーマから広く調査し今回生成する映像や画像のテーマを決定するためのプロセス
-            - 過去に作られた動画や画像と被っていないかも合わせてチェック
-        2. 1で決定されたテーマに基づき動画や画像にするための深堀り調査のプロセス
-            - Web検索も含めたDeepResearchが必要
-- 動画はシーンごとに細かく分解しそれぞれで生成する（つまりシーン分割が重要）
-- 動画の場合はさらにセクションごとにシーンの背景や音楽、ナレーションを細かく指定するためのデータ生成が必要（最終的に動画生成時に利用）
-- 内容の調査結果やセクションの分割データ、セクションの詳細データはすべてFirestore経由で読み書きする
-- 途中生成のアセット、および最終生成されたアセットについてはCloudStorage for Firebaseを利用
-- 最終的に生成されたアセットを各種APIを通じてYouTube、Instagram、Tiktok、AdobeStockなどにアップロード。配信を行う。
-    - 配信を行う最終チェックは各種サービスのコンソールから人間が行う。例えばYouTubeの場合は限定公開で公開しておき、最後は人間の手で一般公開を行う等。
-- DeepResearchや動画の生成や合成は時間がかかるためCloudFunctions for Firebase（第２世代）のhttp呼び出しを用いて60分フルに使えるようにする
-- Httpトリガーやスケジューラーを利用して手動、定期的な自動での生成どちらにも対応できるようにする
-- AIで生成した素材アセットはラベル付けしFirestoreにベクターデータ含めて保存（実データはCloudStorageにアップロード）し後から使いまわしできるようにする
+- Continuously create multiple videos and images from predefined themes (channel themes) or supplied assets.
+    - Input may be a short theme description or an asset such as an image, short video, or music.
+    - Research one theme broadly and create multiple videos or images.
+- Determine content through DeepResearch or research of comparable depth.
+    - Research in two stages:
+        1. Broadly research the supplied channel theme to choose a topic for the current video or image.
+            - Also check for overlap with previously created videos and images.
+        2. Investigate the selected topic in depth to prepare it for a video or image.
+            - DeepResearch, including web searches, is required.
+- Break videos into detailed scenes and generate each scene separately; scene segmentation is important.
+- For videos, generate data specifying backgrounds, music, and narration in detail for each section, to be used during video generation.
+- Read and write all research results, section breakdowns, and section details through Firestore.
+- Use Cloud Storage for Firebase for intermediate and final assets.
+- Upload and distribute final assets to YouTube, Instagram, TikTok, AdobeStock, and other services through their APIs.
+    - A human performs the final publishing check in each service's console. For example, upload a YouTube video as unlisted, then have a human make it public.
+- DeepResearch and video generation/composition take time, so use HTTP calls to Cloud Functions for Firebase (2nd Gen) to allow the full 60-minute execution window.
+- Support both manual generation through HTTP triggers and periodic automatic generation through a scheduler.
+- Label AI-generated source assets and store their metadata, including vectors, in Firestore, with the actual files in Cloud Storage, for later reuse.
 
-## 開発構成
+## Development Structure
 
-- 開発についてはすべてTypeScriptで行う。（Masamuneフレームワークのバックエンド側の仕組みを用いる）
-- 機能別に複数の関数に分ける
-    - Httpトリガーで作成を開始する関数
-        - チャンネルテーマや画像、映像、音声等のアセットを渡して作成リクエストを受け付けるメソッド
-        - 各種データをFirestoreやStorageに保存して調査開始用の関数を叩く
-    - スケジューラーで定期的に作成を開始する関数
-        - Firestoreに保存されたチャンネルテーマおよび最終作成日時を参照し最終作成日時から一定時間経ったらチャンネルテーマに基づいたアセットの作成を行うために調査開始用の関数を叩く
-    - 広域調査用関数
-        - 開始関数から渡されたリクエスト or Firestoreに記載されたチャンネルテーマを基に今回のアセットで用いるテーマを決定
-        - Webから広くテーマを収集
-        - 各テーマにおいて被っているものがないかFirestoreからベクター検索
-        - 被っていないテーマを１つ決定してFirestoreに保存（検索用のベクターデータも保存）し詳細調査用の関数を叩く
-        - 例：
-            - チャンネルテーマが「西洋の歴史」だとすれば「100年戦争」「フランス革命」などのイベント、「ヒトラー」や「ナポレオン」などの人物など、「西洋の城」などの構造物などが対象になる
-    - 詳細調査用関数
-        - 広域調査用関数からリクエストを受け起動
-        - Web等を用いてDeepResearchを行う
-        - 10分〜15分の動画に耐えうるだけの情報量を必ず揃えるようにする
-        - 取得した情報はすべてFirestoreに保存する。生成するアセットの内容に応じて「ショート動画情報生成開始関数」「動画情報生成開始関数」「漫画情報生成関数」「画像情報生成関数」を叩く
-    - ショート動画情報生成開始関数
-        - 詳細調査用関数からリクエストを受け開始。
-        - 詳細調査用のデータをFirestoreから取得して60秒程度のショート動画生成用のメタデータを作成する
-        - ここでは動画全体のメタデータ、ショート動画の概要→ショート動画の詳細データを作成する
-        - 動画のメタデータは下記を記載
-            - 動画タイトル
-            - 動画概要
-            - プロモーション用テキスト
-            - キーワード
-            - 対応言語
-        - ショート動画の概要は下記を記載
-            - 動画の詳細
-            - 映像の雰囲気
-            - 音楽の雰囲気
-        - ショート動画の概要を作成した後それを基にしてショート動画の詳細テキストデータを作成
-            - 映像の動き、音楽の雰囲気、演出（効果音含め）、ナレーションの文言をすべて生成
-                - 映像は映像生成AIに渡さず、「画像生成AIで画像を出力 or Firestoreを検索して既存のものを利用」→「ffmegのフィルターやトランジション、パンやズームを駆使して画像を動かす」という形で作成
-                    - 事前にFirestoreを検索しすでに生成された画像で合うものがあればそれを利用する
-                    - 画像の細かい描写（そのままプロンプトとして渡してその通りの画像ができるまで描写）
-                    - ffmpegに渡して動きをつけるための指示用データ（Json等で構造を定義したうえでそこに記載）
-                    - 画像は動画の長さによっては複数作ってもよい
-                - BGMや効果音もそのままプロンプトとして使えるように長さや雰囲気、使用する楽器まで細かく記載
-                    - Firestoreを検索しすでに生成されたものがあればそれを利用するように指定
-                - ナレーションは動画の長さに合うように文章の長さを調整
-                - ドーパミンを生成しやすいようにテンポ早め光と音の演出多め（不自然にならないように）にする
-        - 動画メタデータやショート動画の内容をすべてFirestoreに保存して「ショート動画生成関数」を叩く
-    - ショート動画生成関数
-        - ショート動画情報生成関数からリクエストを受け開始
-        - 流れとしては下記の流れで作成
-            1. Google Text-to-Speechにナレーション文言を渡し音声を作成
-                - シーンの長さに合うように調整
-            2. ナレーション音声に合う形でBGMをStorageから取得 or Lyriaを使って生成しffmpegを使って合成
-                - AIを使って生成した音声はラベルを付けてベクターデータにしたあとFirestore＆Storageに保存
-                - ffmpegのダッキングを使ってナレーションを際立たせる形で合成
-            3. 音声の長さに合わせて画像を生成 or CloudStorageから画像を取得しffmpegで画像を動かし動画を作成、それを音声に合成させる
-            4. 完成した動画をCloudStorageにアップロード
-        - 動画を生成し終えたら動画完了フラグを立て「動画配信関数」を叩く
-        - 生成された動画の秒数を基にYouTube用の字幕データも合わせて作成、CloudStorageに保存
-    - 動画情報生成開始関数
-        - 詳細調査用関数からリクエストを受け開始。
-        - 詳細調査用のデータをFirestoreから取得して動画生成用のメタデータを作成する
-        - ここでは動画全体のメタデータ、シーン分割およびシーンの概要データを作成する
-        - 詳細調査用のデータから動画としての説明しやすいようにシーンを分割していく
-        - 動画のメタデータは下記を記載
-            - 動画タイトル
-            - 動画概要
-            - プロモーション用テキスト
-            - キーワード
-            - 対応言語
-        - それぞれのシーンに下記データを記載
-            - シーン名
-            - シーンの秒数（内容に応じて増減）
-            - シーンの詳細
-            - 映像の雰囲気
-            - 音楽の雰囲気
-        - すべてのシーンを合わせて最大10分程度になるように調整
-        - 動画メタデータやシーンの内容をすべてFirestoreに保存してシーンごとにそれぞれ「シーン動画情報生成関数」を叩く
-    - シーン動画情報生成関数
-        - 動画情報生成開始関数からリクエストを受け開始
-        - シーンごとに並列で起動
-        - 動画生成を行うためのシーン内の動きをこと細かく生成
-        - 映像の動き、音楽の雰囲気、演出（効果音含め）、ナレーションの文言をすべて生成
-            - 映像は映像生成AIに渡さず、「画像生成AIで画像を出力 or Firestoreを検索して既存のものを利用」→「ffmegのフィルターやトランジション、パンやズームを駆使して画像を動かす」という形で作成
-                - 事前にFirestoreを検索しすでに生成された画像で合うものがあればそれを利用する
-                - 画像の細かい描写（そのままプロンプトとして渡してその通りの画像ができるまで描写）
-                - ffmpegに渡して動きをつけるための指示用データ（Json等で構造を定義したうえでそこに記載）
-                - 画像はシーンの長さによっては複数作ってもよい
-            - BGMや効果音もそのままプロンプトとして使えるように長さや雰囲気、使用する楽器まで細かく記載
-                - Firestoreを検索しすでに生成されたものがあればそれを利用するように指定
-            - ナレーションはシーンの長さに合うように文章の長さを調整
-            - ドーパミンを生成しやすいようにテンポ早め光と音の演出多め（不自然にならないように）にする
-        - 生成した動画情報はFirestoreに保存し「シーン動画生成関数」を叩く
-    - シーン動画生成関数
-        - シーン動画情報生成関数からリクエストを受け開始
-        - シーン動画情報生成関数からの流れで実行されるのでこちらもシーンごとに並列で起動
-        - 流れとしては下記の流れで作成
-            1. Google Text-to-Speechにナレーション文言を渡し音声を作成
-                - シーンの長さに合うように調整
-            2. ナレーション音声に合う形でBGMをStorageから取得 or Lyriaを使って生成しffmpegを使って合成
-                - AIを使って生成した音声はラベルを付けてベクターデータにしたあとFirestore＆Storageに保存
-                - ffmpegのダッキングを使ってナレーションを際立たせる形で合成
-            3. 音声の長さに合わせて画像を生成 or CloudStorageから画像を取得しffmpegで画像を動かし動画を作成、それを音声に合成させる
-            4. 完成した動画をCloudStorageにアップロード
-        - シーンに必要なすべての動画を生成し終えたらFirestoreのシーンの動画完了フラグをONにし「動画合成関数」を叩く
-        - 生成された動画の秒数を基にYouTube用の字幕データも合わせて作成、CloudStorageに保存
-    - 動画合成関数
-        - 動画合成関数からリクエストを受け開始
-        - すべてのシーンにおいてシーンの動画完了フラグが立っているかを確認し立っていたら開始
-        - すべてのシーン合成動画を順番通りに繋ぎ合わせる
-        - すべての動画を繋ぎ合わせたらFirestoreの動画生成完了フラグを立て「動画配信関数」を叩く
-    - 漫画情報生成関数
-        - 詳細調査用関数からリクエストを受け開始。
-        - 詳細調査用のデータをFirestoreから取得してA4１ページに収まる漫画のメタデータを作成する
-        - ここでは漫画全体のメタデータ、漫画の概要→漫画の詳細データを作成する
-        - 漫画のメタデータは下記を記載
-            - 漫画タイトル
-            - 漫画概要
-            - プロモーション用テキスト
-            - キーワード
-            - 対応言語
-        - 漫画の概要は下記を記載
-            - 漫画の詳細
-            - イラストの雰囲気
-            - セリフの雰囲気
-        - 漫画の概要を作成した後それを基にして漫画の詳細テキストデータを作成
-            - コマごとの画像の細かい描写、セリフをすべて作成
-                - そのままプロンプトとして渡すとその通りの画像が生成できるところまでテキスト情報を生成
-                - ドーパミンを生成しやすいようにテンポ早め（不自然にならないように）にする
-        - 漫画メタデータや漫画の内容をすべてFirestoreに保存して「漫画生成関数」を叩く
-    - 漫画生成関数
-        - 漫画情報生成関数からリスエストを受け開始。
-        - GeminiのNanoBananaから画像を生成
-        - 実際にGeminiにプロンプトを渡して画像を生成しCloudStorageに保存。
-        - 画像を生成し終えたら画像完了フラグを立て「画像配信関数」を叩く
-    - 画像情報生成関数
-        - 詳細調査用関数からリクエストを受け開始。
-        - 詳細調査用のデータをFirestoreから取得して画像のメタデータを作成する
-        - ここでは画像全体のメタデータ、画像の概要→画像の詳細データを作成する
-        - 画像のメタデータは下記を記載
-            - 画像タイトル
-            - 画像概要
-            - プロモーション用テキスト
-            - キーワード
-            - 対応言語
-        - 漫画の概要は下記を記載
-            - 画像の詳細
-            - 画像の雰囲気
-        - 画像の概要を作成した後それを基にして画像の詳細テキストデータを作成
-            - 画像全体の詳細の描画を作成
-                - そのままプロンプトとして渡すとその通りの画像が生成できるところまでテキスト情報を生成
-        - 画像メタデータや画像の内容をすべてFirestoreに保存して「画像生成関数」を叩く
-    - 画像生成関数
-        - 画像情報生成関数からリスエストを受け開始。
-        - GeminiのNanoBananaから画像を生成
-        - 実際にGeminiにプロンプトを渡して画像を生成しCloudStorageに保存。
-        - 画像を生成し終えたら画像完了フラグを立て「画像配信関数」を叩く
-    - 動画配信関数
-        - 完成した動画を各種配信サイトにアップロードするための開始関数
-        - Firestoreのデータ（チャンネルテーマと同じドキュメント）に保存されている配信先一覧を基に各種配信関数を叩く
-    - 画像配信関数
-        - 完成した画像を各種配信サイトにアップロードするための開始関数
-        - Firestoreのデータ（チャンネルテーマと同じドキュメント）に保存されている配信先一覧を基に各種配信関数を叩く
-    - YouTube配信関数
-        - ショート動画および通常動画を扱う
-        - 動画配信関数にYouTubeがリストアップされていたらこちらがリクエストされる
-        - 完成した動画をYouTubeのAPIを通して配信手続きを行う。
-        - 動画のメタデータを読み込み、API経由で設定
-        - 字幕データが存在すればそれも合わせて設定。
-        - 限定公開して公開したらメール等で通知するようにする。
-    - Instagram配信関数
-        - ショート動画および画像を扱う
-        - 動画配信関数や画像配信関数にInstagramがリストアップされていたらこちらがリクエストされる
-        - 完成したショート動画や画像をInstagramのAPIを通して配信手続きを行う。
-        - 動画や画像のメタデータを読み込み、API経由で設定
-    - TikTok配信関数
-        - ショート動画を扱う
-        - 動画配信関数や画像配信関数にTikTokがリストアップされていたらこちらがリクエストされる
-        - 完成したショート動画や画像をTikTokのAPIを通して配信手続きを行う。
-        - 動画のメタデータを読み込み、API経由で設定
-    - X（Twitter）配信関数
-        - ショート動画および画像を扱う
-        - 動画配信関数や画像配信関数にXがリストアップされていたらこちらがリクエストされる
-        - 完成したショート動画や画像をXのAPIを通して配信手続きを行う。
-        - 動画や画像のメタデータを読み込み、API経由で設定
-    - AdobeStock配信関数
-        - 画像を扱う
-        - 画像配信関数にAdobeStockがリストアップされていたらこちらがリクエストされる
-        - 完成した画像をAdobeStockのAPIを通して配信手続きを行う。
-        - 画像のメタデータを読み込み、API経由で設定
-    - Suzuri配信関数
-        - 画像を扱う
-        - 画像配信関数にSuzuriがリストアップされていたらこちらがリクエストされる
-        - 完成した画像をSuzuriのAPIを通して配信手続きを行う。
-        - 画像のメタデータを読み込み、API経由で設定
+- Implement everything in TypeScript using the Masamune framework's backend facilities.
+- Split functionality into multiple functions:
+    - HTTP-triggered creation function
+        - Accept creation requests containing a channel theme or image, video, or audio assets.
+        - Save data to Firestore and Storage, then invoke the research-start function.
+    - Scheduled creation function
+        - Read the channel theme and last creation timestamp from Firestore. Once the configured interval has elapsed, invoke the research-start function to create assets based on that theme.
+    - Broad research function
+        - Choose a topic for the current asset from the initial request or the channel theme stored in Firestore.
+        - Gather topic candidates broadly from the web.
+        - Use Firestore vector search to check each candidate for duplicates.
+        - Select one nonduplicate topic, save it and its search vectors to Firestore, then invoke detailed research.
+        - Example:
+            - For a channel theme of "Western history," candidates include events such as the Hundred Years' War or French Revolution, people such as Hitler or Napoleon, and structures such as Western castles.
+    - Detailed research function
+        - Start upon a request from broad research.
+        - Perform DeepResearch using the web and other sources.
+        - Always collect enough information for a 10–15-minute video.
+        - Save all collected information to Firestore. Depending on the asset, invoke the short video metadata, video metadata, manga metadata, or image metadata function.
+    - Short video metadata initiation function
+        - Start upon a request from detailed research.
+        - Load detailed research from Firestore and create metadata for a short video of approximately 60 seconds.
+        - Create overall video metadata, followed by an outline and detailed short video data.
+        - Video metadata includes:
+            - Video title
+            - Video description
+            - Promotional text
+            - Keywords
+            - Supported languages
+        - The short video outline includes:
+            - Video details
+            - Visual atmosphere
+            - Musical atmosphere
+        - Use the outline to create detailed textual direction for the short video.
+            - Generate all visual motion, musical atmosphere, effects (including sound effects), and narration text.
+                - Instead of using video-generation AI, generate images with image AI or find existing images in Firestore, then animate them using FFmpeg filters, transitions, pans, and zooms.
+                    - Search Firestore first and reuse suitable existing images.
+                    - Describe images in enough detail to serve directly as prompts that produce the intended visuals.
+                    - Define a structure such as JSON for the direction data passed to FFmpeg to animate images.
+                    - Multiple images may be created depending on video duration.
+                - Describe BGM and sound effects in prompt-ready detail, including duration, atmosphere, and instruments.
+                    - Specify that Firestore should be searched for existing audio to reuse.
+                - Adjust narration text length to fit the video duration.
+                - Aim for dopamine-stimulating engagement through a brisk pace and plentiful light and sound effects, while keeping the result natural.
+        - Save all video metadata and short video content to Firestore, then invoke short video generation.
+    - Short video generation function
+        - Start upon a request from short video metadata generation.
+        - Generate the video as follows:
+            1. Send narration text to Google Text-to-Speech to generate speech.
+                - Adjust it to the scene duration.
+            2. Retrieve BGM from Storage or generate it with Lyria to suit the narration, then mix it using FFmpeg.
+                - Label AI-generated audio, generate its vectors, and save it to Firestore and Storage.
+                - Use FFmpeg ducking to make the narration stand out in the mix.
+            3. Generate images or retrieve them from Cloud Storage to match the audio duration, animate them with FFmpeg into a video, and combine the result with the audio.
+            4. Upload the finished video to Cloud Storage.
+        - Set the video-complete flag after generation and invoke video distribution.
+        - Also generate YouTube subtitles based on the video's duration and save them to Cloud Storage.
+    - Video metadata initiation function
+        - Start upon a request from detailed research.
+        - Load detailed research from Firestore and create video-generation metadata.
+        - Create overall video metadata, a scene breakdown, and scene outlines.
+        - Split the research into scenes that make the content easy to explain on video.
+        - Video metadata includes:
+            - Video title
+            - Video description
+            - Promotional text
+            - Keywords
+            - Supported languages
+        - Each scene includes:
+            - Scene name
+            - Duration in seconds (adjusted to the content)
+            - Scene details
+            - Visual atmosphere
+            - Musical atmosphere
+        - Adjust the combined scenes to a maximum duration of approximately 10 minutes.
+        - Save all video metadata and scene content to Firestore, then invoke scene video metadata generation for each scene.
+    - Scene video metadata function
+        - Start upon a request from video metadata initiation.
+        - Run in parallel for each scene.
+        - Generate detailed motion directions within the scene for video production.
+        - Generate all visual motion, musical atmosphere, effects (including sound effects), and narration text.
+            - Instead of using video-generation AI, generate images with image AI or find existing images in Firestore, then animate them using FFmpeg filters, transitions, pans, and zooms.
+                - Search Firestore first and reuse suitable existing images.
+                - Describe images in enough detail to serve directly as prompts that produce the intended visuals.
+                - Define a structure such as JSON for the direction data passed to FFmpeg to animate images.
+                - Multiple images may be created depending on scene duration.
+            - Describe BGM and sound effects in prompt-ready detail, including duration, atmosphere, and instruments.
+                - Specify that Firestore should be searched for existing audio to reuse.
+            - Adjust narration text length to fit the scene duration.
+            - Aim for dopamine-stimulating engagement through a brisk pace and plentiful light and sound effects, while keeping the result natural.
+        - Save generated video information to Firestore and invoke scene video generation.
+    - Scene video generation function
+        - Start upon a request from scene video metadata generation.
+        - Continue the per-scene parallel workflow started by scene video metadata generation.
+        - Generate the video as follows:
+            1. Send narration text to Google Text-to-Speech to generate speech.
+                - Adjust it to the scene duration.
+            2. Retrieve BGM from Storage or generate it with Lyria to suit the narration, then mix it using FFmpeg.
+                - Label AI-generated audio, generate its vectors, and save it to Firestore and Storage.
+                - Use FFmpeg ducking to make the narration stand out in the mix.
+            3. Generate images or retrieve them from Cloud Storage to match the audio duration, animate them with FFmpeg into a video, and combine the result with the audio.
+            4. Upload the finished video to Cloud Storage.
+        - Once all videos required for the scene are generated, set the scene's video-complete flag in Firestore and invoke video composition.
+        - Also generate YouTube subtitles based on the video's duration and save them to Cloud Storage.
+    - Video composition function
+        - Start upon a request from the video composition function.
+        - Check that every scene's video-complete flag is set before proceeding.
+        - Join all composed scene videos in order.
+        - Once all videos are joined, set the video-generation-complete flag in Firestore and invoke video distribution.
+    - Manga metadata function
+        - Start upon a request from detailed research.
+        - Load detailed research from Firestore and create metadata for manga that fits on one A4 page.
+        - Create overall manga metadata, followed by an outline and detailed manga data.
+        - Manga metadata includes:
+            - Manga title
+            - Manga description
+            - Promotional text
+            - Keywords
+            - Supported languages
+        - The manga outline includes:
+            - Manga details
+            - Illustration atmosphere
+            - Dialogue atmosphere
+        - Use the outline to create detailed textual manga data.
+            - Create detailed image descriptions and dialogue for every panel.
+                - Provide enough detail that the text can be passed directly as a prompt to generate the intended image.
+                - Use a brisk but natural pace to encourage dopamine-stimulating engagement.
+        - Save all manga metadata and content to Firestore, then invoke manga generation.
+    - Manga generation function
+        - Start upon a request from manga metadata generation.
+        - Generate images with Gemini's NanoBanana.
+        - Pass prompts to Gemini to generate images and save them to Cloud Storage.
+        - After image generation, set the image-complete flag and invoke image distribution.
+    - Image metadata function
+        - Start upon a request from detailed research.
+        - Load detailed research from Firestore and create image metadata.
+        - Create overall image metadata, followed by an outline and detailed image data.
+        - Image metadata includes:
+            - Image title
+            - Image description
+            - Promotional text
+            - Keywords
+            - Supported languages
+        - The manga outline includes:
+            - Image details
+            - Image atmosphere
+        - Use the image outline to create detailed textual image data.
+            - Create a detailed description of the entire image.
+                - Provide enough detail that the text can be passed directly as a prompt to generate the intended image.
+        - Save all image metadata and content to Firestore, then invoke image generation.
+    - Image generation function
+        - Start upon a request from image metadata generation.
+        - Generate images with Gemini's NanoBanana.
+        - Pass prompts to Gemini to generate images and save them to Cloud Storage.
+        - After image generation, set the image-complete flag and invoke image distribution.
+    - Video distribution function
+        - Initiate uploading of finished videos to distribution services.
+        - Invoke platform-specific functions based on the destination list stored in Firestore in the same document as the channel theme.
+    - Image distribution function
+        - Initiate uploading of finished images to distribution services.
+        - Invoke platform-specific functions based on the destination list stored in Firestore in the same document as the channel theme.
+    - YouTube distribution function
+        - Handle short and regular videos.
+        - Receive requests when YouTube is listed in video distribution.
+        - Distribute finished videos through the YouTube API.
+        - Load video metadata and configure it through the API.
+        - Include subtitle data when available.
+        - Publish as unlisted and send a notification by email or similar means.
+    - Instagram distribution function
+        - Handle short videos and images.
+        - Receive requests when Instagram is listed in video or image distribution.
+        - Distribute finished short videos and images through the Instagram API.
+        - Load video/image metadata and configure it through the API.
+    - TikTok distribution function
+        - Handle short videos.
+        - Receive requests when TikTok is listed in video or image distribution.
+        - Distribute finished short videos and images through the TikTok API.
+        - Load video metadata and configure it through the API.
+    - X (Twitter) distribution function
+        - Handle short videos and images.
+        - Receive requests when X is listed in video or image distribution.
+        - Distribute finished short videos and images through the X API.
+        - Load video/image metadata and configure it through the API.
+    - AdobeStock distribution function
+        - Handle images.
+        - Receive requests when AdobeStock is listed in image distribution.
+        - Distribute finished images through the AdobeStock API.
+        - Load image metadata and configure it through the API.
+    - Suzuri distribution function
+        - Handle images.
+        - Receive requests when Suzuri is listed in image distribution.
+        - Distribute finished images through the Suzuri API.
+        - Load image metadata and configure it through the API.
 
-## システム要件
+## System Requirements
 
-- src/以下にソースコードを配置する
-- src/functions/以下にFirestore CloudFunctionsのデータが格納されているので他の関数の記載内容に従って実装を行う
+- Place source code under src/.
+- Follow the existing functions under src/functions/, which contains the Firestore Cloud Functions implementation.

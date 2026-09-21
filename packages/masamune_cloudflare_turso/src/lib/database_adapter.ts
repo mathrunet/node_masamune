@@ -18,7 +18,8 @@ import {
   SqlValue,
   TursoClient,
 } from "./turso_client";
-import { TursoWorkersOptions } from "./types";
+import { parseTursoGroups } from "./env";
+import { TursoGroupContext, TursoWorkersOptions } from "./types";
 
 declare const process: { env?: Record<string, string | undefined> } | undefined;
 
@@ -73,12 +74,16 @@ export class TursoDatabaseAdapter extends DatabaseAdapterBase {
   constructor({
     options,
     client,
+    groupContext,
   }: {
     options?: TursoWorkersOptions | undefined;
+    /** HTTP外での地域情報や認証情報。 */
+    groupContext?: TursoGroupContext | undefined;
     client?: TursoClient | undefined;
   } = {}) {
     super();
     this.options = options ?? {};
+    this.groupContext = groupContext;
     this.injectedClient = client ?? null;
   }
 
@@ -89,6 +94,8 @@ export class TursoDatabaseAdapter extends DatabaseAdapterBase {
    */
   readonly options: TursoWorkersOptions;
 
+  readonly groupContext?: TursoGroupContext;
+
   private readonly injectedClient: TursoClient | null;
 
   private async client(database: string): Promise<TursoClient> {
@@ -98,6 +105,7 @@ export class TursoDatabaseAdapter extends DatabaseAdapterBase {
     const connection = await resolveDatabaseConnection(
       database,
       this.resolveOptions(),
+      this.groupContext,
     );
     return createTursoClient(connection);
   }
@@ -113,6 +121,7 @@ export class TursoDatabaseAdapter extends DatabaseAdapterBase {
         env["TURSO_ORGANIZATION"],
       ),
       group: firstNonEmptyValue(this.options.group, env["TURSO_GROUP"]),
+      groups: this.options.groups ?? parseTursoGroups(env["TURSO_GROUPS"]),
       platformApiToken: firstNonEmptyValue(
         this.options.platformApiToken,
         env["TURSO_PLATFORM_API_TOKEN"],
