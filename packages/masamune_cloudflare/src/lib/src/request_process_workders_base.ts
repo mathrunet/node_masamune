@@ -1,6 +1,6 @@
 import { WorkersBase, WorkersOptions } from "./workers_base";
 import { Hono } from "hono";
-export { Response } from "express";
+export type { Response } from "express";
 
 /**
  * Base class for defining Workers data for HTTP request execution.

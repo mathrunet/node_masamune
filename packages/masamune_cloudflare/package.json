@@ -1,20 +1,20 @@
 {
   "name": "@mathrunet/masamune_cloudflare",
-  "version": "3.3.5",
+  "version": "3.4.0",
   "description": "Manages packages on Cloudflare Workers for the server portion of the Masamune framework.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "tsc",
+    "build": "node -e \"require('node:fs').rmSync('dist', {recursive: true, force: true})\" && tsc",
     "prepare": "npm run build",
-    "prepublish": "npm install && npm run build && npm run test",
     "test": "NODE_OPTIONS='--experimental-vm-modules' jest",
     "postversion": "npm run changelog",
     "changelog": "conventional-changelog -p eslint -i CHANGELOG.md -s -r 0 && git add CHANGELOG.md && git commit -m 'chore(release): publish package'",
-    "publish": "npm publish",
     "minor_update": "npm version minor",
     "major_update": "npm version major",
-    "patch_update": "npm version patch"
+    "patch_update": "npm version patch",
+    "prepublishOnly": "npm run build && npm test -- --runInBand",
+    "release": "npm publish"
   },
   "engines": {
     "node": "22"
@@ -50,5 +50,21 @@
     "conventional-changelog-cli": "^5.0.0",
     "jest": "^30.1.3",
     "ts-jest": "^29.4.11"
-  }
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "workerd": "./dist/worker.js",
+      "browser": "./dist/worker.js",
+      "default": "./dist/index.js"
+    },
+    "./*": "./*"
+  },
+  "files": [
+    "dist/",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE",
+    "MIGRATION.md"
+  ]
 }

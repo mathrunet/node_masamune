@@ -1,8 +1,10 @@
+/** 既存の予定実行引数を維持し、Workersのglobal型と衝突させない。 */
+export interface WorkersScheduledEvent {
+    cron: string;
+    scheduledTime?: number;
+}
+
 declare global {
-    interface ScheduledEvent {
-        cron: string;
-        scheduledTime?: number;
-    }
 
     interface ExecutionContext {
         waitUntil(promise: Promise<unknown>): void;
@@ -21,7 +23,7 @@ declare global {
     }
 
     interface JsonWebKeyWithKid extends JsonWebKey {
-        kid: string;
+        readonly kid: string;
     }
 }
 

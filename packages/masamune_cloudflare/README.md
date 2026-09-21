@@ -1,6 +1,6 @@
 <p align="center">
   <a href="https://mathru.net">
-    <img width="240px" src="https://raw.githubusercontent.com/mathrunet/node_masamune/main/.github/images/icon.png" alt="Masamune logo" style="border-radius: 32px"s><br/>
+    <img width="240px" src="https://raw.githubusercontent.com/mathrunet/node_masamune/main/.github/images/icon.png" alt="Masamune logo" style="border-radius: 32px"><br/>
   </a>
   <h1 align="center">Masamune Framework for Cloudflare Workers</h1>
 </p>
@@ -30,6 +30,12 @@
 
 ---
 
+## Public Entry Points in 3.4.0
+
+Worker bundlers select the Worker-specific entry point using the `workerd` / `browser` conditions. Existing Node entry-point exports are preserved. Shared validation and retry functions have been added for vector synchronization in D1 / Durable Objects / KV.
+
+Scheduled execution arguments use the exported `WorkersScheduledEvent` type. As before, `cron` is required and `scheduledTime` is optional. It can also be used alongside the official Workers `ScheduledEvent` type.
+
 Just load the package in index.ts and pass the predefined data to the methods to implement the server side.
 
 Also, [masamune_functions_cloudflare](https://pub.dev/packages/masamune_functions_cloudflare) can be used to execute server-side functions from methods defined on the client side, allowing for safe implementation.
@@ -50,8 +56,6 @@ Pass the return value of the `deploy` function to `export default`. It is define
 import * as m from "@mathrunet/masamune_cloudflare";
 
 // Define [m.Functions.xxxx] for the functions to be added to Workers.
-//
-// Workersに追加する機能を[m.Functions.xxxx]を定義してください。
 export default m.deploy(
     [
         // Worker for Test.

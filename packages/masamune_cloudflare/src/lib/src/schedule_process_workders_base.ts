@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import type { WorkersScheduledEvent } from "./cloudflare_workers_types";
 import { WorkersBase, WorkersOptions } from "./workers_base";
 
 /**
@@ -22,7 +23,7 @@ export abstract class ScheduleProcessWorkdersBase extends WorkersBase {
      * 実際のスケジュール処理の中身を指定します。
      */
     abstract process(
-        event: ScheduledEvent,
+        event: WorkersScheduledEvent,
         env: unknown,
         ctx: ExecutionContext,
     ): Promise<void>;

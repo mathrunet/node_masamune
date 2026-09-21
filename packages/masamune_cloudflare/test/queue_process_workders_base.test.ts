@@ -1,3 +1,4 @@
+import type { WorkersScheduledEvent as ScheduledEvent } from "../src/lib/src/cloudflare_workers_types";
 import {
     deploy,
     QueueProcessWorkdersBase,
