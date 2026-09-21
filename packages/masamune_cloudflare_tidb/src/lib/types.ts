@@ -20,68 +20,16 @@ export type {
   RulesOperationKey,
 };
 
+/** SQL資格情報はWorkerだけに保持し、共通manifestのtableのみ公開する。 */
 export interface TidbWorkersOptions extends WorkersOptions {
-  databasePrefix?: string | undefined;
-  /**
-   * Shared secret that allows a request to be evaluated as a server request.
-   *
-   * When omitted, every CRUD request is evaluated as a client request and
-   * `server` scoped rules are always denied.
-   *
-   * リクエストをサーバーリクエストとして評価することを許可する共有シークレット。
-   *
-   * 未指定の場合、すべてのCRUDリクエストはクライアントリクエストとして評価され、
-   * `server`指定のrulesは常に拒否されます。
-   */
-  serverAccessToken?: string | undefined;
-  /**
-   * Header name used to present [serverAccessToken].
-   *
-   * Defaults to `x-masamune-server-token`.
-   *
-   * [serverAccessToken]を提示するためのヘッダー名。
-   *
-   * 既定値は`x-masamune-server-token`です。
-   */
-  serverAccessHeader?: string | undefined;
-  dataServiceAppId?: string | undefined;
-  dataServiceRegion?: string | undefined;
-  dataServiceBaseUrl?: string | undefined;
-  dataServicePublicKey?: string | undefined;
-  dataServicePrivateKey?: string | undefined;
-  dataServiceManifest?: TidbDataServiceManifest | undefined;
-  maxScanRows?: number | undefined;
-}
-
-export type TidbDataServiceOperation =
-  | "get"
-  | "list"
-  | "count"
-  | "upsert"
-  | "update"
-  | "delete";
-
-export interface TidbDataServiceEndpoint {
-  path: string;
-  method: "GET" | "POST";
-}
-
-export interface TidbDataServiceTableManifest {
-  database: string;
-  table: string;
-  columns: string[];
-  endpoints: Partial<
-    Record<TidbDataServiceOperation, TidbDataServiceEndpoint>
-  >;
-}
-
-export interface TidbDataServiceManifest {
-  version: "1";
-  tables: Record<string, TidbDataServiceTableManifest>;
-  custom_endpoints?: Record<string, TidbDataServiceEndpoint> | undefined;
+  host?: string; username?: string; password?: string;
+  schemaManifest: import("./direct_client").SchemaManifest;
+  databasePrefix?: string; serverAccessToken?: string; serverAccessHeader?: string;
+  maxScanRows?: number; timeoutMs?: number;
 }
 
 export interface TidbRequestBody {
+  nearest?: { key: string; value: unknown };
   database?: string | undefined;
   table?: string | undefined;
   prefix?: string | undefined;

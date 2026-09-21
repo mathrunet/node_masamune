@@ -28,7 +28,7 @@ export async function parseCrudRequest(
   const pathIndexKey = optionalParam(context, "indexKey");
   const body = method === "GET"
     ? parseGetRequest(context)
-    : await parseJsonBody<TidbRequestBody>(context);
+    : await parseJsonBody<TidbRequestBody>(context, method === "DELETE");
   const database = validateLogicalName(
     requiredString(pathDatabase, "database"),
     "database",
@@ -40,6 +40,7 @@ export async function parseCrudRequest(
   const indexKey = pathIndexKey
     ? validateIndexKey(requiredString(pathIndexKey, "indexKey"))
     : undefined;
+  if (body.nearest !== undefined && method !== "GET") throw new HttpError(400, "nearest is read-only.");
   const where = validateWhere(body.where ?? []);
   const orderBy = validateOrderBy(body.orderBy ?? []);
   const limit = validateLimit(body.limit);
@@ -123,6 +124,7 @@ function parseGetRequest(context: Context): TidbRequestBody {
     where,
     orderBy,
     limit,
+    nearest: query.nearest ? parseJsonString(query.nearest, "nearest") : undefined,
     count: query.count === "true",
   };
 }
@@ -132,9 +134,13 @@ function optionalParam(context: Context, name: string): string | undefined {
   return value && value.length > 0 ? value : undefined;
 }
 
-async function parseJsonBody<T>(context: Context): Promise<T> {
+async function parseJsonBody<T>(context: Context, allowEmpty = false): Promise<T> {
   try {
-    return await context.req.json<T>();
+    const body = await context.req.text();
+    if (allowEmpty && body.length === 0) return {} as T;
+    const parsed = JSON.parse(body);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("object required");
+    return parsed as T;
   } catch (_) {
     throw new HttpError(400, "Request body must be JSON.");
   }

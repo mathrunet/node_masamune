@@ -25,7 +25,7 @@ export const defaultTidbServerAccessHeader = "x-masamune-server-token";
  */
 export function isTidbServerRequest(
   context: Context,
-  options: TidbWorkersOptions,
+  options: Pick<TidbWorkersOptions, "serverAccessToken" | "serverAccessHeader">,
 ): boolean {
   const token = options.serverAccessToken;
   if (typeof token !== "string" || token.length === 0) {

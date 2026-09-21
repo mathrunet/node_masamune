@@ -1,6 +1,6 @@
 <p align="center">
   <a href="https://mathru.net">
-    <img width="240px" src="https://raw.githubusercontent.com/mathrunet/node_masamune/main/.github/images/icon.png" alt="Masamune logo" style="border-radius: 32px"s><br/>
+    <img width="240px" src="https://raw.githubusercontent.com/mathrunet/node_masamune/main/.github/images/icon.png" alt="Masamune logo" style="border-radius: 32px"><br/>
   </a>
   <h1 align="center">TiDB for Cloudflare Workers</h1>
 </p>
@@ -30,13 +30,11 @@
 
 ---
 
-Just load the package in index.ts and pass the predefined data to the methods to implement the server side.
-
-Also, [masamune_functions_cloudflare](https://pub.dev/packages/masamune_functions_cloudflare) can be used to execute server-side functions from methods defined on the client side, allowing for safe implementation.
+A Worker adapter that connects to TiDB over HTTPS using `@tidbcloud/serverless` 0.3.0.
 
 # Installation
 
-Install the following packages
+Install the following package:
 
 ```bash
 npm install @mathrunet/masamune_cloudflare_tidb
@@ -44,121 +42,39 @@ npm install @mathrunet/masamune_cloudflare_tidb
 
 # Implementation
 
-Pass the return value of the `deploy` function to `export default`. It is defined by passing various Workers to the `deploy` function.
-
 ```typescript
 import * as m from "@mathrunet/masamune_cloudflare_tidb";
+import schema from "./tidb_schema.json";
+import rules from "./rules.json";
 
-// Define [m.Functions.xxxx] for the functions to be added to Workers.
-//
-// Workersに追加する機能を[m.Functions.xxxx]を定義してください。
-export default m.deploy(
-    [
-        m.Functions.tidb(),
-    ],
-);
+export default m.deploy([
+  m.Functions.tidb({schemaManifest: schema as m.SchemaManifest, rules}),
+]);
 ```
 
-## Configuration
+Set `TIDB_HOST`, `TIDB_USERNAME`, and `TIDB_PASSWORD` as Worker secrets. Do not distribute SQL credentials to Flutter apps. The Worker conditional exports are selected through `workerd`/`browser` and do not load Node-only Express dependencies.
 
-This package uses TiDB Data Service over HTTPS with Digest authentication.
-Every CRUD request explicitly selects its database with the
-`database/<database>/<table>/<document_id>` path. A generated runtime manifest
-maps the Masamune CRUD contract to Data Service endpoints.
+The CRUD URL is `/tidb/database/<database>/<table>[/<id>]`, and responses use `{data: ...}`. Only databases, tables, and columns listed in the manifest are used, and values are passed as driver parameters. Filtering, sorting, limits, and counts run in the database. Exceeding the `maxScanRows` retrieval cap (default 1000) produces an error.
 
-CRUD requests may pass `prefix` to select a prefixed physical database while
-rules continue to evaluate the logical database path. For example,
-`database/app_db/users?prefix=dev___` connects to `dev_app_db.users`. Prefixes
-are normalized to exactly one trailing underscore. Missing, empty, and
-underscore-only values keep the unprefixed database.
+`FLAVOR=dev` adds a `dev_` boundary to the physical database name, with the request's `prefix` appended after it. Rules are evaluated against the logical database name. Server rules require `TIDB_SERVER_ACCESS_TOKEN` and the `x-masamune-server-token` header. Missing or mismatched tokens are rejected. Do not distribute this token to Flutter apps either.
 
-All reads and writes go through the Workers CRUD endpoint. Flutter clients
-never receive Data Service credentials.
+BIGINT values are converted to Number only within the safe integer range; larger values and DECIMAL values remain strings. JSON, boolean, and vector values are restored according to the manifest. Dart models should also receive precision-sensitive values as String. Timeouts abort fetch and response body reads; mutations with unknown outcomes are not retried automatically.
 
-### Server scoped rules
+Use `TidbDirectClient.transaction(database, callback)` for atomic server-side operations. SQL inside the callback is sent serially within the same transaction and rolled back on failure. A lost commit response produces an error with an unknown outcome. Flutter `runTransaction` and batch operations continue to execute operations sequentially and do not guarantee database atomicity.
 
-The CRUD endpoint is called directly from clients, so rules are evaluated as a
-client request. `"server"` access rules, and rules that set `"server": true`,
-are always denied unless the request proves that it comes from a trusted
-backend. To allow a backend to be evaluated as a server request, configure a
-shared secret and send it in a header.
+Generate schemas using `@TidbSchema` → `katana code generate` and apply DDL with `katana migrate`. `katana apply` only applies connection settings. See the [migration guide](MIGRATION.md) for details.
 
-```bash
-wrangler secret put TIDB_SERVER_ACCESS_TOKEN
-```
+The Data Service client, Digest authentication, CaC/endpoint generation, and compatibility with legacy settings are not provided. When upgrading a published app, update the annotation, builder, CLI, and Node package together.
 
-```typescript
-m.Functions.tidb({
-  // Optional. Defaults to `x-masamune-server-token`.
-  serverAccessHeader: "x-masamune-server-token",
-});
-```
+## Native Vectors
 
-```text
-x-masamune-server-token: <TIDB_SERVER_ACCESS_TOKEN>
-```
+Save, update, delete, and run `nearest` on fixed-dimension vectors in the declared schema. Supported distance metrics are `cosine` (default) and `euclidean`; dimensions range from 1 to 16383, and search limits range from 1 to 100 (default 10). Finite float32 values, dimensions, and metric consistency are validated; zero vectors are rejected for cosine distance.
 
-Never ship this token to clients. Without `TIDB_SERVER_ACCESS_TOKEN` (or
-`serverAccessToken`), every request stays a client request. Note that a rule
-such as `{"type": "path", "param": "uid", "server": true}` denies owner access
-from clients as well. Remove `"server": true` from such rules when the owner
-must be able to read or write from the app.
+For GET requests, `nearest` is the JSON string `{"key":"embedding","value":[1,0,0]}`. Ordinary `where` conditions are applied in the database, results are ordered by distance with ID as a tie-breaker, and candidates' document rules are reevaluated. Authorization filtering may return fewer results than the limit. Combining nearest with `count`, `orderBy`, or a document ID, or including it in a mutation request, is rejected.
 
-```typescript
-import manifest from "./tidb_data_service_manifest.json";
+Stored values accept arrays or `ModelVectorValue` JSON; reads return `@type`, `@source`, `@vector`, and `@measure`. An unfetched value represented by `@vector: []`, or an omitted vector column, preserves the existing value; explicit `null` clears it. Existing TEXT columns are not implicitly converted to native vectors. Plan a separate column migration and data conversion first.
 
-m.Functions.tidb({
-  dataServiceManifest: manifest as m.TidbDataServiceManifest,
-  maxScanRows: 1000,
-});
-```
-
-Data Service bindings:
-
-- `TIDB_DATA_SERVICE_APP_ID`
-- `TIDB_DATA_SERVICE_REGION`
-- `TIDB_DATA_SERVICE_PUBLIC_KEY`
-- `TIDB_DATA_SERVICE_PRIVATE_KEY`
-- `TIDB_DATA_SERVICE_MAX_SCAN_ROWS`
-
-Supported equality/range/`whereIn` conditions are mapped to generated endpoint
-parameters. Other filters and ordering are evaluated in Workers after a
-bounded scan. A scan larger than `maxScanRows` fails instead of silently
-returning incomplete data.
-
-## Katana CLI
-
-Annotate flat Masamune models with `@tidbDataService`, run
-`katana code generate`, and configure the generated official CaC directory:
-
-```dart
-@TidbDataService(prefixes: ["dev"])
-@CollectionModelPath("database/app_db/users")
-abstract class UserModel {}
-```
-
-This generates both `app_db.users` and `dev_app_db.users` endpoints. The
-adapter prefix must have a corresponding generated manifest entry; Data
-Service never falls back to the unprefixed database.
-
-```yaml
-cloudflare:
-  tidb:
-    enable: true
-    project_id: "123"
-    cluster_id: "456"
-```
-
-Organization API credentials belong in `katana_secrets.yaml` under
-`cloudflare.tidb.management_api.public_key/private_key`. The first
-`katana apply` validates a supported active Starter AWS cluster, applies the
-additive schema, upserts endpoints, deploys them, stores generated state in
-`cloudflare/tidb.yaml`, and prepares Workers. The managed state file is added
-to `cloudflare/.gitignore` because it contains the generated Data API private
-key. The first apply intentionally leaves MySQL public access enabled. Run
-`katana cloudflare deploy`, then run `katana apply` again. The second run
-smoke-tests Data Service and disables the TiDB public endpoint. API failures
-preserve the public endpoint and print the GitHub CaC fallback path.
+The TiDB manifest specifies `sqlType: "VECTOR(3)"` and optionally `vectorMetric: "euclidean"`. It uses `VEC_FROM_TEXT` and `VEC_COSINE_DISTANCE`/`VEC_L2_DISTANCE`. ANN indexes are not generated automatically; search is exact using SQL distance calculations. Migration application and reapplication, CRUD, authorization, preservation of unfetched values, NULL, Euclidean distance, rollback, and round trips using the official Flutter Adapter and generated models have been verified on a dedicated TiDB database.
 
 # GitHub Sponsors
 

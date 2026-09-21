@@ -1,17 +1,12 @@
 import { WorkersData, WorkersOptions } from "@mathrunet/masamune_cloudflare";
 import { TidbWorkersOptions } from "./lib/types";
+import { registerDirectTidb } from "./lib/direct_route";
 
-/**
- * Define a list of applicable Functions for Cloudflare Workers.
- * 
- * Cloudflare Workers用の適用可能なFunctionsの一覧を定義します。
- */
+/** TiDB直結のCRUD。DDLはkatana migrateで管理する。 */
 export const Functions = {
-  /**
-   * Endpoints for TiDB database CRUD.
-   *
-   * TiDBデータベースCRUD用のエンドポイントです。
-   */
-  tidb: (options: TidbWorkersOptions = {}) => new WorkersData({ path: "/tidb", func: require("./functions/tidb"), options: options as unknown as WorkersOptions }),
-
+  tidb: (options: TidbWorkersOptions) => new WorkersData({
+    path: "/tidb",
+    func: (hono, resolved) => registerDirectTidb(hono, resolved as TidbWorkersOptions),
+    options: options as unknown as WorkersOptions,
+  }),
 } as const;
