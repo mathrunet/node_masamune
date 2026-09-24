@@ -3,6 +3,7 @@ import { provisionRuntimeUser } from "../src/migrate";
 import { mkdtemp, readFile, stat, rm, mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
+import { createHash } from "node:crypto";
 
 const input = {
   root: ".",
@@ -31,6 +32,7 @@ function connection(
   statements: string[];
 } {
   const statements: string[] = [];
+  const passwordHash = `*${createHash("sha1").update(createHash("sha1").update(input.runtimePassword).digest()).digest("hex").toUpperCase()}`;
   return {
     statements,
     connection: {
@@ -41,7 +43,7 @@ function connection(
           return existing.includes(String(parameters?.[1])) ? [{ TABLE_NAME: "found" }] : [];
         }
         if (sql.includes("FROM mysql.user")) {
-          return accounts.includes(String(parameters?.[0])) ? [{ User: parameters?.[0] }] : [];
+          return accounts.includes(String(parameters?.[0])) ? [{ User: parameters?.[0], authentication_string: passwordHash }] : [];
         }
         if (sql.startsWith("SHOW GRANTS")) {
           const selected = typeof grants === "function" ? grants(sql) : grants;
@@ -77,8 +79,13 @@ describe("provisionRuntimeUser", () => {
       "GRANT SELECT, INSERT, UPDATE, DELETE ON `shared`.`landmarks` TO 'topolia_rw_abcd12'",
     );
     expect(fixture.statements).toContain(
-      "CREATE USER IF NOT EXISTS 'prefix.rt_abcd12' IDENTIFIED BY '<redacted>'",
+      "GRANT SELECT, INSERT, UPDATE, DELETE ON `shared`.`landmarks` TO 'prefix.rt_abcd12'",
     );
+    expect(fixture.statements).toContain(
+      "CREATE USER 'prefix.rt_abcd12' IDENTIFIED BY '<redacted>'",
+    );
+    expect(fixture.statements).not.toContain("GRANT 'topolia_rw_abcd12' TO 'prefix.rt_abcd12'");
+    expect(fixture.statements.some((sql) => sql.startsWith("SET DEFAULT ROLE"))).toBe(false);
     expect(fixture.statements.join("\n")).not.toContain(input.runtimePassword);
     expect(fixture.statements).not.toContain("GRANT ALL");
 
@@ -110,11 +117,11 @@ describe("provisionRuntimeUser", () => {
     expect(fixture.statements.some((sql) => sql.startsWith("CREATE ROLE"))).toBe(false);
   });
 
-  test("rejects additional direct or inherited roles on an owned runtime user", async () => {
+  test("rejects inherited roles outside the managed role on an owned runtime user", async () => {
     const fixture = connection(["landmarks", "regions"], [input.runtimeUsername], [
-      "GRANT USAGE ON *.* TO 'prefix.rt_abcd12'@'%''",
-      "GRANT 'topolia_rw_abcd12'@'%' TO 'prefix.rt_abcd12'@'%''",
-      "GRANT 'role_admin'@'%' TO 'prefix.rt_abcd12'@'%''",
+      "GRANT USAGE ON *.* TO 'prefix.rt_abcd12'@'%'",
+      "GRANT 'topolia_rw_abcd12'@'%' TO 'prefix.rt_abcd12'@'%'",
+      "GRANT 'role_admin'@'%' TO 'prefix.rt_abcd12'@'%'",
     ]);
     await expect(provisionRuntimeUser(input, fixture.connection, (username) => runtimeConnection(username))).rejects.toThrow("role以外または未知形式の権限");
     expect(fixture.statements.some((sql) => sql.startsWith("CREATE USER"))).toBe(false);
@@ -122,7 +129,7 @@ describe("provisionRuntimeUser", () => {
 
   test("reuses owned accounts with TiDB unquoted SHOW GRANTS identifiers", async () => {
     const fixture = connection(["landmarks", "regions"], [input.runtimeRole, input.runtimeUsername], (sql) =>
-      sql.includes(input.runtimeRole)
+      sql.startsWith("SHOW GRANTS FOR 'topolia_rw_abcd12'")
         ? [
             "GRANT Delete,Insert,Select,Update ON shared.landmarks TO 'topolia_rw_abcd12'@'%'",
             "GRANT Delete,Insert,Select,Update ON shared.regions TO 'topolia_rw_abcd12'@'%'",
@@ -130,6 +137,7 @@ describe("provisionRuntimeUser", () => {
         : [
             "GRANT USAGE ON *.* TO 'prefix.rt_abcd12'@'%'",
             "GRANT 'topolia_rw_abcd12'@'%' TO 'prefix.rt_abcd12'@'%'",
+            "GRANT Delete,Insert,Select,Update ON shared.landmarks TO 'prefix.rt_abcd12'@'%'",
           ]);
     const result = await provisionRuntimeUser(input, fixture.connection, (username) => runtimeConnection(username));
     expect(result.checkedTables).toBe(2);
@@ -139,12 +147,10 @@ describe("provisionRuntimeUser", () => {
     expect(fixture.statements.some((sql) => sql.startsWith("CREATE USER"))).toBe(false);
   });
 
-  test("refuses to grant privileges when the existing account password does not authenticate", async () => {
+  test("refuses to grant privileges when the existing account password hash differs", async () => {
     const fixture = connection(["landmarks", "regions"], [input.runtimeUsername]);
-    const wrongIdentity = (username: string): MigrationConnection => ({
-      execute: async () => [{ principal: `other.${username}@%` }],
-    });
-    await expect(provisionRuntimeUser(input, fixture.connection, wrongIdentity)).rejects.toThrow("identityが一致しません");
+    const wrongPassword = { ...input, runtimePassword: "different-runtime-secret" };
+    await expect(provisionRuntimeUser(wrongPassword, fixture.connection)).rejects.toThrow("認証情報が一致しません");
     expect(fixture.statements.some((sql) => sql.startsWith("CREATE ROLE"))).toBe(false);
     expect(fixture.statements.some((sql) => sql.startsWith("GRANT "))).toBe(false);
   });

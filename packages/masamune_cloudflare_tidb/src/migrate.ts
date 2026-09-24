@@ -1,6 +1,6 @@
 /** katana migrateのNode実行入口。設定・資格情報は標準入力だけで受け取る。 */
 import { readFile, readdir, mkdir, writeFile, chmod, rename, unlink, rmdir } from "node:fs/promises";
-import { randomBytes } from "node:crypto";
+import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { resolve, relative, isAbsolute, join } from "node:path";
 import { connect } from "@tidbcloud/serverless";
 import { applyMigration, identifier, inspectSchema, MigrationConnection, MigrationPlan, MigrationSchema, MigrationTarget,
@@ -205,7 +205,7 @@ export async function provisionRuntimeUser(
   }
   const owner = stored.owner;
   const expectedPrivileges = ["delete", "insert", "select", "update"];
-  const hasOnlyExpectedTableGrants = (grant: string): boolean => {
+  const hasOnlyExpectedTableGrants = (grant: string, principal: string): boolean => {
     const match = /^grant\s+(.+?)\s+on\s+(.+?)\s+to\s+(.+)$/i.exec(grant.replace(/\s+/g, " ").trim());
     if (!match) return false;
     const privileges = match[1].split(",").map((item) => item.trim().toLowerCase()).sort();
@@ -217,7 +217,7 @@ export async function provisionRuntimeUser(
     const objectTable = unquote(objectMatch[2]).toLowerCase();
     return tables.some((item) => {
       return item.database.toLowerCase() === objectDatabase && item.table.toLowerCase() === objectTable &&
-        match[3].trim().toLowerCase() === `${quoteUser(runtimeRole)}@'%'`.toLowerCase();
+        match[3].trim().toLowerCase() === `${quoteUser(principal)}@'%'`.toLowerCase();
     });
   };
   const verifyRuntimeIdentity = async () => {
@@ -232,17 +232,25 @@ export async function provisionRuntimeUser(
     if (actual !== runtimeUsername) throw new Error("保存済みruntime credentialの接続先identityが一致しません。");
   };
   const existingRole = await db.execute("SELECT User FROM mysql.user WHERE User = ?", [runtimeRole]);
-  const existingUser = await db.execute("SELECT User FROM mysql.user WHERE User = ?", [runtimeUsername]);
+  const existingUser = await db.execute("SELECT User, authentication_string FROM mysql.user WHERE User = ?", [runtimeUsername]);
   if ((existingRole.length || existingUser.length) && owner !== "katana-cloudflare-tidb-v1") {
     throw new Error("TiDB上に同名の未管理runtime user/roleがあります。既存アカウントを確認してから再実行してください。");
   }
   if (existingUser.length) {
-    await verifyRuntimeIdentity();
+    // HTTPS SQL can reject a USAGE-only principal before grants are installed.
+    // Check its stored MySQL-native password hash before giving it privileges.
+    const storedHash = String(existingUser[0].authentication_string ?? "");
+    const firstHash = createHash("sha1").update(runtimePassword).digest();
+    const expectedHash = `*${createHash("sha1").update(firstHash).digest("hex").toUpperCase()}`;
+    if (!storedHash || storedHash.length !== expectedHash.length ||
+        !timingSafeEqual(Buffer.from(storedHash.toUpperCase()), Buffer.from(expectedHash))) {
+      throw new Error("保存済みruntime credentialとTiDB userの認証情報が一致しません。");
+    }
     const rows = await db.execute(`SHOW GRANTS FOR ${quoteUser(runtimeUsername)}@'%'`);
     const grants = rows.map((row) => String(Object.values(row)[0] ?? "").replace(/\s+/g, " ").trim().toLowerCase());
     const roleGrant = `grant ${quoteUser(runtimeRole)}@'%' to ${quoteUser(runtimeUsername)}@'%'`.toLowerCase();
     const usageGrant = `grant usage on *.* to ${quoteUser(runtimeUsername)}@'%'`.toLowerCase();
-    const allowed = (grant: string) => grant === usageGrant || grant === roleGrant;
+    const allowed = (grant: string) => grant === usageGrant || grant === roleGrant || hasOnlyExpectedTableGrants(grant, runtimeUsername);
     if (grants.some((grant) => !allowed(grant))) {
       throw new Error("TiDB runtime userにrole以外または未知形式の権限があります。権限を確認してから再実行してください。");
     }
@@ -250,13 +258,12 @@ export async function provisionRuntimeUser(
   // Create/authenticate the user before adding any privileges. A name collision with
   // different credentials therefore fails before receiving the managed role.
   if (!existingUser.length) {
-    await db.execute(`CREATE USER IF NOT EXISTS ${quoteUser(runtimeUsername)} IDENTIFIED BY ${quotePassword(runtimePassword)}`);
-    await verifyRuntimeIdentity();
+    await db.execute(`CREATE USER ${quoteUser(runtimeUsername)} IDENTIFIED BY ${quotePassword(runtimePassword)}`);
   }
   if (existingRole.length) {
     const rows = await db.execute(`SHOW GRANTS FOR ${quoteUser(runtimeRole)}@'%'`);
     const actual = rows.map((row) => String(Object.values(row)[0] ?? ""));
-    if (actual.some((grant) => !hasOnlyExpectedTableGrants(grant))) {
+    if (actual.some((grant) => !hasOnlyExpectedTableGrants(grant, runtimeRole))) {
       throw new Error("TiDB runtime roleにmanifest外または未知形式の権限があります。権限を確認してから再実行してください。");
     }
     const recipients = await db.execute("SELECT TO_USER FROM mysql.role_edges WHERE FROM_USER = ?", [runtimeRole]);
@@ -269,9 +276,12 @@ export async function provisionRuntimeUser(
     await db.execute(
       `GRANT SELECT, INSERT, UPDATE, DELETE ON ${quoteIdentifier(item.database)}.${quoteIdentifier(item.table)} TO ${quoteUser(runtimeRole)}`,
     );
+    // TiDB Serverless HTTPS SQL accepts table privileges but rejects role assignment (DCL).
+    await db.execute(
+      `GRANT SELECT, INSERT, UPDATE, DELETE ON ${quoteIdentifier(item.database)}.${quoteIdentifier(item.table)} TO ${quoteUser(runtimeUsername)}`,
+    );
   }
-  await db.execute(`GRANT ${quoteUser(runtimeRole)} TO ${quoteUser(runtimeUsername)}`);
-  await db.execute(`SET DEFAULT ROLE ${quoteUser(runtimeRole)} TO ${quoteUser(runtimeUsername)}`);
+  await verifyRuntimeIdentity();
   return { checkedTables: tables.length, role: runtimeRole };
   } finally {
     await unlink(join(lock, "owner")).catch(() => undefined);
