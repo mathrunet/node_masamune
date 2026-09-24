@@ -1,3 +1,7 @@
+## 3.5.1
+
+- Added the Express type referenced by the published Response type to the distribution dependencies, and fixed strict type validation for independent consumers.
+
 ## 3.4.0 (2026-09-21)
 
 - Reference shared Worker types from the public entry point to fix unresolved types under strict consumer type checking.
