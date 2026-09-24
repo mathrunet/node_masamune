@@ -1,3 +1,9 @@
+## 3.5.3 (2026-09-24)
+
+### dependencies
+
+* Update dependencies: @mathrunet/masamune.
+
 ## 3.5.1
 
 - Added the Express type referenced by the published Response type to the distribution dependencies, and fixed strict type validation for independent consumers.

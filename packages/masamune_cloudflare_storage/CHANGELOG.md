@@ -1,3 +1,14 @@
+## 3.1.5 (2026-09-24)
+
+
+### fix
+
+* **masamune_cloudflare_storage:** remove conflicting worker declarations ([c77e77c](https://github.com/mathrunet/node_masamune/commit/c77e77ca3562bf1cc49a05a9e841cf7f7b70636d))
+
+### dependencies
+
+* Update dependencies: @mathrunet/masamune, @mathrunet/masamune_cloudflare.
+
 ## 3.1.3 (2026-07-27)
 
 

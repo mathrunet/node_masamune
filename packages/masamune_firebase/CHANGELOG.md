@@ -1,5 +1,25 @@
-## 3.1.3 (2026-06-29)
+## 3.2.0 (2026-09-24)
 
+
+### feat
+
+* release version 3.7.0 with enhanced database features and vector support ([d1b49eb](https://github.com/mathrunet/node_masamune/commit/d1b49eb511e5943d2a81b0f33cb59a3535d37408))
+
+
+### chore
+
+* update @mathrunet/masamune dependency version to 3.10.4 across multiple packages ([f62e636](https://github.com/mathrunet/node_masamune/commit/f62e6367ddf48e513c523b8970b4fdc5b4e31152))
+
+
+### docs
+
+* update README links to include masamune_functions_cloudflare for server-side function execution across multiple packages ([d3f8c32](https://github.com/mathrunet/node_masamune/commit/d3f8c322180fbdb8d8d65d2f93942cf82efcefff))
+
+### dependencies
+
+* Update dependencies: @mathrunet/masamune.
+
+### Previously prepared changes
 
 ### chore
 
@@ -356,5 +376,4 @@
 * Extend the timeout for the short video generation test. ([9e46c82](https://github.com/mathrunet/node_masamune/commit/9e46c828c791d933b32344842e63830782aa0fa5))
 * Fixes to pass tests. ([a656689](https://github.com/mathrunet/node_masamune/commit/a6566898613d76cd1027a319cda4f605044db151))
 * Test code implementation. ([7f40834](https://github.com/mathrunet/node_masamune/commit/7f40834936b13a1b54b792b1c47f7c1ae2319502))
-
 

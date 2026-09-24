@@ -1,5 +1,16 @@
 ## 3.7.5 (2026-09-24)
 
+
+### fix
+
+* **masamune_cloudflare_tidb:** grant runtime user directly and accept USAGE on managed role ([8ee4b9a](https://github.com/mathrunet/node_masamune/commit/8ee4b9a45b6d0771b89f2213ae932696dfaaaa07))
+
+### dependencies
+
+* Update dependencies: @mathrunet/masamune, @mathrunet/masamune_cloudflare.
+
+### Previously prepared changes
+
 - **FIX**: Accept TiDB's standard `USAGE` grant when reusing an owned runtime role, while still rejecting unexpected privileges.
 - **FIX**: Execute batch DELETE by frozen row IDs in chunks of 100 so concurrent inserts cannot expand the deletion scope.
 
