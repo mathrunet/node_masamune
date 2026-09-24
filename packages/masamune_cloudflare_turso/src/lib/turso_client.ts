@@ -1,6 +1,6 @@
 import { TursoDatabaseConnection, TursoGroupContext, TursoWorkersOptions } from "./types";
 import { HttpError, validateLogicalName } from "./request";
-import { resolvePhysicalDatabaseName } from "./database_name";
+import { databaseBindingCacheKey, resolvePhysicalDatabaseName } from "./database_name";
 import { resolveTursoCreationGroup, validateTursoDatabaseGroup, validateTursoGroupRequest } from "./env";
 
 export type TursoDatabaseEndpoint = Pick<TursoDatabaseConnection, "url" | "created" | "group" | "primaryRegion">;
@@ -315,6 +315,7 @@ function databaseCacheKey(
   return JSON.stringify([
     options.organization ?? "", options.platformApiToken ?? "",
     options.databasePrefix ?? "", database,
+    databaseBindingCacheKey(database, options),
     normalizeServerTokenTtl(options.serverTokenTtlSeconds),
   ]);
 }

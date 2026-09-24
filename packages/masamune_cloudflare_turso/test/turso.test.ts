@@ -6,6 +6,7 @@ import { resolvePhysicalDatabaseName } from "../src/lib/database_name";
 import {
   applyRequestDatabasePrefix,
   normalizeDatabasePrefix,
+  resolveWorkerDatabasePrefix,
 } from "../src/lib/database_prefix";
 import { createTursoRulesEngine } from "../src/lib/rules";
 import { resolveTursoCreationGroup, resolveTursoWorkersOptionsFromEnv } from "../src/lib/env";
@@ -213,6 +214,81 @@ describe("Turso Cloudflare workers", () => {
 
   afterAll(() => {
     process.env.TURSO_GROUP = originalTursoGroup;
+  });
+
+  test("旧DartのprefixなしCRUDとtoken要求をdev対応表のDBだけへ送る", async () => {
+    const options = dynamicOptions({
+      group: "binding-dev",
+      autoCreateDatabase: true,
+      autoCreateTable: false,
+      autoMigrateAddColumns: false,
+      databaseBindings: {
+        dev: { main: { database: "binding-dev-main", group: "binding-dev" } },
+      },
+    });
+    const requests: string[] = [];
+    const fetchMock = jest.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+      const url = String(input);
+      requests.push(url);
+      if (url.includes("/databases/binding-dev-main/auth/tokens")) {
+        return new Response(JSON.stringify({ jwt: "test-database-token" }));
+      }
+      if (url.endsWith("/databases/binding-dev-main")) {
+        return new Response(JSON.stringify({ database: {
+          DbId: tursoDatabaseId, Hostname: "binding-dev-main.turso.io", group: "binding-dev",
+        } }));
+      }
+      throw new Error("許可表外のPlatform API呼び出し");
+    });
+    const app = deploy([Functions.turso(options), Functions.tursoToken(options)]);
+    const response = await app.request("http://localhost/turso/database/main/users", {}, { FLAVOR: "dev" });
+    expect(response.status).toBe(200);
+    const token = await app.request("http://localhost/turso/token", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ database: "main", ttlSeconds: 60 }),
+    }, { FLAVOR: "dev" });
+    expect(token.status).toBe(200);
+    expect(requests.length).toBeGreaterThan(1);
+    expect(requests.every((url) => url.includes("/databases/binding-dev-main"))).toBe(true);
+    fetchMock.mockClear();
+    for (const [database, flavor, prefix] of [
+      ["main", "prod", ""], ["unknown", "dev", ""], ["main", "dev", "?prefix=prod"],
+    ]) {
+      const denied = await app.request(`http://localhost/turso/database/${database}/users${prefix}`, {}, { FLAVOR: flavor });
+      expect([400, 403]).toContain(denied.status);
+    }
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  test("対応表のDBが存在しなくても自動作成しない", async () => {
+    const options = resolveWorkerDatabasePrefix(dynamicOptions({
+      group: "primary-group", autoCreateDatabase: true,
+      databaseBindings: { dev: { main: { database: "binding-missing-main", group: "primary-group" } } },
+    }), undefined, "dev", "main");
+    const fetchMock = jest.spyOn(globalThis, "fetch").mockResolvedValue(new Response("", { status: 404 }));
+    await expect(resolveDatabaseConnection("main", options)).rejects.toThrow("Database was not found");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock.mock.calls[0][1]?.method).toBeUndefined();
+  });
+
+  test("対応表の変更はキャッシュを共有せず、誤groupはtoken発行前に拒否する", async () => {
+    const bound = (name: string) => resolveWorkerDatabasePrefix(dynamicOptions({
+      databaseBindings: { dev: { main: { database: name, group: "primary-group" } } },
+    }), undefined, "dev", "main");
+    const first = bound("binding-cache-first");
+    const next = bound("binding-cache-next");
+    cacheDatabaseConnection("main", first, {
+      url: "first.turso.io", authToken: "test-token", group: "primary-group",
+      authTokenExpiresAt: Math.floor(Date.now() / 1000) + 3600,
+    });
+    const fetchMock = jest.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify({ database: {
+      DbId: tursoDatabaseId, Hostname: "next.turso.io", group: "wrong-group",
+    } })));
+    await expect(resolveDatabaseConnection("main", first)).resolves.toMatchObject({ url: "first.turso.io" });
+    expect(fetchMock).not.toHaveBeenCalled();
+    await expect(resolveDatabaseConnection("main", next)).rejects.toThrow("Database group is not allowed");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(String(fetchMock.mock.calls[0][0])).toContain("/databases/binding-cache-next");
   });
 
   test("exposes WorkersData using the existing Functions pattern", () => {

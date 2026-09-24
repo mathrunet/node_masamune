@@ -1,5 +1,6 @@
 import { HttpError } from "./http_error";
 import { TursoWorkersOptions } from "./types";
+import { resolveWorkerDatabaseBinding } from "./database_name";
 
 export function normalizeDatabasePrefix(
   value: unknown,
@@ -37,7 +38,11 @@ export function resolveWorkerDatabasePrefix(
   options: TursoWorkersOptions,
   requestPrefix: string | undefined,
   flavor: unknown,
+  database?: string,
 ): TursoWorkersOptions {
+  if (options.databaseBindings !== undefined) {
+    return resolveWorkerDatabaseBinding(options, requestPrefix, flavor, database);
+  }
   const resolvedFlavor = flavor === undefined ? "prod" : flavor;
   if (resolvedFlavor !== "dev" && resolvedFlavor !== "prod") {
     throw new HttpError(500, "Worker FLAVOR must be dev or prod.");

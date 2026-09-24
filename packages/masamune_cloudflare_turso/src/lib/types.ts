@@ -56,6 +56,11 @@ export interface TursoGroupResolverContext extends TursoGroupContext {
 }
 
 export interface TursoWorkersOptions extends WorkersOptions {
+  /** 既存DB専用の環境別許可表。設定時は未登録DB・クライアントprefix・自動DB作成を拒否します。 */
+  databaseBindings?: Partial<Record<"dev" | "prod", Readonly<Record<string, {
+    database: string;
+    group: string;
+  }>>>> | undefined;
   databasePrefix?: string | undefined;
   organization?: string | undefined;
   group?: string | undefined;

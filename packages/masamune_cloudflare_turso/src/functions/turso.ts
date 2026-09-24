@@ -76,6 +76,7 @@ async function handleCrud(
       resolvedOptions,
       crudRequest.prefix,
       (context.env as { FLAVOR?: unknown } | undefined)?.FLAVOR,
+      crudRequest.database,
     );
     const groupContext = tursoGroupContext(context, request.group);
     validateTursoGroupRequest(databaseOptions, groupContext);
@@ -171,6 +172,7 @@ async function handleCrud(
           resolvedOptions,
           request.prefix,
           (context.env as { FLAVOR?: unknown } | undefined)?.FLAVOR,
+          request.database,
         ),
       );
       logServerError(error, 503, {

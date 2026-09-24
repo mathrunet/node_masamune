@@ -101,6 +101,47 @@ is not used.
 `cloudflare.turso.rotate_legacy_tokens: true` only when you intentionally want
 to invalidate all previously issued tokens in the Turso group.
 
+# 既存DBへの環境別対応表
+
+`databaseBindings` は、モデルの論理DB名と既存TursoDBの名前が異なる場合に、
+Workerの `FLAVOR` ごとに接続先を固定します。prefixを送らない旧Dartクライアントでも、
+モデルやrulesの論理パスを変更せず利用できます。
+
+```typescript
+const existingDatabase: turso.TursoWorkersOptions = {
+  databaseBindings: {
+    dev: {
+      main: { database: "example-dev-main", group: "example-dev" },
+    },
+  },
+  autoCreateDatabase: false,
+  autoCreateTable: false,
+  autoMigrateAddColumns: false,
+};
+
+// rulesはdeploy側、または各Functionのoptionsへ従来どおり指定します。
+export default m.deploy([
+  turso.Functions.turso(existingDatabase),
+  turso.Functions.tursoToken(existingDatabase),
+], { rules });
+```
+
+上記は `FLAVOR=dev`、論理DB `main`、prefixなしの要求だけを許可します。
+`FLAVOR` の省略、prodや未登録DBへの要求、クライアントprefixの指定は拒否されます。
+`databasePrefix` との併用や、別の論理名・環境への同一物理DBの重複登録も拒否します。
+対応表はクライアント入力から生成せず、サーバー管理の設定に限定してください。
+
+対応表を使う接続は `autoCreateDatabase: true` が上流に残っていてもDBを作成しません。
+Platform APIから取得したDBのgroupが対応表と一致しない場合も拒否します。
+接続キャッシュは環境・物理DB・groupで分離し、rulesとschemaは元の論理DB名で評価します。
+この設定はWorker用です。環境を確定していない `TursoDatabaseAdapter` への直接指定は拒否します。
+
+Workerへ個人のCLIログイントークンを転送せず、対象organization/groupに限定した
+Platform API tokenを設定してください。既存DBの参照とSQL token発行には
+`read` と `db:mint-token` を指定します。新しいtokenの作成は権限管理者の運用で行い、
+token値はログやソースに保存しません。対応表はSQLのread-only権限を付与する機能ではないため、
+読み取り制限は既存のrulesで指定します。
+
 # Multiple groups and automatic region selection
 
 Register existing Turso groups for each region to let the Worker choose where to create a new database without requiring Flutter to specify a group. This does not create or move groups. The Platform API token must allow retrieving and creating databases and issuing database-scoped tokens for every configured group.

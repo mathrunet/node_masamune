@@ -45,6 +45,7 @@ async function handleToken(
       resolvedOptions,
       request.prefix,
       (context.env as { FLAVOR?: unknown } | undefined)?.FLAVOR,
+      request.database,
     );
     const groupContext = tursoGroupContext(context, request.group);
     validateTursoGroupRequest(databaseOptions, groupContext);
