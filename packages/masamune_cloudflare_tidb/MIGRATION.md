@@ -6,7 +6,7 @@ This change does not automatically update existing Workers or production databas
 
 1. Replace `@TidbDataService` with `@TidbSchema` and `dataServiceDirPath` with `schemaDirPath`, which defaults to `tidb/schema`. Use `TidbSchemaColumn`/`TidbSchemaTable` for server-owned columns and tables. `indexes` maps non-UNIQUE index names to column lists. Custom endpoints and GET cache settings have been removed. Implement any required logic in authenticated Worker functions.
 2. Run `katana code generate`. build_runner manages per-input `.tidb_schema` files, and the CLI merges them into `tidb/schema/schema.json` after success. `katana code watch` also merges after successful builds. If running build_runner directly, finish generation through the CLI. The merged output includes unchanged models and database prefixes and excludes deleted inputs.
-3. Have an administrator create dev/prod databases and separate runtime DML permissions from migration DDL permissions. Verify that the target connection method is available. The CLI does not automatically create or change public connectivity, SQL users, or databases.
+3. Have an administrator create dev/prod databases and verify public connectivity. `katana apply --flavor <dev|prod>` can create a dedicated migration SQL user through the TiDB Cloud SQL Users management API when no migration SQL credentials exist. It never creates a database or changes public connectivity. Runtime DML credentials remain separate.
 
 ```yaml
 # katana.yaml
@@ -16,12 +16,17 @@ cloudflare:
     cluster_id: {dev: "target-cluster", prod: "target-cluster"}
     host: {dev: "connection-host", prod: "connection-host"}
     database: {dev: dev_main, prod: main}
+    # Select explicitly when the management API key cannot manage SQL users.
+    migration_auth: {dev: ticloud_oauth, prod: api_key}
+    migration_auth_profile: {dev: default}
     schema: tidb/schema/schema.json
     migrations: tidb/migrations
     prefixes: [dev]
 ```
 
-Set `username`/`password` and `migration_username`/`migration_password` under `cloudflare.tidb` in `katana_secrets.yaml`. Each value can use the dev/prod format. Migration credentials are passed only to the Node administrative process through standard input, not to the Worker. Migrations record the SQL username as part of the connection identity and compare it with the actual CURRENT_USER. Passwords can be rotated, but changes to the SQL username are not implicitly applied to the same history.
+The existing `katana_secrets.yaml` `cloudflare.tidb.migration_username` / `migration_password` values take precedence on first use. After an SQL identity check, Katana stores them under `cloudflare.tidb.migration_users.<flavor>` in the ignored, mode-0600 `cloudflare/tidb.yaml`. If no SQL credentials exist, the default `api_key` mode uses `TIDBCLOUD_PUBLIC_KEY` / `TIDBCLOUD_PRIVATE_KEY` from Samurai password injection (or existing `cloudflare.tidb.public_key` / `private_key`) to create a `role_admin` SQL user for the selected cluster. The API keys authenticate only the management API; they are not SQL credentials. When a management key cannot see or create SQL users, set `migration_auth` explicitly to `ticloud_oauth` for that flavor. On macOS, Katana reads the existing `ticloud` OAuth profile from Keychain and sends its bearer token only in HTTPS headers. Other platforms must use an authorized API key or existing SQL credentials. Katana never silently switches authentication after an API failure. The generated SQL password is written as `pending` to `cloudflare/tidb.yaml` before the create-only API call, so retries reuse it without rotating or overwriting an unknown same-name user. Successful SQL `CURRENT_USER()` and administrative grant checks mark it `active`. A saved pending record is reconciled on retry. Management credentials and the migration password are never passed on command-line arguments or to Worker secrets.
+
+`katana migrate` reads the same `cloudflare/tidb.yaml` entry and can also import legacy migration SQL credentials. It checks the actual SQL identity. Migration credentials are passed to the local Node administrative process through standard input only. Migrations record the SQL username as part of the connection identity and compare it with `CURRENT_USER()`. Dev and prod are selected explicitly with `--flavor`; preparing dev does not create a prod user. SQL Users management requires the appropriate TiDB Cloud organization/project ownership, while SQL DDL and user/role grants require separate database privileges. If either check fails, inspect the non-secret HTTP status or SQL failure and resolve that permission before retrying. A change to the SQL username is not implicitly applied to existing migration history.
 
 ## Applying Database Changes and Switching Over
 

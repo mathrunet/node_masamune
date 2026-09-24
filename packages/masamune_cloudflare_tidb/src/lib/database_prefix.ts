@@ -21,9 +21,9 @@ export function normalizeDatabasePrefix(
 }
 
 export function applyRequestDatabasePrefix(
-  options: Pick<TidbWorkersOptions, "databasePrefix">,
+  options: Pick<TidbWorkersOptions, "databasePrefix" | "clusterIsolated">,
   prefix: string | undefined,
-): Pick<TidbWorkersOptions, "databasePrefix"> {
+): Pick<TidbWorkersOptions, "databasePrefix" | "clusterIsolated"> {
   if (!prefix) {
     return options;
   }
@@ -34,15 +34,15 @@ export function applyRequestDatabasePrefix(
 }
 
 export function resolveWorkerDatabasePrefix(
-  options: Pick<TidbWorkersOptions, "databasePrefix">,
+  options: Pick<TidbWorkersOptions, "databasePrefix" | "clusterIsolated">,
   requestPrefix: string | undefined,
   flavor: unknown,
-): Pick<TidbWorkersOptions, "databasePrefix"> {
+): Pick<TidbWorkersOptions, "databasePrefix" | "clusterIsolated"> {
   const resolvedFlavor = flavor === undefined ? "prod" : flavor;
   if (resolvedFlavor !== "dev" && resolvedFlavor !== "prod") {
     throw new HttpError(500, "Worker FLAVOR must be dev or prod.");
   }
-  const boundary = resolvedFlavor === "dev" ? "dev_" : "";
+  const boundary = options.clusterIsolated ? "" : resolvedFlavor === "dev" ? "dev_" : "";
   const serverPrefix = options.databasePrefix;
   if (serverPrefix !== undefined && serverPrefix !== "") {
     if (boundary === "") {

@@ -1,5 +1,11 @@
 import { resolveWorkerDatabasePrefix } from "../src/lib/database_prefix";
 
+test("separate clusters keep the logical database name for both flavors", () => {
+  expect(resolveWorkerDatabasePrefix({ clusterIsolated: true }, undefined, "dev").databasePrefix).toBeUndefined();
+  expect(resolveWorkerDatabasePrefix({ clusterIsolated: true }, undefined, "prod").databasePrefix).toBeUndefined();
+  expect(resolveWorkerDatabasePrefix({ clusterIsolated: true }, "bench_", "dev").databasePrefix).toBe("bench_");
+});
+
 describe("TiDB Worker environment prefix", () => {
   test("prod without request prefix keeps databasePrefix undefined", () => {
     expect(resolveWorkerDatabasePrefix({}, undefined, "prod").databasePrefix)

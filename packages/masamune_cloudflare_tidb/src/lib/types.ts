@@ -6,8 +6,8 @@ import {
   RulesOperationAlias,
   RulesOperationKey,
   WorkersAuthContext,
-  WorkersOptions,
 } from "@mathrunet/masamune_cloudflare";
+import type { WorkersOptions } from "@mathrunet/masamune_cloudflare/dist/worker";
 
 export type TidbCrudMethod = "GET" | "POST" | "PUT" | "DELETE";
 
@@ -24,7 +24,7 @@ export type {
 export interface TidbWorkersOptions extends WorkersOptions {
   host?: string; username?: string; password?: string;
   schemaManifest: import("./direct_client").SchemaManifest;
-  databasePrefix?: string; serverAccessToken?: string; serverAccessHeader?: string;
+  databasePrefix?: string; clusterIsolated?: boolean; serverAccessToken?: string; serverAccessHeader?: string;
   maxScanRows?: number; timeoutMs?: number;
 }
 

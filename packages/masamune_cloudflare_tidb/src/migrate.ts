@@ -1,8 +1,9 @@
 /** katana migrateのNode実行入口。設定・資格情報は標準入力だけで受け取る。 */
-import { readFile, readdir, mkdir, writeFile } from "node:fs/promises";
-import { resolve, relative, isAbsolute } from "node:path";
+import { readFile, readdir, mkdir, writeFile, chmod, rename, unlink, rmdir } from "node:fs/promises";
+import { randomBytes } from "node:crypto";
+import { resolve, relative, isAbsolute, join } from "node:path";
 import { connect } from "@tidbcloud/serverless";
-import { applyMigration, inspectSchema, MigrationConnection, MigrationPlan, MigrationSchema, MigrationTarget,
+import { applyMigration, identifier, inspectSchema, MigrationConnection, MigrationPlan, MigrationSchema, MigrationTarget,
   normalizeSchema, planMigration, stableJson } from "./lib/migration";
 
 export interface MigrateInput {
@@ -10,6 +11,20 @@ export interface MigrateInput {
   root: string; schemaPath: string; directory: string;
   target: MigrationTarget; version?: string; apply?: boolean;
   username?: string; password?: string;
+}
+
+export interface RuntimeUserProvisionInput {
+  root: string;
+  host: string;
+  database: string;
+  migrationUsername: string;
+  migrationPassword: string;
+  runtimeUsername: string;
+  runtimePassword: string;
+  runtimeRole: string;
+  tables: Array<{ database: string; table: string }>;
+  environment: "dev" | "prod";
+  credentialState: Record<string, unknown>;
 }
 function safePath(root: string, path: string): string {
   const file = resolve(root, path), delta = relative(resolve(root), file);
@@ -77,6 +92,208 @@ function createConnection(input: MigrateInput): MigrationConnection {
     try { return await connection.execute(sql, args) as Record<string, unknown>[]; }
     catch { throw new Error("TiDB管理queryに失敗しました。接続設定とDBの実行状態を確認してください。"); }
   } };
+}
+
+/** Creates/reconciles a least-privilege runtime user using the existing HTTPS SQL driver. */
+export async function provisionRuntimeUser(
+  input: RuntimeUserProvisionInput,
+  connection?: MigrationConnection,
+  runtimeConnection?: (username: string, password: string) => MigrationConnection,
+): Promise<{ checkedTables: number; role: string }> {
+  const hasRuntimeCredentials = Boolean(input.runtimeUsername && input.runtimePassword && input.runtimeRole);
+  const hasPartialRuntimeCredentials = Boolean(input.runtimeUsername || input.runtimePassword || input.runtimeRole) && !hasRuntimeCredentials;
+  if (!input.host || !input.database || !input.migrationUsername || !input.migrationPassword ||
+      hasPartialRuntimeCredentials || !input.tables.length || !["dev", "prod"].includes(input.environment)) {
+    throw new Error("TiDB runtime userの設定が不足しています。");
+  }
+  const db = connection ?? createConnection({
+    command: "status", root: input.root, schemaPath: "", directory: "", target: {
+      environment: "dev", cluster: "", host: input.host, database: input.database,
+      principal: input.migrationUsername,
+    }, username: input.migrationUsername, password: input.migrationPassword,
+  });
+  // Check the entire manifest set before changing users or grants. A partial schema must be migrated first.
+  const tables = [...new Map(input.tables.map((table) => [`${table.database}\0${table.table}`, table])).values()];
+  const missing: string[] = [];
+  for (const item of tables) {
+    if (!item.database || !item.table) throw new Error("TiDB schema manifestのtable識別子が不正です。");
+    identifier(item.database);
+    identifier(item.table);
+    const found = await db.execute(
+      "SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?",
+      [item.database, item.table],
+    );
+    if (!found.length) missing.push(`${item.database}.${item.table}`);
+  }
+  if (missing.length) {
+    throw new Error(`TiDB schema tableが未作成です。先にkatana migrate applyを実行してください: ${missing.join(", ")}`);
+  }
+  await mkdir(resolve(input.root, "cloudflare"), { recursive: true });
+  const lock = resolve(input.root, "cloudflare/.tidb-runtime-user.lock");
+  await mkdir(lock).catch(async (error: NodeJS.ErrnoException) => {
+    if (error.code === "EEXIST") {
+      let owner = "unknown";
+      try { owner = (await readFile(join(lock, "owner"), "utf8")).trim(); } catch { /* stale/incomplete lock */ }
+      throw new Error(`TiDB runtime user適用lockが残っています (pid=${owner})。実行中プロセスを確認し、停止済みの場合だけ cloudflare/.tidb-runtime-user.lock を手動削除して再実行してください。`);
+    }
+    throw error;
+  });
+  try {
+    await writeFile(join(lock, "owner"), `${process.pid}\n`, { flag: "wx", mode: 0o600 });
+  } catch (error) {
+    await rmdir(lock).catch(() => undefined);
+    throw error;
+  }
+  try {
+  // The CLI loaded YAML before starting this process. Compare the JSON format emitted by
+  // previous runs so concurrent changes cannot be overwritten from a stale snapshot.
+  try {
+    const diskText = await readFile(resolve(input.root, "cloudflare/tidb.yaml"), "utf8");
+    try {
+      const disk = JSON.parse(diskText) as Record<string, unknown>;
+      if (stableJson(disk) !== stableJson(input.credentialState)) {
+        throw new Error("cloudflare/tidb.yamlが読込後に更新されています。既存設定を保護するため再実行してください。");
+      }
+    } catch (error) {
+      if (!(error instanceof SyntaxError)) throw error;
+      // First-run/manual YAML remains governed by its parsed snapshot until it is saved as JSON.
+    }
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+  }
+  let runtimeUsername = input.runtimeUsername;
+  let runtimePassword = input.runtimePassword;
+  let runtimeRole = input.runtimeRole;
+  const quoteIdentifier = (value: string) => identifier(value);
+  const quoteUser = (value: string) => `'${value.replaceAll("\\", "\\\\").replaceAll("'", "''")}'`;
+  const quotePassword = (value: string) => `'${value.replaceAll("\\", "\\\\").replaceAll("'", "''")}'`;
+  const rootState = structuredClone(input.credentialState);
+  const cloudflare = (rootState.cloudflare && typeof rootState.cloudflare === "object"
+    ? rootState.cloudflare : {}) as Record<string, unknown>;
+  const tidb = (cloudflare.tidb && typeof cloudflare.tidb === "object"
+    ? cloudflare.tidb : {}) as Record<string, unknown>;
+  const users = (tidb.runtime_users && typeof tidb.runtime_users === "object"
+    ? tidb.runtime_users : {}) as Record<string, unknown>;
+  const stored = (users[input.environment] && typeof users[input.environment] === "object"
+    ? users[input.environment] : {}) as Record<string, unknown>;
+  if (!runtimeUsername || !runtimePassword || !runtimeRole) {
+    if (stored.username && stored.password && stored.role) {
+      runtimeUsername = String(stored.username);
+      runtimePassword = String(stored.password);
+      runtimeRole = String(stored.role);
+    } else {
+      const current = await db.execute("SELECT CURRENT_USER() AS principal");
+      const currentUser = String(current[0]?.principal ?? "").split("@")[0];
+      // The dedicated migration principal and runtime principal share the cluster prefix.
+      // Authenticate the configured identity before deriving any account names.
+      const prefix = currentUser === input.migrationUsername
+        ? /^([A-Za-z0-9_-]{1,24})\.[A-Za-z0-9_]+$/.exec(currentUser)?.[1] ?? ""
+        : "";
+      if (!prefix) {
+        throw new Error("TiDB SQL user prefixをmigration接続から判定できません。");
+      }
+      const suffix = randomBytes(4).toString("hex");
+      runtimeUsername = `${prefix}.rt_${suffix}`;
+      runtimeRole = `topolia_rw_${suffix}`;
+      runtimePassword = randomBytes(32).toString("base64url");
+      users[input.environment] = { username: runtimeUsername, password: runtimePassword, role: runtimeRole, owner: "katana-cloudflare-tidb-v1" };
+      tidb.runtime_users = users;
+      cloudflare.tidb = tidb;
+      rootState.cloudflare = cloudflare;
+      await saveRuntimeCredentialState(input.root, rootState);
+    }
+  }
+  const owner = stored.owner;
+  const expectedPrivileges = ["delete", "insert", "select", "update"];
+  const hasOnlyExpectedTableGrants = (grant: string): boolean => {
+    const match = /^grant\s+(.+?)\s+on\s+(.+?)\s+to\s+(.+)$/i.exec(grant.replace(/\s+/g, " ").trim());
+    if (!match) return false;
+    const privileges = match[1].split(",").map((item) => item.trim().toLowerCase()).sort();
+    if (stableJson(privileges) !== stableJson(expectedPrivileges)) return false;
+    const objectMatch = /^(`(?:``|[^`])+`|[A-Za-z0-9_$]+)\s*\.\s*(`(?:``|[^`])+`|[A-Za-z0-9_$]+)$/.exec(match[2].trim());
+    if (!objectMatch) return false;
+    const unquote = (part: string) => part.startsWith("`") ? part.slice(1, -1).replaceAll("``", "`") : part;
+    const objectDatabase = unquote(objectMatch[1]).toLowerCase();
+    const objectTable = unquote(objectMatch[2]).toLowerCase();
+    return tables.some((item) => {
+      return item.database.toLowerCase() === objectDatabase && item.table.toLowerCase() === objectTable &&
+        match[3].trim().toLowerCase() === `${quoteUser(runtimeRole)}@'%'`.toLowerCase();
+    });
+  };
+  const verifyRuntimeIdentity = async () => {
+    const runtimeDb = runtimeConnection?.(runtimeUsername, runtimePassword) ?? createConnection({
+      command: "status", root: input.root, schemaPath: "", directory: "", target: {
+        environment: input.environment, cluster: "", host: input.host, database: input.database,
+        principal: runtimeUsername,
+      }, username: runtimeUsername, password: runtimePassword,
+    });
+    const rows = await runtimeDb.execute("SELECT CURRENT_USER() AS principal");
+    const actual = String(rows[0]?.principal ?? "").split("@")[0];
+    if (actual !== runtimeUsername) throw new Error("保存済みruntime credentialの接続先identityが一致しません。");
+  };
+  const existingRole = await db.execute("SELECT User FROM mysql.user WHERE User = ?", [runtimeRole]);
+  const existingUser = await db.execute("SELECT User FROM mysql.user WHERE User = ?", [runtimeUsername]);
+  if ((existingRole.length || existingUser.length) && owner !== "katana-cloudflare-tidb-v1") {
+    throw new Error("TiDB上に同名の未管理runtime user/roleがあります。既存アカウントを確認してから再実行してください。");
+  }
+  if (existingUser.length) {
+    await verifyRuntimeIdentity();
+    const rows = await db.execute(`SHOW GRANTS FOR ${quoteUser(runtimeUsername)}@'%'`);
+    const grants = rows.map((row) => String(Object.values(row)[0] ?? "").replace(/\s+/g, " ").trim().toLowerCase());
+    const roleGrant = `grant ${quoteUser(runtimeRole)}@'%' to ${quoteUser(runtimeUsername)}@'%'`.toLowerCase();
+    const usageGrant = `grant usage on *.* to ${quoteUser(runtimeUsername)}@'%'`.toLowerCase();
+    const allowed = (grant: string) => grant === usageGrant || grant === roleGrant;
+    if (grants.some((grant) => !allowed(grant))) {
+      throw new Error("TiDB runtime userにrole以外または未知形式の権限があります。権限を確認してから再実行してください。");
+    }
+  }
+  // Create/authenticate the user before adding any privileges. A name collision with
+  // different credentials therefore fails before receiving the managed role.
+  if (!existingUser.length) {
+    await db.execute(`CREATE USER IF NOT EXISTS ${quoteUser(runtimeUsername)} IDENTIFIED BY ${quotePassword(runtimePassword)}`);
+    await verifyRuntimeIdentity();
+  }
+  if (existingRole.length) {
+    const rows = await db.execute(`SHOW GRANTS FOR ${quoteUser(runtimeRole)}@'%'`);
+    const actual = rows.map((row) => String(Object.values(row)[0] ?? ""));
+    if (actual.some((grant) => !hasOnlyExpectedTableGrants(grant))) {
+      throw new Error("TiDB runtime roleにmanifest外または未知形式の権限があります。権限を確認してから再実行してください。");
+    }
+    const recipients = await db.execute("SELECT TO_USER FROM mysql.role_edges WHERE FROM_USER = ?", [runtimeRole]);
+    if (recipients.some((row) => String(row.TO_USER ?? "") !== runtimeUsername)) {
+      throw new Error("TiDB runtime roleが別user/roleにも割り当てられています。権限を確認してから再実行してください。");
+    }
+  }
+  await db.execute(`CREATE ROLE IF NOT EXISTS ${quoteUser(runtimeRole)}`);
+  for (const item of tables) {
+    await db.execute(
+      `GRANT SELECT, INSERT, UPDATE, DELETE ON ${quoteIdentifier(item.database)}.${quoteIdentifier(item.table)} TO ${quoteUser(runtimeRole)}`,
+    );
+  }
+  await db.execute(`GRANT ${quoteUser(runtimeRole)} TO ${quoteUser(runtimeUsername)}`);
+  await db.execute(`SET DEFAULT ROLE ${quoteUser(runtimeRole)} TO ${quoteUser(runtimeUsername)}`);
+  return { checkedTables: tables.length, role: runtimeRole };
+  } finally {
+    await unlink(join(lock, "owner")).catch(() => undefined);
+    await rmdir(lock).catch(() => undefined);
+  }
+}
+
+async function saveRuntimeCredentialState(root: string, state: Record<string, unknown>): Promise<void> {
+  const directory = resolve(root, "cloudflare");
+  const file = resolve(directory, "tidb.yaml");
+  if (!file.startsWith(`${directory}/`)) throw new Error("TiDB credential pathが不正です。");
+  const temporary = join(directory, `.tidb.yaml.${randomBytes(8).toString("hex")}.tmp`);
+  await mkdir(directory, { recursive: true });
+  try {
+    await writeFile(temporary, `${JSON.stringify(state, null, 2)}\n`, { flag: "wx", mode: 0o600 });
+    await chmod(temporary, 0o600);
+    await rename(temporary, file);
+    await chmod(file, 0o600);
+  } catch (error) {
+    await unlink(temporary).catch(() => undefined);
+    throw error;
+  }
 }
 if (require.main === module) {
   (async () => {
