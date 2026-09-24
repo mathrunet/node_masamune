@@ -3,15 +3,17 @@ import "@mathrunet/masamune_firebase";
 import * as fs from "fs";
 import * as path from "path";
 
+const serviceAccountPath = path.resolve(__dirname, "development-for-mathrunet-e2c2c84b2167.json");
+const runIntegration = process.env.MASAMUNE_RUN_INTEGRATION_TESTS === "1" && fs.existsSync(serviceAccountPath);
+const integrationTest = runIntegration ? test : test.skip;
 const config = require("firebase-functions-test")({
     storageBucket: "development-for-mathrunet.appspot.com",
     projectId: "development-for-mathrunet",
-}, "test/development-for-mathrunet-e2c2c84b2167.json");
+}, runIntegration ? serviceAccountPath : undefined);
 
-// テスト用にサービスアカウント環境変数を設定
-const serviceAccountPath = path.resolve(__dirname, "development-for-mathrunet-e2c2c84b2167.json");
-const serviceAccountJson = fs.readFileSync(serviceAccountPath, "utf-8");
-process.env.GOOGLE_SERVICE_ACCOUNT = serviceAccountJson;
+if (runIntegration) {
+    process.env.GOOGLE_SERVICE_ACCOUNT = fs.readFileSync(serviceAccountPath, "utf-8");
+}
 
 describe("google_token Function", () => {
     let testUserId: string | null = null;
@@ -34,7 +36,7 @@ describe("google_token Function", () => {
         }
     });
 
-    test("正常系: トークン取得成功", async () => {
+    integrationTest("正常系: トークン取得成功", async () => {
         // テストユーザーを作成
         const testEmail = `test-token-${Date.now()}@example.com`;
         const userRecord = await admin.auth().createUser({
@@ -66,7 +68,7 @@ describe("google_token Function", () => {
         console.log(`Token obtained, expires at: ${new Date(res.expiresAt).toISOString()}`);
     }, 50000);
 
-    test("正常系: duration未指定でもデフォルト値で動作", async () => {
+    integrationTest("正常系: duration未指定でもデフォルト値で動作", async () => {
         // 前のテストで作成したユーザーを再利用
         if (!testUserId) {
             const testEmail = `test-token-default-${Date.now()}@example.com`;
@@ -112,7 +114,7 @@ describe("google_token Function", () => {
             const configNew = require("firebase-functions-test")({
                 storageBucket: "development-for-mathrunet.appspot.com",
                 projectId: "development-for-mathrunet",
-            }, "test/development-for-mathrunet-e2c2c84b2167.json");
+            }, runIntegration ? serviceAccountPath : undefined);
             const wrapped = configNew.wrap(func([], {}, {}));
 
             await expect(wrapped({

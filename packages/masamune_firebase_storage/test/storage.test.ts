@@ -3,15 +3,18 @@ import "@mathrunet/masamune_firebase";
 import * as fs from "fs";
 import * as path from "path";
 
+const serviceAccountPath = path.resolve(__dirname, "development-for-mathrunet-e2c2c84b2167.json");
+const runIntegration = process.env.MASAMUNE_RUN_INTEGRATION_TESTS === "1" && fs.existsSync(serviceAccountPath);
+const integrationTest = runIntegration ? test : test.skip;
 const config = require("firebase-functions-test")({
     storageBucket: "development-for-mathrunet.appspot.com",
     projectId: "development-for-mathrunet",
-}, "test/development-for-mathrunet-e2c2c84b2167.json");
+}, runIntegration ? serviceAccountPath : undefined);
 
-// テスト用にサービスアカウント環境変数を設定
-const serviceAccountPath = path.resolve(__dirname, "development-for-mathrunet-e2c2c84b2167.json");
-const serviceAccountJson = fs.readFileSync(serviceAccountPath, "utf-8");
-process.env.STORAGE_SERVICE_ACCOUNT = serviceAccountJson;
+const originalServiceAccount = process.env.STORAGE_SERVICE_ACCOUNT;
+process.env.STORAGE_SERVICE_ACCOUNT = runIntegration
+    ? fs.readFileSync(serviceAccountPath, "utf-8")
+    : JSON.stringify({ project_id: "offline-test", client_email: "offline@example.com", private_key: "offline-key" });
 
 describe("storage_firebase Function", () => {
     const testBucket = "development-for-mathrunet.appspot.com";
@@ -27,16 +30,19 @@ describe("storage_firebase Function", () => {
     });
 
     afterAll(async () => {
-        // クリーンアップ: テストファイルを削除
-        try {
-            const bucket = admin.storage().bucket(testBucket);
-            await bucket.file(testFilePath).delete();
-        } catch (e) {
-            // 既に削除済みの場合は無視
+        if (runIntegration) {
+            try {
+                const bucket = admin.storage().bucket(testBucket);
+                await bucket.file(testFilePath).delete();
+            } catch (e) {
+                // 既に削除済みの場合は無視
+            }
         }
+        if (originalServiceAccount === undefined) delete process.env.STORAGE_SERVICE_ACCOUNT;
+        else process.env.STORAGE_SERVICE_ACCOUNT = originalServiceAccount;
     });
 
-    test("PUT - ファイルアップロード成功", async () => {
+    integrationTest("PUT - ファイルアップロード成功", async () => {
         const func = require("../src/functions/storage_firebase");
         const wrapped = config.wrap(func([], {}, {}));
         const res = await wrapped({
@@ -58,7 +64,7 @@ describe("storage_firebase Function", () => {
         expect(res.meta.publicUri).toBeDefined();
     }, 50000);
 
-    test("GET - ファイル取得成功", async () => {
+    integrationTest("GET - ファイル取得成功", async () => {
         const func = require("../src/functions/storage_firebase");
         const wrapped = config.wrap(func([], {}, {}));
         const res = await wrapped({
@@ -80,7 +86,7 @@ describe("storage_firebase Function", () => {
         expect(decoded).toBe(testContent);
     }, 50000);
 
-    test("DELETE - ファイル削除成功", async () => {
+    integrationTest("DELETE - ファイル削除成功", async () => {
         const func = require("../src/functions/storage_firebase");
         const wrapped = config.wrap(func([], {}, {}));
         const res = await wrapped({
@@ -95,7 +101,7 @@ describe("storage_firebase Function", () => {
         expect(res.message).toBe("File deleted successfully");
     }, 50000);
 
-    test("GET - 存在しないファイル (404)", async () => {
+    integrationTest("GET - 存在しないファイル (404)", async () => {
         const func = require("../src/functions/storage_firebase");
         const wrapped = config.wrap(func([], {}, {}));
         const res = await wrapped({
@@ -111,7 +117,7 @@ describe("storage_firebase Function", () => {
         expect(res.error).toBe("File not found");
     }, 50000);
 
-    test("DELETE - 存在しないファイル (404)", async () => {
+    integrationTest("DELETE - 存在しないファイル (404)", async () => {
         const func = require("../src/functions/storage_firebase");
         const wrapped = config.wrap(func([], {}, {}));
         const res = await wrapped({

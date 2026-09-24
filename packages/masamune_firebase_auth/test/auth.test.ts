@@ -1,10 +1,16 @@
 import * as admin from "firebase-admin";
 import "@mathrunet/masamune_firebase";
+import * as fs from "fs";
+import * as path from "path";
+
+const credentialsPath = path.resolve(__dirname, "development-for-mathrunet-e2c2c84b2167.json");
+const runIntegration = process.env.MASAMUNE_RUN_INTEGRATION_TESTS === "1" && fs.existsSync(credentialsPath);
+const integrationTest = runIntegration ? test : test.skip;
 
 const config = require("firebase-functions-test")({
     storageBucket: "development-for-mathrunet.appspot.com",
     projectId: "development-for-mathrunet",
-}, "test/development-for-mathrunet-e2c2c84b2167.json");
+}, runIntegration ? credentialsPath : undefined);
 
 describe("deleteUser Function", () => {
     let testUserId: string | null = null;
@@ -26,7 +32,7 @@ describe("deleteUser Function", () => {
         }
     });
 
-    test("正常系: ユーザー削除成功", async () => {
+    integrationTest("正常系: ユーザー削除成功", async () => {
         // テストユーザーを作成
         const testEmail = `test-delete-${Date.now()}@example.com`;
         const userRecord = await admin.auth().createUser({
@@ -76,7 +82,7 @@ describe("deleteUser Function", () => {
         })).rejects.toThrow(/No user ID specified/);
     }, 50000);
 
-    test("エラー: 存在しないユーザー", async () => {
+    integrationTest("エラー: 存在しないユーザー", async () => {
         const func = require("../src/functions/delete_user");
         const wrapped = config.wrap(func([], {}, {}));
         await expect(wrapped({

@@ -3,14 +3,26 @@ import "@mathrunet/masamune_firebase";
 import * as dotenv from "dotenv";
 import * as path from "path";
 import * as algolia from "algoliasearch";
+import * as fs from "fs";
 
 // .envファイルを読み込み
 dotenv.config({ path: path.resolve(__dirname, ".env") });
 
+const credentialsPath = path.resolve(__dirname, "development-for-mathrunet-e2c2c84b2167.json");
+const runIntegration = process.env.MASAMUNE_RUN_INTEGRATION_TESTS === "1" && fs.existsSync(credentialsPath)
+    && !!process.env.ALGOLIA_APPID && process.env.ALGOLIA_APPID !== "YOUR_ALGOLIA_APP_ID"
+    && !!process.env.ALGOLIA_APIKEY && process.env.ALGOLIA_APIKEY !== "YOUR_ALGOLIA_API_KEY";
+const integrationTest = runIntegration ? test : test.skip;
+const originalAppId = process.env.ALGOLIA_APPID;
+const originalApiKey = process.env.ALGOLIA_APIKEY;
+if (!runIntegration) {
+    process.env.ALGOLIA_APPID = "offline-test";
+    process.env.ALGOLIA_APIKEY = "offline-test";
+}
 const config = require("firebase-functions-test")({
     storageBucket: "development-for-mathrunet.appspot.com",
     projectId: "development-for-mathrunet",
-}, "test/development-for-mathrunet-e2c2c84b2167.json");
+}, runIntegration ? credentialsPath : undefined);
 
 describe("masamune_algolia", () => {
     const testIndexName = "test_algolia";
@@ -21,18 +33,10 @@ describe("masamune_algolia", () => {
         if (admin.apps.length === 0) {
             admin.initializeApp();
         }
-        // 環境変数のチェック
-        if (!process.env.ALGOLIA_APPID || process.env.ALGOLIA_APPID === "YOUR_ALGOLIA_APP_ID") {
-            console.warn("Warning: ALGOLIA_APPID is not set. Integration tests may fail.");
-        }
-        if (!process.env.ALGOLIA_APIKEY || process.env.ALGOLIA_APIKEY === "YOUR_ALGOLIA_API_KEY") {
-            console.warn("Warning: ALGOLIA_APIKEY is not set. Integration tests may fail.");
-        }
-        // Algoliaクライアントを初期化
-        if (process.env.ALGOLIA_APPID && process.env.ALGOLIA_APIKEY) {
+        if (runIntegration) {
             algoliaClient = algolia.algoliasearch(
-                process.env.ALGOLIA_APPID,
-                process.env.ALGOLIA_APIKEY,
+                process.env.ALGOLIA_APPID!,
+                process.env.ALGOLIA_APIKEY!,
             );
         }
     });
@@ -58,13 +62,17 @@ describe("masamune_algolia", () => {
             }
         }
         config.cleanup();
+        if (originalAppId === undefined) delete process.env.ALGOLIA_APPID;
+        else process.env.ALGOLIA_APPID = originalAppId;
+        if (originalApiKey === undefined) delete process.env.ALGOLIA_APIKEY;
+        else process.env.ALGOLIA_APIKEY = originalApiKey;
     });
 
     // ============================================================
     // functions/algolia.ts のテスト（Firestoreトリガー - 実際のAPI呼び出し）
     // ============================================================
     describe("functions/algolia - Firestoreトリガー（統合テスト）", () => {
-        test("正常系: ドキュメント作成時にAlgoliaに同期", async () => {
+        integrationTest("正常系: ドキュメント作成時にAlgoliaに同期", async () => {
             const func = require("../src/functions/algolia");
             const wrapped = config.wrap(func([], { path: testDocPath }, {}));
 
@@ -101,7 +109,7 @@ describe("masamune_algolia", () => {
             }
         }, 30000);
 
-        test("正常系: ドキュメント更新時にAlgoliaに同期", async () => {
+        integrationTest("正常系: ドキュメント更新時にAlgoliaに同期", async () => {
             const func = require("../src/functions/algolia");
             const wrapped = config.wrap(func([], { path: testDocPath }, {}));
 
@@ -141,7 +149,7 @@ describe("masamune_algolia", () => {
             }
         }, 30000);
 
-        test("正常系: ドキュメント削除時にAlgoliaから削除", async () => {
+        integrationTest("正常系: ドキュメント削除時にAlgoliaから削除", async () => {
             const func = require("../src/functions/algolia");
             const wrapped = config.wrap(func([], { path: testDocPath }, {}));
 

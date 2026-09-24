@@ -3,17 +3,45 @@ import "@mathrunet/masamune_firebase";
 import * as fs from "fs";
 import * as path from "path";
 
+const serviceAccountPath = path.resolve(__dirname, "development-for-mathrunet-e2c2c84b2167.json");
+const runIntegration = process.env.MASAMUNE_RUN_INTEGRATION_TESTS === "1" && fs.existsSync(serviceAccountPath);
+const integrationDescribe = runIntegration ? describe : describe.skip;
 const config = require("firebase-functions-test")({
     storageBucket: "development-for-mathrunet.appspot.com",
     projectId: "development-for-mathrunet",
-}, "test/development-for-mathrunet-e2c2c84b2167.json");
+}, runIntegration ? serviceAccountPath : undefined);
 
-// テスト用にサービスアカウント環境変数を設定
-const serviceAccountPath = path.resolve(__dirname, "development-for-mathrunet-e2c2c84b2167.json");
-const serviceAccountJson = fs.readFileSync(serviceAccountPath, "utf-8");
-process.env.FIRESTORE_SERVICE_ACCOUNT = serviceAccountJson;
+if (runIntegration) {
+    process.env.FIRESTORE_SERVICE_ACCOUNT = fs.readFileSync(serviceAccountPath, "utf-8");
+}
 
-describe("Firestore Test", () => {
+describe("Firestore credential validation", () => {
+    const originalFirestoreAccount = process.env.FIRESTORE_SERVICE_ACCOUNT;
+    const originalServiceAccount = process.env.SERVICE_ACCOUNT;
+
+    beforeAll(() => {
+        delete process.env.FIRESTORE_SERVICE_ACCOUNT;
+        delete process.env.SERVICE_ACCOUNT;
+    });
+
+    afterAll(() => {
+        if (originalFirestoreAccount === undefined) delete process.env.FIRESTORE_SERVICE_ACCOUNT;
+        else process.env.FIRESTORE_SERVICE_ACCOUNT = originalFirestoreAccount;
+        if (originalServiceAccount === undefined) delete process.env.SERVICE_ACCOUNT;
+        else process.env.SERVICE_ACCOUNT = originalServiceAccount;
+    });
+
+    for (const name of ["aggregate_model_firestore", "collection_model_firestore", "document_model_firestore"]) {
+        test(`${name} rejects a missing service account before accessing Firestore`, async () => {
+            const func = require(`../src/functions/${name}`);
+            const wrapped = config.wrap(func([], {}, {}));
+            await expect(wrapped({ data: { path: "unit/test", method: "get" }, params: {} }))
+                .rejects.toThrow(/Service account JSON not found/);
+        });
+    }
+});
+
+integrationDescribe("Firestore Test", () => {
     beforeAll(() => {
         admin.initializeApp();
     });
@@ -77,7 +105,7 @@ describe("Firestore Test", () => {
     }, 50000);
 });
 
-describe("Aggregate Model Firestore", () => {
+integrationDescribe("Aggregate Model Firestore", () => {
     const testCollection = "unit/test/aggregate";
     let firestoreInstance: admin.firestore.Firestore;
 
@@ -169,7 +197,7 @@ describe("Aggregate Model Firestore", () => {
     }, 50000);
 });
 
-describe("Collection Model Firestore", () => {
+integrationDescribe("Collection Model Firestore", () => {
     const testCollection = "unit/test/collection";
     let firestoreInstance: admin.firestore.Firestore;
 
@@ -270,7 +298,7 @@ describe("Collection Model Firestore", () => {
     }, 50000);
 });
 
-describe("Document Model Firestore", () => {
+integrationDescribe("Document Model Firestore", () => {
     const testCollection = "unit/test/document";
     let firestoreInstance: admin.firestore.Firestore;
 
