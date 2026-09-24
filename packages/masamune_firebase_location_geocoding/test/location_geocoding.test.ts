@@ -1,4 +1,3 @@
-import * as admin from "firebase-admin";
 import "@mathrunet/masamune_firebase";
 import * as dotenv from "dotenv";
 import * as path from "path";
@@ -9,19 +8,13 @@ dotenv.config({ path: path.resolve(__dirname, ".env") });
 const config = require("firebase-functions-test")({
     storageBucket: "development-for-mathrunet.appspot.com",
     projectId: "development-for-mathrunet",
-}, "test/development-for-mathrunet-e2c2c84b2167.json");
+});
+const runIntegration = process.env.MASAMUNE_RUN_INTEGRATION_TESTS === "1"
+    && !!process.env.MAP_GEOCODING_APIKEY
+    && process.env.MAP_GEOCODING_APIKEY !== "YOUR_API_KEY_HERE";
+const integrationTest = runIntegration ? test : test.skip;
 
 describe("masamune_location_geocoding", () => {
-    beforeAll(() => {
-        if (admin.apps.length === 0) {
-            admin.initializeApp();
-        }
-        // 環境変数のチェック
-        if (!process.env.MAP_GEOCODING_APIKEY || process.env.MAP_GEOCODING_APIKEY === "YOUR_API_KEY_HERE") {
-            console.warn("Warning: MAP_GEOCODING_APIKEY is not set. Integration tests may fail.");
-        }
-    });
-
     afterAll(() => {
         config.cleanup();
     });
@@ -30,7 +23,7 @@ describe("masamune_location_geocoding", () => {
     // functions/geocoding.ts のテスト（Cloud Function - 実際のAPI呼び出し）
     // ============================================================
     describe("functions/geocoding - Cloud Function（統合テスト）", () => {
-        test("正常系: 住所から緯度経度を取得", async () => {
+        integrationTest("正常系: 住所から緯度経度を取得", async () => {
             const func = require("../src/functions/geocoding");
             const wrapped = config.wrap(func([], {}, {}));
 
@@ -55,7 +48,7 @@ describe("masamune_location_geocoding", () => {
             expect(typeof location.lng).toBe("number");
         }, 30000);
 
-        test("正常系: 郵便番号から緯度経度を取得", async () => {
+        integrationTest("正常系: 郵便番号から緯度経度を取得", async () => {
             const func = require("../src/functions/geocoding");
             const wrapped = config.wrap(func([], {}, {}));
 
@@ -78,7 +71,7 @@ describe("masamune_location_geocoding", () => {
             expect(location).toHaveProperty("lng");
         }, 30000);
 
-        test("正常系: 英語住所から緯度経度を取得", async () => {
+        integrationTest("正常系: 英語住所から緯度経度を取得", async () => {
             const func = require("../src/functions/geocoding");
             const wrapped = config.wrap(func([], {}, {}));
 
