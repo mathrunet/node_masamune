@@ -1,6 +1,6 @@
 {
   "name": "@mathrunet/masamune_cloudflare_media",
-  "version": "3.1.1",
+  "version": "3.1.2",
   "description": "Masamune framework package plugin for video and image conversion for Cloudflare Workers.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
