@@ -1,3 +1,24 @@
+## 3.10.0 (2026-09-24)
+
+
+### feat
+
+* release version 3.7.0 with enhanced database features and vector support ([d1b49eb](https://github.com/mathrunet/node_masamune/commit/d1b49eb511e5943d2a81b0f33cb59a3535d37408))
+
+
+### docs
+
+* update README links to include masamune_functions_cloudflare for server-side function execution across multiple packages ([d3f8c32](https://github.com/mathrunet/node_masamune/commit/d3f8c322180fbdb8d8d65d2f93942cf82efcefff))
+
+
+### test
+
+* **firebase_agora:** require credentials for storage integration checks ([c3bfe46](https://github.com/mathrunet/node_masamune/commit/c3bfe4680a0174ebcc5a9b0903a4585611919bcd))
+
+### dependencies
+
+* Update dependencies: @mathrunet/masamune, @mathrunet/masamune_firebase.
+
 ## 3.9.1 (2026-06-29)
 
 
