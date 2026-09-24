@@ -1,3 +1,15 @@
+## 3.11.0 (2026-09-24)
+
+
+### feat
+
+* release version 3.1.0 with updates to multiple packages and new features ([45e8d85](https://github.com/mathrunet/node_masamune/commit/45e8d85755434384a90f0e3691b5eb51fea9e4f4))
+
+
+### docs
+
+* update README links to include masamune_functions_cloudflare for server-side function execution across multiple packages ([d3f8c32](https://github.com/mathrunet/node_masamune/commit/d3f8c322180fbdb8d8d65d2f93942cf82efcefff))
+
 ## 3.10.4 (2026-06-29)
 
 

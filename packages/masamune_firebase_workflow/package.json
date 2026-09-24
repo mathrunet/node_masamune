@@ -1,6 +1,6 @@
 {
   "name": "@mathrunet/masamune_firebase_workflow",
-  "version": "3.10.0",
+  "version": "3.11.0",
   "description": "Masamune framework package plugin that provides a workflow capable of executing various tasks.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -38,10 +38,10 @@
   "homepage": "https://github.com/mathrunet/node_masamune#readme",
   "dependencies": {
     "@cfworker/json-schema": "^4.1.1",
-    "@mathrunet/masamune_firebase": "^3.1.2",
+    "@mathrunet/masamune_firebase": "^3.2.0",
     "@google-cloud/run": "^3.0.1",
     "@google/genai": "^1.30.0",
-    "@mathrunet/masamune": "^3.10.4",
+    "@mathrunet/masamune": "^3.11.0",
     "@modelcontextprotocol/sdk": "^1.23.0",
     "firebase-admin": "^13.1.0",
     "firebase-functions": "^6.3.2",
