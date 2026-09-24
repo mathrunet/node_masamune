@@ -2,14 +2,17 @@ import * as admin from "firebase-admin";
 import "@mathrunet/masamune_firebase";
 import * as dotenv from "dotenv";
 import * as path from "path";
+import * as fs from "fs";
 
 // .envファイルを読み込み
 dotenv.config({ path: path.resolve(__dirname, ".env") });
 
+const credentialsPath = process.env.GOOGLE_APPLICATION_CREDENTIALS ?? path.resolve(__dirname, "development-for-mathrunet-e2c2c84b2167.json");
 const config = require("firebase-functions-test")({
     storageBucket: "development-for-mathrunet.appspot.com",
     projectId: "development-for-mathrunet",
-}, "test/development-for-mathrunet-e2c2c84b2167.json");
+}, fs.existsSync(credentialsPath) ? credentialsPath : undefined);
+const onlineTest = process.env.OPENAI_APIKEY ? test : test.skip;
 
 describe("masamune_ai_openai", () => {
     beforeAll(() => {
@@ -30,7 +33,7 @@ describe("masamune_ai_openai", () => {
     // functions/openai_chat_gpt.ts のテスト（Cloud Function - 実際のAPI呼び出し）
     // ============================================================
     describe("functions/openai_chat_gpt - Cloud Function（統合テスト）", () => {
-        test("正常系: 実際にOpenAI APIを呼び出してChat完了", async () => {
+        onlineTest("正常系: 実際にOpenAI APIを呼び出してChat完了", async () => {
             const func = require("../src/functions/openai_chat_gpt");
             const wrapped = config.wrap(func([], {}, {}));
 
@@ -50,7 +53,7 @@ describe("masamune_ai_openai", () => {
             expect(result.choices[0].message).toHaveProperty("content");
         }, 60000);
 
-        test("正常系: model指定（gpt-3.5-turbo）で正常にレスポンスを取得", async () => {
+        onlineTest("正常系: model指定（gpt-3.5-turbo）で正常にレスポンスを取得", async () => {
             const func = require("../src/functions/openai_chat_gpt");
             const wrapped = config.wrap(func([], {}, {}));
 
@@ -65,7 +68,7 @@ describe("masamune_ai_openai", () => {
             expect(result.choices[0].message.content).toBeDefined();
         }, 60000);
 
-        test("正常系: temperature指定で正常にレスポンスを取得", async () => {
+        onlineTest("正常系: temperature指定で正常にレスポンスを取得", async () => {
             const func = require("../src/functions/openai_chat_gpt");
             const wrapped = config.wrap(func([], {}, {}));
 
@@ -80,7 +83,7 @@ describe("masamune_ai_openai", () => {
             expect(result.choices[0].message.content).toBeDefined();
         }, 60000);
 
-        test("正常系: 複数メッセージの会話で正常にレスポンスを取得", async () => {
+        onlineTest("正常系: 複数メッセージの会話で正常にレスポンスを取得", async () => {
             const func = require("../src/functions/openai_chat_gpt");
             const wrapped = config.wrap(func([], {}, {}));
 
