@@ -1,6 +1,6 @@
 {
   "name": "@mathrunet/masamune_firebase_asset_pipeline",
-  "version": "3.7.0",
+  "version": "3.8.0",
   "description": "Masamune framework package plugin that provides a pipeline for generating content such as images and videos.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -36,8 +36,8 @@
   },
   "homepage": "https://github.com/mathrunet/node_masamune#readme",
   "dependencies": {
-    "@mathrunet/masamune": "^3.10.4",
-    "@mathrunet/masamune_firebase": "^3.1.2",
+    "@mathrunet/masamune": "^3.11.0",
+    "@mathrunet/masamune_firebase": "^3.2.0",
     "@google-cloud/text-to-speech": "^6.4.0",
     "firebase-admin": "^13.1.0",
     "firebase-functions": "^6.3.2",
