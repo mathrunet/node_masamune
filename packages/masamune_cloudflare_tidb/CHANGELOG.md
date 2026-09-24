@@ -1,3 +1,10 @@
+## 3.7.2 (2026-09-24)
+
+- `TidbDirectOperationError`で一時障害とSQL・設定障害を区別し、driverのSQL値・資格情報・元例外を公開しない。
+- transaction callbackがquery例外を捕捉しても障害分類を保持し、commitを拒否してrollbackする。
+- commit・rollbackの応答喪失では結果不明と再送不可を返し、自動再送を行わない。
+- 依存バージョン、CRUD・認可・transactionの公開引数は変更しない。詳細は`MIGRATION.md`を参照。
+
 ## 3.6.0 (2026-09-21)
 
 - Rebuild dist before publishing and limit published files to runtime code, type declarations, and documentation.

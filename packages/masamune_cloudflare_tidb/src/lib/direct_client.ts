@@ -25,6 +25,36 @@ export interface DirectOptions {
   fetch?: typeof fetch;
 }
 
+/** 元の例外・SQL・パラメータを保持しない公開エラー。 */
+export class TidbDirectOperationError extends HttpError {
+  readonly name = "TidbDirectOperationError";
+  /** trueでも、このクライアント自身は再送しない。結果不明の更新は再送不可。 */
+  readonly retryable: boolean;
+  constructor(
+    readonly category: "transient" | "sql" | "configuration" | "unknown",
+    readonly phase: "query" | "begin" | "commit" | "callback",
+    readonly outcomeUnknown: boolean,
+  ) {
+    const label = phase === "query" ? "query" : phase === "begin" ? "transaction start" : phase === "commit" ? "commit" : "transaction";
+    super(category === "transient" ? 503 : 500,
+      `TiDB ${label} failed${outcomeUnknown ? "; mutation outcome may be unknown" : ""}.`);
+    this.retryable = category === "transient" && !outcomeUnknown;
+  }
+}
+
+function operationError(error: unknown, phase: TidbDirectOperationError["phase"], outcomeUnknown: boolean): TidbDirectOperationError {
+  if (error instanceof TidbDirectOperationError) return new TidbDirectOperationError(error.category, phase, outcomeUnknown);
+  const value = error && typeof error === "object" ? error as { status?: unknown; details?: { code?: unknown }; name?: unknown } : {};
+  const status = typeof value.status === "number" ? value.status : 0;
+  const code = typeof value.details?.code === "number" ? value.details.code : 0;
+  const category = [1205, 1213].includes(code) ? "transient"
+    : [1044, 1045, 1049].includes(code) || [401, 403].includes(status) ? "configuration"
+    : code >= 1000 && code <= 9999 ? "sql"
+    : [408, 409, 425, 429, 500, 502, 503, 504].includes(status) || ["AbortError", "TimeoutError"].includes(String(value.name)) ? "transient"
+    : status === 400 ? "sql" : "unknown";
+  return new TidbDirectOperationError(category, phase, outcomeUnknown);
+}
+
 /** manifest外の識別子をSQLへ渡さない。資格情報はWorkerだけに保持する。 */
 export class TidbDirectClient {
   constructor(private readonly options: DirectOptions) {
@@ -61,12 +91,12 @@ export class TidbDirectClient {
     if (!this.options.manifest.tables.some(t => t.database === database)) {
       throw new HttpError(400, "Database is not present in schema manifest.");
     }
-    const connection = this.connection(database);
     try {
+      const connection = this.connection(database);
       return await connection.execute(sql, parameters) as Record<string, unknown>[];
     } catch (error) {
       // ドライバの例外にはSQL・値が含まれ得るため外部へ渡さない。
-      throw new HttpError(502, "TiDB query failed; mutation outcome may be unknown.");
+      throw operationError(error, "query", true);
     }
   }
 
@@ -74,9 +104,9 @@ export class TidbDirectClient {
   async transaction<T>(database: string, action: (client: Pick<TidbDirectClient, "table" | "column" | "execute">) => Promise<T>): Promise<T> {
     if (!this.options.manifest.tables.some(t => t.database === database)) throw new HttpError(400, "Database is not present in schema manifest.");
     const connection = this.connection(database);
-    const tx = await connection.begin().catch(() => { throw new HttpError(502, "TiDB transaction could not start."); });
+    const tx = await connection.begin().catch(error => { throw operationError(error, "begin", false); });
     let pending = Promise.resolve();
-    let failed = false;
+    let failed: TidbDirectOperationError | undefined;
     let commitStarted = false;
     try {
       const result = await action({
@@ -84,27 +114,28 @@ export class TidbDirectClient {
         execute: (selected, sql, parameters = []) => {
           if (selected !== database) return Promise.reject(new HttpError(400, "Transaction database mismatch."));
           const run = pending.then(async () => {
-            if (failed) throw new HttpError(502, "Transaction already failed.");
+            if (failed) throw failed;
             try { return await tx.execute(sql, parameters) as Record<string, unknown>[]; }
-            catch { failed = true; throw new HttpError(502, "TiDB transaction query failed."); }
+            catch (error) { failed = operationError(error, "query", false); throw failed; }
           });
           pending = run.then(() => {}, () => {});
           return run;
         },
       });
       await pending;
-      if (failed) throw new HttpError(502, "TiDB transaction query failed.");
+      if (failed) throw failed;
       commitStarted = true;
       await tx.commit();
       return result;
     } catch (error) {
       await pending;
       if (!commitStarted) {
-        try { await tx.rollback(); } catch { /* 失敗を成功へ変換せず、元のエラーを返す。 */ }
+        try { await tx.rollback(); }
+        catch { throw operationError(error, error instanceof TidbDirectOperationError ? error.phase : "callback", true); }
       }
-      if (commitStarted) throw new HttpError(502, "TiDB commit failed; mutation outcome may be unknown.");
+      if (commitStarted) throw operationError(error, "commit", true);
       if (error instanceof HttpError) throw error;
-      throw new HttpError(502, "TiDB transaction failed.");
+      throw operationError(error, "callback", false);
     }
   }
 
@@ -122,6 +153,9 @@ export class TidbDirectClient {
           const response = await (this.options.fetch ?? fetch)(url, { ...init, signal: controller.signal });
           const body = await response.arrayBuffer();
           return new Response(body, { status: response.status, statusText: response.statusText, headers: response.headers });
+        } catch {
+          // fetch/bodyの通信障害にはdriverがHTTP情報を付けないため境界で分類する。
+          throw new TidbDirectOperationError("transient", "query", true);
         } finally { clearTimeout(timer); }
       },
     };

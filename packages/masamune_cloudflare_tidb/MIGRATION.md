@@ -53,3 +53,19 @@ Switch over in database → Worker → app order. Supply the shared schema to th
 `_masamune_migrations` stores the version, hash, progress, and snapshot; `_masamune_migration_lock` stores the execution owner. If DDL succeeds but the ledger update fails, the actual schema is checked and execution resumes without resending the same DDL.
 
 A lost DDL response does not prove that server processing has completed, so the persistent lock remains. There is no automatic timeout-based takeover. After an administrator verifies the execution process, completion of TiDB DDL, and the actual schema, release the lock belonging to that owner and rerun the same version. Do not bypass validation by manually editing SQL/JSON or deleting the ledger.
+
+
+## Direct clientの障害分類（3.7.2）
+
+両方の公開入口から`TidbDirectOperationError`を利用できます。
+公開する値は`category`（`transient`、`sql`、`configuration`、`unknown`）、
+`phase`、HTTP `status`（一時障害は503、それ以外は500）、`outcomeUnknown`、
+`retryable`です。driverのmessage、SQL値、資格情報、応答本文、causeは保持しません。
+設定値と識別子の検証は既存の`HttpError`契約を維持します。
+
+transaction内のexecute失敗をcallbackが捕捉しても、元の障害分類を維持します。
+rollback成功後の一時障害では`retryable=true`です。commitまたはrollbackの応答を
+失った場合は`outcomeUnknown=true`、`retryable=false`となります。アプリケーションの
+冪等性状態を照合してから再試行してください。単独executeはSQLが更新か判定できないため、
+失敗時に`outcomeUnknown=true`とします。クライアントはquery、transaction、commit、
+rollbackを自動再送しません。
