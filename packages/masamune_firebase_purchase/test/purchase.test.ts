@@ -1,15 +1,18 @@
 import * as admin from "firebase-admin";
 import "@mathrunet/masamune_firebase";
 import * as dotenv from "dotenv";
+import * as fs from "fs";
 import * as path from "path";
 
 // .envファイルを読み込み
 dotenv.config({ path: path.resolve(__dirname, ".env") });
 
+const liveTestsEnabled = process.env.MASAMUNE_RUN_LIVE_TESTS === "1" &&
+    fs.existsSync(path.join(__dirname, "development-for-mathrunet-e2c2c84b2167.json"));
 const config = require("firebase-functions-test")({
     storageBucket: "development-for-mathrunet.appspot.com",
     projectId: "development-for-mathrunet",
-}, "test/development-for-mathrunet-e2c2c84b2167.json");
+}, liveTestsEnabled ? "test/development-for-mathrunet-e2c2c84b2167.json" : undefined);
 
 describe("Subscription Verify", () => {
     const testUserId = `test-user-${Date.now()}`;
@@ -23,6 +26,10 @@ describe("Subscription Verify", () => {
     });
 
     afterAll(async () => {
+        if (createdDocIds.length === 0) {
+            config.cleanup();
+            return;
+        }
         // クリーンアップ: テストで作成されたサブスクリプションドキュメントを削除
         const firestore = admin.firestore();
         for (const docId of createdDocIds) {
@@ -33,9 +40,10 @@ describe("Subscription Verify", () => {
                 // 既に削除済みの場合は無視
             }
         }
+        config.cleanup();
     });
 
-    describe("Android (Google Play)", () => {
+    (liveTestsEnabled ? describe : describe.skip)("Android (Google Play)", () => {
         const hasAndroidCredentials = () => {
             return process.env.PURCHASE_ANDROID_SERVICEACCOUNT_EMAIL &&
                 process.env.PURCHASE_ANDROID_SERVICEACCOUNT_PRIVATE_KEY &&
@@ -129,7 +137,7 @@ describe("Subscription Verify", () => {
         }, 60000);
     });
 
-    describe("iOS (App Store)", () => {
+    (liveTestsEnabled ? describe : describe.skip)("iOS (App Store)", () => {
         const hasIOSCredentials = () => {
             return process.env.PURCHASE_IOS_SHAREDSECRET &&
                 process.env.PURCHASE_IOS_SUBSCRIPTION_PRODUCT_ID;

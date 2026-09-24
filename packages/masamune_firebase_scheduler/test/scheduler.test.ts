@@ -1,13 +1,17 @@
 import * as admin from "firebase-admin";
 import { ModelServerCommandBase, ModelToken, utils } from "@mathrunet/masamune_firebase";
 import "@mathrunet/masamune_firebase";
+import * as fs from "fs";
+import * as path from "path";
 
-const config = require("firebase-functions-test")({
+const liveTestsEnabled = process.env.MASAMUNE_RUN_LIVE_TESTS === "1" &&
+    fs.existsSync(path.join(__dirname, "development-for-mathrunet-e2c2c84b2167.json"));
+const config = liveTestsEnabled ? require("firebase-functions-test")({
     storageBucket: "development-for-mathrunet.appspot.com",
     projectId: "development-for-mathrunet",
-}, "test/development-for-mathrunet-e2c2c84b2167.json");
+}, "test/development-for-mathrunet-e2c2c84b2167.json") : undefined;
 
-describe("Firestore Test", () => {
+(liveTestsEnabled ? describe : describe.skip)("Firestore Test", () => {
     beforeAll(() => {
         admin.initializeApp();
     });

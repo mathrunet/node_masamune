@@ -1,13 +1,17 @@
 import * as admin from "firebase-admin";
 import "@mathrunet/masamune_firebase";
+import * as fs from "fs";
 import * as path from "path";
 
-const config = require("firebase-functions-test")({
+const liveTestsEnabled = process.env.MASAMUNE_RUN_LIVE_TESTS === "1" &&
+    fs.existsSync(path.join(__dirname, "development-for-mathrunet-e2c2c84b2167.json")) &&
+    fs.existsSync(path.join(__dirname, "sample.mp4"));
+const config = liveTestsEnabled ? require("firebase-functions-test")({
     storageBucket: "development-for-mathrunet.appspot.com",
     projectId: "development-for-mathrunet",
-}, "test/development-for-mathrunet-e2c2c84b2167.json");
+}, "test/development-for-mathrunet-e2c2c84b2167.json") : undefined;
 
-describe("HLS Conversion", () => {
+(liveTestsEnabled ? describe : describe.skip)("HLS Conversion", () => {
     const testBucket = "development-for-mathrunet.appspot.com";
     const testDir = `unit/test/media`;
     const testFileName = `sample-${Date.now()}.mp4`;

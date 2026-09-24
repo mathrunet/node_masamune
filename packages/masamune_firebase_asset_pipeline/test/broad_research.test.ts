@@ -1,12 +1,16 @@
 import * as admin from "firebase-admin";
 import * as functions from "firebase-functions-test";
+import * as fs from "fs";
+import * as path from "path";
 
-const config = require("firebase-functions-test")({
+const liveTestsEnabled = process.env.MASAMUNE_RUN_LIVE_TESTS === "1" &&
+    fs.existsSync(path.join(__dirname, "mathru-net-39425d37638c.json"));
+const config = liveTestsEnabled ? require("firebase-functions-test")({
     storageBucket: "mathru-net.appspot.com",
     projectId: "mathru-net",
-}, "test/mathru-net-39425d37638c.json");
+}, "test/mathru-net-39425d37638c.json") : undefined;
 
-describe("Broad Research Function Test", () => {
+(liveTestsEnabled ? describe : describe.skip)("Broad Research Function Test", () => {
     beforeAll(() => {
         if (admin.apps.length === 0) {
             admin.initializeApp();
@@ -53,4 +57,3 @@ describe("Broad Research Function Test", () => {
         console.log("Generated Theme:", assetDoc.theme);
     }, 20000);
 });
-

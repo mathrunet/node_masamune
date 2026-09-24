@@ -2,12 +2,14 @@ import * as admin from "firebase-admin";
 import * as fs from "fs";
 import * as path from "path";
 
-const config = require("firebase-functions-test")({
+const liveTestsEnabled = process.env.MASAMUNE_RUN_LIVE_TESTS === "1" &&
+    fs.existsSync(path.join(__dirname, "mathru-net-39425d37638c.json"));
+const config = liveTestsEnabled ? require("firebase-functions-test")({
     storageBucket: "mathru-net.appspot.com",
     projectId: "mathru-net",
-}, "test/mathru-net-39425d37638c.json");
+}, "test/mathru-net-39425d37638c.json") : undefined;
 
-describe("Generate Short Video with Audio Function Test", () => {
+(liveTestsEnabled ? describe : describe.skip)("Generate Short Video with Audio Function Test", () => {
     let wrapped: any;
 
     beforeAll(() => {
