@@ -110,19 +110,31 @@ export async function executeDirectCrud({ client, method, request, maxScanRows =
   const value = method === "PUT" ? vectorWriteValue(schema, requireValue(request.value)) : {};
   for (const key of Object.keys(value)) client.column(schema, key);
   const rows = await selectDirectRows(client, { ...request, limit: undefined, orderBy: undefined }, maxScanRows);
+  if (method === "DELETE") {
+    // Freeze the selected IDs and retain the original filter so concurrent
+    // inserts or rows that no longer match cannot expand the deletion scope.
+    const ids = rows.map(row => {
+      if (typeof row.id !== "string") throw new HttpError(502, "Row requires a string id.");
+      return row.id;
+    });
+    const where = directWhere(client, schema, request);
+    for (let start = 0; start < ids.length; start += 100) {
+      const batch = ids.slice(start, start + 100);
+      await client.execute(schema.database,
+        `DELETE FROM ${tableSql(schema)}${where.sql} AND ${client.column(schema, "id")} IN (${batch.map(() => "?").join(", ")})`,
+        [...where.parameters, ...batch]);
+    }
+    return [];
+  }
   const result: Record<string, unknown>[] = [];
   for (const old of rows) {
     if (typeof old.id !== "string") throw new HttpError(502, "Row requires a string id.");
     const where = directWhere(client, schema, { ...request, indexKey: old.id });
-    if (method === "DELETE") {
-      await client.execute(schema.database, `DELETE FROM ${tableSql(schema)}${where.sql}`, where.parameters);
-    } else {
-      const patch = { ...value, updated_at: value.updated_at ?? Date.now() };
-      const keys = Object.keys(patch).filter(k => k !== "id" && k !== "created_at");
-      await client.execute(schema.database, `UPDATE ${tableSql(schema)} SET ${keys.map(k => `${client.column(schema, k)} = ?`).join(", ")}${where.sql}`,
-        [...keys.map(k => encode((patch as Record<string, unknown>)[k])), ...where.parameters]);
-      result.push(decodeDirectRow({ ...old, ...Object.fromEntries(keys.map(k => [k, (patch as Record<string, unknown>)[k]])) }, schema));
-    }
+    const patch = { ...value, updated_at: value.updated_at ?? Date.now() };
+    const keys = Object.keys(patch).filter(k => k !== "id" && k !== "created_at");
+    await client.execute(schema.database, `UPDATE ${tableSql(schema)} SET ${keys.map(k => `${client.column(schema, k)} = ?`).join(", ")}${where.sql}`,
+      [...keys.map(k => encode((patch as Record<string, unknown>)[k])), ...where.parameters]);
+    result.push(decodeDirectRow({ ...old, ...Object.fromEntries(keys.map(k => [k, (patch as Record<string, unknown>)[k]])) }, schema));
   }
   return result;
 }

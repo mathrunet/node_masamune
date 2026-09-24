@@ -263,7 +263,9 @@ export async function provisionRuntimeUser(
   if (existingRole.length) {
     const rows = await db.execute(`SHOW GRANTS FOR ${quoteUser(runtimeRole)}@'%'`);
     const actual = rows.map((row) => String(Object.values(row)[0] ?? ""));
-    if (actual.some((grant) => !hasOnlyExpectedTableGrants(grant, runtimeRole))) {
+    const usageGrant = `grant usage on *.* to ${quoteUser(runtimeRole)}@'%'`.toLowerCase();
+    if (actual.some((grant) => grant.replace(/\s+/g, " ").trim().toLowerCase() !== usageGrant &&
+        !hasOnlyExpectedTableGrants(grant, runtimeRole))) {
       throw new Error("TiDB runtime roleにmanifest外または未知形式の権限があります。権限を確認してから再実行してください。");
     }
     const recipients = await db.execute("SELECT TO_USER FROM mysql.role_edges WHERE FROM_USER = ?", [runtimeRole]);

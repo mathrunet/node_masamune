@@ -61,6 +61,31 @@ const runtimeConnection = (username: string): MigrationConnection => ({
 });
 
 describe("provisionRuntimeUser", () => {
+  test.each([false, true])("connects as runtime only after all table grants (existing user=%s)", async (existing) => {
+    const fixture = connection(
+      ["landmarks", "regions"],
+      existing ? [input.runtimeUsername] : [],
+      ["GRANT USAGE ON *.* TO 'prefix.rt_abcd12'@'%'"],
+    );
+    let identityChecks = 0;
+    const runtime = (username: string): MigrationConnection => ({
+      execute: async () => {
+        identityChecks++;
+        for (const { database, table } of input.tables) {
+          const grant = `GRANT SELECT, INSERT, UPDATE, DELETE ON \`${database}\`.\`${table}\` TO '${username}'`;
+          if (!fixture.statements.includes(grant)) {
+            throw new Error("401: default database access denied before table grants");
+          }
+        }
+        return [{ principal: `${username}@%` }];
+      },
+    });
+    await expect(provisionRuntimeUser(input, fixture.connection, runtime)).resolves.toEqual({
+      checkedTables: 2, role: input.runtimeRole,
+    });
+    expect(identityChecks).toBe(1);
+  });
+
   test("checks all manifest tables before making any user or grant changes", async () => {
     const fixture = connection(["landmarks"]);
     await expect(provisionRuntimeUser(input, fixture.connection)).rejects.toThrow(
@@ -115,6 +140,32 @@ describe("provisionRuntimeUser", () => {
     await expect(provisionRuntimeUser(input, fixture.connection, (username) => runtimeConnection(username))).rejects.toThrow("manifest外または未知形式の権限");
     expect(fixture.statements.some((sql) => sql.startsWith("GRANT "))).toBe(false);
     expect(fixture.statements.some((sql) => sql.startsWith("CREATE ROLE"))).toBe(false);
+  });
+
+  test.each([false, true])("resumes an owned role with USAGE (existing table grants=%s)", async (withTableGrants) => {
+    const fixture = connection(["landmarks", "regions"], [input.runtimeRole, input.runtimeUsername], (sql) =>
+      sql.startsWith("SHOW GRANTS FOR 'topolia_rw_abcd12'")
+        ? [
+            "GRANT USAGE ON *.* TO 'topolia_rw_abcd12'@'%'",
+            ...(withTableGrants ? ["GRANT Delete,Insert,Select,Update ON shared.landmarks TO 'topolia_rw_abcd12'@'%'"] : []),
+          ]
+        : ["GRANT USAGE ON *.* TO 'prefix.rt_abcd12'@'%'"]);
+    await expect(provisionRuntimeUser(input, fixture.connection, runtimeConnection)).resolves.toEqual({
+      checkedTables: 2, role: input.runtimeRole,
+    });
+    expect(fixture.statements.some((sql) => sql.startsWith("CREATE USER"))).toBe(false);
+  });
+
+  test.each([
+    "GRANT USAGE ON *.* TO 'another_role'@'%'",
+    "GRANT USAGE ON *.* TO 'topolia_rw_abcd12'@'localhost'",
+    "GRANT USAGE ON *.* TO 'topolia_rw_abcd12'@'%' WITH GRANT OPTION",
+    "GRANT SELECT ON *.* TO 'topolia_rw_abcd12'@'%'",
+  ])("rejects unexpected role grants: %s", async (grant) => {
+    const fixture = connection(["landmarks", "regions"], [input.runtimeRole], [grant]);
+    await expect(provisionRuntimeUser(input, fixture.connection, runtimeConnection))
+      .rejects.toThrow("TiDB runtime roleにmanifest外または未知形式の権限があります。");
+    expect(fixture.statements.some((sql) => sql.startsWith("GRANT "))).toBe(false);
   });
 
   test("rejects inherited roles outside the managed role on an owned runtime user", async () => {

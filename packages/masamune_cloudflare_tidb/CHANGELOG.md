@@ -1,9 +1,14 @@
+## 3.7.5 (2026-09-24)
+
+- **FIX**: Accept TiDB's standard `USAGE` grant when reusing an owned runtime role, while still rejecting unexpected privileges.
+- **FIX**: Execute batch DELETE by frozen row IDs in chunks of 100 so concurrent inserts cannot expand the deletion scope.
+
 ## 3.7.2 (2026-09-24)
 
-- `TidbDirectOperationError`で一時障害とSQL・設定障害を区別し、driverのSQL値・資格情報・元例外を公開しない。
-- transaction callbackがquery例外を捕捉しても障害分類を保持し、commitを拒否してrollbackする。
-- commit・rollbackの応答喪失では結果不明と再送不可を返し、自動再送を行わない。
-- 依存バージョン、CRUD・認可・transactionの公開引数は変更しない。詳細は`MIGRATION.md`を参照。
+- Differentiate transient failures, SQL failures, and configuration failures in `TidbDirectOperationError` without exposing driver SQL values, credentials, or original exceptions.
+- In transaction callbacks, retain failure classification even if query exceptions are caught, reject commit, and rollback.
+- For lost commit/rollback responses, return unknown result and non-resumable, and do not perform automatic retries.
+- Do not change dependency versions or public arguments for CRUD, authorization, and transactions. See `MIGRATION.md` for details.
 
 ## 3.6.0 (2026-09-21)
 
@@ -390,5 +395,4 @@
 * Fixes to pass tests. ([a656689](https://github.com/mathrunet/node_masamune/commit/a6566898613d76cd1027a319cda4f605044db151))
 * refactor media tests for Cloudflare integration ([7b1e581](https://github.com/mathrunet/node_masamune/commit/7b1e5816b297d68ba5c28599b5cfb7fa935a70f4))
 * Test code implementation. ([7f40834](https://github.com/mathrunet/node_masamune/commit/7f40834936b13a1b54b792b1c47f7c1ae2319502))
-
 
