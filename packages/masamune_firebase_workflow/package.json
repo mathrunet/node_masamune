@@ -8,7 +8,7 @@
     "build": "tsc",
     "prepare": "npm run build",
     "prepublish": "npm install && npm run build",
-    "test": "NODE_OPTIONS='--experimental-vm-modules' jest",
+    "test": "NODE_OPTIONS='--experimental-vm-modules' jest --runInBand --config test/unit/jest.config.json",
     "postversion": "npm run changelog",
     "changelog": "conventional-changelog -p eslint -i CHANGELOG.md -s -r 0 && git add CHANGELOG.md && git commit -m 'chore(release): publish package'",
     "publish": "npm publish",
