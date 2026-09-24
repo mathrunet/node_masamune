@@ -2,14 +2,17 @@ import * as admin from "firebase-admin";
 import "@mathrunet/masamune_firebase";
 import * as dotenv from "dotenv";
 import * as path from "path";
+import * as fs from "fs";
 
 // .envファイルを読み込み
 dotenv.config({ path: path.resolve(__dirname, ".env") });
 
+const storageCredentialsPath = process.env.GOOGLE_APPLICATION_CREDENTIALS ?? path.resolve(__dirname, "development-for-mathrunet-e2c2c84b2167.json");
+const hasStorageCredentials = fs.existsSync(storageCredentialsPath);
 const config = require("firebase-functions-test")({
     storageBucket: "development-for-mathrunet.appspot.com",
     projectId: "development-for-mathrunet",
-}, "test/development-for-mathrunet-e2c2c84b2167.json");
+}, hasStorageCredentials ? storageCredentialsPath : undefined);
 
 describe("masamune_agora", () => {
     let hasValidCredentials = false;
@@ -177,7 +180,7 @@ describe("masamune_agora", () => {
     // ============================================================
     // functions/agora_cloud_recording.ts のテスト（onObjectFinalized）
     // ============================================================
-    describe("functions/agora_cloud_recording - Storage トリガー", () => {
+    (hasStorageCredentials ? describe : describe.skip)("functions/agora_cloud_recording - Storage トリガー", () => {
         const testBucket = "development-for-mathrunet.appspot.com";
         const testDir = "unit/test/agora";
         let uploadedFiles: string[] = [];
