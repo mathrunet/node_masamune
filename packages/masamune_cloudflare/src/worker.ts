@@ -14,6 +14,7 @@ export type { WorkersScheduledEvent } from "./lib/src/cloudflare_workers_types";
 import * as hono from "hono";
 import { WorkersBase, WorkersOptions } from "./lib/src/workers_base";
 import { ScheduleProcessWorkdersBase } from "./lib/src/schedule_process_workders_base";
+import { RegionScheduleProcessWorkdersBase } from "./lib/src/region_schedule_process_workders_base";
 import { QueueProcessWorkdersBase } from "./lib/src/queue_process_workders_base";
 import {
     WorkersQueueExecutionContext,
@@ -27,6 +28,8 @@ export * from "./lib/src/workers_rule_adapter_base";
 export * from "./lib/src/workers_data";
 export * from "./lib/src/request_process_workders_base";
 export * from "./lib/src/schedule_process_workders_base";
+export * from "./lib/src/region_schedule_process_workders_base";
+export * from "./lib/src/internal_request";
 export * from "./lib/src/queue_process_workders_base";
 export * from "./lib/src/queue_workers_types";
 export * from "./lib/src/http_error";
@@ -38,6 +41,7 @@ export * from "./lib/src/rules/path_matcher";
 export * from "./lib/src/rules/rules_engine";
 export * from "./lib/adapters/firebase_auth_adapter";
 export * from "./lib/adapters/none_auth_adapter";
+export * from "./lib/adapters/internal_auth_adapter";
 export * from "./lib/adapters/rules_middleware";
 export * from "./lib/adapters";
 
@@ -111,6 +115,9 @@ export function deploy(deployWorkders: WorkersBase[], options: WorkersDeployOpti
     for (const worker of deployWorkders) {
         if (worker instanceof ScheduleProcessWorkdersBase) {
             scheduleWorkers.push(worker);
+            if (worker instanceof RegionScheduleProcessWorkdersBase) {
+                app.route(worker.path, worker.build(workersOptions));
+            }
             continue;
         }
         if (worker instanceof QueueProcessWorkdersBase) {

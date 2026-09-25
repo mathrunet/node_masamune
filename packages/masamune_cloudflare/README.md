@@ -110,6 +110,52 @@ export default m.deploy([
 
 Both Workers authenticate requests and evaluate rules on their own. Do not forward requests from the edge Worker to the region Worker through a Service Binding; placement applies to `fetch` handlers of the Worker that receives the request. Configure the client with one endpoint per Worker instead, for example `CloudflareFunctionsAdapter(endpoint: "https://my-app-region.<subdomain>.workers.dev")` for `TidbModelAdapter`. Never set placement on the edge Worker, because it would move per-user Turso traffic away from clients.
 
+## Running cron jobs in the region Worker
+
+Placement applies only to `fetch` handlers. A `scheduled` handler does not run near the placed region, so a cron job that talks to TiDB from `scheduled` pays the full round trip. Extend `RegionScheduleProcessWorkdersBase` instead. Its `scheduled` handler sends the event to the Worker itself as a signed internal request, and `run` executes in the `fetch` handler near the backend. The internal route skips Firebase authentication and accepts only requests signed with `MASAMUNE_INTERNAL_SECRET`.
+
+```typescript
+// src/region.ts
+import * as m from "@mathrunet/masamune_cloudflare";
+
+class CleanupJob extends m.RegionScheduleProcessWorkdersBase {
+    path = "/cron/cleanup";
+
+    async run(event: m.WorkersScheduledEvent, env: unknown, ctx: ExecutionContext): Promise<void> {
+        // Runs in the fetch handler, near the placed region.
+    }
+}
+
+export default m.deploy([
+    new CleanupJob(),
+], { type: "region" });
+```
+
+```jsonc
+// wrangler.region.jsonc
+{
+  "name": "my-app-region",
+  "main": "src/region.ts",
+  "placement": { "region": "aws:us-east-1" },
+  "triggers": { "crons": ["*/5 * * * *"] },
+  "services": [{ "binding": "SELF", "service": "my-app-region" }]
+}
+```
+
+Set the secret with `wrangler secret put MASAMUNE_INTERNAL_SECRET --config wrangler.region.jsonc`. The job targets the `SELF` binding by default (`defaultRegionScheduleTarget`). Pass `{ url: "https://my-app-region.<subdomain>.workers.dev" }` as the second constructor argument to send it over HTTPS instead.
+
+## Internal requests between Workers
+
+`fetchInternal(env, target, pathname, body)` sends a `POST` request signed with HMAC-SHA256 (`x-masamune-internal-timestamp` and `x-masamune-internal-signature` headers). It uses the Service Binding `fetch` when `target.binding` is set, and the global `fetch` to `target.url` otherwise. It does not use Service Binding RPC, because placement applies only to `fetch` handlers and an RPC call would run the method outside the placed region. Protect the receiving routes with `InternalAuthAdapter`, or call `verifyInternalRequest(request, secret)` yourself. Requests older than 300 seconds are rejected.
+
+```typescript
+const response = await m.fetchInternal(env, { binding: "SELF" }, "/internal/sync", JSON.stringify({ id }));
+
+m.deploy([
+    new m.WorkersData({ path: "/internal/sync", options: { auth: new m.InternalAuthAdapter() }, func: (hono) => hono }),
+]);
+```
+
 # Queue Workers
 
 Extend `QueueProcessWorkdersBase<T>` to add a Cloudflare Queues consumer to the
