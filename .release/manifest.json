@@ -46,8 +46,8 @@
       "sourceSha": "7c3809942cec97d27adffbaa90f55715f3db8bb5"
     },
     "@mathrunet/masamune_cloudflare_purchase_stripe": {
-      "version": "3.2.2",
-      "sourceSha": "7c3809942cec97d27adffbaa90f55715f3db8bb5"
+      "version": "3.3.0",
+      "sourceSha": "87de5c394846a59f8757175fdaac7d9235272e3b"
     },
     "@mathrunet/masamune_cloudflare_storage": {
       "version": "3.2.0",
@@ -118,8 +118,8 @@
       "sourceSha": "84a1f7034d4418515aa733cf5d5ae9cec1e3f153"
     },
     "@mathrunet/masamune_firebase_purchase_stripe": {
-      "version": "3.11.0",
-      "sourceSha": "84a1f7034d4418515aa733cf5d5ae9cec1e3f153"
+      "version": "3.12.0",
+      "sourceSha": "87de5c394846a59f8757175fdaac7d9235272e3b"
     },
     "@mathrunet/masamune_firebase_scheduler": {
       "version": "3.10.0",

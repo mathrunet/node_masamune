@@ -1,3 +1,10 @@
+## 3.12.0 (2026-09-25)
+
+
+### feat
+
+* **purchase_stripe:** upgrade Stripe SDK to v22 and API version 2026-08-26.dahlia ([7ceea35](https://github.com/mathrunet/node_masamune/commit/7ceea354dd0edb1214b64ba002340692c90adee5))
+
 ## 3.11.0 (2026-09-24)
 
 
