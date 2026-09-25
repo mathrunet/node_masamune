@@ -1,3 +1,9 @@
+## 3.4.3 (2026-09-25)
+
+### dependencies
+
+* Update dependencies: @mathrunet/masamune_cloudflare.
+
 ## 3.4.2 (2026-09-25)
 
 ### dependencies

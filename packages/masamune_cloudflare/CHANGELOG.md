@@ -1,3 +1,10 @@
+## 3.7.0 (2026-09-25)
+
+
+### feat
+
+* **masamune_cloudflare:** delegate cron jobs to the region Worker through signed internal requests ([8fb289c](https://github.com/mathrunet/node_masamune/commit/8fb289c0986e532da8eb57b5a51f870ae0f5d426))
+
 ## 3.6.0 (2026-09-25)
 
 
