@@ -33,6 +33,10 @@
       "version": "3.1.1",
       "sourceSha": "45e8d85755434384a90f0e3691b5eb51fea9e4f4"
     },
+    "@mathrunet/masamune_cloudflare_send_mail": {
+      "version": "3.1.0",
+      "sourceSha": "b8cea4de412dafeed49eecf8465e31a1c6a036c0"
+    },
     "@mathrunet/masamune_cloudflare_media": {
       "version": "3.1.2",
       "sourceSha": "cdedc1f1ac46339555563e8ff4a71cc08da21b0a"
