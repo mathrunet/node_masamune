@@ -69,8 +69,43 @@ export type WorkersDeployResult = hono.Hono & {
     ) => Promise<void>;
 };
 
-export function deploy(deployWorkders: WorkersBase[], options: WorkersOptions = {}): WorkersDeployResult {
+/**
+ * Type of Worker deployment.
+ *
+ * `edge` runs near each client without placement, and `region` runs near a fixed-region backend with placement.
+ *
+ * Workerのデプロイタイプ。
+ *
+ * `edge`はplacementなしで各クライアントの近くで動き、`region`はplacementで固定リージョンのバックエンドの近くで動きます。
+ */
+export type WorkersDeployType = "edge" | "region";
+
+/**
+ * Options for [deploy].
+ *
+ * [deploy]のオプション。
+ */
+export interface WorkersDeployOptions extends WorkersOptions {
+    /**
+     * Type of this Worker. When set, every response has the `x-masamune-worker` header.
+     *
+     * このWorkerのタイプ。指定するとすべてのレスポンスに`x-masamune-worker`ヘッダを付与します。
+     */
+    type?: WorkersDeployType | undefined;
+}
+
+export function deploy(deployWorkders: WorkersBase[], options: WorkersDeployOptions = {}): WorkersDeployResult {
     const app = new hono.Hono();
+    const { type, ...workersOptions } = options;
+    if (type !== undefined) {
+        if (type !== "edge" && type !== "region") {
+            throw new Error(`Invalid Worker type: ${String(type)}`);
+        }
+        app.use("*", async (context, next) => {
+            await next();
+            context.header("x-masamune-worker", type);
+        });
+    }
     const scheduleWorkers: ScheduleProcessWorkdersBase[] = [];
     const queueWorkers: QueueProcessWorkdersBase[] = [];
     for (const worker of deployWorkders) {
@@ -82,7 +117,7 @@ export function deploy(deployWorkders: WorkersBase[], options: WorkersOptions = 
             queueWorkers.push(worker);
             continue;
         }
-        app.route(worker.path, worker.build(options));
+        app.route(worker.path, worker.build(workersOptions));
     }
     const result = app as WorkersDeployResult;
     if (scheduleWorkers.length > 0) {

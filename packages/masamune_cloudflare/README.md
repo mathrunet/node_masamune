@@ -59,10 +59,56 @@ import * as m from "@mathrunet/masamune_cloudflare";
 export default m.deploy(
     [
         // Worker for Test.
-        m.TestWorkers.test,
+        m.Functions.test(),
     ],
 );
 ```
+
+# Edge and Region Workers
+
+Cloudflare applies Worker placement to a whole Worker, not to each route. Split an application into two Workers when it uses both per-user databases near clients and databases in one fixed region.
+
+| Worker | Entry | Wrangler config | Placement | Typical functions |
+|---|---|---|---|---|
+| edge | `src/edge.ts` | `wrangler.jsonc` | none (runs near each client) | Turso, KV, R2, D1, Durable Objects |
+| region | `src/region.ts` | `wrangler.region.jsonc` | `{ "region": "aws:us-east-1" }` | TiDB and other fixed-region backends |
+
+Pass `type` to `deploy` to add the `x-masamune-worker` response header. Use it to verify which Worker answered a request.
+
+```typescript
+// src/edge.ts
+import * as m from "@mathrunet/masamune_cloudflare";
+import * as turso from "@mathrunet/masamune_cloudflare_turso";
+import rules from "./rules.json";
+
+export default m.deploy([
+    turso.Functions.turso({ autoCreateDatabase: true }),
+    turso.Functions.tursoToken({ autoCreateDatabase: true }),
+], { type: "edge", rules: rules as m.RulesConfig, auth: new AuthAdapter() });
+```
+
+```typescript
+// src/region.ts
+import * as m from "@mathrunet/masamune_cloudflare";
+import * as tidb from "@mathrunet/masamune_cloudflare_tidb";
+import rules from "./rules.json";
+import tidbSchemaManifest from "./tidb_schema.json";
+
+export default m.deploy([
+    tidb.Functions.tidb({ schemaManifest: tidbSchemaManifest as tidb.SchemaManifest }),
+], { type: "region", rules: rules as m.RulesConfig, auth: new AuthAdapter() });
+```
+
+```jsonc
+// wrangler.region.jsonc
+{
+  "name": "my-app-region",
+  "main": "src/region.ts",
+  "placement": { "region": "aws:us-east-1" }
+}
+```
+
+Both Workers authenticate requests and evaluate rules on their own. Do not forward requests from the edge Worker to the region Worker through a Service Binding; placement applies to `fetch` handlers of the Worker that receives the request. Configure the client with one endpoint per Worker instead, for example `CloudflareFunctionsAdapter(endpoint: "https://my-app-region.<subdomain>.workers.dev")` for `TidbModelAdapter`. Never set placement on the edge Worker, because it would move per-user Turso traffic away from clients.
 
 # Queue Workers
 
@@ -114,7 +160,7 @@ import rulesJson from "../rules.json";
 
 export default m.deploy(
     [
-        m.TestWorkers.test,
+        m.Functions.test(),
     ],
     {
         rules: rulesJson,
