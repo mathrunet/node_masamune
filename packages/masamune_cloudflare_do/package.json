@@ -1,6 +1,6 @@
 {
   "name": "@mathrunet/masamune_cloudflare_do",
-  "version": "3.2.2",
+  "version": "3.2.3",
   "description": "ユーザー単位のDurable Objects SQLite保存・移行・リース",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -41,7 +41,7 @@
   "homepage": "https://github.com/mathrunet/node_masamune#readme",
   "dependencies": {
     "@mathrunet/masamune": "^3.11.0",
-    "@mathrunet/masamune_cloudflare": "^3.6.0",
+    "@mathrunet/masamune_cloudflare": "^3.7.0",
     "hono": "^4.12.27",
     "typescript": "^5.9.2"
   },

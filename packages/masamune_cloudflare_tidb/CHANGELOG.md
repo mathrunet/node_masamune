@@ -1,3 +1,14 @@
+## 3.8.0 (2026-09-25)
+
+
+### feat
+
+* **masamune_cloudflare_tidb:** add createTidbDirectClient helper ([4f8395f](https://github.com/mathrunet/node_masamune/commit/4f8395f2dd8611590135ec7b269be627862a6ae7))
+
+### dependencies
+
+* Update dependencies: @mathrunet/masamune_cloudflare.
+
 ## 3.7.6 (2026-09-25)
 
 
