@@ -1,6 +1,6 @@
 import * as functions from "firebase-functions/v2";
-import * as stripe from "stripe";
 import { HttpFunctionsOptions, firestoreLoader } from "@mathrunet/masamune_firebase";
+import { createStripeClient } from "../lib/stripe";
 
 /**
  * Webhook for proper redirection when 3D Secure authentication is required.
@@ -76,9 +76,7 @@ module.exports = (
           const stripeUserPath = process.env.PURCHASE_STRIPE_USERPATH ?? "plugins/stripe/user";
           const stripePurchasePath = process.env.PURCHASE_STRIPE_PURCHASEPATH ?? "purchase";
           const firestoreInstance = firestoreLoader(databaseId);
-          const stripeClient = new stripe.Stripe(apiKey, {
-            apiVersion: "2025-02-24.acacia",
-          });
+          const stripeClient = createStripeClient(apiKey);
           const token = req.query.token;
           if (!token || typeof token !== "string") {
             res.status(403).send(JSON.stringify({

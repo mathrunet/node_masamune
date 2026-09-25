@@ -11,3 +11,4 @@
 export * from "@mathrunet/masamune";
 export * from "@mathrunet/masamune_firebase";
 export * from "./functions";
+export * from "./lib/stripe";

@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { jsonError } from "@mathrunet/masamune_cloudflare/dist/lib/src/http_error";
+import { jsonError } from "@mathrunet/masamune_cloudflare";
 import {
     resolveStripeClient,
     resolveStripePurchaseStore,
@@ -9,6 +9,10 @@ import {
 } from "../lib/options";
 import { constructStripeEvent } from "../lib/stripe_client";
 import { syncStripePayment } from "../lib/purchase/sync_payment";
+import {
+    resolvePaymentIntentReceipt,
+    resolveSubscriptionPurchaseFields,
+} from "../lib/purchase/stripe_mapping";
 
 /**
  * Receives and processes webhooks from Stripe (parity with the `stripeWebhook`
@@ -154,13 +158,16 @@ module.exports = (
                     update["errorMessage"] = null;
                     update["updatedTime"] = new Date();
 
-                    if (payment["charges"] && payment["charges"]["data"] && payment["charges"]["data"].length > 0 && payment["charges"]["data"][0]) {
-                        if (payment["charges"]["data"][0]["receipt_url"]) {
-                            update["receiptUrl"] = payment["charges"]["data"][0]["receipt_url"];
-                        }
-                        if (payment["charges"]["data"][0]["amount_captured"]) {
-                            update["capturedAmount"] = payment["charges"]["data"][0]["amount_captured"];
-                        }
+                    // `PaymentIntent.charges` no longer exists; resolve the receipt via `latest_charge`.
+                    const receipt = await resolvePaymentIntentReceipt({
+                        stripeClient,
+                        paymentIntent: payment,
+                    });
+                    if (receipt.receiptUrl) {
+                        update["receiptUrl"] = receipt.receiptUrl;
+                    }
+                    if (receipt.capturedAmount) {
+                        update["capturedAmount"] = receipt.capturedAmount;
                     }
                     await store.savePurchase(purchase.orderId, update);
                     return c.json({
@@ -333,17 +340,17 @@ module.exports = (
                             "success": "Subscription is not active.",
                         });
                     }
-                    const endDate = new Date(subscription["current_period_end"] as number * 1000);
+                    // Since basil the period and price live on the subscription items.
+                    const fields = resolveSubscriptionPurchaseFields(subscription);
                     const id = subscription["id"];
                     const userId = subscription["metadata"]?.["userId"] as string;
                     const orderId = (subscription["metadata"]?.["orderId"] as string) ?? id;
-                    const plan = subscription["plan"] as {
-                        [key: string]: any
-                    } ?? {};
 
                     const existing = await store.findPurchaseBySubscriptionId(id);
                     const targetOrderId = existing?.orderId ?? orderId;
-                    update["expired"] = now >= endDate;
+                    update["expired"] = fields.current_period_end !== null
+                        ? now.getTime() >= fields.current_period_end * 1000
+                        : false;
                     if (userId) {
                         update["user"] = userId;
                     }
@@ -357,20 +364,20 @@ module.exports = (
                     update["canceled_at"] = subscription["canceled_at"];
                     update["collection_method"] = subscription["collection_method"];
                     update["currency"] = subscription["currency"];
-                    update["current_period_start"] = subscription["current_period_start"];
-                    update["current_period_end"] = subscription["current_period_end"];
+                    update["current_period_start"] = fields.current_period_start;
+                    update["current_period_end"] = fields.current_period_end;
                     update["customer"] = subscription["customer"];
                     update["default_payment_method"] = subscription["default_payment_method"];
                     update["ended_at"] = subscription["ended_at"];
                     update["latest_invoice"] = subscription["latest_invoice"];
-                    update["price_id"] = plan["id"];
-                    update["active"] = plan["active"];
-                    update["amount"] = plan["amount"];
-                    update["billing_scheme"] = plan["billing_scheme"];
-                    update["interval"] = plan["interval"];
-                    update["interval_count"] = plan["interval_count"];
-                    update["usage_type"] = plan["usage_type"];
-                    update["quantity"] = subscription["quantity"];
+                    update["price_id"] = fields.price_id;
+                    update["active"] = fields.active;
+                    update["amount"] = fields.amount;
+                    update["billing_scheme"] = fields.billing_scheme;
+                    update["interval"] = fields.interval;
+                    update["interval_count"] = fields.interval_count;
+                    update["usage_type"] = fields.usage_type;
+                    update["quantity"] = fields.quantity;
                     update["start_date"] = subscription["start_date"];
                     console.log(`Subscription status is ${status}.`);
                     await store.savePurchase(targetOrderId, update, {

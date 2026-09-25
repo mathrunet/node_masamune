@@ -1,6 +1,6 @@
 import Stripe from "stripe";
 import { Hono } from "hono";
-import { HttpError, jsonError } from "@mathrunet/masamune_cloudflare/dist/lib/src/http_error";
+import { HttpError, jsonError } from "@mathrunet/masamune_cloudflare";
 import "@mathrunet/masamune";
 import {
     resolveStripeClient,

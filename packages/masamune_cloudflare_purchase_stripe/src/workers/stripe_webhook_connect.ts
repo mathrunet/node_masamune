@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { jsonError } from "@mathrunet/masamune_cloudflare/dist/lib/src/http_error";
+import { jsonError } from "@mathrunet/masamune_cloudflare";
 import {
     resolveStripeClient,
     resolveStripePurchaseStore,

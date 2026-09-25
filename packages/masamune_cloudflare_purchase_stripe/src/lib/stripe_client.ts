@@ -7,7 +7,7 @@ import Stripe from "stripe";
  * このパッケージ全体で使用するStripe APIバージョン
  * （`@mathrunet/masamune_firebase_purchase_stripe`と同一）。
  */
-export const STRIPE_API_VERSION = "2025-02-24.acacia";
+export const STRIPE_API_VERSION = "2026-08-26.dahlia";
 
 /**
  * Options for [createStripeClient].

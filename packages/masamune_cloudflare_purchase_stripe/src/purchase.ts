@@ -23,6 +23,7 @@ export * from "./lib/purchase/interface";
 export * from "./lib/purchase/d1_purchase_store";
 export * from "./lib/purchase/helpers";
 export * from "./lib/purchase/sync_payment";
+export * from "./lib/purchase/stripe_mapping";
 
 /**
  * Builder signature of the purchase workers (`stripe` / `stripeWebhook` /

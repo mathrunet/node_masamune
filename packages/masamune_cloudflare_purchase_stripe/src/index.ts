@@ -17,6 +17,7 @@ export * from "./lib/purchase/interface";
 export * from "./lib/purchase/d1_purchase_store";
 export * from "./lib/purchase/helpers";
 export * from "./lib/purchase/sync_payment";
+export * from "./lib/purchase/stripe_mapping";
 export * from "./lib/meter/interface";
 export * from "./lib/meter/stripe_meter_client";
 export * from "./lib/meter/flush_meter";

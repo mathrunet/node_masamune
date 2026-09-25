@@ -1,8 +1,9 @@
 import * as functions from "firebase-functions/v2";
-import * as stripe from "stripe";
+import Stripe from "stripe";
 import * as admin from "firebase-admin";
 import "@mathrunet/masamune";
 import { HttpFunctionsOptions, firestoreLoader } from "@mathrunet/masamune_firebase";
+import { createStripeClient, resolvePaymentIntentReceipt, resolveSubscriptionPurchaseFields } from "../lib/stripe";
 
 
 /**
@@ -70,9 +71,7 @@ module.exports = (
           const stripePurchasePath = process.env.PURCHASE_STRIPE_PURCHASEPATH ?? "purchase";
           const stripeWebhookSecret = process.env.PURCHASE_STRIPE_WEBHOOKSECRET ?? "";
           const firestoreInstance = firestoreLoader(databaseId);
-          const stripeClient = new stripe.Stripe(apiKey, {
-            apiVersion: "2025-02-24.acacia",
-          });
+          const stripeClient = createStripeClient(apiKey);
           const signature = req.headers["stripe-signature"];
           if (!signature) {
             res.status(403).send(JSON.stringify({
@@ -193,13 +192,16 @@ module.exports = (
               update["errorMessage"] = admin.firestore.FieldValue.delete();
               update["updatedTime"] = new Date();
 
-              if (payment["charges"] && payment["charges"]["data"] && payment["charges"]["data"].length > 0 && payment["charges"]["data"][0]) {
-                if (payment["charges"]["data"][0]["receipt_url"]) {
-                  update["receiptUrl"] = payment["charges"]["data"][0]["receipt_url"];
-                }
-                if (payment["charges"]["data"][0]["amount_captured"]) {
-                  update["capturedAmount"] = payment["charges"]["data"][0]["amount_captured"];
-                }
+              // `PaymentIntent.charges` no longer exists; resolve the receipt via `latest_charge`.
+              const receipt = await resolvePaymentIntentReceipt({
+                stripeClient,
+                paymentIntent: payment,
+              });
+              if (receipt.receiptUrl) {
+                update["receiptUrl"] = receipt.receiptUrl;
+              }
+              if (receipt.capturedAmount) {
+                update["capturedAmount"] = receipt.capturedAmount;
               }
               await purchase.ref.save(
                 update, { merge: true }
@@ -411,14 +413,12 @@ module.exports = (
                 }));
                 return;
               }
-              const endDate = new Date(subscription["current_period_end"] as number * 1000);
+              // Since basil the period and price live on the subscription items.
+              const fields = resolveSubscriptionPurchaseFields(subscription);
               const id = subscription["id"];
               const userId = subscription.metadata.userId as string;
               const orderId = subscription.metadata.orderId as string ?? id;
               const targetPath = `${stripePurchasePath}/${orderId}`;
-              const plan = subscription.plan as {
-                [key: string]: any
-              };
 
               let doc: FirebaseFirestore.DocumentReference<FirebaseFirestore.DocumentData>;
               const subscriptionCol = await firestoreInstance.collection(`${stripePurchasePath}`).where("subscription", "==", id).load();
@@ -427,7 +427,9 @@ module.exports = (
               } else {
                 doc = subscriptionCol.docs[0].ref;
               }
-              update["expired"] = now >= endDate;
+              update["expired"] = fields.current_period_end !== null
+                ? now.getTime() >= fields.current_period_end * 1000
+                : false;
               if (userId) {
                 update["user"] = userId;
               }
@@ -441,20 +443,20 @@ module.exports = (
               update["canceled_at"] = subscription["canceled_at"];
               update["collection_method"] = subscription["collection_method"];
               update["currency"] = subscription["currency"];
-              update["current_period_start"] = subscription["current_period_start"];
-              update["current_period_end"] = subscription["current_period_end"];
+              update["current_period_start"] = fields.current_period_start;
+              update["current_period_end"] = fields.current_period_end;
               update["customer"] = subscription["customer"];
               update["default_payment_method"] = subscription["default_payment_method"];
               update["ended_at"] = subscription["ended_at"];
               update["latest_invoice"] = subscription["latest_invoice"];
-              update["price_id"] = plan["id"];
-              update["active"] = plan["active"];
-              update["amount"] = plan["amount"];
-              update["billing_scheme"] = plan["billing_scheme"];
-              update["interval"] = plan["interval"];
-              update["interval_count"] = plan["interval_count"];
-              update["usage_type"] = plan["usage_type"];
-              update["quantity"] = subscription["quantity"];
+              update["price_id"] = fields.price_id;
+              update["active"] = fields.active;
+              update["amount"] = fields.amount;
+              update["billing_scheme"] = fields.billing_scheme;
+              update["interval"] = fields.interval;
+              update["interval_count"] = fields.interval_count;
+              update["usage_type"] = fields.usage_type;
+              update["quantity"] = fields.quantity;
               update["start_date"] = subscription["start_date"];
               update["start_date"] = subscription["start_date"];
               console.log(`Subscription status is ${status} ${stripePurchasePath}.`);
@@ -503,7 +505,7 @@ module.exports = (
  *
  * Stripeの取得結果をFirestoreに同期します。
  *
- * @param {stripe.Stripe} stripeClient
+ * @param {Stripe} stripeClient
  * Stripe client instances.
  * ストライプのクライアントインスタンス。
  *
@@ -522,13 +524,13 @@ module.exports = (
  * @returns {Promise<void>}
  *
  */
-async function syncStripePayment(stripeClient: stripe.Stripe, firestoreInstance: FirebaseFirestore.Firestore, userId: string, customerId: string) {
+async function syncStripePayment(stripeClient: Stripe, firestoreInstance: FirebaseFirestore.Firestore, userId: string, customerId: string) {
   const stripeUserPath = process.env.PURCHASE_STRIPE_USERPATH ?? "plugins/stripe/user";
   const stripePaymentPath = process.env.PURCHASE_STRIPE_PAYMENTPATH ?? "payment";
 
   const customer = await stripeClient.customers.retrieve(
     customerId,
-  ) as stripe.Stripe.Customer;
+  ) as Stripe.Customer;
   let defaultSource = customer.invoice_settings.default_payment_method;
   const paymentMethods = await stripeClient.customers.listPaymentMethods(
     customerId,

@@ -1,7 +1,7 @@
 import * as functions from "firebase-functions/v2";
-import * as stripe from "stripe";
 import { HttpFunctionsOptions, firestoreLoader } from "@mathrunet/masamune_firebase";
 import "@mathrunet/masamune";
+import { createStripeClient } from "../lib/stripe";
 
 /**
  * Receive and process webhooks for Stripe Connect.
@@ -61,9 +61,7 @@ module.exports = (
           const stripeUserPath = process.env.PURCHASE_STRIPE_USERPATH ?? "plugins/stripe/user";
           const stripeWebhookConnectSecret = process.env.PURCHASE_STRIPE_WEBHOOKCONNECTSECRET ?? "";
           const firestoreInstance = firestoreLoader(databaseId);
-          const stripeClient = new stripe.Stripe(apiKey, {
-            apiVersion: "2025-02-24.acacia",
-          });
+          const stripeClient = createStripeClient(apiKey);
           const signature = req.headers["stripe-signature"];
           if (!signature) {
             res.status(403).send(JSON.stringify({

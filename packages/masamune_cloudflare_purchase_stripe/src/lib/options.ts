@@ -1,7 +1,7 @@
 import Stripe from "stripe";
 import { Context } from "hono";
-import { resolveConfig } from "@mathrunet/masamune_cloudflare/dist/lib/src/http_error";
-import { WorkersOptions } from "@mathrunet/masamune_cloudflare/dist/lib/src/workers_base";
+import { resolveConfig } from "@mathrunet/masamune_cloudflare";
+import { WorkersOptions } from "@mathrunet/masamune_cloudflare";
 import { SqlDatabaseLike } from "./meter/d1_usage_event_store";
 import { D1StripePurchaseStore, D1StripePurchaseStoreOptions } from "./purchase/d1_purchase_store";
 import { StripePurchaseStore } from "./purchase/interface";

@@ -1,6 +1,6 @@
 import Stripe from "stripe";
 import { Context } from "hono";
-import { HttpError } from "@mathrunet/masamune_cloudflare/dist/lib/src/http_error";
+import { HttpError } from "@mathrunet/masamune_cloudflare";
 import { StripePurchaseWorkersOptions } from "../options";
 import { StripePurchaseStore, StripeUserDocument } from "./interface";
 

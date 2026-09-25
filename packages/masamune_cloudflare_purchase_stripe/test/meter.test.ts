@@ -39,7 +39,14 @@ function fakeKv(store: Map<string, string>): KVNamespaceLike {
 function fakeFetch(status: number, onRequest?: (init?: RequestInit) => void): typeof fetch {
     return (async (_url: unknown, init?: RequestInit) => {
         onRequest?.(init);
-        return new Response(status >= 400 ? "error" : "{}", { status });
+        // Return a Stripe-shaped JSON error body; the SDK leaves its request
+        // timeout timer armed when an error body is not valid JSON.
+        return new Response(
+            status >= 400
+                ? JSON.stringify({ error: { type: "invalid_request_error", message: "error" } })
+                : "{}",
+            { status, headers: { "content-type": "application/json" } },
+        );
     }) as typeof fetch;
 }
 
@@ -68,7 +75,9 @@ describe("recordUsage", () => {
             pendingRows: [{ id: "u1", units: 10 }],
             executed,
             store,
-            fetch: fakeFetch(500),
+            // Use a non-retryable error: stripe-node 22.6.x leaves the request
+            // timeout timer of a retried (5xx) attempt armed, which keeps Jest alive.
+            fetch: fakeFetch(400),
         });
 
         await recordUsage({

@@ -1,9 +1,10 @@
 import * as functions from "firebase-functions/v2";
-import * as stripe from "stripe";
+import Stripe from "stripe";
 import * as admin from "firebase-admin";
 import { HttpFunctionsOptions, firestoreLoader } from "@mathrunet/masamune_firebase";
 import { lib as sendgrid } from "@mathrunet/masamune_firebase_mail_sendgrid";
 import "@mathrunet/masamune";
+import { createStripeClient } from "../lib/stripe";
 
 
 /**
@@ -202,9 +203,7 @@ module.exports = (
           const stripePaymentPath = process.env.PURCHASE_STRIPE_PAYMENTPATH ?? "payment";
           const stripeEmailProvider = process.env.PURCHASE_STRIPE_EMAILPROVIDER ?? "sendgrid";
           const firestoreInstance = firestoreLoader(databaseId);
-          const stripeClient = new stripe.Stripe(apiKey, {
-            apiVersion: "2025-02-24.acacia",
-          });
+          const stripeClient = createStripeClient(apiKey);
           switch (query.data.mode) {
             case "create_account": {
               const userId = query.data.userId;
@@ -498,7 +497,7 @@ module.exports = (
               if (!defaultPayment) {
                 const customer = await stripeClient.customers.retrieve(
                   userData["customer"],
-                ) as stripe.Stripe.Customer;
+                ) as Stripe.Customer;
                 defaultPayment = customer.invoice_settings.default_payment_method;
                 if (!defaultPayment) {
                   const payments = await firestoreInstance.collection(`${stripeUserPath}/${userId}/${stripePaymentPath}`).load();
@@ -614,7 +613,7 @@ module.exports = (
               if (!defaultPayment) {
                 const customer = await stripeClient.customers.retrieve(
                   userData["customer"],
-                ) as stripe.Stripe.Customer;
+                ) as Stripe.Customer;
                 defaultPayment = customer.invoice_settings.default_payment_method;
                 if (!defaultPayment) {
                   const payments = await firestoreInstance.collection(`${stripeUserPath}/${userId}/${stripePaymentPath}`).load();
@@ -1000,7 +999,7 @@ module.exports = (
               if (!defaultPayment) {
                 const customer = await stripeClient.customers.retrieve(
                   userData["customer"],
-                ) as stripe.Stripe.Customer;
+                ) as Stripe.Customer;
                 defaultPayment = customer.invoice_settings.default_payment_method;
                 if (!defaultPayment) {
                   const payments = await firestoreInstance.collection(`${stripeUserPath}/${userId}/${stripePaymentPath}`).load();
