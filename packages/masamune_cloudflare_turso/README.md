@@ -142,6 +142,12 @@ Platform API tokenを設定してください。既存DBの参照とSQL token発
 token値はログやソースに保存しません。対応表はSQLのread-only権限を付与する機能ではないため、
 読み取り制限は既存のrulesで指定します。
 
+# Worker placement
+
+Register Turso in the edge Worker entry (`src/edge.ts`) and do not set `placement` on that Worker. Cloudflare runs a Worker without placement in the data center that receives the request, so a new database is created in the group nearest to the client and later requests reach it from a nearby Worker. Smart Placement or a placement hint moves the whole Worker to one location and adds distance for users in other regions. Keep fixed-region databases such as TiDB in a separate region Worker. See "Edge and Region Workers" in the `@mathrunet/masamune_cloudflare` README.
+
+The Worker closes the Hrana stream after sending the response when `ExecutionContext.waitUntil` is available.
+
 # Multiple groups and automatic region selection
 
 Register existing Turso groups for each region to let the Worker choose where to create a new database without requiring Flutter to specify a group. This does not create or move groups. The Platform API token must allow retrieving and creating databases and issuing database-scoped tokens for every configured group.
@@ -215,19 +221,24 @@ cloudflare:
     groups:
       dev:
         - name: dev-apac
-          continents: [AS, OC, NA, SA, EU, AF]
+          location: aws-ap-northeast-1
       prod:
         - name: prod-apac
+          location: aws-ap-northeast-1
           continents: [AS, OC]
         - name: prod-us
+          location: aws-us-east-1
           continents: [NA, SA]
         - name: prod-eu
+          location: aws-eu-west-1
           continents: [EU, AF]
 ```
 
+When a group has `location`, `katana apply` creates the group through the Platform API if it does not exist. Existing groups are not changed. Creating groups requires an organization-wide Platform API token, and multiple groups require a Turso plan that supports them. `location` is not written to `TURSO_GROUPS`.
+
 `katana apply` writes environment-specific `TURSO_GROUPS` (a JSON string) to Wrangler. `TURSO_GROUPS` takes precedence over `options.groups`. `TURSO_GROUP` overrides only the default, not region selection or the resolver. With multiple groups, the default must also appear in the list. Configuring only `groups` is supported.
 
-Reapplying preserves custom options and references to shared configuration in `index.ts`. When passing all options through a variable, as in `turso.Functions.turso(sharedOptions)`, manage `autoCreateDatabase` and `schemaManifest` in that variable as well. Setting `rotate_legacy_tokens: true` targets all configured groups.
+Reapplying preserves custom options and references to shared configuration in `edge.ts`. When passing all options through a variable, as in `turso.Functions.turso(sharedOptions)`, manage `autoCreateDatabase` and `schemaManifest` in that variable as well. Setting `rotate_legacy_tokens: true` targets all configured groups.
 
 # Endpoints
 

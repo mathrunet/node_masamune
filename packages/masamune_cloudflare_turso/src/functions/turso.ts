@@ -197,12 +197,35 @@ async function handleCrud(
       table: request?.table,
     });
   } finally {
-    try {
-      await client?.close();
-    } catch (_) {
-      // The request result is authoritative; closing a completed stream is best effort.
-    }
+    await closeTursoClient(context, client);
   }
+}
+
+/**
+ * Closes the Hrana stream without delaying the response when the runtime can continue work after it.
+ *
+ * レスポンス後も処理を継続できる実行環境では、応答を待たせずにHranaストリームを閉じます。
+ */
+async function closeTursoClient(
+  context: Context,
+  client: TursoClient | undefined,
+): Promise<void> {
+  if (!client) {
+    return;
+  }
+  // The request result is authoritative; closing a completed stream is best effort.
+  const closing = Promise.resolve().then(() => client.close()).catch(() => undefined);
+  let executionContext: { waitUntil(promise: Promise<unknown>): void } | undefined;
+  try {
+    executionContext = context.executionCtx;
+  } catch (_) {
+    executionContext = undefined;
+  }
+  if (typeof executionContext?.waitUntil === "function") {
+    executionContext.waitUntil(closing);
+    return;
+  }
+  await closing;
 }
 
 function resolveCrudRulesOperation(

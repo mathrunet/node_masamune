@@ -1997,6 +1997,33 @@ describe("Turso Cloudflare workers", () => {
     expect(close).toHaveBeenCalledTimes(1);
   });
 
+  test("responds before closing the Hrana stream when waitUntil is available", async () => {
+    mockExistingDatabase({ url: "libsql://deferred-close.turso.io" });
+    execute.mockResolvedValue({ columns: ["id"], rows: [["item"]] });
+    let releaseClose: () => void = () => undefined;
+    close.mockImplementationOnce(() => new Promise<void>((resolve) => { releaseClose = resolve; }));
+    const pending: Promise<unknown>[] = [];
+    const executionCtx = {
+      waitUntil: (promise: Promise<unknown>) => { pending.push(promise); },
+      passThroughOnException: () => undefined,
+      props: {},
+    };
+    const app = deploy([Functions.turso(dynamicOptions())]);
+
+    const response = await app.request(
+      "http://localhost/turso/database/deferred-close/users/item",
+      {},
+      undefined,
+      executionCtx,
+    );
+
+    expect(response.status).toBe(200);
+    expect(close).toHaveBeenCalledTimes(1);
+    expect(pending).toHaveLength(1);
+    releaseClose();
+    await Promise.all(pending);
+  });
+
   test("retries a concurrent write after the libsql connection cap fires", async () => {
     mockExistingDatabase({ url: "libsql://connection-cap-db.turso.io" });
     execute
