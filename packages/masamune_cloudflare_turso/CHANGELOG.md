@@ -1,3 +1,14 @@
+## 3.7.5 (2026-09-25)
+
+
+### perf
+
+* **masamune_cloudflare_turso:** close Hrana streams after sending the response ([64edfe1](https://github.com/mathrunet/node_masamune/commit/64edfe1cb49f5fa59c3ec6414ff7a478d7fe1a4f))
+
+### dependencies
+
+* Update dependencies: @mathrunet/masamune_cloudflare.
+
 ## 3.7.4 (2026-09-25)
 
 
