@@ -42,15 +42,30 @@ npm install @mathrunet/masamune_cloudflare_tidb
 
 # Implementation
 
+Register TiDB in the region Worker entry (`src/region.ts`) and place that Worker near the TiDB cluster. See "Edge and Region Workers" in the `@mathrunet/masamune_cloudflare` README.
+
 ```typescript
+// src/region.ts
 import * as m from "@mathrunet/masamune_cloudflare_tidb";
 import schema from "./tidb_schema.json";
 import rules from "./rules.json";
 
 export default m.deploy([
-  m.Functions.tidb({schemaManifest: schema as m.SchemaManifest, rules}),
-]);
+  m.Functions.tidb({schemaManifest: schema as m.SchemaManifest}),
+], { type: "region", rules: rules as m.RulesConfig });
 ```
+
+```jsonc
+// wrangler.region.jsonc
+{
+  "name": "my-app-region",
+  "main": "src/region.ts",
+  // Use the region of the TiDB cluster.
+  "placement": { "region": "aws:us-east-1" }
+}
+```
+
+Each SQL statement is one HTTPS round trip from the Worker to TiDB. Without placement, the Worker runs near the client and every statement crosses the distance to the cluster. Flutter should use a `CloudflareFunctionsAdapter` for the region Worker endpoint in `TidbModelAdapter`.
 
 Set `TIDB_HOST`, `TIDB_USERNAME`, and `TIDB_PASSWORD` as Worker secrets. Do not distribute SQL credentials to Flutter apps. The Worker conditional exports are selected through `workerd`/`browser` and do not load Node-only Express dependencies.
 
