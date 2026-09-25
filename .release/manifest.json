@@ -66,8 +66,8 @@
       "sourceSha": "84a1f7034d4418515aa733cf5d5ae9cec1e3f153"
     },
     "@mathrunet/masamune_cloudflare_turso": {
-      "version": "3.7.3",
-      "sourceSha": "84a1f7034d4418515aa733cf5d5ae9cec1e3f153"
+      "version": "3.7.4",
+      "sourceSha": "407a1d18f19011f06c8573da066d2f99eea0ad45"
     },
     "@mathrunet/masamune_firebase": {
       "version": "3.2.0",
