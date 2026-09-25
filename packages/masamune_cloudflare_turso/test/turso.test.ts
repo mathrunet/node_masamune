@@ -22,14 +22,29 @@ import {
 
 const execute = jest.fn();
 const close = jest.fn();
+// Observes each `BEGIN CONCURRENT` ... `COMMIT`/`ROLLBACK` span. The callback
+// settles when the transaction ends, so a wrapping implementation sees every
+// statement issued inside the transaction.
 const concurrent = jest.fn(async (callback: () => Promise<unknown>) => callback());
-const transaction = jest.fn((callback: () => Promise<unknown>) => ({
-  concurrent: () => concurrent(callback),
-}));
-const connect = jest.fn(() => ({ execute, transaction, close }));
+const transactionEnds: Array<() => void> = [];
+const clientExecute = jest.fn(async (...args: unknown[]) => {
+  const [statement] = args;
+  const sql = typeof statement === "string" ? statement : "";
+  if (sql === "BEGIN CONCURRENT") {
+    const ended = new Promise<void>((resolve) => transactionEnds.push(resolve));
+    void concurrent(() => ended);
+    return { columns: [], rows: [] };
+  }
+  if (sql === "COMMIT" || sql === "ROLLBACK") {
+    transactionEnds.shift()?.();
+    return { columns: [], rows: [] };
+  }
+  return execute(...args);
+});
+const connect = jest.fn(() => ({ execute: clientExecute, close }));
 
-jest.mock("@tursodatabase/serverless", () => ({
-  connect,
+jest.mock("@tursodatabase/serverless/compat", () => ({
+  createClient: connect,
 }));
 
 const tursoDatabaseId = "00000000-0010-4000-8000-000000000000";

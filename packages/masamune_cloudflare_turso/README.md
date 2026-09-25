@@ -379,11 +379,11 @@ Automatic migration is intentionally limited to additive field changes.
 - Field rename, field deletion, primary key changes, unique constraints, and foreign keys are not automatically migrated.
 - `PUT` and `DELETE` require `indexKey` or `where` to avoid accidental full-table changes.
 
-Worker-side `POST`, `PUT`, and `DELETE` operations use the native
-`@tursodatabase/serverless` connection API and a `BEGIN CONCURRENT`
-transaction. Row conflicts and `SQLITE_BUSY` at commit are rolled back and
-retried with bounded backoff; constraints and other SQL errors are returned
-without retrying.
+Worker-side `POST`, `PUT`, and `DELETE` operations use the libSQL-compatible
+`@tursodatabase/serverless/compat` client and a `BEGIN CONCURRENT`
+transaction on that client's session. Row conflicts and `SQLITE_BUSY` at
+commit are rolled back and retried with bounded backoff; constraints and other
+SQL errors are returned without retrying.
 
 The default table shape is:
 

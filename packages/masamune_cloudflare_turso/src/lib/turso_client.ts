@@ -5,16 +5,23 @@ import { resolveTursoCreationGroup, validateTursoDatabaseGroup, validateTursoGro
 
 export type TursoDatabaseEndpoint = Pick<TursoDatabaseConnection, "url" | "created" | "group" | "primaryRegion">;
 
-interface TursoNativeConnection {
+// libSQL-compatible client exported by `@tursodatabase/serverless/compat`.
+//
+// The native `connect()` API removed `Connection#execute` in
+// `@tursodatabase/serverless` 1.3.0, while the compat client keeps the same
+// `execute` contract in every release since 1.2.x.
+interface TursoCompatClient {
+  execute(
+    statement: string | { sql: string; args?: SqlValue[] },
+  ): Promise<TursoResultSet>;
   execute(sql: string, args?: SqlValue[]): Promise<TursoResultSet>;
-  transaction<T>(callback: () => Promise<T>): {
-    concurrent(): Promise<T>;
-  };
-  close(): Promise<void>;
+  close(): void | Promise<void>;
 }
 
 declare const require: (id: string) => {
-  connect: (config: TursoDatabaseConnection) => TursoNativeConnection;
+  createClient: (
+    config: Pick<TursoDatabaseConnection, "url" | "authToken">,
+  ) => TursoCompatClient;
 };
 
 export interface TursoResultSet {
@@ -77,8 +84,8 @@ const tokenRefreshWindowSeconds = 60;
 export function createTursoClient(
   connection: TursoDatabaseConnection,
 ): TursoClient {
-  const { connect } = require("@tursodatabase/serverless");
-  const client = connect({
+  const { createClient } = require("@tursodatabase/serverless/compat");
+  const client = createClient({
     url: connection.url,
     authToken: connection.authToken,
   });
@@ -94,9 +101,35 @@ export function createTursoClient(
         ? client.execute(statement.sql)
         : client.execute(statement.sql, statement.args),
     concurrent: <T>(callback: () => Promise<T>) =>
-      client.transaction(callback).concurrent(),
-    close: () => client.close(),
+      runConcurrentTransaction(client, callback),
+    close: async () => {
+      await client.close();
+    },
   };
+}
+
+// Runs [callback] inside `BEGIN CONCURRENT` on the client's own session.
+//
+// The compat `transaction()` API cannot open a concurrent transaction (it only
+// issues `BEGIN`, `BEGIN DEFERRED` or `BEGIN IMMEDIATE`) and it holds the
+// client lock until commit, so statements issued through the same client from
+// [callback] would never run. The compat client keeps one Hrana stream across
+// `execute` calls, so issuing the transaction control statements on it gives
+// the callback the same atomic MVCC transaction as the former native
+// `transaction(callback).concurrent()` API.
+async function runConcurrentTransaction<T>(
+  client: TursoCompatClient,
+  callback: () => Promise<T>,
+): Promise<T> {
+  await client.execute("BEGIN CONCURRENT");
+  try {
+    const result = await callback();
+    await client.execute("COMMIT");
+    return result;
+  } catch (error) {
+    await client.execute("ROLLBACK");
+    throw error;
+  }
 }
 
 export async function resolveDatabaseConnection(
