@@ -59,14 +59,19 @@ class FakeR2Bucket {
   }
 }
 
-const env = (bucket: FakeR2Bucket) => ({
+const env = (
+  bucket: FakeR2Bucket,
+  overrides: Record<string, unknown> = {},
+) => ({
   R2_BUCKET: bucket,
   STORAGE_DOWNLOAD_URL_SECRET: "test-secret",
+  STORAGE_PUBLIC_BASE_URL: "https://storage-env.example.com/",
+  ...overrides,
 });
 
-function createApp() {
+function createApp(options: Parameters<typeof Functions.storageCloudflare>[0] = {}) {
   return deploy([
-    Functions.storageCloudflare(),
+    Functions.storageCloudflare(options),
   ], {
     rules: {
       version: "1",
@@ -155,6 +160,64 @@ describe("storage_cloudflare worker", () => {
 
     expect(response.status).toBe(200);
     expect(body.meta.downloadUri).toContain("/storage_cloudflare/download/public/hello.txt");
+    expect(body.meta.downloadUri).toContain("signature=");
+  });
+
+  test("resolves public URL from STORAGE_PUBLIC_BASE_URL when publicBaseUrl option is not specified", async () => {
+    const app = createApp();
+    const bucket = new FakeR2Bucket();
+    await bucket.put("public/hello.txt", new TextEncoder().encode("hello"));
+
+    const response = await app.request("http://localhost/storage_cloudflare", {
+      method: "POST",
+      body: JSON.stringify({
+        operation: "downloadUrl",
+        path: "public/hello.txt",
+      }),
+      headers: { "Content-Type": "application/json" },
+    }, env(bucket));
+    const body = await response.json() as { meta: { publicUri: string } };
+
+    expect(response.status).toBe(200);
+    expect(body.meta.publicUri).toBe("https://storage-env.example.com/public/hello.txt");
+  });
+
+  test("prefers publicBaseUrl option over STORAGE_PUBLIC_BASE_URL", async () => {
+    const app = createApp({ publicBaseUrl: "https://storage-option.example.com/" });
+    const bucket = new FakeR2Bucket();
+    await bucket.put("public/hello.txt", new TextEncoder().encode("hello"));
+
+    const response = await app.request("http://localhost/storage_cloudflare", {
+      method: "POST",
+      body: JSON.stringify({
+        operation: "downloadUrl",
+        path: "public/hello.txt",
+      }),
+      headers: { "Content-Type": "application/json" },
+    }, env(bucket));
+    const body = await response.json() as { meta: { publicUri: string } };
+
+    expect(response.status).toBe(200);
+    expect(body.meta.publicUri).toBe("https://storage-option.example.com/public/hello.txt");
+  });
+
+  test("omits publicUri when neither publicBaseUrl nor STORAGE_PUBLIC_BASE_URL is configured", async () => {
+    const app = createApp({ publicBaseUrl: "" });
+    const bucket = new FakeR2Bucket();
+    await bucket.put("public/hello.txt", new TextEncoder().encode("hello"));
+
+    const response = await app.request("http://localhost/storage_cloudflare", {
+      method: "POST",
+      body: JSON.stringify({
+        operation: "downloadUrl",
+        path: "public/hello.txt",
+      }),
+      headers: { "Content-Type": "application/json" },
+    }, env(bucket, { STORAGE_PUBLIC_BASE_URL: "" }));
+    const body = await response.json() as { meta: { downloadUri: string; publicUri?: string } };
+
+    expect(response.status).toBe(200);
+    expect(body.meta.publicUri).toBeUndefined();
     expect(body.meta.downloadUri).toContain("signature=");
   });
 });

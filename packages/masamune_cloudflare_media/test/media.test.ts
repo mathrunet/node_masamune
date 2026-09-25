@@ -87,6 +87,33 @@ describe("masamune_cloudflare_media", () => {
         expect(deleted).toEqual(["videos/source.mp4"]);
     });
 
+    test("正常系: publicBaseUrl未指定時はSTORAGE_PUBLIC_BASE_URL環境変数から公開URLを解決", async () => {
+        const fetchMock = jest.fn(async () => ({
+            ok: true,
+            json: async () => streamCopyResponse,
+        } as unknown as Response));
+        (globalThis as { fetch: typeof fetch }).fetch = fetchMock as unknown as typeof fetch;
+        const app = deploy([
+            Functions.hls({
+                auth: new NoneAuthAdapter(),
+                accountId: "account-1",
+                apiToken: "api-token",
+            }),
+        ]);
+        const response = await app.request("http://localhost/hls", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                path: "videos/source.mp4",
+            }),
+        }, {
+            STORAGE_PUBLIC_BASE_URL: "https://cdn-env.example.com/",
+        });
+        expect(response.status).toBe(200);
+        const calls = fetchMock.mock.calls as unknown as [string, { body: string }][];
+        expect(JSON.parse(calls[0][1].body).url).toBe("https://cdn-env.example.com/videos/source.mp4");
+    });
+
     test("正常系: downloadBaseUrl + secretで署名付きURLを生成", async () => {
         const fetchMock = jest.fn(async () => ({
             ok: true,

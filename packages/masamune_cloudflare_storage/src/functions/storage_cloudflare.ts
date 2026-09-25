@@ -5,6 +5,7 @@ import {
   WorkersAuthContext,
   WorkersOptions,
   isRulesConfig,
+  resolveConfig,
 } from "@mathrunet/masamune_cloudflare";
 
 type StorageOperation = "get" | "put" | "post" | "delete" | "downloadUrl";
@@ -47,6 +48,13 @@ interface R2BucketLike {
 
 export interface StorageWorkerData extends WorkersOptions {
   bucketBindingName?: string | undefined;
+  /**
+   * Public base URL used to build `publicUri` for stored objects.
+   *
+   * If not specified (or empty), it is resolved from the `STORAGE_PUBLIC_BASE_URL`
+   * environment variable (Workers `vars`), which allows different URLs per environment.
+   * If neither is configured, `publicUri` is omitted from the response.
+   */
   publicBaseUrl?: string | undefined;
   downloadUrlSecret?: string | undefined;
   downloadUrlSecretBindingName?: string | undefined;
@@ -55,6 +63,7 @@ export interface StorageWorkerData extends WorkersOptions {
 }
 
 const defaultBucketBindingName = "R2_BUCKET";
+const defaultPublicBaseUrlBindingName = "STORAGE_PUBLIC_BASE_URL";
 const defaultDownloadUrlSecretBindingName = "STORAGE_DOWNLOAD_URL_SECRET";
 const defaultExpiresIn = 60 * 60;
 
@@ -104,7 +113,7 @@ async function handleStorageOperation(
           status: 200,
           meta: {
             downloadUri: await createLimitedDownloadUrl(context, path, body.expiresIn, data),
-            publicUri: createPublicUrl(path, data),
+            publicUri: createPublicUrl(context, path, data),
           },
         });
     }
@@ -133,7 +142,7 @@ async function getObject(
       size: object.size,
       updated: object.uploaded?.toISOString(),
       downloadUri: await createLimitedDownloadUrl(context, path, undefined, data),
-      publicUri: createPublicUrl(path, data),
+      publicUri: createPublicUrl(context, path, data),
     },
   });
 }
@@ -166,7 +175,7 @@ async function putObject(
     meta: {
       contentType,
       downloadUri: await createLimitedDownloadUrl(context, path, body.expiresIn, data),
-      publicUri: createPublicUrl(path, data),
+      publicUri: createPublicUrl(context, path, data),
     },
   });
 }
@@ -319,11 +328,14 @@ async function signDownloadPath(path: string, expires: number, secret: string): 
   return arrayBufferToHex(signature);
 }
 
-function createPublicUrl(path: string, data: StorageWorkerData): string | undefined {
-  if (!data.publicBaseUrl) {
+function createPublicUrl(context: Context, path: string, data: StorageWorkerData): string | undefined {
+  // [data.publicBaseUrl] takes precedence. Falls back to the STORAGE_PUBLIC_BASE_URL env var.
+  // When neither is configured, the public URL is omitted.
+  const baseUrl = resolveConfig(context, data.publicBaseUrl, defaultPublicBaseUrlBindingName);
+  if (!baseUrl) {
     return undefined;
   }
-  return `${data.publicBaseUrl.replace(/\/+$/g, "")}/${encodeStoragePath(path)}`;
+  return `${baseUrl.replace(/\/+$/g, "")}/${encodeStoragePath(path)}`;
 }
 
 function currentRouteBaseUrl(context: Context): string {

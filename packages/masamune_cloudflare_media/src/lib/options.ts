@@ -38,7 +38,11 @@ export interface MediaWorkersOptions extends WorkersOptions {
     /**
      * Public base URL of the storage. Used to build the source URL from an R2 key.
      *
+     * If not specified, it is resolved from the `STORAGE_PUBLIC_BASE_URL` environment variable (Workers vars).
+     *
      * ストレージの公開ベースURL。R2キーからソースURLを構築するために使用します。
+     *
+     * 指定されていない場合は`STORAGE_PUBLIC_BASE_URL`環境変数（Workers vars）から解決されます。
      */
     publicBaseUrl?: string | undefined;
 

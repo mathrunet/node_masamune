@@ -5,6 +5,7 @@ import { MediaWorkersOptions } from "../lib/options";
 
 const defaultBucketBindingName = "R2_BUCKET";
 const defaultDownloadUrlSecretBindingName = "STORAGE_DOWNLOAD_URL_SECRET";
+const defaultPublicBaseUrlBindingName = "STORAGE_PUBLIC_BASE_URL";
 const defaultSignedUrlExpiresIn = 60 * 60;
 const waitUntilReadyIntervalMs = 2000;
 const waitUntilReadyMaxAttempts = 10;
@@ -136,11 +137,12 @@ async function resolveSourceUrl(
         const baseUrl = options.downloadBaseUrl.replace(/\/+$/g, "");
         return `${baseUrl}/download/${encodedPath}?expires=${expires}&signature=${signature}`;
     }
-    // 公開URL
-    if (options.publicBaseUrl) {
-        return `${options.publicBaseUrl.replace(/\/+$/g, "")}/${encodedPath}`;
+    // 公開URL（optionsが優先、未指定ならSTORAGE_PUBLIC_BASE_URL環境変数から解決）
+    const publicBaseUrl = resolveConfig(context, options.publicBaseUrl, defaultPublicBaseUrlBindingName);
+    if (publicBaseUrl) {
+        return `${publicBaseUrl.replace(/\/+$/g, "")}/${encodedPath}`;
     }
-    throw new HttpError(500, "Either [publicBaseUrl] or [downloadBaseUrl] + download URL secret must be configured to resolve the source URL from [path].");
+    throw new HttpError(500, "Either [publicBaseUrl] (or STORAGE_PUBLIC_BASE_URL) or [downloadBaseUrl] + download URL secret must be configured to resolve the source URL from [path].");
 }
 
 function resolveBucket(context: Context, options: MediaWorkersOptions): R2BucketLike {

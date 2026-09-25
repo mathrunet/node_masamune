@@ -11,7 +11,9 @@ import {
  * Cloudflare Workers用の適用可能なFunctionsの一覧を定義します。
  */
 export const Functions = {
-  storageCloudflare: (options: StorageWorkerData = {}) => new masamune.WorkersData({ path: "/storage_cloudflare", func: require("./functions/storage_cloudflare"), options: options }),
+  // [options] is also passed as [data] so that storage-specific settings
+  // (bucketBindingName, publicBaseUrl, downloadUrlSecret, ...) reach the worker.
+  storageCloudflare: (options: StorageWorkerData = {}) => new masamune.WorkersData({ path: "/storage_cloudflare", func: require("./functions/storage_cloudflare"), options: options, data: options }),
   storageCloudflareBackup: (
     options: StorageCloudflareBackupWorkerData = {},
   ) => new StorageCloudflareBackupWorker(options),
