@@ -1,3 +1,10 @@
+## 3.2.0 (2026-09-25)
+
+
+### feat
+
+* **masamune_cloudflare_storage:** resolve public base URL from STORAGE_PUBLIC_BASE_URL ([02559fa](https://github.com/mathrunet/node_masamune/commit/02559fa79d198583c865f970847f73ab5eb193f6))
+
 ## 3.1.4 (2026-09-25)
 
 ### dependencies
