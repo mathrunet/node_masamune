@@ -1,3 +1,10 @@
+## 3.6.0 (2026-09-25)
+
+
+### feat
+
+* **masamune_cloudflare:** add type option to deploy for edge and region Workers ([a7a8f27](https://github.com/mathrunet/node_masamune/commit/a7a8f27e517496b40b12f0edcdd062ba0e831ef3))
+
 ## 3.5.3 (2026-09-24)
 
 ### dependencies

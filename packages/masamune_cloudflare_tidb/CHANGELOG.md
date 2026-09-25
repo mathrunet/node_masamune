@@ -1,3 +1,14 @@
+## 3.7.6 (2026-09-25)
+
+
+### docs
+
+* **masamune_cloudflare_tidb:** document region Worker placement ([7c38099](https://github.com/mathrunet/node_masamune/commit/7c3809942cec97d27adffbaa90f55715f3db8bb5))
+
+### dependencies
+
+* Update dependencies: @mathrunet/masamune_cloudflare.
+
 ## 3.7.5 (2026-09-24)
 
 
