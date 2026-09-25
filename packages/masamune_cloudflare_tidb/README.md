@@ -77,6 +77,16 @@ BIGINT values are converted to Number only within the safe integer range; larger
 
 Use `TidbDirectClient.transaction(database, callback)` for atomic server-side operations. SQL inside the callback is sent serially within the same transaction and rolled back on failure. A lost commit response produces an error with an unknown outcome. Flutter `runTransaction` and batch operations continue to execute operations sequentially and do not guarantee database atomicity.
 
+Use `createTidbDirectClient(env, { manifest })` to create a `TidbDirectClient` from the `TIDB_HOST`, `TIDB_USERNAME`, and `TIDB_PASSWORD` Worker secrets in your own server code, such as a scheduled job. Surrounding whitespace is removed, and missing credentials throw an error.
+
+```typescript
+import * as m from "@mathrunet/masamune_cloudflare_tidb";
+import schema from "./tidb_schema.json";
+
+const client = m.createTidbDirectClient(env, { manifest: schema as m.SchemaManifest });
+await client.execute("app", "DELETE FROM `sessions` WHERE `expiresAt` < ?", [Date.now()]);
+```
+
 Generate schemas using `@TidbSchema` → `katana code generate` and apply DDL with `katana migrate`. `katana apply` only applies connection settings. See the [migration guide](MIGRATION.md) for details.
 
 The Data Service client, Digest authentication, CaC/endpoint generation, and compatibility with legacy settings are not provided. When upgrading a published app, update the annotation, builder, CLI, and Node package together.

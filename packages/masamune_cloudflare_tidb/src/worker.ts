@@ -32,3 +32,4 @@ export type {
 export * from "./lib/types";
 export * from "./lib/server_request";
 export * from "./lib/direct_client";
+export * from "./lib/direct_env";
