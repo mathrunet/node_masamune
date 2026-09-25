@@ -1,3 +1,10 @@
+## 3.7.4 (2026-09-25)
+
+
+### fix
+
+* **masamune_cloudflare_turso:** use the libSQL compat client for Turso queries ([407a1d1](https://github.com/mathrunet/node_masamune/commit/407a1d18f19011f06c8573da066d2f99eea0ad45))
+
 ## 3.7.3 (2026-09-24)
 
 ### dependencies
