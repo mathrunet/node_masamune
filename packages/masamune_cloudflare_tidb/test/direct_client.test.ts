@@ -17,7 +17,7 @@ test("manifest外のtable・columnと不正な識別子を拒否する", () => {
 });
 
 test("大きな整数と小数の精度、NULL、JSON、booleanを保持する", () => {
-  const decoded = decodeDirectRow({ id: "1", amount: "12345678901234567890.1234567890", large: "9007199254740993", flag: "0", data: '{"name":"日本語"}' }, manifest.tables[0]);
+  const decoded = decodeDirectRow({ id: "1", amount: "12345678901234567890.1234567890", large: "9007199254740993", flag: "0", data: { name: "日本語" } }, manifest.tables[0]);
   expect(decoded).toEqual({ id: "1", amount: "12345678901234567890.1234567890", large: "9007199254740993", flag: false, data: { name: "日本語" } });
   expect(decodeDirectRow({ amount: null }, manifest.tables[0])).toEqual({ amount: null });
 });
@@ -43,3 +43,15 @@ test("timeoutでbody受信をabortする", async () => {
   await expect(client.execute("app", "SELECT 1")).rejects.toThrow("TiDB query failed");
   expect(aborted).toBe(true);
 });
+
+
+test.each(["2026-09-27T00:00:00Z", "123", "true", "null", "{invalid", "{\"nested\":1}"])(
+  "preserves JSON scalar strings decoded by the real driver: %s", async value => {
+    const transport: typeof fetch = async () => new Response(JSON.stringify({
+      types: [{ name: "data", type: "JSON" }], rows: [[JSON.stringify(value)]],
+    }), { headers: { "Content-Type": "application/json", "TiDB-Session": "fixture-session" } });
+    const client = new TidbDirectClient({ host: "fixture.invalid", username: "fixture", password: "fixture", manifest, fetch: transport });
+    const rows = await client.execute("app", "SELECT data FROM items");
+    expect(decodeDirectRow(rows[0], manifest.tables[0])).toEqual({ data: value });
+  },
+);

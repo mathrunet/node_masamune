@@ -40,7 +40,7 @@ test.each(["equalTo", "notEqualTo", "lessThan", "lessThanOrEqualTo", "greaterTha
 });
 
 test("HTTP read/countは同じdata envelopeを返し、order/limitをDBへ渡す", async () => {
-  const execute = jest.spyOn(TidbDirectClient.prototype, "execute").mockResolvedValueOnce([{ id: "one", score: "42", tags: '["日本語"]' }]).mockResolvedValueOnce([{ count: "9" }]);
+  const execute = jest.spyOn(TidbDirectClient.prototype, "execute").mockResolvedValueOnce([{ id: "one", score: "42", tags: ["日本語"] }]).mockResolvedValueOnce([{ count: "9" }]);
   const app = registerDirectTidb(new Hono(), options);
   const url = new URL("http://localhost/database/main/items");
   url.searchParams.set("orderBy", JSON.stringify([{ key: "score", descending: true }])); url.searchParams.set("limit", "2");

@@ -182,7 +182,9 @@ export function decodeDirectRow(row: Record<string, unknown>, schema: SchemaTabl
         value = Number.isSafeInteger(number) ? number : String(value);
       } else if (/^(?:DECIMAL|NUMERIC)(?:\b|\()/.test(type)) {
         value = String(value);
-      } else if ((type === "JSON" || type.startsWith("VECTOR(")) && typeof value === "string") {
+      // The serverless driver already decodes JSON, including JSON scalar strings.
+      // Parse only native vectors, which the driver returns as text.
+      } else if (type.startsWith("VECTOR(") && typeof value === "string") {
         try { value = JSON.parse(value); } catch { throw new HttpError(502, "Invalid structured value."); }
       }
     }
