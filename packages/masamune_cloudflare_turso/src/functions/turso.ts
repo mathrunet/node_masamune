@@ -137,7 +137,17 @@ async function handleCrud(
     const preparesSchemaBeforeConcurrentWrite = declaredSchema !== undefined ||
       method === "PUT" ||
       (method === "POST" && crudRequest.indexKey !== undefined);
-    if (method === "GET" || !preparesSchemaBeforeConcurrentWrite) {
+    if (method === "POST" && !crudRequest.indexKey) {
+      // INSERT ... RETURNING is one atomic statement. An interactive
+      // BEGIN CONCURRENT/COMMIT adds network-held transactions whose commits
+      // contend under bursts, without adding atomicity to this operation.
+      if (declaredSchema !== undefined) {
+        await executeRetriableWrite(() => prepareCrudWriteSchema(crudOptions));
+      }
+      response = await executeRetriableWrite(() => executeCrud({
+        ...crudOptions, schemaPrepared: declaredSchema !== undefined,
+      }));
+    } else if (method === "GET" || !preparesSchemaBeforeConcurrentWrite) {
       response = method === "GET"
         ? await executeCrud(crudOptions)
         : await executeConcurrentWrite(

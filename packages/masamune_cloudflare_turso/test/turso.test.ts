@@ -1975,6 +1975,21 @@ describe("Turso Cloudflare workers", () => {
     expect(body.error).toContain("Settings > General");
   });
 
+  test("single-statement upserts avoid interactive transaction commit contention", async () => {
+    mockExistingDatabase({ url: "libsql://atomic-upserts.turso.io" });
+    const app = deploy([Functions.turso(dynamicOptions())]);
+    execute.mockResolvedValue({ columns: ["id", "name"], rows: [["item", "value"]] });
+    const responses = await Promise.all(Array.from({ length: 50 }, (_, i) => app.request(
+      "http://localhost/turso/database/atomic-upserts/users",
+      { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ value: { id: `item-${i}`, name: "value" } }) },
+    )));
+    expect(responses.map(response => response.status)).toEqual(Array(50).fill(200));
+    expect(execute.mock.calls.filter(([sql]) => String(sql).startsWith("INSERT"))).toHaveLength(50);
+    expect(concurrent).not.toHaveBeenCalled();
+    expect(close).toHaveBeenCalledTimes(50);
+  });
+
   test("retries a concurrent write after a row conflict", async () => {
     mockExistingDatabase({ url: "libsql://conflict-db.turso.io" });
     execute
@@ -2164,7 +2179,8 @@ describe("Turso Cloudflare workers", () => {
 
     expect(response.status).toBe(200);
     expect(execute).toHaveBeenCalledTimes(7);
-    expect(concurrent).toHaveBeenCalledTimes(1);
+    expect(execute.mock.calls.at(-1)?.[0]).toMatch(/^INSERT/);
+    expect(concurrent).not.toHaveBeenCalled();
   });
 
   test("returns an access-time error when database group is not configured", async () => {

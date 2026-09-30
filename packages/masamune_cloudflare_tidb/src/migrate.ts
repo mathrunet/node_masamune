@@ -17,6 +17,7 @@ export interface RuntimeUserProvisionInput {
   root: string;
   host: string;
   database: string;
+  cluster: string;
   migrationUsername: string;
   migrationPassword: string;
   runtimeUsername: string;
@@ -102,7 +103,7 @@ export async function provisionRuntimeUser(
 ): Promise<{ checkedTables: number; role: string }> {
   const hasRuntimeCredentials = Boolean(input.runtimeUsername && input.runtimePassword && input.runtimeRole);
   const hasPartialRuntimeCredentials = Boolean(input.runtimeUsername || input.runtimePassword || input.runtimeRole) && !hasRuntimeCredentials;
-  if (!input.host || !input.database || !input.migrationUsername || !input.migrationPassword ||
+  if (!input.host || !input.database || !input.cluster || !input.migrationUsername || !input.migrationPassword ||
       hasPartialRuntimeCredentials || !input.tables.length || !["dev", "prod"].includes(input.environment)) {
     throw new Error("TiDB runtime userの設定が不足しています。");
   }
@@ -174,8 +175,18 @@ export async function provisionRuntimeUser(
     ? cloudflare.tidb : {}) as Record<string, unknown>;
   const users = (tidb.runtime_users && typeof tidb.runtime_users === "object"
     ? tidb.runtime_users : {}) as Record<string, unknown>;
-  const stored = (users[input.environment] && typeof users[input.environment] === "object"
-    ? users[input.environment] : {}) as Record<string, unknown>;
+  const migrationUsers = (tidb.migration_users && typeof tidb.migration_users === "object"
+    ? tidb.migration_users : {}) as Record<string, unknown>;
+  const legacyMigration = (migrationUsers[input.environment] && typeof migrationUsers[input.environment] === "object"
+    ? migrationUsers[input.environment] : {}) as Record<string, unknown>;
+  const legacyCluster = String(legacyMigration.cluster_id ?? "");
+  const usersByCluster = (tidb.runtime_users_by_cluster && typeof tidb.runtime_users_by_cluster === "object"
+    ? tidb.runtime_users_by_cluster : {}) as Record<string, unknown>;
+  const environmentUsers = (usersByCluster[input.environment] && typeof usersByCluster[input.environment] === "object"
+    ? usersByCluster[input.environment] : {}) as Record<string, unknown>;
+  const useClusterState = Boolean(environmentUsers[input.cluster]) || Boolean(legacyCluster && legacyCluster !== input.cluster);
+  const selected = useClusterState ? environmentUsers[input.cluster] : users[input.environment];
+  const stored = (selected && typeof selected === "object" ? selected : {}) as Record<string, unknown>;
   if (!runtimeUsername || !runtimePassword || !runtimeRole) {
     if (stored.username && stored.password && stored.role) {
       runtimeUsername = String(stored.username);
@@ -196,8 +207,15 @@ export async function provisionRuntimeUser(
       runtimeUsername = `${prefix}.rt_${suffix}`;
       runtimeRole = `topolia_rw_${suffix}`;
       runtimePassword = randomBytes(32).toString("base64url");
-      users[input.environment] = { username: runtimeUsername, password: runtimePassword, role: runtimeRole, owner: "katana-cloudflare-tidb-v1" };
-      tidb.runtime_users = users;
+      const newState = { username: runtimeUsername, password: runtimePassword, role: runtimeRole, owner: "katana-cloudflare-tidb-v1", cluster_id: input.cluster };
+      if (useClusterState) {
+        environmentUsers[input.cluster] = newState;
+        usersByCluster[input.environment] = environmentUsers;
+        tidb.runtime_users_by_cluster = usersByCluster;
+      } else {
+        users[input.environment] = newState;
+        tidb.runtime_users = users;
+      }
       cloudflare.tidb = tidb;
       rootState.cloudflare = cloudflare;
       await saveRuntimeCredentialState(input.root, rootState);

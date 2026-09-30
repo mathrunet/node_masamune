@@ -9,6 +9,7 @@ const input = {
   root: ".",
   host: "fixture.invalid",
   database: "shared",
+  cluster: "old-cluster",
   migrationUsername: "prefix.migrate_dev",
   migrationPassword: "fixture-admin-secret",
   runtimeUsername: "prefix.rt_abcd12",
@@ -61,6 +62,27 @@ const runtimeConnection = (username: string): MigrationConnection => ({
 });
 
 describe("provisionRuntimeUser", () => {
+  test("keeps the old cluster identity when provisioning a new dev cluster", async () => {
+    const root = await mkdtemp(join(tmpdir(), "tidb-runtime-rebind-"));
+    try {
+      const old = { username: "prefix.old_runtime", password: "old-runtime-secret", role: "old_runtime_role", owner: "katana-cloudflare-tidb-v1" };
+      const credentialState = { cloudflare: { tidb: {
+        migration_users: { dev: { cluster_id: "old-cluster" } },
+        runtime_users: { dev: old },
+      } } };
+      await mkdir(join(root, "cloudflare"));
+      await writeFile(join(root, "cloudflare", "tidb.yaml"), `${JSON.stringify(credentialState)}\n`);
+      const fixture = connection();
+      await provisionRuntimeUser({ ...input, root, cluster: "new-cluster",
+        runtimeUsername: "", runtimePassword: "", runtimeRole: "", credentialState },
+        fixture.connection, runtimeConnection);
+      const saved = JSON.parse(await readFile(join(root, "cloudflare", "tidb.yaml"), "utf8"));
+      expect(saved.cloudflare.tidb.runtime_users.dev).toEqual(old);
+      expect(saved.cloudflare.tidb.runtime_users_by_cluster.dev["new-cluster"].username).toMatch(/^prefix\.rt_[a-f0-9]{8}$/);
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
   test.each([false, true])("connects as runtime only after all table grants (existing user=%s)", async (existing) => {
     const fixture = connection(
       ["landmarks", "regions"],
