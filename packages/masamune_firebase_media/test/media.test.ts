@@ -1,4 +1,5 @@
-import * as admin from "firebase-admin";
+import { getApps, initializeApp } from "firebase-admin/app";
+import { getStorage } from "firebase-admin/storage";
 import "@mathrunet/masamune_firebase";
 import * as fs from "fs";
 import * as path from "path";
@@ -20,14 +21,14 @@ const config = liveTestsEnabled ? require("firebase-functions-test")({
     let uploadedFiles: string[] = [];
 
     beforeAll(() => {
-        if (admin.apps.length === 0) {
-            admin.initializeApp();
+        if (getApps().length === 0) {
+            initializeApp();
         }
     });
 
     afterAll(async () => {
         // クリーンアップ: テストで生成されたファイルを削除
-        const bucket = admin.storage().bucket(testBucket);
+        const bucket = getStorage().bucket(testBucket);
         for (const filePath of uploadedFiles) {
             try {
                 await bucket.file(filePath).delete();
@@ -39,7 +40,7 @@ const config = liveTestsEnabled ? require("firebase-functions-test")({
     });
 
     test("MP4をアップロードするとHLSファイルが生成される", async () => {
-        const bucket = admin.storage().bucket(testBucket);
+        const bucket = getStorage().bucket(testBucket);
 
         // 1. sample.mp4をStorageにアップロード
         const sampleVideoPath = path.resolve(__dirname, "sample.mp4");

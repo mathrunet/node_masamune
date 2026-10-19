@@ -1,5 +1,5 @@
 import * as path from "path";
-import * as admin from "firebase-admin";
+import { FieldValue } from "firebase-admin/firestore";
 import "@mathrunet/masamune";
 import { UpdateWalletData, UpdateWalletRequest } from "./interface";
 
@@ -33,7 +33,6 @@ export async function updateWallet(request: UpdateWalletRequest): Promise<void> 
     const key = path.basename(request.targetDocumentFieldPath);
     const parent = request.targetDocumentFieldPath.replace(`/${key}`, "");
     const uid = path.basename(parent);
-    const FieldValue = admin.firestore.FieldValue;
     const data: UpdateWalletData = {
         ...update,
         [key]: FieldValue.increment(request.value),

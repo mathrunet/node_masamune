@@ -1,6 +1,6 @@
 import { HttpFunctionsOptions } from "@mathrunet/masamune_firebase";
 import { Action, WorkflowProcessFunctionBase, WorkflowContext } from "@mathrunet/masamune_firebase_workflow";
-import * as admin from "firebase-admin";
+import { getStorage } from "firebase-admin/storage";
 import { ChartService, ChartInputData } from "../services/chart_service";
 import { PDFService, PDFInputData } from "../services/pdf_service";
 import { PDFStyleOptions } from "../models/pdf_data";
@@ -113,7 +113,7 @@ export class GenerateMarketingPdf extends WorkflowProcessFunctionBase {
 
             console.log("GenerateMarketingPdf: Uploading to Storage bucket:", storageBucket);
 
-            const storage = admin.storage().bucket(storageBucket);
+            const storage = getStorage().bucket(storageBucket);
             const timestamp = Date.now();
             const taskId = task["@uid"] || "unknown";
             const filePath = `reports/${taskId}/${timestamp}_marketing_report.pdf`;

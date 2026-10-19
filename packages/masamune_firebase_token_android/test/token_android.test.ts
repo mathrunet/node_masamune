@@ -1,4 +1,4 @@
-import * as admin from "firebase-admin";
+import { getApps, initializeApp } from "firebase-admin/app";
 import "@mathrunet/masamune_firebase";
 import * as dotenv from "dotenv";
 import * as path from "path";
@@ -14,8 +14,8 @@ require("firebase-functions-test")({
 
 describe("Android Token", () => {
     beforeAll(() => {
-        if (admin.apps.length === 0) {
-            admin.initializeApp();
+        if (getApps().length === 0) {
+            initializeApp();
         }
     });
 

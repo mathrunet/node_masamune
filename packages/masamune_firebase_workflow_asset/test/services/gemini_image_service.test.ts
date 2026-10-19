@@ -9,7 +9,7 @@
  * - Environment variables in test/.env
  */
 
-import * as admin from "firebase-admin";
+import { cert, getApps, initializeApp } from "firebase-admin/app";
 import * as dotenv from "dotenv";
 import * as path from "path";
 import * as fs from "fs";
@@ -36,9 +36,9 @@ process.env.GOOGLE_APPLICATION_CREDENTIALS = serviceAccountPath;
 process.env.GCLOUD_PROJECT = projectId;
 
 // Initialize Firebase Admin with service account credentials
-if (admin.apps.length === 0) {
-    admin.initializeApp({
-        credential: admin.credential.cert(serviceAccountPath),
+if (getApps().length === 0) {
+    initializeApp({
+        credential: cert(serviceAccountPath),
         projectId: projectId,
         storageBucket: storageBucket,
     });

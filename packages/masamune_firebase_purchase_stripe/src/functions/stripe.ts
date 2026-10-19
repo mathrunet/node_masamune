@@ -1,6 +1,7 @@
 import * as functions from "firebase-functions/v2";
 import Stripe from "stripe";
-import * as admin from "firebase-admin";
+import { getAuth } from "firebase-admin/auth";
+import { FieldValue } from "firebase-admin/firestore";
 import { HttpFunctionsOptions, firestoreLoader } from "@mathrunet/masamune_firebase";
 import { lib as sendgrid } from "@mathrunet/masamune_firebase_mail_sendgrid";
 import "@mathrunet/masamune";
@@ -288,8 +289,8 @@ module.exports = (
               }
               await stripeClient.accounts.del(data["account"]);
               const update: { [key: string]: any } = {};
-              update["account"] = admin.firestore.FieldValue.delete();
-              update["capability"] = admin.firestore.FieldValue.arrayRemove({
+              update["account"] = FieldValue.delete();
+              update["capability"] = FieldValue.arrayRemove({
                 "transfers": true
               });
               await doc.ref.save(
@@ -331,7 +332,7 @@ module.exports = (
               const userId = query.data.userId;
               const successUrl = query.data.successUrl;
               const cancelUrl = query.data.cancelUrl;
-              const authInstance = admin.auth();
+              const authInstance = getAuth();
               if (!userId) {
                 throw new functions.https.HttpsError("invalid-argument", "The user id is empty.");
               }
@@ -446,7 +447,7 @@ module.exports = (
               );
               if (data["defaultPayment"] === paymentData["id"]) {
                 const update: { [key: string]: any } = {};
-                update["defaultPayment"] = admin.firestore.FieldValue.delete();
+                update["defaultPayment"] = FieldValue.delete();
                 await doc.ref.save(
                   update, { merge: true }
                 );
@@ -467,7 +468,7 @@ module.exports = (
               }
               await stripeClient.customers.del(data["customer"]);
               const update: { [key: string]: any } = {};
-              update["customer"] = admin.firestore.FieldValue.delete();
+              update["customer"] = FieldValue.delete();
               await doc.ref.save(
                 update, { merge: true }
               );
@@ -476,7 +477,7 @@ module.exports = (
               };
             }
             case "authorization": {
-              const authInstance = admin.auth();
+              const authInstance = getAuth();
               const amount = parseFloat(query.data.amount);
               const currency = query.data.currency ?? "jpy";
               const returnUrl = query.data.returnUrl;
@@ -586,7 +587,7 @@ module.exports = (
               };
             }
             case "create_purchase": {
-              const authInstance = admin.auth();
+              const authInstance = getAuth();
               const amount = parseFloat(query.data.amount);
               const revenue = parseFloat(query.data.revenueRatio ?? 0);
               const currency = query.data.currency ?? "jpy";
@@ -843,7 +844,7 @@ module.exports = (
                     };
                   } else {
                     update["verify"] = true;
-                    update["nextAction"] = admin.firestore.FieldValue.delete();
+                    update["nextAction"] = FieldValue.delete();
                     await doc.ref.save(
                       update, { merge: true }
                     );
@@ -1025,8 +1026,8 @@ module.exports = (
               );
               const update: { [key: string]: any } = {};
               update["paymentMethodId"] = defaultPayment;
-              update["error"] = admin.firestore.FieldValue.delete();
-              update["errorMessage"] = admin.firestore.FieldValue.delete();
+              update["error"] = FieldValue.delete();
+              update["errorMessage"] = FieldValue.delete();
               await doc.ref.save(
                 update, { merge: true }
               );
@@ -1059,8 +1060,8 @@ module.exports = (
               );
               const update: { [key: string]: any } = {};
               update["cancel"] = true;
-              update["error"] = admin.firestore.FieldValue.delete();
-              update["errorMessage"] = admin.firestore.FieldValue.delete();
+              update["error"] = FieldValue.delete();
+              update["errorMessage"] = FieldValue.delete();
               await doc.ref.save(
                 update, { merge: true }
               );

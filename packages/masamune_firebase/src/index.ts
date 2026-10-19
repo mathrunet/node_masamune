@@ -8,7 +8,7 @@
  * [mathru.net]: https://mathru.net
  * [YouTube]: https://www.youtube.com/c/mathrunetchannel
  */
-import * as admin from "firebase-admin";
+import { getApps, initializeApp } from "firebase-admin/app";
 import { Regions } from "./lib/regions";
 import { FunctionsBase } from "./lib/src/functions_base";
 
@@ -57,8 +57,8 @@ export * from "./lib/exntensions/firestore.extension";
  * pub/subで用いるトピック名やスケジュールの長さなどを指定します。
  */
 export function deploy(exports: any, region: Regions, deployFunctions: FunctionsBase[]) {
-    if (admin.apps.length === 0) {
-        admin.initializeApp();
+    if (getApps().length === 0) {
+        initializeApp();
     }
     for (const func of deployFunctions) {
         if (!process.env.FUNCTION_NAME || process.env.FUNCTION_NAME === func.id) {

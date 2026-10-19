@@ -1,5 +1,5 @@
 import * as functions from "firebase-functions/v2";
-import * as admin from "firebase-admin";
+import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import { VertexAI, SchemaType } from "@google-cloud/vertexai";
 import { HttpFunctionsOptions } from "@mathrunet/masamune_firebase";
 
@@ -41,7 +41,7 @@ module.exports = (
             throw new functions.https.HttpsError("invalid-argument", "The function must be called with a requestId.");
         }
 
-        const firestore = admin.firestore();
+        const firestore = getFirestore();
         const requestDocRef = firestore.collection("plugins/asset/request").doc(requestId);
         const requestDoc = await requestDocRef.get();
 
@@ -122,8 +122,8 @@ module.exports = (
                 theme: selectedTheme,
                 channelTheme: channelTheme,
                 status: "broad_research_completed",
-                createdAt: admin.firestore.FieldValue.serverTimestamp(),
-                updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+                createdAt: FieldValue.serverTimestamp(),
+                updatedAt: FieldValue.serverTimestamp(),
             });
 
             // Update request status

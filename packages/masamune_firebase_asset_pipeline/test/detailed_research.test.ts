@@ -1,4 +1,5 @@
-import * as admin from "firebase-admin";
+import { getApps, initializeApp } from "firebase-admin/app";
+import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import * as fs from "fs";
 import * as path from "path";
 
@@ -13,8 +14,8 @@ const config = liveTestsEnabled ? require("firebase-functions-test")({
     let wrapped: any;
 
     beforeAll(() => {
-        if (admin.apps.length === 0) {
-            admin.initializeApp();
+        if (getApps().length === 0) {
+            initializeApp();
         }
         process.env.GCP_PROJECT_ID = "mathru-net";
         process.env.GEMINI_MODEL = "gemini-2.5-flash";
@@ -38,20 +39,20 @@ const config = liveTestsEnabled ? require("firebase-functions-test")({
         const theme = "The History of the Sengoku Period in Japan";
 
         // Setup Firestore data
-        await admin.firestore().collection("plugins/asset/request").doc(requestId).set({
+        await getFirestore().collection("plugins/asset/request").doc(requestId).set({
             status: "broad_research_completed",
             assetId: assetId,
-            createdAt: admin.firestore.FieldValue.serverTimestamp(),
-            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            createdAt: FieldValue.serverTimestamp(),
+            updatedAt: FieldValue.serverTimestamp(),
         });
 
-        await admin.firestore().collection("plugins/asset/asset").doc(assetId).set({
+        await getFirestore().collection("plugins/asset/asset").doc(assetId).set({
             requestId: requestId,
             theme: theme,
             channelTheme: "Japanese History",
             status: "broad_research_completed",
-            createdAt: admin.firestore.FieldValue.serverTimestamp(),
-            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            createdAt: FieldValue.serverTimestamp(),
+            updatedAt: FieldValue.serverTimestamp(),
         });
 
         // Call the function
@@ -83,10 +84,10 @@ const config = liveTestsEnabled ? require("firebase-functions-test")({
         }
 
         // Verify Firestore updates
-        const requestDoc = await admin.firestore().collection("plugins/asset/request").doc(requestId).get();
+        const requestDoc = await getFirestore().collection("plugins/asset/request").doc(requestId).get();
         expect(requestDoc.data()?.status).toBe("detailed_research_completed");
 
-        const assetDoc = await admin.firestore().collection("plugins/asset/asset").doc(assetId).get();
+        const assetDoc = await getFirestore().collection("plugins/asset/asset").doc(assetId).get();
         const assetData = assetDoc.data();
 
         // Verify all required fields exist

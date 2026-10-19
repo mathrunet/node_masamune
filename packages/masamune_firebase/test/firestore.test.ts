@@ -1,4 +1,5 @@
-import * as admin from "firebase-admin";
+import { initializeApp } from "firebase-admin/app";
+import { getFirestore } from "firebase-admin/firestore";
 import { ModelCounter, ModelDate, ModelDateRange, ModelFieldValue, ModelGeoValue, ModelImageUri, ModelLocale, ModelLocalizedLocaleVaue, ModelLocalizedValue, ModelRefBase, ModelSearch, ModelTime, ModelTimeRange, ModelTimestamp, ModelTimestampRange, ModelToken, ModelUri, ModelVectorValue, ModelVideoUri } from "@mathrunet/masamune";
 import { ModelRefFirebase } from "../src/lib/model_field_value/model_field_value";
 import "../src/lib/exntensions/firestore.extension";
@@ -50,7 +51,7 @@ interface TestModel {
 
 describe("Firestore Test", () => {
     beforeAll(() => {
-        admin.initializeApp();
+        initializeApp();
     });
     test("Firestore save and load", async () => {
         const testPath = "unit/test/katana/saveLoad";
@@ -59,7 +60,7 @@ describe("Firestore Test", () => {
             text: "bbb",
             number: 100,
         };
-        const firestoreInstance = admin.firestore();
+        const firestoreInstance = getFirestore();
         await firestoreInstance.doc(testPath).save(testData);
         const res = await firestoreInstance.doc(testPath).load();
         const data = res.data();
@@ -96,7 +97,7 @@ describe("Firestore Test", () => {
             ref: new ModelRefFirebase("test/ref"),
         };
         console.log(testData);
-        const firestoreInstance = admin.firestore();
+        const firestoreInstance = getFirestore();
         await firestoreInstance.doc(testPath).save(testData);
         const res = await firestoreInstance.doc(testPath).load();
         const data = res.data();

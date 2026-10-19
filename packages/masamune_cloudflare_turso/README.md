@@ -158,10 +158,10 @@ import rulesJson from "../rules.json";
 
 const tursoOptions: turso.TursoWorkersOptions = {
   organization: "my-organization",
-  group: "prod-apac", // Default for unknown regions; otherwise the first entry in groups.
+  group: "prod-us", // Default for unknown regions; otherwise the first entry in groups.
   groups: [
-    { name: "prod-apac", countries: ["JP"], continents: ["AS", "OC"] },
     { name: "prod-us", continents: ["NA", "SA"] },
+    { name: "prod-asia", countries: ["JP"], continents: ["AS", "OC"] },
     { name: "prod-eu", continents: ["EU", "AF"] },
   ],
   autoCreateDatabase: true,
@@ -180,6 +180,8 @@ Placement uses the following priority order. Region information comes from Cloud
 3. A match in `countries`
 4. A match in `continents`
 5. The default `group`, or the first entry in `groups` when omitted
+
+Requests without region information, such as a missing `request.cf`, unknown codes like `XX` or `T1`, or regions not mapped to any group, use step 5. Set the default `group` to the US group and list it first in `groups` so that these requests are always placed in the US.
 
 Selection uses configured region mappings; it does not measure latency on every request. Assigning the same country or continent to multiple groups is rejected. A country match takes precedence over a continent match.
 
@@ -217,18 +219,18 @@ cloudflare:
     organization: my-organization
     group:
       dev: dev-apac
-      prod: prod-apac
+      prod: prod-us
     groups:
       dev:
         - name: dev-apac
           location: aws-ap-northeast-1
       prod:
-        - name: prod-apac
-          location: aws-ap-northeast-1
-          continents: [AS, OC]
         - name: prod-us
           location: aws-us-east-1
           continents: [NA, SA]
+        - name: prod-asia
+          location: aws-ap-northeast-1
+          continents: [AS, OC]
         - name: prod-eu
           location: aws-eu-west-1
           continents: [EU, AF]

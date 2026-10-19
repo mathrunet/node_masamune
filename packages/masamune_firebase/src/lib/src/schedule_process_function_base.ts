@@ -1,6 +1,5 @@
 import * as functions from "firebase-functions/v2";
 import { FunctionsBase, SchedulerFunctionsOptions } from "./functions_base";
-import * as admin from "firebase-admin";
 
 /**
  * Base class for defining the data of Functions for periodic scheduled execution.

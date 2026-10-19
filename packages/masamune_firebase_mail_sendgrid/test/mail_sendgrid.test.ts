@@ -1,4 +1,4 @@
-import * as admin from "firebase-admin";
+import { getApps, initializeApp } from "firebase-admin/app";
 import "@mathrunet/masamune_firebase";
 import * as dotenv from "dotenv";
 import * as path from "path";
@@ -18,8 +18,8 @@ describe("masamune_mail_sendgrid", () => {
     const testEmailTo = process.env.TEST_EMAIL_TO ?? "";
 
     beforeAll(() => {
-        if (admin.apps.length === 0) {
-            admin.initializeApp();
+        if (getApps().length === 0) {
+            initializeApp();
         }
         // 環境変数のチェック
         if (!process.env.MAIL_SENDGRID_APIKEY) {

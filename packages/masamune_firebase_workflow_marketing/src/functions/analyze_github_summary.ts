@@ -14,7 +14,7 @@ import {
     WorkflowContext,
     Project,
 } from "@mathrunet/masamune_firebase_workflow";
-import * as admin from "firebase-admin";
+import { getApps, initializeApp } from "firebase-admin/app";
 import { GitHubAnalysisService } from "../services/github_analysis_service";
 import {
     FolderSummary,
@@ -87,8 +87,8 @@ export class AnalyzeGitHubSummary extends WorkflowProcessFunctionBase {
         }
 
         // Auto-initialize Firebase Admin if needed
-        if (admin.apps.length === 0) {
-            admin.initializeApp();
+        if (getApps().length === 0) {
+            initializeApp();
         }
 
         const projectId = projectRef.id;

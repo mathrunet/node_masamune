@@ -1,7 +1,6 @@
 import * as functions from "firebase-functions/v2";
 import { FunctionsBase, HttpFunctionsOptions } from "./functions_base";
 import * as express from "express";
-import * as admin from "firebase-admin";
 export { Request } from "firebase-functions/v2/https";
 export { Response } from "express";
 

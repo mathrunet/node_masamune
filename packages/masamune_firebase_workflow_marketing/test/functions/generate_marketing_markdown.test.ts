@@ -16,7 +16,8 @@
  * - GITHUB_TOKEN and GITHUB_REPO for GitHub analysis
  */
 
-import * as admin from "firebase-admin";
+import { cert, getApps, initializeApp } from "firebase-admin/app";
+import { Firestore, Timestamp, getFirestore } from "firebase-admin/firestore";
 import * as dotenv from "dotenv";
 import * as path from "path";
 import * as fs from "fs";
@@ -39,16 +40,16 @@ const config = require("firebase-functions-test")({
 }, serviceAccountPath);
 
 // Initialize Firebase Admin with service account credentials
-if (admin.apps.length === 0) {
-    admin.initializeApp({
-        credential: admin.credential.cert(serviceAccountPath),
+if (getApps().length === 0) {
+    initializeApp({
+        credential: cert(serviceAccountPath),
         projectId: "mathru-net",
         storageBucket: "mathru-net.appspot.com",
     });
 }
 
 // Helper to create Firestore Timestamp from Date
-const toTimestamp = (date: Date) => admin.firestore.Timestamp.fromDate(date);
+const toTimestamp = (date: Date) => Timestamp.fromDate(date);
 
 // Test configuration from .env
 const googlePlayPackageName = process.env.GOOGLE_PLAY_PACKAGE_NAME || "net.mathru.nansuru";
@@ -74,12 +75,12 @@ const organizationPath = `plugins/workflow/organization/${testOrganizationId}`;
 const projectPath = `plugins/workflow/project/${testProjectId}`;
 
 describe("GenerateMarketingMarkdown Integration Tests", () => {
-    let firestore: admin.firestore.Firestore;
+    let firestore: Firestore;
     let googlePlayServiceAccount: string;
     let appStorePrivateKey: string;
 
     beforeAll(() => {
-        firestore = admin.firestore();
+        firestore = getFirestore();
 
         // Load Google Play service account JSON
         const projectRoot = path.join(__dirname, "..", "..");

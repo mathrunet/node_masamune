@@ -21,7 +21,7 @@ import {
     deleteAnalysisData,
     getStoragePath,
 } from "../../src/utils/github_analysis_storage";
-import * as admin from "firebase-admin";
+import { cert, getApps, initializeApp } from "firebase-admin/app";
 import * as path from "path";
 
 // Skip tests if environment variables are not set
@@ -438,9 +438,9 @@ describe("GitHub Analysis Storage Integration", () => {
 
     beforeAll(() => {
         // Initialize Firebase Admin if not already initialized
-        if (admin.apps.length === 0) {
-            admin.initializeApp({
-                credential: admin.credential.cert(serviceAccountPath),
+        if (getApps().length === 0) {
+            initializeApp({
+                credential: cert(serviceAccountPath),
                 projectId: "mathru-net",
                 storageBucket: "mathru-net.appspot.com",
             });

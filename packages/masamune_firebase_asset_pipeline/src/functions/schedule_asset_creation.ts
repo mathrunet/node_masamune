@@ -1,6 +1,6 @@
 import * as functions from "firebase-functions/v2";
 import { SchedulerFunctionsOptions, firestoreLoader } from "@mathrunet/masamune_firebase";
-import * as admin from "firebase-admin";
+import { FieldValue } from "firebase-admin/firestore";
 
 /**
  * Periodically check and start asset creation.
@@ -50,7 +50,7 @@ module.exports = (
                         // Mark as processing to avoid double processing
                         await doc.ref.update({
                             status: "processing",
-                            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+                            updatedAt: FieldValue.serverTimestamp(),
                         });
                     }
 

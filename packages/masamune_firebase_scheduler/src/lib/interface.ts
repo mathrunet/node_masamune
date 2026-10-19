@@ -1,6 +1,6 @@
 import { SendNotificationRequest } from "@mathrunet/masamune_firebase_notification";
 import { FirestoreDeleteDocumentsRequest } from "@mathrunet/masamune_firebase_firestore";
-import * as admin from "firebase-admin";
+import { DocumentData, Firestore, QueryDocumentSnapshot } from "firebase-admin/firestore";
 
 /**
  * Scheduler copy document request interface.
@@ -8,8 +8,8 @@ import * as admin from "firebase-admin";
  * スケジューラーのドキュメントコピーリクエストインターフェース。
  */
 export interface SchedulerCopyDocumentRequest {
-    doc: admin.firestore.QueryDocumentSnapshot<admin.firestore.DocumentData, admin.firestore.DocumentData>,
-    firestoreInstance: admin.firestore.Firestore,
+    doc: QueryDocumentSnapshot<DocumentData, DocumentData>,
+    firestoreInstance: Firestore,
     params: {
         path?: string;
         [key: string]: any;
@@ -32,8 +32,8 @@ export interface SchedulerCopyDocumentResponse {
  * スケジューラーのドキュメント削除レスポンスインターフェース。
  */
 export interface SchedulerDeleteDocumentsRequest {
-    doc: admin.firestore.QueryDocumentSnapshot<admin.firestore.DocumentData, admin.firestore.DocumentData>,
-    firestoreInstance: admin.firestore.Firestore,
+    doc: QueryDocumentSnapshot<DocumentData, DocumentData>,
+    firestoreInstance: Firestore,
     params: FirestoreDeleteDocumentsRequest;
 }
 
@@ -43,8 +43,8 @@ export interface SchedulerDeleteDocumentsRequest {
  * スケジューラーの通知リクエストインターフェース。
  */
 export interface SchedulerNotificationRequest {
-    doc: admin.firestore.QueryDocumentSnapshot<admin.firestore.DocumentData, admin.firestore.DocumentData>;
-    firestoreInstance: admin.firestore.Firestore;
+    doc: QueryDocumentSnapshot<DocumentData, DocumentData>;
+    firestoreInstance: Firestore;
     params: SendNotificationRequest;
 }
 

@@ -1,6 +1,6 @@
 import { FirestoreModelFieldValueConverter } from "../model_field_value_converter";
 import { utils } from "@mathrunet/masamune";
-import { firestore } from "firebase-admin";
+import { FieldValue } from "firebase-admin/firestore";
 import { VectorValue } from "@google-cloud/firestore";
 
 
@@ -70,7 +70,7 @@ export class FirestoreModelVectorValueConverter extends FirestoreModelFieldValue
         };
 
         if (fromUser) {
-          result[key] = firestore.FieldValue.vector(val);
+          result[key] = FieldValue.vector(val);
         }
 
         return result;

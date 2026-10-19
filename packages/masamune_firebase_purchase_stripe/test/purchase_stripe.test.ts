@@ -1,4 +1,3 @@
-import * as admin from "firebase-admin";
 import "@mathrunet/masamune_firebase";
 
 const config = require("firebase-functions-test")({

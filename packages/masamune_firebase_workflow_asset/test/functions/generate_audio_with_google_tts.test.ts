@@ -9,7 +9,9 @@
  * - Environment variables in test/.env
  */
 
-import * as admin from "firebase-admin";
+import { cert, getApps, initializeApp } from "firebase-admin/app";
+import { Firestore, Timestamp, getFirestore } from "firebase-admin/firestore";
+import { getStorage } from "firebase-admin/storage";
 import * as dotenv from "dotenv";
 import * as path from "path";
 import * as fs from "fs";
@@ -37,16 +39,16 @@ const config = require("firebase-functions-test")({
 }, serviceAccountPath);
 
 // Initialize Firebase Admin with service account credentials
-if (admin.apps.length === 0) {
-    admin.initializeApp({
-        credential: admin.credential.cert(serviceAccountPath),
+if (getApps().length === 0) {
+    initializeApp({
+        credential: cert(serviceAccountPath),
         projectId: projectId,
         storageBucket: storageBucket,
     });
 }
 
 // Helper to create Firestore Timestamp from Date
-const toTimestamp = (date: Date) => admin.firestore.Timestamp.fromDate(date);
+const toTimestamp = (date: Date) => Timestamp.fromDate(date);
 
 // Generate unique IDs for test data
 const testTimestamp = Date.now();
@@ -64,10 +66,10 @@ if (!fs.existsSync(tmpDir)) {
 }
 
 describe("GenerateAudioWithGoogleTTS Integration Tests", () => {
-    let firestore: admin.firestore.Firestore;
+    let firestore: Firestore;
 
     beforeAll(() => {
-        firestore = admin.firestore();
+        firestore = getFirestore();
     });
 
     afterAll(async () => {
@@ -237,7 +239,7 @@ describe("GenerateAudioWithGoogleTTS Integration Tests", () => {
                 console.log("Public URL:", audioAsset?.public_url);
 
                 // Download and save the generated audio locally
-                const storage = admin.storage();
+                const storage = getStorage();
                 const gsMatch = audioAsset?.url?.match(/^gs:\/\/([^/]+)\/(.+)$/);
                 if (gsMatch) {
                     const bucketName = gsMatch[1];
@@ -303,7 +305,7 @@ describe("GenerateAudioWithGoogleTTS Integration Tests", () => {
                 console.log("Generated audio URL:", taskData?.assets?.generatedAudio?.url);
 
                 // Save locally
-                const storage = admin.storage();
+                const storage = getStorage();
                 const gsMatch = taskData?.assets?.generatedAudio?.url?.match(/^gs:\/\/([^/]+)\/(.+)$/);
                 if (gsMatch) {
                     const [buffer] = await storage.bucket(gsMatch[1]).file(gsMatch[2]).download();
@@ -368,7 +370,7 @@ describe("GenerateAudioWithGoogleTTS Integration Tests", () => {
                     console.log(`${lang.label} test completed successfully!`);
 
                     // Save locally
-                    const storage = admin.storage();
+                    const storage = getStorage();
                     const gsMatch = taskData?.assets?.generatedAudio?.url?.match(/^gs:\/\/([^/]+)\/(.+)$/);
                     if (gsMatch) {
                         const [buffer] = await storage.bucket(gsMatch[1]).file(gsMatch[2]).download();
@@ -437,7 +439,7 @@ describe("GenerateAudioWithGoogleTTS Integration Tests", () => {
                     console.log(`Format ${fmt.format} test completed successfully!`);
 
                     // Save locally
-                    const storage = admin.storage();
+                    const storage = getStorage();
                     const gsMatch = taskData?.assets?.generatedAudio?.url?.match(/^gs:\/\/([^/]+)\/(.+)$/);
                     if (gsMatch) {
                         const [buffer] = await storage.bucket(gsMatch[1]).file(gsMatch[2]).download();
@@ -1022,7 +1024,7 @@ describe("GenerateAudioWithGoogleTTS Integration Tests", () => {
                 console.log("Audio duration:", taskData?.results?.audioGeneration?.files?.[0]?.duration, "seconds");
 
                 // Save locally
-                const storage = admin.storage();
+                const storage = getStorage();
                 const gsMatch = taskData?.assets?.generatedAudio?.url?.match(/^gs:\/\/([^/]+)\/(.+)$/);
                 if (gsMatch) {
                     const [buffer] = await storage.bucket(gsMatch[1]).file(gsMatch[2]).download();

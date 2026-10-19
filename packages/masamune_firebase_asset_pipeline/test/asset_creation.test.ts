@@ -1,4 +1,5 @@
-import * as admin from "firebase-admin";
+import { getApps, initializeApp } from "firebase-admin/app";
+import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import * as functions from "firebase-functions-test";
 import * as fs from "fs";
 import * as path from "path";
@@ -12,13 +13,13 @@ const config = liveTestsEnabled ? require("firebase-functions-test")({
 
 (liveTestsEnabled ? describe : describe.skip)("Asset Creation Test", () => {
     beforeAll(() => {
-        if (admin.apps.length === 0) {
-            admin.initializeApp();
+        if (getApps().length === 0) {
+            initializeApp();
         }
     });
 
     test("Start Asset Creation", async () => {
-        const firestoreInstance = admin.firestore();
+        const firestoreInstance = getFirestore();
         const func = require("../src/functions/start_asset_creation");
         const wrapped = config.wrap(func([], {}, {}));
 
@@ -44,7 +45,7 @@ const config = liveTestsEnabled ? require("firebase-functions-test")({
     });
 
     test("Schedule Asset Creation", async () => {
-        const firestoreInstance = admin.firestore();
+        const firestoreInstance = getFirestore();
 
         // Create a pending request manually
         const collectionPath = "plugins/asset/request";
@@ -52,8 +53,8 @@ const config = liveTestsEnabled ? require("firebase-functions-test")({
         await docRef.set({
             channelTheme: "Test Theme",
             status: "pending",
-            createdAt: admin.firestore.FieldValue.serverTimestamp(),
-            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            createdAt: FieldValue.serverTimestamp(),
+            updatedAt: FieldValue.serverTimestamp(),
         });
 
         const func = require("../src/functions/schedule_asset_creation");

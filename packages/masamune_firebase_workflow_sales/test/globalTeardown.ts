@@ -4,7 +4,8 @@
  * Cleans up all test data from Firestore after all tests complete.
  */
 
-import * as admin from "firebase-admin";
+import { cert, getApp, getApps, initializeApp } from "firebase-admin/app";
+import { FieldPath, Firestore, getFirestore } from "firebase-admin/firestore";
 import * as path from "path";
 import * as dotenv from "dotenv";
 import "@mathrunet/masamune";
@@ -21,7 +22,7 @@ const serviceAccountPath = process.env.GOOGLE_SERVICE_ACCOUNT_PATH
  * Delete test documents from a collection (those with IDs starting with 'test-' or 'googlePlay_').
  */
 async function deleteTestDocuments(
-    firestore: admin.firestore.Firestore,
+    firestore: Firestore,
     collectionPath: string,
     prefixes: string[] = ["test-"]
 ): Promise<number> {
@@ -30,8 +31,8 @@ async function deleteTestDocuments(
     for (const prefix of prefixes) {
         const collectionRef = firestore.collection(collectionPath);
         const snapshot = await collectionRef
-            .where(admin.firestore.FieldPath.documentId(), ">=", prefix)
-            .where(admin.firestore.FieldPath.documentId(), "<", prefix + "\uf8ff")
+            .where(FieldPath.documentId(), ">=", prefix)
+            .where(FieldPath.documentId(), "<", prefix + "\uf8ff")
             .get();
 
         if (snapshot.empty) {
@@ -63,13 +64,13 @@ export default async function globalTeardown(): Promise<void> {
     }
 
     // Initialize Firebase Admin if not already initialized
-    if (admin.apps.length === 0) {
-        admin.initializeApp({
-            credential: admin.credential.cert(serviceAccountPath),
+    if (getApps().length === 0) {
+        initializeApp({
+            credential: cert(serviceAccountPath),
         });
     }
 
-    const firestore = admin.firestore();
+    const firestore = getFirestore();
     let totalDeleted = 0;
 
     // Collections to clean up
@@ -98,5 +99,5 @@ export default async function globalTeardown(): Promise<void> {
     console.log("========================================\n");
 
     // Cleanup Firebase Admin
-    await admin.app().delete();
+    await getApp().delete();
 }

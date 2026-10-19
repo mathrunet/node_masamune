@@ -1,4 +1,5 @@
-import * as admin from "firebase-admin";
+import { initializeApp } from "firebase-admin/app";
+import { Firestore, getFirestore } from "firebase-admin/firestore";
 import "@mathrunet/masamune_firebase";
 import * as fs from "fs";
 import * as path from "path";
@@ -43,7 +44,7 @@ describe("Firestore credential validation", () => {
 
 integrationDescribe("Firestore Test", () => {
     beforeAll(() => {
-        admin.initializeApp();
+        initializeApp();
     });
     test("Test for test", async () => {
         const testPath = "unit/test/user/aaa";
@@ -52,7 +53,7 @@ integrationDescribe("Firestore Test", () => {
             text: "bbb",
             number: 100,
         };
-        const firestoreInstance = admin.firestore();
+        const firestoreInstance = getFirestore();
         await firestoreInstance.doc(testPath).save(testData);
         const func = require("@mathrunet/masamune/src/functions/test");
         const wrapped = config.wrap(func([], {}, {}));
@@ -67,7 +68,7 @@ integrationDescribe("Firestore Test", () => {
         expect(res).toStrictEqual(testData);
     });
     test("Delete document test", async () => {
-        const firestoreInstance = admin.firestore();
+        const firestoreInstance = getFirestore();
         const sourceCollection = "unit/test/delete";
         const watchCollection = "unit/test/watch";
         const sourceDatas: { [key: string]: any }[] = [];
@@ -107,10 +108,10 @@ integrationDescribe("Firestore Test", () => {
 
 integrationDescribe("Aggregate Model Firestore", () => {
     const testCollection = "unit/test/aggregate";
-    let firestoreInstance: admin.firestore.Firestore;
+    let firestoreInstance: Firestore;
 
     beforeAll(async () => {
-        firestoreInstance = admin.firestore();
+        firestoreInstance = getFirestore();
         // テストデータを作成
         for (let i = 1; i <= 5; i++) {
             await firestoreInstance.doc(`${testCollection}/doc${i}`).save({
@@ -199,10 +200,10 @@ integrationDescribe("Aggregate Model Firestore", () => {
 
 integrationDescribe("Collection Model Firestore", () => {
     const testCollection = "unit/test/collection";
-    let firestoreInstance: admin.firestore.Firestore;
+    let firestoreInstance: Firestore;
 
     beforeAll(() => {
-        firestoreInstance = admin.firestore();
+        firestoreInstance = getFirestore();
     });
 
     afterAll(async () => {
@@ -300,10 +301,10 @@ integrationDescribe("Collection Model Firestore", () => {
 
 integrationDescribe("Document Model Firestore", () => {
     const testCollection = "unit/test/document";
-    let firestoreInstance: admin.firestore.Firestore;
+    let firestoreInstance: Firestore;
 
     beforeAll(() => {
-        firestoreInstance = admin.firestore();
+        firestoreInstance = getFirestore();
     });
 
     afterAll(async () => {

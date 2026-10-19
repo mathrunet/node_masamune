@@ -1,5 +1,5 @@
 
-import * as admin from "firebase-admin";
+import { DocumentData, DocumentReference } from "firebase-admin/firestore";
 import { utils, firestore } from "@mathrunet/masamune_firebase";
 import "@mathrunet/masamune";
 import { FirestoreDeleteDocumentsRequest } from "./interface";
@@ -38,7 +38,7 @@ export async function deleteDocuments(request: FirestoreDeleteDocumentsRequest):
             if (!collection) {
                 break;
             }
-            const deleteList: admin.firestore.DocumentReference<admin.firestore.DocumentData, admin.firestore.DocumentData>[] = [];
+            const deleteList: DocumentReference<DocumentData, DocumentData>[] = [];
             for (let doc of collection.docs) {
                 const data = doc.data() as { [key: string]: any };
                 if (!await firestore.hasMatch({ data: data, conditions: request.conditions })) {

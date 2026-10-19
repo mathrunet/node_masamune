@@ -1,12 +1,12 @@
-import * as admin from "firebase-admin";
+import { getApps, initializeApp } from "firebase-admin/app";
 
 const config = require("firebase-functions-test")({ projectId: "media-test" });
 const originalFirebaseConfig = process.env.FIREBASE_CONFIG;
 
 beforeAll(() => {
     process.env.FIREBASE_CONFIG = JSON.stringify({ projectId: "media-test", storageBucket: "media-test" });
-    if (admin.apps.length === 0) {
-        admin.initializeApp({ projectId: "media-test", storageBucket: "media-test" });
+    if (getApps().length === 0) {
+        initializeApp({ projectId: "media-test", storageBucket: "media-test" });
     }
 });
 

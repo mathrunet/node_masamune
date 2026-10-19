@@ -1,7 +1,7 @@
 import * as functions from "firebase-functions/v2";
 import { SchedulerFunctionsOptions, firestoreLoader, utils, ModelTimestamp } from "@mathrunet/masamune_firebase";
 import { Workflow } from "../lib/interfaces";
-import * as admin from "firebase-admin";
+import { FieldValue } from "firebase-admin/firestore";
 import "@mathrunet/masamune";
 
 const _kCollectionLimit = 100;
@@ -47,7 +47,7 @@ module.exports = (
                             const updatedWorkflowData: Workflow = {
                                 ...data,
                                 "@time": now,
-                                "nextTime": admin.firestore.FieldValue.delete(),
+                                "nextTime": FieldValue.delete(),
                                 "updatedTime": new ModelTimestamp(now),
                             };
                             promies.push(
@@ -132,7 +132,7 @@ module.exports = (
                                 const updatedWorkflowData: Workflow = {
                                     ...data,
                                     "@time": now,
-                                    "nextTime": admin.firestore.FieldValue.delete(),
+                                    "nextTime": FieldValue.delete(),
                                     "updatedTime": new ModelTimestamp(now),
                                 };
                                 promies.push(

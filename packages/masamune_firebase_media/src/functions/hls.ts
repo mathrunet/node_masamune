@@ -1,5 +1,5 @@
 import * as functions from "firebase-functions/v2";
-import * as admin from "firebase-admin";
+import { getStorage } from "firebase-admin/storage";
 import { StorageFunctionsOptions } from "@mathrunet/masamune_firebase";
 import * as path from "path";
 import * as os from "os";
@@ -27,7 +27,7 @@ module.exports = (
     },
     async (event) => {
         try {
-            const storage = admin.storage();
+            const storage = getStorage();
             // ファイルがアップロードされたバケット
             const fileBucket = event.data.bucket;
             // ファイルのパス

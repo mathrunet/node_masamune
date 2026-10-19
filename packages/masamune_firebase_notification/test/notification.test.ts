@@ -1,4 +1,4 @@
-import * as admin from "firebase-admin";
+import { getApps, initializeApp } from "firebase-admin/app";
 import "@mathrunet/masamune_firebase";
 
 const config = require("firebase-functions-test")({
@@ -8,8 +8,8 @@ const config = require("firebase-functions-test")({
 
 describe("send_notification Function", () => {
     beforeAll(() => {
-        if (admin.apps.length === 0) {
-            admin.initializeApp();
+        if (getApps().length === 0) {
+            initializeApp();
         }
     });
 

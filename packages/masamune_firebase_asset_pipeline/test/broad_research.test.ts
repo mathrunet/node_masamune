@@ -1,4 +1,5 @@
-import * as admin from "firebase-admin";
+import { getApps, initializeApp } from "firebase-admin/app";
+import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import * as functions from "firebase-functions-test";
 import * as fs from "fs";
 import * as path from "path";
@@ -12,15 +13,15 @@ const config = liveTestsEnabled ? require("firebase-functions-test")({
 
 (liveTestsEnabled ? describe : describe.skip)("Broad Research Function Test", () => {
     beforeAll(() => {
-        if (admin.apps.length === 0) {
-            admin.initializeApp();
+        if (getApps().length === 0) {
+            initializeApp();
         }
         process.env.GCP_PROJECT_ID = "mathru-net";
         process.env.GEMINI_MODEL = "gemini-2.5-pro";
     });
 
     test("Conduct Broad Research", async () => {
-        const firestoreInstance = admin.firestore();
+        const firestoreInstance = getFirestore();
         const myFunctionsFactory = require("../src/functions/conduct_broad_research");
         // Call the factory to get the Cloud Function
         const cloudFunction = myFunctionsFactory(["us-central1"], {}, {});
@@ -34,8 +35,8 @@ const config = liveTestsEnabled ? require("firebase-functions-test")({
         await docRef.set({
             channelTheme: channelTheme,
             status: "pending",
-            createdAt: admin.firestore.FieldValue.serverTimestamp(),
-            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            createdAt: FieldValue.serverTimestamp(),
+            updatedAt: FieldValue.serverTimestamp(),
         });
 
         // Invoke the function with the document ID

@@ -1,4 +1,5 @@
-import * as admin from "firebase-admin";
+import { getApps, initializeApp } from "firebase-admin/app";
+import { getFirestore } from "firebase-admin/firestore";
 import "@mathrunet/masamune_firebase";
 import * as dotenv from "dotenv";
 import * as fs from "fs";
@@ -20,8 +21,8 @@ describe("Subscription Verify", () => {
     let createdDocIds: string[] = [];
 
     beforeAll(() => {
-        if (admin.apps.length === 0) {
-            admin.initializeApp();
+        if (getApps().length === 0) {
+            initializeApp();
         }
     });
 
@@ -31,7 +32,7 @@ describe("Subscription Verify", () => {
             return;
         }
         // クリーンアップ: テストで作成されたサブスクリプションドキュメントを削除
-        const firestore = admin.firestore();
+        const firestore = getFirestore();
         for (const docId of createdDocIds) {
             try {
                 await firestore.collection(subscriptionPath).doc(docId).delete();
@@ -124,7 +125,7 @@ describe("Subscription Verify", () => {
             console.log("Android subscription verified:", JSON.stringify(res, null, 2));
 
             // Firestoreに保存されたことを確認
-            const firestore = admin.firestore();
+            const firestore = getFirestore();
             const docs = await firestore.collection(subscriptionPath)
                 .where("userId", "==", testUserId)
                 .get();
@@ -214,7 +215,7 @@ describe("Subscription Verify", () => {
             console.log("iOS subscription verified:", JSON.stringify(res, null, 2));
 
             // Firestoreに保存されたことを確認
-            const firestore = admin.firestore();
+            const firestore = getFirestore();
             const docs = await firestore.collection(subscriptionPath)
                 .where("userId", "==", testUserId)
                 .get();

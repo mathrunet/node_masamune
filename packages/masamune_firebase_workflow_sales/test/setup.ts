@@ -3,7 +3,7 @@
  */
 import * as dotenv from "dotenv";
 import * as path from "path";
-import * as admin from "firebase-admin";
+import { cert, getApps, initializeApp } from "firebase-admin/app";
 import "@mathrunet/masamune";
 
 // Project root directory
@@ -20,13 +20,13 @@ if (serviceAccountPath && !process.env.GOOGLE_APPLICATION_CREDENTIALS) {
 }
 
 // Initialize Firebase Admin
-if (admin.apps.length === 0) {
+if (getApps().length === 0) {
     const resolvedServiceAccountPath = process.env.GOOGLE_APPLICATION_CREDENTIALS
         || (serviceAccountPath ? path.resolve(__dirname, serviceAccountPath) : null);
 
     if (resolvedServiceAccountPath) {
-        admin.initializeApp({
-            credential: admin.credential.cert(resolvedServiceAccountPath),
+        initializeApp({
+            credential: cert(resolvedServiceAccountPath),
         });
         console.log("Firebase Admin initialized with service account");
     } else {

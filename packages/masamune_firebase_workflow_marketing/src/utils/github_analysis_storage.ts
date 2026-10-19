@@ -5,7 +5,7 @@
  * Firestoreの代わりに1つのJSONファイルにすべてのデータを保存することでコストを削減。
  */
 
-import * as admin from "firebase-admin";
+import { getStorage } from "firebase-admin/storage";
 import "@mathrunet/masamune";
 import {
     GitHubAnalysisState,
@@ -82,7 +82,7 @@ export async function readAnalysisData(
     const storageBucket = process.env.STORAGE_BUCKET ||
         `${process.env.GCLOUD_PROJECT || process.env.GOOGLE_CLOUD_PROJECT || "unknown"}.appspot.com`;
 
-    const bucket = admin.storage().bucket(storageBucket);
+    const bucket = getStorage().bucket(storageBucket);
     const filePath = getStoragePath(projectId);
     const file = bucket.file(filePath);
 
@@ -116,7 +116,7 @@ export async function writeAnalysisData(
     const storageBucket = process.env.STORAGE_BUCKET ||
         `${process.env.GCLOUD_PROJECT || process.env.GOOGLE_CLOUD_PROJECT || "unknown"}.appspot.com`;
 
-    const bucket = admin.storage().bucket(storageBucket);
+    const bucket = getStorage().bucket(storageBucket);
     const filePath = getStoragePath(projectId);
     const file = bucket.file(filePath);
 
@@ -171,7 +171,7 @@ export async function deleteAnalysisData(projectId: string): Promise<void> {
     const storageBucket = process.env.STORAGE_BUCKET ||
         `${process.env.GCLOUD_PROJECT || process.env.GOOGLE_CLOUD_PROJECT || "unknown"}.appspot.com`;
 
-    const bucket = admin.storage().bucket(storageBucket);
+    const bucket = getStorage().bucket(storageBucket);
     const filePath = getStoragePath(projectId);
     const file = bucket.file(filePath);
 

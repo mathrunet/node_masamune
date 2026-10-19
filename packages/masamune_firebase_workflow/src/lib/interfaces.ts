@@ -1,7 +1,6 @@
 import { ModelLocale, ModelRefFirebase, ModelTimestamp } from "@mathrunet/masamune_firebase";
-import * as admin from "firebase-admin";
+import { FieldValue, Firestore } from "firebase-admin/firestore";
 import { WorkflowContext } from "./workflow_process_function_base";
-import { Firestore } from "firebase-admin/firestore";
 
 /**
  * Workflow repeat type.
@@ -129,7 +128,7 @@ export interface Workflow extends Model {
     "actions": ActionCommand[];
     "prompt"?: string;
     "materials"?: { [key: string]: any };
-    "nextTime"?: ModelTimestamp | admin.firestore.FieldValue;
+    "nextTime"?: ModelTimestamp | FieldValue;
     "startTime"?: ModelTimestamp;
     "createdTime": ModelTimestamp;
     "updatedTime": ModelTimestamp;
@@ -147,16 +146,16 @@ export interface Task extends Model {
     "locale"?: ModelLocale | string;
     "status": WorkflowTaskStatus;
     "actions": ActionCommand[];
-    "currentAction"?: ModelRefFirebase | admin.firestore.FieldValue;
-    "nextAction"?: ActionCommand | admin.firestore.FieldValue;
+    "currentAction"?: ModelRefFirebase | FieldValue;
+    "nextAction"?: ActionCommand | FieldValue;
     "error"?: { [key: string]: any };
     "log"?: TaskLog[];
     "prompt"?: string;
     "materials"?: { [key: string]: any };
     "results"?: { [key: string]: any };
     "assets"?: { [key: string]: any };
-    "search"?: string | admin.firestore.FieldValue;
-    "@search"?: admin.firestore.FieldValue;
+    "search"?: string | FieldValue;
+    "@search"?: FieldValue;
     "usage": number;
     "startTime"?: ModelTimestamp;
     "finishedTime"?: ModelTimestamp;
@@ -256,7 +255,7 @@ export interface Page extends Model {
 export interface Usage extends Model {
     "organization"?: ModelRefFirebase;
     "usage": number;
-    "latestPlan"?: string | admin.firestore.FieldValue;
+    "latestPlan"?: string | FieldValue;
     "bucketBalance"?: number;
     "lastCheckTime"?: ModelTimestamp;
     "currentMonth"?: string;

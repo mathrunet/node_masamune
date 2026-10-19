@@ -1,6 +1,6 @@
 import * as functions from "firebase-functions/v2";
 import { HttpFunctionsOptions, firestoreLoader } from "@mathrunet/masamune_firebase";
-import * as admin from "firebase-admin";
+import { FieldValue } from "firebase-admin/firestore";
 
 /**
  * Start the asset creation process.
@@ -51,8 +51,8 @@ module.exports = (
                 channelTheme: channelTheme,
                 assets: assets ?? {},
                 status: "pending",
-                createdAt: admin.firestore.FieldValue.serverTimestamp(),
-                updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+                createdAt: FieldValue.serverTimestamp(),
+                updatedAt: FieldValue.serverTimestamp(),
             });
 
             // TODO: Trigger the next step (e.g., broad research) or set a flag for the scheduler.

@@ -1,5 +1,5 @@
 import * as functions from "firebase-functions/v2";
-import * as admin from "firebase-admin";
+import { getStorage } from "firebase-admin/storage";
 import { StorageFunctionsOptions } from "@mathrunet/masamune_firebase";
 
 /**
@@ -31,7 +31,7 @@ module.exports = (
             if (!source) {
                 return;
             }
-            const bucket = admin.storage().bucket(object.bucket);
+            const bucket = getStorage().bucket(object.bucket);
             const targetScreenShot = source.toString().match(/([a-z0-9A-Z]+)_([a-z0-9A-Z]+)__uid_s_([0-9]+)__uid_e_video_([0-9]+).jp(e)?g/);
             if (targetScreenShot) {
                 const target = targetScreenShot[2] + ".jpg";

@@ -3,7 +3,8 @@
  * Cleans up test files from Firebase Storage after tests complete.
  * テスト完了後にFirebase Storageのテストファイルをクリーンアップ。
  */
-import * as admin from "firebase-admin";
+import { getApps, initializeApp } from "firebase-admin/app";
+import { getStorage } from "firebase-admin/storage";
 import * as dotenv from "dotenv";
 import * as path from "path";
 import * as fs from "fs";
@@ -31,11 +32,11 @@ export default async function globalTeardown(): Promise<void> {
 
     try {
         // Initialize Firebase Admin if not already initialized
-        if (!admin.apps.length) {
-            admin.initializeApp();
+        if (!getApps().length) {
+            initializeApp();
         }
 
-        const storage = admin.storage();
+        const storage = getStorage();
         const bucketName = process.env.STORAGE_BUCKET ||
             `${process.env.GCLOUD_PROJECT || process.env.GCP_PROJECT_ID}.appspot.com`;
         const bucket = storage.bucket(bucketName);

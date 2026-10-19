@@ -1,7 +1,7 @@
 import * as functions from "firebase-functions/v2";
 import { SchedulerFunctionsOptions, firestoreLoader, ModelFieldValue, utils, ModelTimestamp } from "@mathrunet/masamune_firebase";
 import { Action, Task } from "../lib/interfaces";
-import * as admin from "firebase-admin";
+import { FieldValue } from "firebase-admin/firestore";
 import * as adminFunctions from "firebase-admin/functions";
 import * as crypto from "crypto";
 import "@mathrunet/masamune";
@@ -84,7 +84,7 @@ module.exports = (
                             "@time": now,
                             "status": "running",
                             "currentAction": actionDoc,
-                            "nextAction": admin.firestore.FieldValue.delete(),
+                            "nextAction": FieldValue.delete(),
                             "updatedTime": new ModelTimestamp(now),
                         };
                         promies.push(

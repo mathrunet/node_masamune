@@ -1,4 +1,6 @@
-import * as admin from "firebase-admin";
+import { cert, getApps, initializeApp } from "firebase-admin/app";
+import { FieldValue, getFirestore } from "firebase-admin/firestore";
+import { getStorage } from "firebase-admin/storage";
 import * as fs from "fs";
 import * as path from "path";
 
@@ -20,9 +22,9 @@ const config = liveTestsEnabled ? require("firebase-functions-test")({
         process.env.GOOGLE_SERVICE_ACCOUNT = JSON.stringify(serviceAccount);
 
         // Initialize Firebase Admin with the service account credentials
-        if (admin.apps.length === 0) {
-            admin.initializeApp({
-                credential: admin.credential.cert(serviceAccount),
+        if (getApps().length === 0) {
+            initializeApp({
+                credential: cert(serviceAccount),
                 storageBucket: "mathru-net.appspot.com",
             });
         }
@@ -114,14 +116,14 @@ const config = liveTestsEnabled ? require("firebase-functions-test")({
         };
 
         // Setup Firestore data
-        await admin.firestore().collection("plugins/asset/request").doc(requestId).set({
+        await getFirestore().collection("plugins/asset/request").doc(requestId).set({
             status: "short_video_metadata_completed",
             assetId: assetId,
-            createdAt: admin.firestore.FieldValue.serverTimestamp(),
-            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            createdAt: FieldValue.serverTimestamp(),
+            updatedAt: FieldValue.serverTimestamp(),
         });
 
-        await admin.firestore().collection("plugins/asset/asset").doc(assetId).set({
+        await getFirestore().collection("plugins/asset/asset").doc(assetId).set({
             requestId: requestId,
             theme: "Test Theme",
             title: "Test Title",
@@ -131,8 +133,8 @@ const config = liveTestsEnabled ? require("firebase-functions-test")({
             shortVideoOverview: shortVideoOverview,
             shortVideoDetails: shortVideoDetails,
             status: "short_video_metadata_completed",
-            createdAt: admin.firestore.FieldValue.serverTimestamp(),
-            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            createdAt: FieldValue.serverTimestamp(),
+            updatedAt: FieldValue.serverTimestamp(),
         });
 
         // Call the function
@@ -160,10 +162,10 @@ const config = liveTestsEnabled ? require("firebase-functions-test")({
         }
 
         // Verify Firestore updates
-        const requestDoc = await admin.firestore().collection("plugins/asset/request").doc(requestId).get();
+        const requestDoc = await getFirestore().collection("plugins/asset/request").doc(requestId).get();
         expect(requestDoc.data()?.status).toBe("short_video_completed");
 
-        const assetDoc = await admin.firestore().collection("plugins/asset/asset").doc(assetId).get();
+        const assetDoc = await getFirestore().collection("plugins/asset/asset").doc(assetId).get();
         const assetData = assetDoc.data();
 
         // Verify video generation completed
@@ -190,7 +192,7 @@ const config = liveTestsEnabled ? require("firebase-functions-test")({
         }
 
         // Download files from Cloud Storage and save to test/tmp
-        const bucket = admin.storage().bucket();
+        const bucket = getStorage().bucket();
         const videoFile = bucket.file(`assets/${assetId}/short_video.mp4`);
         const subtitleFile = bucket.file(`assets/${assetId}/subtitles.srt`);
 

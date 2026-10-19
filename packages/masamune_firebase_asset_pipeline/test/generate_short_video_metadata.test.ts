@@ -1,4 +1,5 @@
-import * as admin from "firebase-admin";
+import { getApps, initializeApp } from "firebase-admin/app";
+import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import * as fs from "fs";
 import * as path from "path";
 
@@ -13,8 +14,8 @@ const config = liveTestsEnabled ? require("firebase-functions-test")({
     let wrapped: any;
 
     beforeAll(() => {
-        if (admin.apps.length === 0) {
-            admin.initializeApp();
+        if (getApps().length === 0) {
+            initializeApp();
         }
         process.env.GCP_PROJECT_ID = "mathru-net";
         process.env.GEMINI_MODEL = "gemini-2.5-flash";
@@ -62,14 +63,14 @@ Japanese swords (katana) are renowned worldwide for their exceptional craftsmans
         `;
 
         // Setup Firestore data - simulating completed detailed research
-        await admin.firestore().collection("plugins/asset/request").doc(requestId).set({
+        await getFirestore().collection("plugins/asset/request").doc(requestId).set({
             status: "detailed_research_completed",
             assetId: assetId,
-            createdAt: admin.firestore.FieldValue.serverTimestamp(),
-            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            createdAt: FieldValue.serverTimestamp(),
+            updatedAt: FieldValue.serverTimestamp(),
         });
 
-        await admin.firestore().collection("plugins/asset/asset").doc(assetId).set({
+        await getFirestore().collection("plugins/asset/asset").doc(assetId).set({
             requestId: requestId,
             theme: theme,
             title: title,
@@ -78,8 +79,8 @@ Japanese swords (katana) are renowned worldwide for their exceptional craftsmans
             assetType: "short_video",
             assetTypeReason: "Quick, impactful facts about samurai swords perfect for 60-second format",
             status: "detailed_research_completed",
-            createdAt: admin.firestore.FieldValue.serverTimestamp(),
-            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            createdAt: FieldValue.serverTimestamp(),
+            updatedAt: FieldValue.serverTimestamp(),
         });
 
         // Call the function
@@ -106,10 +107,10 @@ Japanese swords (katana) are renowned worldwide for their exceptional craftsmans
         }
 
         // Verify Firestore updates
-        const requestDoc = await admin.firestore().collection("plugins/asset/request").doc(requestId).get();
+        const requestDoc = await getFirestore().collection("plugins/asset/request").doc(requestId).get();
         expect(requestDoc.data()?.status).toBe("short_video_metadata_completed");
 
-        const assetDoc = await admin.firestore().collection("plugins/asset/asset").doc(assetId).get();
+        const assetDoc = await getFirestore().collection("plugins/asset/asset").doc(assetId).get();
         const assetData = assetDoc.data();
 
         // Verify all required metadata fields exist

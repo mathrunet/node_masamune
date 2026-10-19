@@ -1,7 +1,7 @@
 import * as firestore from "firebase-admin/firestore";
 import * as storage from "firebase-admin/storage";
 import { Bucket } from '@google-cloud/storage';
-import * as admin from "firebase-admin";
+import { getApps, initializeApp } from "firebase-admin/app";
 
 /**
  * Loads the Firestore instance.
@@ -19,17 +19,17 @@ import * as admin from "firebase-admin";
  * Firestoreインスタンス。
  */
 export function firestoreLoader(databaseId: string | null | undefined): firestore.Firestore {
-    if (admin.apps.length === 0) {
-        admin.initializeApp();
+    if (getApps().length === 0) {
+        initializeApp();
     }
     if (!databaseId || databaseId == "" || databaseId == "(default)") {
-        const app = admin.apps[0];
+        const app = getApps()[0];
         if(!app){
             throw new Error("No app found");
         }
         return firestore.getFirestore(app);
     } else {
-        const app = admin.apps[0];
+        const app = getApps()[0];
         if(!app){
             throw new Error("No app found");
         }
@@ -49,10 +49,10 @@ export function firestoreLoader(databaseId: string | null | undefined): firestor
  * Storageインスタンス。
  */
 export function storageLoader(bucketId: string): Bucket {
-    if (admin.apps.length === 0) {
-        admin.initializeApp();
+    if (getApps().length === 0) {
+        initializeApp();
     }
-    const app = admin.apps[0];
+    const app = getApps()[0];
     if(!app){
         throw new Error("No app found");
     }

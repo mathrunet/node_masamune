@@ -1,6 +1,7 @@
 import * as functions from "firebase-functions/v2";
 import { firestoreLoader, FunctionsBase, HttpFunctionsOptions, ModelTimestamp } from "@mathrunet/masamune_firebase";
-import * as admin from "firebase-admin";
+import { getApps, initializeApp } from "firebase-admin/app";
+import { FieldValue, Firestore, Timestamp } from "firebase-admin/firestore";
 import { Action, Task, Usage, Plan, Subscription, Campaign, TaskLog } from "./interfaces";
 import { GoogleGenAI } from "@google/genai";
 import "@mathrunet/masamune";
@@ -92,8 +93,8 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                         throw new Error("invalid-argument");
                     }
                     // Auto-initialize Firebase Admin if not already initialized
-                    if (admin.apps.length === 0) {
-                        admin.initializeApp();
+                    if (getApps().length === 0) {
+                        initializeApp();
                     }
                     const firestore = firestoreLoader(defaultDatabaseId);
                     const action = await firestore.doc(path).load();
@@ -171,7 +172,7 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                             );
                             const updatedTaskData: Task = {
                                 ...taskData,
-                                currentAction: admin.firestore.FieldValue.delete(),
+                                currentAction: FieldValue.delete(),
                                 nextAction: command,
                                 usage: taskData.usage + usage,
                                 status: "canceled",
@@ -234,8 +235,8 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                                 };
                                 const updatedTaskData: Task = {
                                     ...taskData,
-                                    currentAction: admin.firestore.FieldValue.delete(),
-                                    nextAction: admin.firestore.FieldValue.delete(),
+                                    currentAction: FieldValue.delete(),
+                                    nextAction: FieldValue.delete(),
                                     usage: taskData.usage + result.usage + usage,
                                     status: "completed",
                                     log: [
@@ -254,8 +255,8 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                                     },
                                     "finishedTime": new ModelTimestamp(finishedTime),
                                     "updatedTime": new ModelTimestamp(finishedTime),
-                                    "search": result.search ? result.search : admin.firestore.FieldValue.delete(),
-                                    "@search": search ? admin.firestore.FieldValue.vector(search) : admin.firestore.FieldValue.delete(),
+                                    "search": result.search ? result.search : FieldValue.delete(),
+                                    "@search": search ? FieldValue.vector(search) : FieldValue.delete(),
                                 };
                                 await task.ref.save(
                                     updatedTaskData,
@@ -304,7 +305,7 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                                 };
                                 const updatedTaskData: Task = {
                                     ...taskData,
-                                    currentAction: admin.firestore.FieldValue.delete(),
+                                    currentAction: FieldValue.delete(),
                                     nextAction: nextCommand,
                                     usage: taskData.usage + result.usage + usage,
                                     status: "waiting",
@@ -324,8 +325,8 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                                     },
                                     "finishedTime": new ModelTimestamp(finishedTime),
                                     "updatedTime": new ModelTimestamp(finishedTime),
-                                    "search": result.search ? result.search : admin.firestore.FieldValue.delete(),
-                                    "@search": search ? admin.firestore.FieldValue.vector(search) : admin.firestore.FieldValue.delete(),
+                                    "search": result.search ? result.search : FieldValue.delete(),
+                                    "@search": search ? FieldValue.vector(search) : FieldValue.delete(),
                                 };
                                 await task.ref.save(
                                     updatedTaskData,
@@ -390,7 +391,7 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                             };
                             const updatedTaskData: Task = {
                                 ...taskData,
-                                currentAction: admin.firestore.FieldValue.delete(),
+                                currentAction: FieldValue.delete(),
                                 nextAction: command,
                                 log: [
                                     ...taskData.log ?? [],
@@ -489,11 +490,11 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
         organizationId,
         plan,
     }: {
-        firestore: admin.firestore.Firestore,
+        firestore: Firestore,
         organizationId: string,
         plan: Plan | undefined | null,
     }): Promise<void> {
-        const now = admin.firestore.Timestamp.now();
+        const now = Timestamp.now();
         const year = now.toDate().getFullYear();
         const month = (now.toDate().getMonth() + 1).toString().padStart(2, '0');
         const dateId = `${year}${month}`;
@@ -545,7 +546,7 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
         plan,
         organizationId,
     }: {
-        firestore: admin.firestore.Firestore,
+        firestore: Firestore,
         finishedTime: Date,
         usage: number,
         plan: Plan | undefined | null,
@@ -612,7 +613,7 @@ export abstract class WorkflowProcessFunctionBase extends FunctionsBase {
                     usage: totalUsage,
                     bucketBalance: newBucketBalance,
                     currentMonth: currentMonthStr,
-                    "latestPlan": planId ? planId : admin.firestore.FieldValue.delete(),
+                    "latestPlan": planId ? planId : FieldValue.delete(),
                     "lastCheckTime": new ModelTimestamp(finishedTime),
                     "updatedTime": new ModelTimestamp(finishedTime),
                 };

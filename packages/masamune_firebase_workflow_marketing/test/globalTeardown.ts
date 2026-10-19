@@ -5,7 +5,9 @@
  * This ensures no orphaned test data remains in the database.
  */
 
-import * as admin from "firebase-admin";
+import { cert, getApp, getApps, initializeApp } from "firebase-admin/app";
+import { DocumentSnapshot, FieldPath, Firestore, getFirestore } from "firebase-admin/firestore";
+import { getStorage } from "firebase-admin/storage";
 import * as path from "path";
 import * as dotenv from "dotenv";
 import "@mathrunet/masamune";
@@ -23,7 +25,7 @@ const serviceAccountPath = process.env.GOOGLE_SERVICE_ACCOUNT_PATH ||
  * Recursively delete all documents in a collection and their subcollections.
  */
 async function deleteCollection(
-    firestore: admin.firestore.Firestore,
+    firestore: Firestore,
     collectionPath: string,
     batchSize: number = 100
 ): Promise<number> {
@@ -36,7 +38,7 @@ async function deleteCollection(
 
     while (!snapshot.empty) {
         const batch = firestore.batch();
-        const docsToDelete: admin.firestore.DocumentSnapshot[] = [];
+        const docsToDelete: DocumentSnapshot[] = [];
 
         for (const doc of snapshot.docs) {
             // First, recursively delete subcollections
@@ -66,7 +68,7 @@ async function deleteCollection(
  * Delete test documents from a collection (those with IDs starting with 'test-').
  */
 async function deleteTestDocuments(
-    firestore: admin.firestore.Firestore,
+    firestore: Firestore,
     collectionPath: string
 ): Promise<number> {
     const collectionRef = firestore.collection(collectionPath);
@@ -74,8 +76,8 @@ async function deleteTestDocuments(
 
     // Query documents with IDs starting with 'test-'
     const snapshot = await collectionRef
-        .where(admin.firestore.FieldPath.documentId(), ">=", "test-")
-        .where(admin.firestore.FieldPath.documentId(), "<", "test-\uf8ff")
+        .where(FieldPath.documentId(), ">=", "test-")
+        .where(FieldPath.documentId(), "<", "test-\uf8ff")
         .load();
 
     if (snapshot.empty) {
@@ -107,7 +109,7 @@ async function deleteTestDocuments(
  * This handles the case where parent documents don't exist but subcollections do.
  */
 async function deleteOrphanedTestSubcollections(
-    firestore: admin.firestore.Firestore,
+    firestore: Firestore,
     collectionPath: string,
     subcollectionName: string
 ): Promise<number> {
@@ -234,16 +236,16 @@ export default async function globalTeardown(): Promise<void> {
     console.log("========================================\n");
 
     // Initialize Firebase Admin if not already initialized
-    if (admin.apps.length === 0) {
-        admin.initializeApp({
-            credential: admin.credential.cert(serviceAccountPath),
+    if (getApps().length === 0) {
+        initializeApp({
+            credential: cert(serviceAccountPath),
             projectId: "mathru-net",
             storageBucket: "mathru-net.appspot.com",
         });
     }
 
-    const firestore = admin.firestore();
-    const storage = admin.storage().bucket("mathru-net.appspot.com");
+    const firestore = getFirestore();
+    const storage = getStorage().bucket("mathru-net.appspot.com");
 
     let totalDeleted = 0;
 
@@ -292,5 +294,5 @@ export default async function globalTeardown(): Promise<void> {
     console.log("========================================\n");
 
     // Cleanup Firebase Admin
-    await admin.app().delete();
+    await getApp().delete();
 }

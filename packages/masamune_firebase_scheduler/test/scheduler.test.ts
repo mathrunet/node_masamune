@@ -1,4 +1,5 @@
-import * as admin from "firebase-admin";
+import { initializeApp } from "firebase-admin/app";
+import { getFirestore } from "firebase-admin/firestore";
 import { ModelServerCommandBase, ModelToken, utils } from "@mathrunet/masamune_firebase";
 import "@mathrunet/masamune_firebase";
 import * as fs from "fs";
@@ -13,10 +14,10 @@ const config = liveTestsEnabled ? require("firebase-functions-test")({
 
 (liveTestsEnabled ? describe : describe.skip)("Firestore Test", () => {
     beforeAll(() => {
-        admin.initializeApp();
+        initializeApp();
     });
     test("Notification test", async () => {
-        const firestoreInstance = admin.firestore();
+        const firestoreInstance = getFirestore();
         const sourceCollectionPath = "unit/test/source";
         const userCollectionPath = "unit/test/user";
         const sourceUid = `sourceTestUid`;
@@ -139,7 +140,7 @@ const config = liveTestsEnabled ? require("firebase-functions-test")({
     test("Notification scheduler test", async () => {
         const now = new Date();
         const schedulerCollectionPath = "unit/test/schedule";
-        const firestoreInstance = admin.firestore();
+        const firestoreInstance = getFirestore();
         let uid = "notificationTestUid";
         let command = new ModelServerCommandBase({
             "command": "notification",
@@ -176,7 +177,7 @@ const config = liveTestsEnabled ? require("firebase-functions-test")({
         const now = new Date();
         const targetPath = "unit/test/target/copySourceUid";
         const schedulerCollectionPath = "unit/test/schedule";
-        const firestoreInstance = admin.firestore();
+        const firestoreInstance = getFirestore();
         let uid = "notificationTestUid";
         let command = new ModelServerCommandBase({
             command: "copy_document",
@@ -215,7 +216,7 @@ const config = liveTestsEnabled ? require("firebase-functions-test")({
     }, 50000);
     test("Delete documents scheduler test", async () => {
         const now = new Date();
-        const firestoreInstance = admin.firestore();
+        const firestoreInstance = getFirestore();
         const sourceCollection = "unit/test/source";
         const sourceDatas: { [key: string]: any }[] = [];
         for (let i = 0; i < 10; i++) {

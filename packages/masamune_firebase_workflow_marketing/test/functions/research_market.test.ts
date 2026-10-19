@@ -9,7 +9,8 @@
  * - Environment variables in test/.env
  */
 
-import * as admin from "firebase-admin";
+import { cert, getApps, initializeApp } from "firebase-admin/app";
+import { Firestore, Timestamp, getFirestore } from "firebase-admin/firestore";
 import * as dotenv from "dotenv";
 import * as path from "path";
 import { ModelTimestamp } from "@mathrunet/masamune_firebase";
@@ -31,15 +32,15 @@ const config = require("firebase-functions-test")({
 }, serviceAccountPath);
 
 // Initialize Firebase Admin with service account credentials
-if (admin.apps.length === 0) {
-    admin.initializeApp({
-        credential: admin.credential.cert(serviceAccountPath),
+if (getApps().length === 0) {
+    initializeApp({
+        credential: cert(serviceAccountPath),
         projectId: "mathru-net",
     });
 }
 
 // Helper to create Firestore Timestamp from Date
-const toTimestamp = (date: Date) => admin.firestore.Timestamp.fromDate(date);
+const toTimestamp = (date: Date) => Timestamp.fromDate(date);
 
 // Generate unique IDs for test data
 const testTimestamp = Date.now();
@@ -51,10 +52,10 @@ const organizationPath = `plugins/workflow/organization/${testOrganizationId}`;
 const projectPath = `plugins/workflow/project/${testProjectId}`;
 
 describe("ResearchMarket Integration Tests", () => {
-    let firestore: admin.firestore.Firestore;
+    let firestore: Firestore;
 
     beforeAll(() => {
-        firestore = admin.firestore();
+        firestore = getFirestore();
     });
 
     // 各テスト間に遅延を追加してレート制限を回避

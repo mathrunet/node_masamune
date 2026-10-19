@@ -2,7 +2,8 @@
  * Firebase Storage Service for uploading generated images.
  * Firebase Storageへの画像アップロードサービス。
  */
-import * as admin from "firebase-admin";
+import { getApps, initializeApp } from "firebase-admin/app";
+import { Storage, getStorage } from "firebase-admin/storage";
 import { StorageUploadOptions, StorageUploadResult } from "../models/image_generation";
 
 /**
@@ -10,7 +11,7 @@ import { StorageUploadOptions, StorageUploadResult } from "../models/image_gener
  * Firebase Storageにファイルをアップロードするサービス。
  */
 export class StorageService {
-    private storage: admin.storage.Storage;
+    private storage: Storage;
     private defaultBucket: string;
 
     /**
@@ -19,10 +20,10 @@ export class StorageService {
      */
     constructor(bucketName?: string) {
         // Initialize Firebase Admin if not already initialized
-        if (!admin.apps.length) {
-            admin.initializeApp();
+        if (!getApps().length) {
+            initializeApp();
         }
-        this.storage = admin.storage();
+        this.storage = getStorage();
         this.defaultBucket = bucketName ||
             process.env.STORAGE_BUCKET ||
             `${process.env.GCLOUD_PROJECT || process.env.GOOGLE_CLOUD_PROJECT || process.env.GCP_PROJECT_ID}.appspot.com`;
@@ -100,7 +101,7 @@ export class StorageService {
      * @returns Signed URL
      */
     private async getSignedUrl(
-        file: ReturnType<ReturnType<admin.storage.Storage["bucket"]>["file"]>,
+        file: ReturnType<ReturnType<Storage["bucket"]>["file"]>,
         expiresIn: number = 7 * 24 * 60 * 60 * 1000
     ): Promise<string> {
         const [signedUrl] = await file.getSignedUrl({

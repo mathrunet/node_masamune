@@ -1,7 +1,7 @@
 import * as functions from "firebase-functions/v2";
 import { SchedulerFunctionsOptions, firestoreLoader, ModelFieldValue, ModelTimestamp } from "@mathrunet/masamune_firebase";
 import { Task, Action } from "../lib/interfaces";
-import * as admin from "firebase-admin";
+import { FieldValue } from "firebase-admin/firestore";
 import "@mathrunet/masamune";
 
 const _kCollectionLimit = 100;
@@ -47,8 +47,8 @@ module.exports = (
                             ...data,
                             "@time": now,
                             "status": "failed",
-                            "currentAction": admin.firestore.FieldValue.delete(),
-                            "nextAction": admin.firestore.FieldValue.delete(),
+                            "currentAction": FieldValue.delete(),
+                            "nextAction": FieldValue.delete(),
                             "error": {
                                 status: 500,
                                 "message": "Task timed out",

@@ -1,4 +1,4 @@
-import * as admin from "firebase-admin";
+import { getApps, initializeApp } from "firebase-admin/app";
 import "@mathrunet/masamune_firebase";
 import * as dotenv from "dotenv";
 import * as path from "path";
@@ -16,8 +16,8 @@ const onlineTest = process.env.OPENAI_APIKEY ? test : test.skip;
 
 describe("masamune_ai_openai", () => {
     beforeAll(() => {
-        if (admin.apps.length === 0) {
-            admin.initializeApp();
+        if (getApps().length === 0) {
+            initializeApp();
         }
         // 環境変数のチェック
         if (!process.env.OPENAI_APIKEY) {

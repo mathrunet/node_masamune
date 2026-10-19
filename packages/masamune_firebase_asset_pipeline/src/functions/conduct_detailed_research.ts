@@ -1,5 +1,5 @@
 import * as functions from "firebase-functions/v2";
-import * as admin from "firebase-admin";
+import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import { VertexAI, SchemaType } from "@google-cloud/vertexai";
 import { HttpFunctionsOptions } from "@mathrunet/masamune_firebase";
 
@@ -49,7 +49,7 @@ module.exports = (
                 throw new functions.https.HttpsError("invalid-argument", "The function must be called with a requestId.");
             }
 
-            const firestore = admin.firestore();
+            const firestore = getFirestore();
             const requestDocRef = firestore.collection("plugins/asset/request").doc(requestId);
 
             try {
@@ -172,7 +172,7 @@ module.exports = (
                     assetType: json.assetType,
                     assetTypeReason: json.assetTypeReason,
                     status: "detailed_research_completed",
-                    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+                    updatedAt: FieldValue.serverTimestamp(),
                 });
 
                 await requestDocRef.update({ status: "detailed_research_completed" });

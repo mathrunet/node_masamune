@@ -1,4 +1,5 @@
-import * as admin from "firebase-admin";
+import { getApps, initializeApp } from "firebase-admin/app";
+import { getStorage } from "firebase-admin/storage";
 import "@mathrunet/masamune_firebase";
 import * as fs from "fs";
 import * as path from "path";
@@ -24,15 +25,15 @@ describe("storage_firebase Function", () => {
     const testBase64 = Buffer.from(testContent).toString("base64");
 
     beforeAll(() => {
-        if (admin.apps.length === 0) {
-            admin.initializeApp();
+        if (getApps().length === 0) {
+            initializeApp();
         }
     });
 
     afterAll(async () => {
         if (runIntegration) {
             try {
-                const bucket = admin.storage().bucket(testBucket);
+                const bucket = getStorage().bucket(testBucket);
                 await bucket.file(testFilePath).delete();
             } catch (e) {
                 // 既に削除済みの場合は無視

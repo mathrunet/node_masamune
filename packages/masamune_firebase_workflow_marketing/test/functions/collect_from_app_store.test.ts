@@ -10,7 +10,8 @@
  * - App Store P8 key file: test/AuthKey_48T4WJHF5B.p8
  */
 
-import * as admin from "firebase-admin";
+import { cert, getApps, initializeApp } from "firebase-admin/app";
+import { Firestore, Timestamp, getFirestore } from "firebase-admin/firestore";
 import * as dotenv from "dotenv";
 import * as path from "path";
 import * as fs from "fs";
@@ -32,15 +33,15 @@ const config = require("firebase-functions-test")({
 }, serviceAccountPath);
 
 // Initialize Firebase Admin with service account credentials
-if (admin.apps.length === 0) {
-    admin.initializeApp({
-        credential: admin.credential.cert(serviceAccountPath),
+if (getApps().length === 0) {
+    initializeApp({
+        credential: cert(serviceAccountPath),
         projectId: "mathru-net",
     });
 }
 
 // Helper to create Firestore Timestamp from Date
-const toTimestamp = (date: Date) => admin.firestore.Timestamp.fromDate(date);
+const toTimestamp = (date: Date) => Timestamp.fromDate(date);
 
 // Test configuration from .env
 const appStoreKeyId = process.env.APP_STORE_KEY_ID || "48T4WJHF5B";
@@ -63,11 +64,11 @@ const taskPath = `plugins/workflow/task/${testTaskId}`;
 const actionPath = `plugins/workflow/action/${testActionId}`;
 
 describe("CollectFromAppStore Integration Tests", () => {
-    let firestore: admin.firestore.Firestore;
+    let firestore: Firestore;
     let appStorePrivateKey: string;
 
     beforeAll(() => {
-        firestore = admin.firestore();
+        firestore = getFirestore();
 
         // Load App Store private key
         // .env path is relative to test directory

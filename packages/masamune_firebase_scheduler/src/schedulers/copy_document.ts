@@ -1,4 +1,3 @@
-import * as admin from "firebase-admin";
 import "@mathrunet/masamune_firebase";
 import { SchedulerCopyDocumentRequest, SchedulerCopyDocumentResponse } from "../lib/interface";
 

@@ -1,6 +1,6 @@
 import * as functions from "firebase-functions/v2";
 import { HttpFunctionsOptions } from "@mathrunet/masamune_firebase";
-import * as admin from "firebase-admin";
+import { getAuth } from "firebase-admin/auth";
 import { DeleteUserResponse } from "../lib/interface";
 
 /**
@@ -35,7 +35,7 @@ module.exports = (
             if (!userId) {
                 throw new functions.https.HttpsError("invalid-argument", "No user ID specified in `userId`.");
             }
-            const authInstance = admin.auth();
+            const authInstance = getAuth();
             await authInstance.deleteUser(userId);
             const response: DeleteUserResponse = {
                 success: true,

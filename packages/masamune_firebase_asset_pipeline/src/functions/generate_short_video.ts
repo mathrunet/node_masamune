@@ -1,5 +1,6 @@
 import * as functions from "firebase-functions/v2";
-import * as admin from "firebase-admin";
+import { FieldValue, getFirestore } from "firebase-admin/firestore";
+import { getStorage } from "firebase-admin/storage";
 import { VertexAI } from "@google-cloud/vertexai";
 import * as path from "path";
 import * as os from "os";
@@ -776,8 +777,8 @@ module.exports = (
                 throw new functions.https.HttpsError("invalid-argument", "The function must be called with a requestId.");
             }
 
-            const firestore = admin.firestore();
-            const storage = admin.storage();
+            const firestore = getFirestore();
+            const storage = getStorage();
             const requestDocRef = firestore.collection("plugins/asset/request").doc(requestId);
 
             try {
@@ -1184,7 +1185,7 @@ module.exports = (
                         subtitleUrl: subtitleUrl,
                         videoDuration: totalDuration,
                         status: "short_video_completed",
-                        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+                        updatedAt: FieldValue.serverTimestamp(),
                     });
 
                     await requestDocRef.update({ status: "short_video_completed" });

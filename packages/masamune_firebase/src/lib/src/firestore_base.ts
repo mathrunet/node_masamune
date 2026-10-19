@@ -1,4 +1,4 @@
-import * as admin from "firebase-admin";
+import { DocumentData, DocumentReference, Query, getFirestore } from "firebase-admin/firestore";
 import { ModelRefFirebase } from "../model_field_value/model_field_value";
 import { ModelRefBase } from "@mathrunet/masamune";
 
@@ -26,9 +26,9 @@ export function where({
     query,
     wheres,
 }: {
-    query: admin.firestore.Query<admin.firestore.DocumentData, admin.firestore.DocumentData>,
+    query: Query<DocumentData, DocumentData>,
     wheres: { [key: string]: any }[] | undefined,
-}): admin.firestore.Query<admin.firestore.DocumentData, admin.firestore.DocumentData> {
+}): Query<DocumentData, DocumentData> {
     if (!wheres) {
         return query;
     }
@@ -125,7 +125,7 @@ export async function hasMatch({
             continue;
         }
         const source = data[key];
-        if (source instanceof admin.firestore.DocumentReference) {
+        if (source instanceof DocumentReference) {
             const doc = await source.get();
             const data = doc.data() as { [key: string]: any };
             console.log(`Reference data ${JSON.stringify(data)}`);
@@ -162,7 +162,7 @@ export async function hasMatch({
                 }
             }
         } else if (source instanceof ModelRefBase) {
-            const doc = await admin.firestore().doc(source["@ref"]).get();
+            const doc = await getFirestore().doc(source["@ref"]).get();
             if (doc) {
                 const data = doc.data() as { [key: string]: any };
                 console.log(`Reference data ${JSON.stringify(data)}`);
@@ -314,7 +314,7 @@ export async function get({
     }
     const key = field["key"];
     const source = data[key];
-    if (source instanceof admin.firestore.DocumentReference) {
+    if (source instanceof DocumentReference) {
         const doc = await source.get();
         const data = doc.data() as { [key: string]: any };
         return get({ data, field: field["value"] });
@@ -325,7 +325,7 @@ export async function get({
             return get({ data, field: field["value"] });
         }
     } else if (source instanceof ModelRefBase) {
-        const doc = await admin.firestore().doc(source["@ref"]).get();
+        const doc = await getFirestore().doc(source["@ref"]).get();
         if (doc) {
             const data = doc.data() as { [key: string]: any };
             return get({ data, field: field["value"] });
@@ -361,10 +361,10 @@ export function cursor({
     limit,
     cursor,
 }: {
-    query: admin.firestore.Query<admin.firestore.DocumentData, admin.firestore.DocumentData>,
+    query: Query<DocumentData, DocumentData>,
     limit: number,
     cursor: FirebaseFirestore.QueryDocumentSnapshot | undefined | null,
-}): admin.firestore.Query<admin.firestore.DocumentData, admin.firestore.DocumentData> {
+}): Query<DocumentData, DocumentData> {
     if (!cursor) {
         return query.limit(limit);
     }

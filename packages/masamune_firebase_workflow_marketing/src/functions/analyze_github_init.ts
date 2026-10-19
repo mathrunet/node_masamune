@@ -17,7 +17,8 @@ import {
     Project,
     ActionCommand,
 } from "@mathrunet/masamune_firebase_workflow";
-import * as admin from "firebase-admin";
+import { getApps, initializeApp } from "firebase-admin/app";
+import { DocumentReference } from "firebase-admin/firestore";
 import { GitHubContentClient } from "../clients/github_content_client";
 import {
     GitHubAnalysisState,
@@ -81,8 +82,8 @@ export class AnalyzeGitHubInit extends WorkflowProcessFunctionBase {
         }
 
         // Auto-initialize Firebase Admin if needed
-        if (admin.apps.length === 0) {
-            admin.initializeApp();
+        if (getApps().length === 0) {
+            initializeApp();
         }
 
         const projectDoc = await projectRef.load();
@@ -204,7 +205,7 @@ export class AnalyzeGitHubInit extends WorkflowProcessFunctionBase {
      * Update task.actions to include process and summary actions.
      */
     private async updateTaskActions(
-        taskRef: admin.firestore.DocumentReference,
+        taskRef: DocumentReference,
         currentActions: ActionCommand[],
         currentIndex: number,
         batchCount: number,

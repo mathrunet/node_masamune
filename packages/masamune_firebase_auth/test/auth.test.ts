@@ -1,4 +1,5 @@
-import * as admin from "firebase-admin";
+import { getApps, initializeApp } from "firebase-admin/app";
+import { getAuth } from "firebase-admin/auth";
 import "@mathrunet/masamune_firebase";
 import * as fs from "fs";
 import * as path from "path";
@@ -16,8 +17,8 @@ describe("deleteUser Function", () => {
     let testUserId: string | null = null;
 
     beforeAll(() => {
-        if (admin.apps.length === 0) {
-            admin.initializeApp();
+        if (getApps().length === 0) {
+            initializeApp();
         }
     });
 
@@ -25,7 +26,7 @@ describe("deleteUser Function", () => {
         // クリーンアップ: 残っているテストユーザーを削除
         if (testUserId) {
             try {
-                await admin.auth().deleteUser(testUserId);
+                await getAuth().deleteUser(testUserId);
             } catch (e) {
                 // 既に削除済みの場合は無視
             }
@@ -35,14 +36,14 @@ describe("deleteUser Function", () => {
     integrationTest("正常系: ユーザー削除成功", async () => {
         // テストユーザーを作成
         const testEmail = `test-delete-${Date.now()}@example.com`;
-        const userRecord = await admin.auth().createUser({
+        const userRecord = await getAuth().createUser({
             email: testEmail,
             password: "testPassword123",
         });
         testUserId = userRecord.uid;
 
         // ユーザーが作成されたことを確認
-        const createdUser = await admin.auth().getUser(testUserId);
+        const createdUser = await getAuth().getUser(testUserId);
         expect(createdUser.uid).toBe(testUserId);
 
         // delete_user関数を呼び出し
@@ -58,7 +59,7 @@ describe("deleteUser Function", () => {
         expect(res.success).toBe(true);
 
         // ユーザーが削除されたことを確認
-        await expect(admin.auth().getUser(testUserId)).rejects.toThrow();
+        await expect(getAuth().getUser(testUserId)).rejects.toThrow();
         testUserId = null; // クリーンアップ不要
     }, 50000);
 

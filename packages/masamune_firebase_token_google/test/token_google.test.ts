@@ -1,4 +1,5 @@
-import * as admin from "firebase-admin";
+import { getApps, initializeApp } from "firebase-admin/app";
+import { getAuth } from "firebase-admin/auth";
 import "@mathrunet/masamune_firebase";
 import * as fs from "fs";
 import * as path from "path";
@@ -19,8 +20,8 @@ describe("google_token Function", () => {
     let testUserId: string | null = null;
 
     beforeAll(() => {
-        if (admin.apps.length === 0) {
-            admin.initializeApp();
+        if (getApps().length === 0) {
+            initializeApp();
         }
     });
 
@@ -28,7 +29,7 @@ describe("google_token Function", () => {
         // クリーンアップ: テストユーザーを削除
         if (testUserId) {
             try {
-                await admin.auth().deleteUser(testUserId);
+                await getAuth().deleteUser(testUserId);
                 console.log(`Deleted test user: ${testUserId}`);
             } catch (e) {
                 // 既に削除済みの場合は無視
@@ -39,7 +40,7 @@ describe("google_token Function", () => {
     integrationTest("正常系: トークン取得成功", async () => {
         // テストユーザーを作成
         const testEmail = `test-token-${Date.now()}@example.com`;
-        const userRecord = await admin.auth().createUser({
+        const userRecord = await getAuth().createUser({
             email: testEmail,
             password: "testPassword123",
         });
@@ -72,7 +73,7 @@ describe("google_token Function", () => {
         // 前のテストで作成したユーザーを再利用
         if (!testUserId) {
             const testEmail = `test-token-default-${Date.now()}@example.com`;
-            const userRecord = await admin.auth().createUser({
+            const userRecord = await getAuth().createUser({
                 email: testEmail,
                 password: "testPassword123",
             });

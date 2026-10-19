@@ -16,7 +16,9 @@
  * - GITHUB_TOKEN and GITHUB_REPO for GitHub analysis
  */
 
-import * as admin from "firebase-admin";
+import { cert, getApps, initializeApp } from "firebase-admin/app";
+import { Firestore, Timestamp, getFirestore } from "firebase-admin/firestore";
+import { getStorage } from "firebase-admin/storage";
 import * as dotenv from "dotenv";
 import * as path from "path";
 import * as fs from "fs";
@@ -39,16 +41,16 @@ const config = require("firebase-functions-test")({
 }, serviceAccountPath);
 
 // Initialize Firebase Admin with service account credentials
-if (admin.apps.length === 0) {
-    admin.initializeApp({
-        credential: admin.credential.cert(serviceAccountPath),
+if (getApps().length === 0) {
+    initializeApp({
+        credential: cert(serviceAccountPath),
         projectId: "mathru-net",
         storageBucket: "mathru-net.appspot.com",
     });
 }
 
 // Helper to create Firestore Timestamp from Date
-const toTimestamp = (date: Date) => admin.firestore.Timestamp.fromDate(date);
+const toTimestamp = (date: Date) => Timestamp.fromDate(date);
 
 // Test configuration from .env
 const googlePlayPackageName = process.env.GOOGLE_PLAY_PACKAGE_NAME || "net.mathru.nansuru";
@@ -74,12 +76,12 @@ const organizationPath = `plugins/workflow/organization/${testOrganizationId}`;
 const projectPath = `plugins/workflow/project/${testProjectId}`;
 
 describe("GenerateMarketingPdf Integration Tests", () => {
-    let firestore: admin.firestore.Firestore;
+    let firestore: Firestore;
     let googlePlayServiceAccount: string;
     let appStorePrivateKey: string;
 
     beforeAll(() => {
-        firestore = admin.firestore();
+        firestore = getFirestore();
 
         // Load Google Play service account JSON
         const projectRoot = path.join(__dirname, "..", "..");
@@ -232,7 +234,7 @@ describe("GenerateMarketingPdf Integration Tests", () => {
      */
     async function copyPdfToLocal(storagePath: string, locale?: string): Promise<string | null> {
         try {
-            const storage = admin.storage().bucket("mathru-net.appspot.com");
+            const storage = getStorage().bucket("mathru-net.appspot.com");
             const file = storage.file(storagePath);
             const [buffer] = await file.download();
 
@@ -801,7 +803,7 @@ describe("GenerateMarketingPdf Integration Tests", () => {
                 // Optionally clean up the uploaded PDF from Storage
                 // (Comment out if you want to keep it for manual inspection)
                 // if (pdfPath) {
-                //     const storage = admin.storage().bucket("mathru-net.appspot.com");
+                //     const storage = getStorage().bucket("mathru-net.appspot.com");
                 //     await storage.file(pdfPath).delete().catch(() => {});
                 // }
 

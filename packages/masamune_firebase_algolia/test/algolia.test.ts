@@ -1,4 +1,4 @@
-import * as admin from "firebase-admin";
+import { getApps, initializeApp } from "firebase-admin/app";
 import "@mathrunet/masamune_firebase";
 import * as dotenv from "dotenv";
 import * as path from "path";
@@ -30,8 +30,8 @@ describe("masamune_algolia", () => {
     let algoliaClient: ReturnType<typeof algolia.algoliasearch> | null = null;
 
     beforeAll(() => {
-        if (admin.apps.length === 0) {
-            admin.initializeApp();
+        if (getApps().length === 0) {
+            initializeApp();
         }
         if (runIntegration) {
             algoliaClient = algolia.algoliasearch(

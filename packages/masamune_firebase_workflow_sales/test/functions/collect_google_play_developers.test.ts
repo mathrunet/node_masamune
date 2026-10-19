@@ -1,4 +1,4 @@
-import * as admin from "firebase-admin";
+import { Firestore, getFirestore } from "firebase-admin/firestore";
 import { WorkflowContext, Action } from "@mathrunet/masamune_workflow";
 import { CollectGooglePlayDevelopers } from "../../src/functions/collect_google_play_developers";
 import {
@@ -7,11 +7,11 @@ import {
 } from "../../src/models/google_play_developer_data";
 
 describe("CollectGooglePlayDevelopers", () => {
-    let firestore: admin.firestore.Firestore;
+    let firestore: Firestore;
     let functionInstance: CollectGooglePlayDevelopers;
 
     beforeAll(() => {
-        firestore = admin.firestore();
+        firestore = getFirestore();
         functionInstance = new CollectGooglePlayDevelopers({});
     });
 

@@ -1,4 +1,4 @@
-import * as admin from "firebase-admin";
+import { Timestamp, getFirestore } from "firebase-admin/firestore";
 import { HttpFunctionsOptions } from "@mathrunet/masamune_firebase";
 import { Action, WorkflowProcessFunctionBase, WorkflowContext } from "@mathrunet/masamune_firebase_workflow";
 import { AppStoreScraperClient } from "../clients/app_store_scraper_client";
@@ -180,15 +180,15 @@ export class CollectAppStoreDevelopers extends WorkflowProcessFunctionBase {
      * @param devInfo Developer information / デベロッパー情報
      */
     private async saveToFirestore(devInfo: AppStoreDeveloperInfo): Promise<void> {
-        const firestore = admin.firestore();
+        const firestore = getFirestore();
         const docId = `appStore_${devInfo.developerId}`;
         const docPath = `plugins/workflow/address/${docId}`;
 
-        const now = admin.firestore.Timestamp.now();
+        const now = Timestamp.now();
 
         // Convert ModelTimestamp to Firestore Timestamp
         const collectedTimestamp = devInfo.collectedTime
-            ? admin.firestore.Timestamp.fromDate(devInfo.collectedTime.value())
+            ? Timestamp.fromDate(devInfo.collectedTime.value())
             : now;
 
         // Build document, omitting undefined values

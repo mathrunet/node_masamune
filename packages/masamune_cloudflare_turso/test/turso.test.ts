@@ -2249,13 +2249,14 @@ describe("Turso接続設定の分離", () => {
 
 describe("Tursoリージョン配置", () => {
   const groups = [
-    { name: "prod-apac", continents: ["AS", "OC"], countries: ["JP"] },
+    // 地域不明時はUSへ配置するため、既定groupと先頭をUSにします。
     { name: "prod-us", continents: ["NA", "SA"] },
+    { name: "prod-asia", continents: ["AS", "OC"], countries: ["JP"] },
     { name: "prod-eu", continents: ["EU", "AF"] },
   ];
   let sequence = 0;
   const options = (extra: Partial<TursoWorkersOptions> = {}): TursoWorkersOptions =>
-    dynamicOptions({ group: "prod-apac", groups, autoCreateDatabase: true, ...extra });
+    dynamicOptions({ group: "prod-us", groups, autoCreateDatabase: true, ...extra });
   const database = () => `region-${++sequence}`;
 
   beforeEach(() => {
@@ -2289,8 +2290,9 @@ describe("Tursoリージョン配置", () => {
   }
 
   test.each([
-    ["JP", "AS", "prod-apac"], ["US", "NA", "prod-us"],
-    ["DE", "EU", "prod-eu"], [undefined, undefined, "prod-apac"],
+    ["JP", "AS", "prod-asia"], ["US", "NA", "prod-us"],
+    ["DE", "EU", "prod-eu"], [undefined, undefined, "prod-us"],
+    ["XX", undefined, "prod-us"], ["T1", undefined, "prod-us"],
   ])("作成時の自動選択 %s/%s → %s", async (country, continent, expected) => {
     const api = platform();
     const endpoint = await resolveDatabaseEndpoint(database(), options(), { country, continent });
@@ -2305,8 +2307,8 @@ describe("Tursoリージョン配置", () => {
     expect(await resolveTursoCreationGroup("alice", options({ resolveGroup: resolver }), context)).toBe("prod-eu");
     expect(resolver).toHaveBeenCalledWith(expect.objectContaining({ database: "alice", authentication: { uid: "alice" } }));
     expect(await resolveTursoCreationGroup("alice", options(), context)).toBe("prod-us");
-    expect(await resolveTursoCreationGroup("alice", options(), { country: "JP", continent: "EU" })).toBe("prod-apac");
-    expect(await resolveTursoCreationGroup("alice", options({ group: undefined }))).toBe("prod-apac");
+    expect(await resolveTursoCreationGroup("alice", options(), { country: "JP", continent: "EU" })).toBe("prod-asia");
+    expect(await resolveTursoCreationGroup("alice", options({ group: undefined }))).toBe("prod-us");
     await expect(resolveTursoCreationGroup("alice", options({ resolveGroup: () => "unknown" }))).rejects.toThrow("included in groups");
   });
 
@@ -2351,7 +2353,7 @@ describe("Tursoリージョン配置", () => {
       resolveDatabaseEndpoint(db, options(), { continent: "AS" }),
       resolveDatabaseEndpoint(db, options(), { continent: "EU" }),
     ]);
-    expect(result[0].group).toBe("prod-apac");
+    expect(result[0].group).toBe("prod-asia");
     expect(result[1]).toEqual(result[0]);
     expect(api.mock.calls.filter(([, init]) => init?.method === "POST")).toHaveLength(1);
   });
@@ -2382,7 +2384,7 @@ describe("Tursoリージョン配置", () => {
 
   test("旧環境変数は自動選択を上書きしない", async () => {
     const config = resolveTursoWorkersOptionsFromEnv({ env: {
-      TURSO_GROUP: "prod-apac", TURSO_GROUPS: JSON.stringify(groups),
+      TURSO_GROUP: "prod-us", TURSO_GROUPS: JSON.stringify(groups),
     } } as unknown as Context, options());
     expect(await resolveTursoCreationGroup("alice", config, { continent: "EU" })).toBe("prod-eu");
   });

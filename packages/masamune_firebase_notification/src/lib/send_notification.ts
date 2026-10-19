@@ -1,5 +1,5 @@
 import * as functions from "firebase-functions/v2";
-import * as admin from "firebase-admin";
+import { getMessaging } from "firebase-admin/messaging";
 import { utils, firestore, ModelToken } from "@mathrunet/masamune_firebase";
 import "@mathrunet/masamune";
 import { SendNotificationRequest, SendNotificationResponse } from "./interface";
@@ -127,7 +127,7 @@ export async function sendNotification(request: SendNotificationRequest): Promis
             }
             for (let t in tokenList) {
                 try {
-                    const messageId = await admin.messaging().sendEachForMulticast(
+                    const messageId = await getMessaging().sendEachForMulticast(
                         {
                             notification: {
                                 title: request.title,
@@ -205,7 +205,7 @@ export async function sendNotification(request: SendNotificationRequest): Promis
                 return response;
             }
             try {
-                const messageId = await admin.messaging().send(
+                const messageId = await getMessaging().send(
                     {
                         notification: {
                             title: request.title,

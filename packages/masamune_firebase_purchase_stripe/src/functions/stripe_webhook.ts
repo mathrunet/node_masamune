@@ -1,6 +1,6 @@
 import * as functions from "firebase-functions/v2";
 import Stripe from "stripe";
-import * as admin from "firebase-admin";
+import { FieldValue } from "firebase-admin/firestore";
 import "@mathrunet/masamune";
 import { HttpFunctionsOptions, firestoreLoader } from "@mathrunet/masamune_firebase";
 import { createStripeClient, resolvePaymentIntentReceipt, resolveSubscriptionPurchaseFields } from "../lib/stripe";
@@ -188,8 +188,8 @@ module.exports = (
               update["verify"] = true;
               update["capture"] = true;
               update["success"] = true;
-              update["error"] = admin.firestore.FieldValue.delete();
-              update["errorMessage"] = admin.firestore.FieldValue.delete();
+              update["error"] = FieldValue.delete();
+              update["errorMessage"] = FieldValue.delete();
               update["updatedTime"] = new Date();
 
               // `PaymentIntent.charges` no longer exists; resolve the receipt via `latest_charge`.
@@ -612,7 +612,7 @@ async function syncStripePayment(stripeClient: Stripe, firestoreInstance: Fireba
       if (defaultSource) {
         update["defaultPayment"] = defaultSource;
       } else {
-        update["defaultPayment"] = admin.firestore.FieldValue.delete();
+        update["defaultPayment"] = FieldValue.delete();
       }
       await transaction.set(firestoreInstance.doc(`${stripeUserPath}/${userId}`), update, {
         merge: true,

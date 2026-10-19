@@ -1,6 +1,5 @@
 import * as functions from "firebase-functions/v2";
 import { DatabasePathFunctionsOptions, FunctionsBase } from "./functions_base";
-import * as admin from "firebase-admin";
 
 /**
  * Base class for defining Function data for Firestore triggers.

@@ -1,4 +1,5 @@
-import * as admin from "firebase-admin";
+import { getApps, initializeApp } from "firebase-admin/app";
+import { getStorage } from "firebase-admin/storage";
 import "@mathrunet/masamune_firebase";
 import * as dotenv from "dotenv";
 import * as path from "path";
@@ -18,8 +19,8 @@ describe("masamune_agora", () => {
     let hasValidCredentials = false;
 
     beforeAll(() => {
-        if (admin.apps.length === 0) {
-            admin.initializeApp();
+        if (getApps().length === 0) {
+            initializeApp();
         }
         // 環境変数のチェック
         const appId = process.env.AGORA_APP_ID;
@@ -187,7 +188,7 @@ describe("masamune_agora", () => {
 
         afterAll(async () => {
             // クリーンアップ: テストで生成されたファイルを削除
-            const bucket = admin.storage().bucket(testBucket);
+            const bucket = getStorage().bucket(testBucket);
             for (const filePath of uploadedFiles) {
                 try {
                     await bucket.file(filePath).delete();
@@ -199,7 +200,7 @@ describe("masamune_agora", () => {
         });
 
         test("正常系: スクリーンショットファイル処理", async () => {
-            const bucket = admin.storage().bucket(testBucket);
+            const bucket = getStorage().bucket(testBucket);
 
             // テスト用のJPGファイルを作成
             // ファイル名パターン: sid_channelId__uid_s_123__uid_e_video_456.jpg
@@ -246,7 +247,7 @@ describe("masamune_agora", () => {
         }, 60000);
 
         test("正常系: M3U8ファイル処理", async () => {
-            const bucket = admin.storage().bucket(testBucket);
+            const bucket = getStorage().bucket(testBucket);
 
             const channelId = `m3u8Channel${Date.now()}`;
             const testFileName = `sid_${channelId}.m3u8`;
@@ -294,7 +295,7 @@ segment0.ts
         }, 60000);
 
         test("正常系: TSファイル処理", async () => {
-            const bucket = admin.storage().bucket(testBucket);
+            const bucket = getStorage().bucket(testBucket);
 
             // TS ファイルのパターン: sid_channelId_segment.ts
             // 注意: 正規表現は /([a-z0-9A-Z]+)_([a-z0-9A-Z]+)_([a-z0-9A-Z]+).ts/
@@ -342,7 +343,7 @@ segment0.ts
         }, 60000);
 
         test("正常系: パターン不一致ファイル", async () => {
-            const bucket = admin.storage().bucket(testBucket);
+            const bucket = getStorage().bucket(testBucket);
 
             const testFileName = `random_file_${Date.now()}.txt`;
             const testFilePath = `${testDir}/${testFileName}`;
@@ -390,7 +391,7 @@ segment0.ts
         }, 30000);
 
         test("エッジケース: 既にリネーム済みのJPGファイル（ルートに直接配置）", async () => {
-            const bucket = admin.storage().bucket(testBucket);
+            const bucket = getStorage().bucket(testBucket);
 
             // 既にリネーム後の名前のファイルをルートに直接配置
             // ファイル名がパターンにマッチしないので何もしない

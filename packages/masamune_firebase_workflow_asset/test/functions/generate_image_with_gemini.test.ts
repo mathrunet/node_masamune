@@ -12,7 +12,9 @@
  * - Environment variables in test/.env
  */
 
-import * as admin from "firebase-admin";
+import { cert, getApps, initializeApp } from "firebase-admin/app";
+import { Firestore, Timestamp, getFirestore } from "firebase-admin/firestore";
+import { getStorage } from "firebase-admin/storage";
 import * as dotenv from "dotenv";
 import * as path from "path";
 import * as fs from "fs";
@@ -40,16 +42,16 @@ const config = require("firebase-functions-test")({
 }, serviceAccountPath);
 
 // Initialize Firebase Admin with service account credentials
-if (admin.apps.length === 0) {
-    admin.initializeApp({
-        credential: admin.credential.cert(serviceAccountPath),
+if (getApps().length === 0) {
+    initializeApp({
+        credential: cert(serviceAccountPath),
         projectId: projectId,
         storageBucket: storageBucket,
     });
 }
 
 // Helper to create Firestore Timestamp from Date
-const toTimestamp = (date: Date) => admin.firestore.Timestamp.fromDate(date);
+const toTimestamp = (date: Date) => Timestamp.fromDate(date);
 
 // Generate unique IDs for test data
 const testTimestamp = Date.now();
@@ -67,7 +69,7 @@ if (!fs.existsSync(tmpDir)) {
 }
 
 describe.skip("GenerateImageWithGemini Integration Tests - SKIPPED: Use Imagen 3 instead", () => {
-    let firestore: admin.firestore.Firestore;
+    let firestore: Firestore;
 
     beforeAll(() => {
         // Reset test counter at the start of test suite
@@ -75,7 +77,7 @@ describe.skip("GenerateImageWithGemini Integration Tests - SKIPPED: Use Imagen 3
             (global as any).resetTestCounter();
         }
 
-        firestore = admin.firestore();
+        firestore = getFirestore();
     });
 
     // Add delay before each test to avoid rate limiting (using default 90 seconds + progressive delay)
@@ -251,7 +253,7 @@ describe.skip("GenerateImageWithGemini Integration Tests - SKIPPED: Use Imagen 3
                 console.log("Public URL:", imageAsset?.public_url);
 
                 // Download and save the generated image locally
-                const storage = admin.storage();
+                const storage = getStorage();
                 const gsMatch = imageAsset?.url?.match(/^gs:\/\/([^/]+)\/(.+)$/);
                 if (gsMatch) {
                     const bucketName = gsMatch[1];
@@ -319,7 +321,7 @@ describe.skip("GenerateImageWithGemini Integration Tests - SKIPPED: Use Imagen 3
                 console.log("Generated image URL:", taskData?.assets?.generatedImage?.url);
 
                 // Save locally
-                const storage = admin.storage();
+                const storage = getStorage();
                 const gsMatch = taskData?.assets?.generatedImage?.url?.match(/^gs:\/\/([^/]+)\/(.+)$/);
                 if (gsMatch) {
                     const [buffer] = await storage.bucket(gsMatch[1]).file(gsMatch[2]).download();
@@ -582,7 +584,7 @@ describe.skip("GenerateImageWithGemini Integration Tests - SKIPPED: Use Imagen 3
                 console.log("Image type:", taskData?.results?.imageGeneration?.imageType);
 
                 // Save locally
-                const storage = admin.storage();
+                const storage = getStorage();
                 const gsMatch = taskData?.assets?.generatedImage?.url?.match(/^gs:\/\/([^/]+)\/(.+)$/);
                 if (gsMatch) {
                     const [buffer] = await storage.bucket(gsMatch[1]).file(gsMatch[2]).download();
