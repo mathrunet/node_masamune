@@ -1,13 +1,12 @@
-import { initializeApp } from "firebase-admin/app";
+import { deleteApp, getApp, initializeApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import { ModelCounter, ModelDate, ModelDateRange, ModelFieldValue, ModelGeoValue, ModelImageUri, ModelLocale, ModelLocalizedLocaleVaue, ModelLocalizedValue, ModelRefBase, ModelSearch, ModelTime, ModelTimeRange, ModelTimestamp, ModelTimestampRange, ModelToken, ModelUri, ModelVectorValue, ModelVideoUri } from "@mathrunet/masamune";
 import { ModelRefFirebase } from "../src/lib/model_field_value/model_field_value";
 import "../src/lib/exntensions/firestore.extension";
 
-process.env.FIRESTORE_EMULATOR_HOST = process.env.FIRESTORE_EMULATOR_HOST ?? "127.0.0.1:8080";
-const config = require("firebase-functions-test")({
-    projectId: "masamune-firebase-test",
-});
+if (!process.env.FIRESTORE_EMULATOR_HOST) {
+    throw new Error("Run Firestore tests through the Firebase Emulator Suite.");
+}
 
 function removeSource(data: { [key: string]: any } | undefined): { [key: string]: any } {
     if (data == undefined) {
@@ -51,7 +50,12 @@ interface TestModel {
 
 describe("Firestore Test", () => {
     beforeAll(() => {
-        initializeApp();
+        initializeApp({ projectId: "masamune-firebase-test" });
+    });
+    afterAll(async () => {
+        const firestoreInstance = getFirestore();
+        await firestoreInstance.terminate();
+        await deleteApp(getApp());
     });
     test("Firestore save and load", async () => {
         const testPath = "unit/test/katana/saveLoad";
