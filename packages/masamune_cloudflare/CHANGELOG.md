@@ -1,3 +1,9 @@
+## 3.7.1 (2026-10-20)
+
+### dependencies
+
+* Update dependencies: @mathrunet/masamune.
+
 ## 3.7.0 (2026-09-25)
 
 
