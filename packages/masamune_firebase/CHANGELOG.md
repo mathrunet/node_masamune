@@ -1,3 +1,20 @@
+## 3.2.1 (2026-10-20)
+
+
+### chore
+
+* update dependencies and platform compatibility ([95acab0](https://github.com/mathrunet/node_masamune/commit/95acab03ca34bf928b299c8e94fd6e4f0df2693f))
+
+
+### test
+
+* **firebase:** handle ESM dependencies in Node 22 Jest suites ([cee6adb](https://github.com/mathrunet/node_masamune/commit/cee6adbc327c5f4c727b7c7f5e08c49730537245))
+* **firebase:** isolate Firestore emulator tests from Functions auth ([bfce3a3](https://github.com/mathrunet/node_masamune/commit/bfce3a3f7baebf8012a3289c1839667b536397d9))
+
+### dependencies
+
+* Update dependencies: @mathrunet/masamune.
+
 ## 3.2.0 (2026-09-24)
 
 
