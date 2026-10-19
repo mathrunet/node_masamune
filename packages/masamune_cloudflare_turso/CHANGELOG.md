@@ -1,3 +1,19 @@
+## 3.8.0 (2026-10-20)
+
+
+### feat
+
+* **cloudflare:** TiDB cluster creds; Turso atomic POST ([4f4e611](https://github.com/mathrunet/node_masamune/commit/4f4e6111615e4ee70762be2302c22396a6653f68))
+
+
+### chore
+
+* update dependencies and platform compatibility ([95acab0](https://github.com/mathrunet/node_masamune/commit/95acab03ca34bf928b299c8e94fd6e4f0df2693f))
+
+### dependencies
+
+* Update dependencies: @mathrunet/masamune, @mathrunet/masamune_cloudflare.
+
 ## 3.7.6 (2026-09-25)
 
 ### dependencies
