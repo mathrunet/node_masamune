@@ -1,3 +1,14 @@
+## 3.10.1 (2026-10-20)
+
+
+### chore
+
+* update dependencies and platform compatibility ([95acab0](https://github.com/mathrunet/node_masamune/commit/95acab03ca34bf928b299c8e94fd6e4f0df2693f))
+
+### dependencies
+
+* Update dependencies: @mathrunet/masamune, @mathrunet/masamune_firebase, @mathrunet/masamune_firebase_firestore, @mathrunet/masamune_firebase_notification.
+
 ## 3.10.0 (2026-09-24)
 
 

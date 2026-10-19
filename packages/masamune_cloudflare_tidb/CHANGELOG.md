@@ -1,3 +1,19 @@
+## 3.9.0 (2026-10-20)
+
+
+### feat
+
+* **cloudflare:** TiDB cluster creds; Turso atomic POST ([4f4e611](https://github.com/mathrunet/node_masamune/commit/4f4e6111615e4ee70762be2302c22396a6653f68))
+
+
+### fix
+
+* **tidb:** preserve JSON scalars decoded by serverless driver ([6a81ee1](https://github.com/mathrunet/node_masamune/commit/6a81ee1a5c266497406abb00023f4fd087e56d1a))
+
+### dependencies
+
+* Update dependencies: @mathrunet/masamune, @mathrunet/masamune_cloudflare.
+
 ## 3.8.0 (2026-09-25)
 
 
