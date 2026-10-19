@@ -14,9 +14,21 @@
         "<rootDir>/test"
     ],
     "transform": {
-        "^.+\\.(ts|tsx)$": "ts-jest"
+        "^.+\\.(ts|tsx)$": "ts-jest",
+        "^.+/node_modules/jose/.+\\.js$": [
+            "ts-jest",
+            {
+                "tsconfig": {
+                    "allowJs": true,
+                    "module": "CommonJS"
+                }
+            }
+        ]
     },
     "setupFiles": [
         "<rootDir>/test/firebase_admin_compat.ts"
+    ],
+    "transformIgnorePatterns": [
+        "/node_modules/(?!jose/)"
     ]
 }

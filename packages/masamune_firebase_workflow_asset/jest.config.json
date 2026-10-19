@@ -14,12 +14,24 @@
         "<rootDir>/test"
     ],
     "transform": {
-        "^.+\\.(ts|tsx)$": "ts-jest"
+        "^.+\\.(ts|tsx)$": "ts-jest",
+        "^.+/node_modules/jose/.+\\.js$": [
+            "ts-jest",
+            {
+                "tsconfig": {
+                    "allowJs": true,
+                    "module": "CommonJS"
+                }
+            }
+        ]
     },
     "setupFiles": [
         "<rootDir>/test/setup.ts"
     ],
     "globalTeardown": "<rootDir>/test/globalTeardown.ts",
     "testTimeout": 300000,
-    "maxWorkers": 1
+    "maxWorkers": 1,
+    "transformIgnorePatterns": [
+        "/node_modules/(?!jose/)"
+    ]
 }

@@ -16,6 +16,18 @@
         "<rootDir>/test"
     ],
     "transform": {
-        "^.+\\.(ts|tsx)$": "ts-jest"
-    }
+        "^.+\\.(ts|tsx)$": "ts-jest",
+        "^.+/node_modules/jose/.+\\.js$": [
+            "ts-jest",
+            {
+                "tsconfig": {
+                    "allowJs": true,
+                    "module": "CommonJS"
+                }
+            }
+        ]
+    },
+    "transformIgnorePatterns": [
+        "/node_modules/(?!jose/)"
+    ]
 }
