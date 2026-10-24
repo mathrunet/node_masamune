@@ -1,4 +1,4 @@
-import { DatabaseIncrement } from "@mathrunet/masamune_cloudflare";
+import { DatabaseIncrement, HttpError } from "@mathrunet/masamune_cloudflare";
 import { UpdateWalletData, UpdateWalletRequest } from "./interface";
 
 /**
@@ -32,6 +32,12 @@ export async function updateWallet(request: UpdateWalletRequest): Promise<void> 
     const key = segments[segments.length - 1];
     const parent = segments.slice(0, segments.length - 1).join("/");
     const uid = segments[segments.length - 2];
+    const transactionPath = `${parent}/transaction/${request.transactionId}`;
+    // The same receipt must not credit the wallet twice.
+    // 同じレシートでウォレットを二重に加算させません。
+    if (await request.database.getDocument(transactionPath)) {
+        throw new HttpError(409, "Transaction already processed.");
+    }
     const data: UpdateWalletData = {
         ...update,
         [key]: new DatabaseIncrement(request.value),
@@ -40,7 +46,7 @@ export async function updateWallet(request: UpdateWalletRequest): Promise<void> 
     };
     await request.database.saveDocument(parent, data, { merge: true });
     await request.database.saveDocument(
-        `${parent}/transaction/${request.transactionId}`,
+        transactionPath,
         request.transactionData,
         { merge: true },
     );

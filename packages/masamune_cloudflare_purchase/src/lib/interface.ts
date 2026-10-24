@@ -127,6 +127,9 @@ export interface VerifyIOSRequest {
     password?: string | null | undefined;
     storeKitVersion?: number;
     transactionId?: string | null | undefined;
+    bundleId?: string | null | undefined;
+    environment?: string | null | undefined;
+    rootCertificates?: string[] | null | undefined;
 }
 
 /**
@@ -137,6 +140,9 @@ export interface VerifyIOSRequest {
 export interface VerifyIOSStoreKit2Request {
     jwtToken: string;
     transactionId?: string;
+    bundleId?: string | null | undefined;
+    environment?: string | null | undefined;
+    rootCertificates?: string[] | null | undefined;
 }
 
 /**

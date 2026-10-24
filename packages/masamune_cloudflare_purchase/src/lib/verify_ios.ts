@@ -29,6 +29,23 @@ import { VerifyIOSRequest, VerifyIOSResponse, VerifyIOSStoreKit2Request } from "
  *
  * トランザクションID（StoreKit2の場合は必須）。
  *
+ * @param {String} bundleId
+ * App bundle ID. Required for StoreKit2; the signed transaction's `bundleId` must match.
+ * For StoreKit1 it is compared with `receipt.bundle_id` when specified.
+ *
+ * アプリのバンドルID。StoreKit2では必須で、署名付きトランザクションの`bundleId`と一致する必要があります。
+ * StoreKit1では指定時に`receipt.bundle_id`と比較します。
+ *
+ * @param {String} environment
+ * Accepted environment (`Production` or `Sandbox`). Both are accepted when omitted.
+ *
+ * 受け入れる環境（`Production`または`Sandbox`）。省略時は両方を受け入れます。
+ *
+ * @param {String[]} rootCertificates
+ * Trusted root certificates (base64 DER). Defaults to Apple Root CA - G3.
+ *
+ * 信頼するルート証明書（base64 DER）。デフォルトはApple Root CA - G3です。
+ *
  * @return {Promise<{ [key: string]: any; }}
  * Receipt information for the item.
  *
@@ -36,13 +53,19 @@ import { VerifyIOSRequest, VerifyIOSResponse, VerifyIOSStoreKit2Request } from "
  */
 export async function verifyIOS(request: VerifyIOSRequest): Promise<VerifyIOSResponse> {
     if (request.storeKitVersion === 2) {
-        console.log(`StoreKitVersion2: ${request.receiptData} ${request.transactionId}`);
+        console.log(`StoreKitVersion2: ${request.transactionId}`);
         if (!request.transactionId) {
             throw new HttpError(400, "Transaction ID is required for StoreKit2 verification.");
         }
-        return await verifyIOSStoreKit2({ jwtToken: request.receiptData, transactionId: request.transactionId });
+        return await verifyIOSStoreKit2({
+            jwtToken: request.receiptData,
+            transactionId: request.transactionId,
+            bundleId: request.bundleId,
+            environment: request.environment,
+            rootCertificates: request.rootCertificates,
+        });
     }
-    console.log(`StoreKitVersion1: ${request.receiptData}`);
+    console.log("StoreKitVersion1");
     if (!request.password) {
         throw new HttpError(400, "Password is required for StoreKit1 verification.");
     }
@@ -58,6 +81,10 @@ export async function verifyIOS(request: VerifyIOSRequest): Promise<VerifyIOSRes
         if (status !== 0) {
             throw new HttpError(404, "Illegal receipt.");
         }
+    }
+    const receiptBundleId = json["receipt"]?.["bundle_id"];
+    if (request.bundleId && typeof receiptBundleId === "string" && receiptBundleId !== request.bundleId) {
+        throw new HttpError(403, "Bundle ID mismatch.");
     }
     return json as VerifyIOSResponse;
 }
@@ -103,9 +130,16 @@ async function verifyIOSStoreKit2(request: VerifyIOSStoreKit2Request): Promise<V
     if (!request.jwtToken) {
         throw new HttpError(400, "JWT token is required for StoreKit2 verification.");
     }
+    if (!request.bundleId) {
+        throw new HttpError(500, "PURCHASE_IOS_BUNDLEID is not set.");
+    }
 
     try {
-        const { payload: verifiedPayload } = await verifyJwsWithX5c(request.jwtToken);
+        const { payload: verifiedPayload } = await verifyJwsWithX5c(request.jwtToken, {
+            bundleId: request.bundleId,
+            environment: request.environment ?? undefined,
+            rootCertificates: request.rootCertificates ?? undefined,
+        });
 
         if (request.transactionId && verifiedPayload.transactionId !== request.transactionId) {
             throw new HttpError(403, "Transaction ID mismatch.");
@@ -146,7 +180,7 @@ async function verifyIOSStoreKit2(request: VerifyIOSStoreKit2Request): Promise<V
             decoded_payload: verifiedPayload,
         };
 
-        console.log("StoreKit2 verification successful:", result);
+        console.log(`StoreKit2 verification successful: ${verifiedPayload.transactionId}`);
         return result;
     } catch (error) {
         console.error("StoreKit2 verification error:", error);

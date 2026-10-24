@@ -14,3 +14,4 @@ export * from "./functions";
 export * from "./lib/interface";
 export * from "./lib/options";
 export * from "./lib/jws";
+export * from "./lib/auth";

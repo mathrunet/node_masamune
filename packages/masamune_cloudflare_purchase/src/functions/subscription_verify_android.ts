@@ -2,7 +2,8 @@ import { Context, Hono } from "hono";
 import { HttpError, jsonError } from "@mathrunet/masamune_cloudflare";
 import * as verifier from "../lib/verify_android";
 import * as subscription from "../lib/update_subscription";
-import { PurchaseWorkersOptions, resolveAndroidServiceAccount, resolveSubscriptionPath } from "../lib/options";
+import { assertUserIdMatches, requireAuthenticatedUid, rethrowAsHttpError, sanitizeAdditionalData } from "../lib/auth";
+import { PurchaseWorkersOptions, resolveAndroidPackageName, resolveAndroidServiceAccount, resolveSubscriptionPath } from "../lib/options";
 
 /**
  * Verify Android subscriptions and save subscription data.
@@ -55,6 +56,17 @@ import { PurchaseWorkersOptions, resolveAndroidServiceAccount, resolveSubscripti
  * ID of the user who purchased the subscription.
  *
  * サブスクリプションを購入したユーザーのID。
+ *
+ * The authenticated user ID (from the auth adapter) is always used as the owner. `userId` in the body, when present, must match it.
+ * `path` in the body is ignored; only `PURCHASE_SUBSCRIPTIONPATH` is used. Extra fields must be sent under `data`.
+ *
+ * 所有者には常に認証アダプターの認証済みユーザーIDを使用します。ボディの`userId`がある場合は一致が必要です。
+ * ボディの`path`は無視され`PURCHASE_SUBSCRIPTIONPATH`のみを使用します。追加フィールドは`data`に入れてください。
+ *
+ * @param {string} PURCHASE_ANDROID_PACKAGENAME
+ * Android package name. When set, requests for other packages are rejected.
+ *
+ * Androidのパッケージ名。設定した場合、他パッケージのリクエストは拒否されます。
  */
 module.exports = (
     hono: Hono,
@@ -63,10 +75,13 @@ module.exports = (
 ) => {
     hono.post("/", async (context: Context) => {
         try {
+            const uid = requireAuthenticatedUid(context);
             const body = await context.req.json() as { [key: string]: any };
+            assertUserIdMatches(uid, body.userId);
             /* ==== Android検証ここから ==== */
-            if (!body.userId) {
-                throw new HttpError(400, "User is empty.");
+            const expectedPackageName = resolveAndroidPackageName(context, options);
+            if (expectedPackageName && body.packageName !== expectedPackageName) {
+                throw new HttpError(403, "Package name mismatch.");
             }
             const serviceAccount = resolveAndroidServiceAccount(context, options);
             const res = await verifier.verifyAndroid({
@@ -91,7 +106,9 @@ module.exports = (
             const database = options.database;
             if (database) {
                 try {
-                    const targetPath = body.path ?? resolveSubscriptionPath(context, options);
+                    // The collection path is server configuration only; `body.path` is never honored.
+                    // コレクションパスはサーバー設定のみで決まり、`body.path`は使用しません。
+                    const targetPath = resolveSubscriptionPath(context, options);
                     if (!targetPath) {
                         throw new HttpError(500, "PURCHASE_SUBSCRIPTIONPATH is not set.");
                     }
@@ -99,8 +116,8 @@ module.exports = (
                         targetCollectionPath: targetPath,
                         targetDocumentId: body.purchaseToken,
                         data: res,
-                        additionalData: body,
-                        userId: body.userId,
+                        additionalData: sanitizeAdditionalData(body.data),
+                        userId: uid,
                         platform: "Android",
                         orderId: res.orderId ?? "",
                         productId: body.productId,
@@ -111,8 +128,7 @@ module.exports = (
                         database: database,
                     });
                 } catch (err) {
-                    console.error(err);
-                    throw new HttpError(500, "Unknown error.");
+                    rethrowAsHttpError(err);
                 }
             }
             /* ==== ここまでデータベースの更新 ==== */

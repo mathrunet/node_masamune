@@ -1,98 +1,44 @@
 import { webcrypto } from "crypto";
-import { decodeJws, extractSubjectPublicKeyInfo, verifyJwsWithX5c } from "../src/lib/jws";
+import {
+    APPLE_RECEIPT_SIGNING_OID,
+    APPLE_ROOT_CA_G3_DER_BASE64,
+    APPLE_WWDR_INTERMEDIATE_OID,
+    decodeJws,
+    extractSubjectPublicKeyInfo,
+    parseCertificate,
+    verifyCertificateSignature,
+    verifyJwsWithX5c,
+} from "../src/lib/jws";
+import {
+    base64UrlEncode,
+    createForgedChain,
+    createRootCertificate,
+    createSignedJws,
+    createTestChain,
+    TestChain,
+} from "./test_certificates";
 
 if (!(globalThis as { crypto?: Crypto }).crypto) {
     (globalThis as { crypto?: Crypto }).crypto = webcrypto as unknown as Crypto;
 }
 
-function derLength(length: number): number[] {
-    if (length < 0x80) {
-        return [length];
-    }
-    const bytes: number[] = [];
-    let value = length;
-    while (value > 0) {
-        bytes.unshift(value & 0xff);
-        value >>= 8;
-    }
-    return [0x80 | bytes.length, ...bytes];
-}
-
-function derWrap(tag: number, content: number[]): number[] {
-    return [tag, ...derLength(content.length), ...content];
-}
-
-// extractSubjectPublicKeyInfo が期待する構造（[0] version, serial, signature, issuer,
-// validity, subject, subjectPublicKeyInfo）を持つ最小限のDER証明書を構築します。
-function buildMinimalCertificate(spki: Uint8Array): Uint8Array {
-    const version = derWrap(0xa0, derWrap(0x02, [0x02]));
-    const serialNumber = derWrap(0x02, [0x01]);
-    const signatureAlgorithm = derWrap(0x30, []);
-    const issuer = derWrap(0x30, []);
-    const validity = derWrap(0x30, []);
-    const subject = derWrap(0x30, []);
-    const tbs = derWrap(0x30, [
-        ...version,
-        ...serialNumber,
-        ...signatureAlgorithm,
-        ...issuer,
-        ...validity,
-        ...subject,
-        ...Array.from(spki),
-    ]);
-    const outerSignatureAlgorithm = derWrap(0x30, []);
-    const signatureValue = derWrap(0x03, [0x00]);
-    const certificate = derWrap(0x30, [
-        ...tbs,
-        ...outerSignatureAlgorithm,
-        ...signatureValue,
-    ]);
-    return new Uint8Array(certificate);
-}
-
-function base64UrlEncode(data: Uint8Array | string): string {
-    const buffer = typeof data === "string" ? Buffer.from(data) : Buffer.from(data);
-    return buffer.toString("base64url");
-}
-
-async function createSignedJws(payload: { [key: string]: any }): Promise<string> {
-    const keyPair = await crypto.subtle.generateKey(
-        { name: "ECDSA", namedCurve: "P-256" },
-        true,
-        ["sign", "verify"],
-    );
-    const spki = new Uint8Array(await crypto.subtle.exportKey("spki", keyPair.publicKey));
-    const certificate = buildMinimalCertificate(spki);
-    const header = {
-        alg: "ES256",
-        x5c: [Buffer.from(certificate).toString("base64")],
-    };
-    const signingInput = `${base64UrlEncode(JSON.stringify(header))}.${base64UrlEncode(JSON.stringify(payload))}`;
-    const signature = await crypto.subtle.sign(
-        { name: "ECDSA", hash: "SHA-256" },
-        keyPair.privateKey,
-        new TextEncoder().encode(signingInput),
-    );
-    return `${signingInput}.${base64UrlEncode(new Uint8Array(signature))}`;
-}
-
 describe("jws", () => {
+    let chain: TestChain;
+
+    beforeAll(async () => {
+        chain = await createTestChain();
+    });
+
     test("decodeJws decodes header and payload", async () => {
-        const token = await createSignedJws({ transactionId: "tx-1" });
+        const token = await createSignedJws({ transactionId: "tx-1" }, chain);
         const decoded = decodeJws(token);
         expect(decoded.header.alg).toBe("ES256");
         expect(decoded.payload.transactionId).toBe("tx-1");
     });
 
     test("extractSubjectPublicKeyInfo returns importable SPKI", async () => {
-        const keyPair = await crypto.subtle.generateKey(
-            { name: "ECDSA", namedCurve: "P-256" },
-            true,
-            ["sign", "verify"],
-        );
-        const spki = new Uint8Array(await crypto.subtle.exportKey("spki", keyPair.publicKey));
-        const certificate = buildMinimalCertificate(spki);
-        const extracted = extractSubjectPublicKeyInfo(certificate);
+        const spki = new Uint8Array(await crypto.subtle.exportKey("spki", chain.leaf.keyPair.publicKey));
+        const extracted = extractSubjectPublicKeyInfo(chain.leaf.der);
         expect(Buffer.from(extracted).equals(Buffer.from(spki))).toBe(true);
         await expect(crypto.subtle.importKey(
             "spki",
@@ -103,26 +49,121 @@ describe("jws", () => {
         )).resolves.toBeDefined();
     });
 
-    test("verifyJwsWithX5c verifies a valid ES256 token", async () => {
+    test("verifyJwsWithX5c verifies a token whose chain is anchored to a trusted root", async () => {
         const token = await createSignedJws({
             transactionId: "tx-1",
             productId: "sub_monthly",
+            bundleId: "net.mathru.app",
+            environment: "Sandbox",
+        }, chain);
+        const verified = await verifyJwsWithX5c(token, {
+            rootCertificates: [chain.root.base64],
+            bundleId: "net.mathru.app",
+            environment: "Sandbox",
         });
-        const verified = await verifyJwsWithX5c(token);
         expect(verified.payload.transactionId).toBe("tx-1");
         expect(verified.payload.productId).toBe("sub_monthly");
     });
 
+    test("verifyJwsWithX5c rejects a self-signed forged certificate", async () => {
+        const forged = await createForgedChain();
+        const token = await createSignedJws({ transactionId: "tx-1" }, forged);
+        // Default roots (Apple Root CA - G3).
+        await expect(verifyJwsWithX5c(token)).rejects.toThrow(/chain|anchored|WWDR/);
+        // Even with the test root pinned.
+        await expect(verifyJwsWithX5c(token, { rootCertificates: [chain.root.base64] })).rejects.toThrow(/chain|anchored|WWDR/);
+    });
+
+    test("verifyJwsWithX5c rejects a chain anchored to a different root", async () => {
+        const otherRoot = await createRootCertificate("Other Root");
+        const token = await createSignedJws({ transactionId: "tx-1" }, chain);
+        await expect(verifyJwsWithX5c(token, { rootCertificates: [otherRoot.base64] }))
+            .rejects.toThrow("not anchored to a trusted root");
+    });
+
+    test("verifyJwsWithX5c rejects a genuine chain by default when it is not Apple's", async () => {
+        const token = await createSignedJws({ transactionId: "tx-1" }, chain);
+        await expect(verifyJwsWithX5c(token)).rejects.toThrow("not anchored to a trusted root");
+    });
+
+    test("verifyJwsWithX5c rejects an expired leaf certificate", async () => {
+        const expired = await createTestChain({ root: chain.root, leafNotAfter: new Date(Date.now() - 60 * 1000) });
+        const token = await createSignedJws({ transactionId: "tx-1" }, expired);
+        await expect(verifyJwsWithX5c(token, { rootCertificates: [chain.root.base64] }))
+            .rejects.toThrow("expired or not yet valid");
+    });
+
+    test("verifyJwsWithX5c rejects a leaf without the Apple receipt signing OID", async () => {
+        const noOid = await createTestChain({ root: chain.root, leafExtensionOids: [] });
+        const token = await createSignedJws({ transactionId: "tx-1" }, noOid);
+        await expect(verifyJwsWithX5c(token, { rootCertificates: [chain.root.base64] }))
+            .rejects.toThrow("not an Apple receipt signing certificate");
+    });
+
+    test("verifyJwsWithX5c rejects an intermediate without the Apple WWDR OID", async () => {
+        const noOid = await createTestChain({ root: chain.root, intermediateExtensionOids: [] });
+        const token = await createSignedJws({ transactionId: "tx-1" }, noOid);
+        await expect(verifyJwsWithX5c(token, { rootCertificates: [chain.root.base64] }))
+            .rejects.toThrow("not an Apple WWDR certificate");
+    });
+
+    test("verifyJwsWithX5c rejects a chain shorter than three certificates", async () => {
+        const token = await createSignedJws({ transactionId: "tx-1" }, chain, {
+            x5c: [chain.leaf.base64, chain.intermediate.base64],
+        });
+        await expect(verifyJwsWithX5c(token, { rootCertificates: [chain.root.base64] }))
+            .rejects.toThrow("Invalid certificate chain length");
+    });
+
     test("verifyJwsWithX5c rejects a tampered payload", async () => {
-        const token = await createSignedJws({ transactionId: "tx-1" });
+        const token = await createSignedJws({ transactionId: "tx-1" }, chain);
         const parts = token.split(".");
         const tampered = `${parts[0]}.${base64UrlEncode(JSON.stringify({ transactionId: "tx-2" }))}.${parts[2]}`;
-        await expect(verifyJwsWithX5c(tampered)).rejects.toThrow("signature verification failed");
+        await expect(verifyJwsWithX5c(tampered, { rootCertificates: [chain.root.base64] }))
+            .rejects.toThrow("signature verification failed");
     });
 
     test("verifyJwsWithX5c rejects a token without x5c", async () => {
         const header = { alg: "ES256" };
         const token = `${base64UrlEncode(JSON.stringify(header))}.${base64UrlEncode(JSON.stringify({}))}.AAAA`;
         await expect(verifyJwsWithX5c(token)).rejects.toThrow("Missing x5c");
+    });
+
+    test("verifyJwsWithX5c rejects non-ES256 algorithms", async () => {
+        const token = await createSignedJws({ transactionId: "tx-1" }, chain, { alg: "RS256" });
+        await expect(verifyJwsWithX5c(token, { rootCertificates: [chain.root.base64] }))
+            .rejects.toThrow("Unsupported JWS algorithm");
+    });
+
+    test("verifyJwsWithX5c rejects bundleId and environment mismatches", async () => {
+        const token = await createSignedJws({
+            transactionId: "tx-1",
+            bundleId: "net.mathru.app",
+            environment: "Sandbox",
+        }, chain);
+        await expect(verifyJwsWithX5c(token, { rootCertificates: [chain.root.base64], bundleId: "net.mathru.other" }))
+            .rejects.toThrow("Bundle ID mismatch");
+        await expect(verifyJwsWithX5c(token, { rootCertificates: [chain.root.base64], environment: "Production" }))
+            .rejects.toThrow("Environment mismatch");
+    });
+
+    test("the pinned Apple Root CA - G3 constant parses and is self-signed", async () => {
+        const der = new Uint8Array(Buffer.from(APPLE_ROOT_CA_G3_DER_BASE64, "base64"));
+        const root = parseCertificate(der);
+        expect(root.isCa).toBe(true);
+        expect(root.namedCurveOid).toBe("1.3.132.0.34");
+        expect(Buffer.from(root.subject).toString("latin1")).toContain("Apple Root CA - G3");
+        expect(Buffer.from(root.issuer).equals(Buffer.from(root.subject))).toBe(true);
+        expect(root.notAfter.getUTCFullYear()).toBe(2039);
+        await expect(verifyCertificateSignature(root, root)).resolves.toBe(true);
+    });
+
+    test("parseCertificate exposes extension OIDs and CA flag", () => {
+        const leaf = parseCertificate(chain.leaf.der);
+        expect(leaf.extensionOids.has(APPLE_RECEIPT_SIGNING_OID)).toBe(true);
+        expect(leaf.isCa).toBe(false);
+        const intermediate = parseCertificate(chain.intermediate.der);
+        expect(intermediate.extensionOids.has(APPLE_WWDR_INTERMEDIATE_OID)).toBe(true);
+        expect(intermediate.isCa).toBe(true);
     });
 });

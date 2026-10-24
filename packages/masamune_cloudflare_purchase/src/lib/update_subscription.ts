@@ -1,4 +1,5 @@
 import { utils } from "@mathrunet/masamune";
+import { HttpError } from "@mathrunet/masamune_cloudflare";
 import { UpdateSubscriptionData, UpdateSubscriptionRequest } from "./interface";
 
 /**
@@ -84,6 +85,13 @@ export async function updateSubscription(request: UpdateSubscriptionRequest): Pr
     }
     const targetDocumentPath = `${request.targetCollectionPath}/${request.targetDocumentId}`;
     const segments = targetDocumentPath.split("/").filter((segment) => segment.length > 0);
+    // A transaction already claimed by another user must not be re-bound.
+    // 既に別のユーザーに紐付いたトランザクションを付け替えさせません。
+    const existing = await request.database.getDocument(targetDocumentPath);
+    const owner = existing?.data?.["userId"];
+    if (typeof owner === "string" && owner.length > 0 && owner !== request.userId) {
+        throw new HttpError(403, "This subscription belongs to another user.");
+    }
     const data: UpdateSubscriptionData = {
         ...update,
         expired: false,
@@ -95,12 +103,9 @@ export async function updateSubscription(request: UpdateSubscriptionRequest): Pr
         packageName: request.packageName,
         expiredTime: request.expiryDate,
         orderId: request.orderId,
-        userId: request.userId ? request.userId : undefined,
+        userId: request.userId,
         "@time": new Date(),
         "@uid": segments[segments.length - 1],
     };
-    if (!data.userId) {
-        delete data["userId"];
-    }
     await request.database.saveDocument(targetDocumentPath, data, { merge: true });
 }

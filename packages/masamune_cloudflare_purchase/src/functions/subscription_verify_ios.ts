@@ -2,7 +2,8 @@ import { Context, Hono } from "hono";
 import { HttpError, jsonError } from "@mathrunet/masamune_cloudflare";
 import * as verifier from "../lib/verify_ios";
 import * as subscription from "../lib/update_subscription";
-import { PurchaseWorkersOptions, resolveIOSSharedSecret, resolveSubscriptionPath } from "../lib/options";
+import { assertUserIdMatches, requireAuthenticatedUid, rethrowAsHttpError, sanitizeAdditionalData } from "../lib/auth";
+import { PurchaseWorkersOptions, resolveIOSBundleId, resolveIOSEnvironment, resolveIOSRootCertificates, resolveIOSSharedSecret, resolveSubscriptionPath } from "../lib/options";
 
 /**
  * Verify IOS subscriptions and save subscription data.
@@ -28,6 +29,22 @@ import { PurchaseWorkersOptions, resolveIOSSharedSecret, resolveSubscriptionPath
  * ID of the user who purchased the subscription.
  *
  * サブスクリプションを購入したユーザーのID。
+ *
+ * The authenticated user ID (from the auth adapter) is always used as the owner. `userId` in the body, when present, must match it.
+ * `path` in the body is ignored; only `PURCHASE_SUBSCRIPTIONPATH` is used. Extra fields must be sent under `data`.
+ *
+ * 所有者には常に認証アダプターの認証済みユーザーIDを使用します。ボディの`userId`がある場合は一致が必要です。
+ * ボディの`path`は無視され`PURCHASE_SUBSCRIPTIONPATH`のみを使用します。追加フィールドは`data`に入れてください。
+ *
+ * @param {string} PURCHASE_IOS_BUNDLEID
+ * App bundle ID. Required for StoreKit 2; signed transactions of other apps are rejected.
+ *
+ * アプリのバンドルID。StoreKit 2では必須で、他アプリの署名付きトランザクションは拒否されます。
+ *
+ * @param {string} PURCHASE_IOS_ENVIRONMENT
+ * Accepted App Store environment (`Production` or `Sandbox`). Both are accepted when unset.
+ *
+ * 受け入れるApp Store環境（`Production`または`Sandbox`）。未設定の場合は両方を受け入れます。
  */
 module.exports = (
     hono: Hono,
@@ -36,16 +53,18 @@ module.exports = (
 ) => {
     hono.post("/", async (context: Context) => {
         try {
+            const uid = requireAuthenticatedUid(context);
             const body = await context.req.json() as { [key: string]: any };
+            assertUserIdMatches(uid, body.userId);
             /* ==== IOS検証ここから ==== */
-            if (!body.userId) {
-                throw new HttpError(400, "User is empty.");
-            }
             const res = await verifier.verifyIOS({
                 receiptData: body.receiptData,
                 password: resolveIOSSharedSecret(context, options),
                 transactionId: body.transactionId,
                 storeKitVersion: body.storeKitVersion ?? 1,
+                bundleId: resolveIOSBundleId(context, options),
+                environment: resolveIOSEnvironment(context, options),
+                rootCertificates: resolveIOSRootCertificates(options),
             });
             const status = res["status"];
             if (status !== 0) {
@@ -70,7 +89,9 @@ module.exports = (
             const database = options.database;
             if (database) {
                 try {
-                    const targetPath = body.path ?? resolveSubscriptionPath(context, options);
+                    // The collection path is server configuration only; `body.path` is never honored.
+                    // コレクションパスはサーバー設定のみで決まり、`body.path`は使用しません。
+                    const targetPath = resolveSubscriptionPath(context, options);
                     if (!targetPath) {
                         throw new HttpError(500, "PURCHASE_SUBSCRIPTIONPATH is not set.");
                     }
@@ -78,8 +99,8 @@ module.exports = (
                         targetCollectionPath: targetPath,
                         targetDocumentId: info[info.length - 1].original_transaction_id ?? "",
                         data: info[info.length - 1],
-                        additionalData: body,
-                        userId: body.userId,
+                        additionalData: sanitizeAdditionalData(body.data),
+                        userId: uid,
                         platform: "IOS",
                         orderId: info[info.length - 1].original_transaction_id ?? "",
                         productId: currentProductId ?? "",
@@ -90,8 +111,7 @@ module.exports = (
                         database: database,
                     });
                 } catch (err) {
-                    console.error(err);
-                    throw new HttpError(500, "Unknown error.");
+                    rethrowAsHttpError(err);
                 }
             }
             /* ==== ここまでデータベースの更新 ==== */

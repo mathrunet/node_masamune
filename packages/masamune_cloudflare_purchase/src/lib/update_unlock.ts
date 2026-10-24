@@ -26,6 +26,12 @@ export async function updateUnlock(request: UpdateUnlockRequest): Promise<void> 
     const key = segments[segments.length - 1];
     const parent = segments.slice(0, segments.length - 1).join("/");
     const uid = segments[segments.length - 2];
+    const transactionPath = `${parent}/transaction/${request.transactionId}`;
+    // Unlocking is idempotent: a receipt that was already processed is a no-op.
+    // アンロックは冪等で、処理済みのレシートは何もしません。
+    if (await request.database.getDocument(transactionPath)) {
+        return;
+    }
     const data: UpdateUnlockData = {
         ...update,
         "@time": new Date(),
@@ -34,7 +40,7 @@ export async function updateUnlock(request: UpdateUnlockRequest): Promise<void> 
     };
     await request.database.saveDocument(parent, data, { merge: true });
     await request.database.saveDocument(
-        `${parent}/transaction/${request.transactionId}`,
+        transactionPath,
         request.transactionData,
         { merge: true },
     );
