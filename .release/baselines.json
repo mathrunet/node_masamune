@@ -166,6 +166,10 @@
     "@mathrunet/masamune_workflow_sales": {
       "version": "3.8.0",
       "sourceSha": "f717f7f4c63c103bb80a1ae3d47813efe424c7f4"
+    },
+    "@mathrunet/masamune_cloudflare_short_link": {
+      "version": "3.1.0",
+      "sourceSha": "98832329916bdcc4d1860e03d7b17fa6a39535fe"
     }
   }
 }
