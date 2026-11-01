@@ -65,6 +65,10 @@ cloudflare:
     routes:
       prod:
         - example.com
+    # Optional: an exported function in `cloudflare/src` used as `resolveDestination`.
+    resolve_destination:
+      name: resolveDestination
+      from: ./lib/short_link_destination
 ```
 
 Create the namespaces beforehand.
