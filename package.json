@@ -33,6 +33,7 @@
     "packages/masamune_cloudflare_location_geocoding",
     "packages/masamune_cloudflare_mail_sendgrid",
     "packages/masamune_cloudflare_send_mail",
+    "packages/masamune_cloudflare_short_link",
     "packages/masamune_cloudflare_media",
     "packages/masamune_cloudflare_auth",
     "packages/masamune_cloudflare_notification",
