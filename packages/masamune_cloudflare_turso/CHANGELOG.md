@@ -1,3 +1,10 @@
+## 3.9.0 (2026-11-04)
+
+
+### feat
+
+* **masamune_cloudflare_turso:** add shared database mode with server token and reserved databases ([05f4ce8](https://github.com/mathrunet/node_masamune/commit/05f4ce8458f94c9864ed56bbf9e374b31fb2cc68))
+
 ## 3.8.0 (2026-10-20)
 
 
