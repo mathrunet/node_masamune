@@ -608,6 +608,18 @@
       "manifestDifferences": [],
       "changelogMatches": true,
       "publishedOnlyFiles": {}
+    },
+    "@mathrunet/masamune_cloudflare_firestore": {
+      "version": "3.1.0",
+      "sourceSha": "5de235f3bc33cfad49a720046240a05a15c4bb72",
+      "sourceVersion": "3.1.0",
+      "archiveUrl": "https://registry.npmjs.org/@mathrunet/masamune_cloudflare_firestore/-/masamune_cloudflare_firestore-3.1.0.tgz",
+      "integrity": "sha512-TUWKuGRjsDHVPhpXPO8DPF0ucWqN5FcGdHGL0x+prsQOpOMqJizQvWXx9yts6QOR94cWK151gs4gYZyRwyksPw==",
+      "compiler": "TypeScript 5.9.3",
+      "matchingGeneratedRuntimeFiles": 22,
+      "manifestDifferences": [],
+      "changelogMatches": true,
+      "publishedOnlyFiles": {}
     }
   }
 }

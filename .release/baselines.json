@@ -170,6 +170,10 @@
     "@mathrunet/masamune_cloudflare_short_link": {
       "version": "3.1.0",
       "sourceSha": "98832329916bdcc4d1860e03d7b17fa6a39535fe"
+    },
+    "@mathrunet/masamune_cloudflare_firestore": {
+      "version": "3.1.0",
+      "sourceSha": "5de235f3bc33cfad49a720046240a05a15c4bb72"
     }
   }
 }
