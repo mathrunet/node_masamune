@@ -8,6 +8,8 @@ interface TursoWorkersEnv {
   TURSO_GROUPS?: string | readonly TursoGroup[] | undefined;
   TURSO_PLATFORM_API_TOKEN?: string | undefined;
   TURSO_SERVER_TOKEN_TTL_SECONDS?: string | undefined;
+  TURSO_SERVER_ACCESS_TOKEN?: string | undefined;
+  TURSO_SERVER_ACCESS_HEADER?: string | undefined;
 }
 
 export function resolveTursoWorkersOptionsFromEnv(
@@ -30,6 +32,14 @@ export function resolveTursoWorkersOptionsFromEnv(
     serverTokenTtlSeconds: firstPositiveInteger(
       env.TURSO_SERVER_TOKEN_TTL_SECONDS,
       options.serverTokenTtlSeconds,
+    ),
+    serverAccessToken: firstNonEmpty(
+      env.TURSO_SERVER_ACCESS_TOKEN?.trim(),
+      options.serverAccessToken,
+    ),
+    serverAccessHeader: firstNonEmpty(
+      env.TURSO_SERVER_ACCESS_HEADER?.trim(),
+      options.serverAccessHeader,
     ),
   };
 }

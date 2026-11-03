@@ -134,13 +134,102 @@ export default m.deploy([
 対応表を使う接続は `autoCreateDatabase: true` が上流に残っていてもDBを作成しません。
 Platform APIから取得したDBのgroupが対応表と一致しない場合も拒否します。
 接続キャッシュは環境・物理DB・groupで分離し、rulesとschemaは元の論理DB名で評価します。
-この設定はWorker用です。環境を確定していない `TursoDatabaseAdapter` への直接指定は拒否します。
+`TursoDatabaseAdapter` accepts `databaseBindings` only together with an explicit environment (the `flavor` constructor option or the `FLAVOR` environment variable); otherwise it is rejected.
 
 Workerへ個人のCLIログイントークンを転送せず、対象organization/groupに限定した
 Platform API tokenを設定してください。既存DBの参照とSQL token発行には
 `read` と `db:mint-token` を指定します。新しいtokenの作成は権限管理者の運用で行い、
 token値はログやソースに保存しません。対応表はSQLのread-only権限を付与する機能ではないため、
 読み取り制限は既存のrulesで指定します。
+
+# Shared database on the region Worker
+
+Besides per-user databases on the edge Worker, an app can keep one shared
+database (for example, a single database in a US group) behind the region
+Worker. Clients never connect to it directly; every request is relayed by the
+region Worker and authorized by rules.
+
+```typescript
+// cloudflare/src/region.ts
+import * as m from "@mathrunet/masamune_cloudflare";
+import * as turso from "@mathrunet/masamune_cloudflare_turso";
+import tursoSharedSchemaManifest from "./turso_shared_schema_manifest.json";
+
+export default m.deploy([
+  turso.Functions.turso({
+    schemaManifest: tursoSharedSchemaManifest as turso.TursoSchemaManifest,
+    databaseBindings: {
+      dev: { shared: { database: "my-app-dev-shared", group: "my-app-dev" } },
+      prod: { shared: { database: "my-app-shared", group: "my-app-us" } },
+    },
+  }),
+], { type: "region" });
+```
+
+- `databaseBindings` fixes the physical database per `FLAVOR`. The database is
+  never created by a request and client `prefix` values are rejected.
+- Do not register `Functions.tursoToken` on the region Worker. A direct
+  connection token would grant access to the whole shared database.
+- Rules are evaluated with `server: true` only when the request presents the
+  server access token. Set the `TURSO_SERVER_ACCESS_TOKEN` secret (or the
+  `serverAccessToken` option) and send it from trusted backends in the
+  `x-masamune-server-token` header (`serverAccessHeader` /
+  `TURSO_SERVER_ACCESS_HEADER` change the header name). The comparison runs in
+  constant time. With `databaseBindings` and no configured token, `"server"`
+  rules are never granted. Never ship this token to Flutter apps.
+- Without `databaseBindings` and without a server access token, the previous
+  behavior is kept: the edge Worker evaluates every request with
+  `server: true`.
+
+## Custom region functions
+
+Use `createTursoSharedClient(env, options?)` to connect to the shared database
+from your own region Worker functions such as billing or permission updates.
+It selects the bound database by `FLAVOR` and reads the bindings from
+`options.databaseBindings` or the `TURSO_DATABASE_BINDINGS` variable
+(`katana apply` writes it to `wrangler.region.jsonc`). The client has full
+access, so the function itself is the authorization boundary.
+
+```typescript
+const client = await turso.createTursoSharedClient(env);
+try {
+  await client.execute("UPDATE ranking SET score = ? WHERE id = ?", [10, uid]);
+} finally {
+  await client.close();
+}
+
+// DatabaseAdapterBase implementation bound to the same database.
+const adapter = turso.createTursoSharedDatabaseAdapter(env);
+await adapter.saveDocument(`database/shared/ranking/${uid}`, { score: 10 });
+```
+
+`new TursoDatabaseAdapter({ options: { databaseBindings }, flavor: "prod" })`
+works the same way when you prefer to build the options yourself.
+
+## Using per-user and shared databases together
+
+The edge Worker (per-user databases, direct connections) and the region Worker
+(shared database, relayed) are separate Workers, so both can expose `/turso`.
+Reserve the shared logical name on the edge Worker so that a request for
+`database/shared/...` sent to the wrong Worker is rejected with HTTP 400
+`{ "error": "reserved_database" }` instead of auto-creating a per-user database:
+
+```typescript
+// cloudflare/src/edge.ts
+turso.Functions.turso({ schemaManifest, autoCreateDatabase: true, reservedDatabases: ["shared"] }),
+turso.Functions.tursoToken({ schemaManifest, autoCreateDatabase: true, reservedDatabases: ["shared"] }),
+```
+
+A single rules file can cover both: write `shared/<table>/<id>` paths for the
+shared database and the per-user paths for the edge databases. A transaction
+cannot span both databases; put writes that must stay consistent in a region
+Worker function.
+
+With Katana CLI, enable `cloudflare.turso.shared.enable` in `katana.yaml` and
+run `katana apply`. It creates the shared database, splits the schema manifest
+by `logical_name`, registers the region function, adds `reservedDatabases` to
+the edge functions, and puts `TURSO_PLATFORM_API_TOKEN` and
+`TURSO_SERVER_ACCESS_TOKEN` to the region Worker.
 
 # Worker placement
 

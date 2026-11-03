@@ -17,6 +17,7 @@ import { issueDatabaseToken } from "../lib/token";
 import { resolveTursoWorkersOptionsFromEnv, tursoGroupContext, validateTursoGroupRequest } from "../lib/env";
 import { resolveWorkerDatabasePrefix } from "../lib/database_prefix";
 import { ensureTableSchema, resolveTursoSchema } from "../lib/schema";
+import { assertTursoDatabaseNotReserved } from "../lib/server_request";
 
 const tokenSchemaApplications = new Map<string, Promise<void>>();
 
@@ -41,6 +42,7 @@ async function handleToken(
     const resolvedOptions = resolveTursoWorkersOptionsFromEnv(context, options);
     const request = await parseTokenRequest(context);
     database = request.database;
+    assertTursoDatabaseNotReserved(resolvedOptions, request.database);
     const databaseOptions = resolveWorkerDatabasePrefix(
       resolvedOptions,
       request.prefix,

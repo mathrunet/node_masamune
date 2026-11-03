@@ -35,6 +35,10 @@ import {
 import { resolveTursoWorkersOptionsFromEnv, tursoGroupContext, validateTursoGroupRequest } from "../lib/env";
 import { resolveWorkerDatabasePrefix } from "../lib/database_prefix";
 import { resolveTursoSchema } from "../lib/schema";
+import {
+  assertTursoDatabaseNotReserved,
+  resolveTursoRulesServerFlag,
+} from "../lib/server_request";
 
 module.exports = (
   hono: Hono,
@@ -72,6 +76,8 @@ async function handleCrud(
     resolvedOptions = resolveTursoWorkersOptionsFromEnv(context, options);
     request = await parseCrudRequest(context);
     const crudRequest = request;
+    assertTursoDatabaseNotReserved(resolvedOptions, crudRequest.database);
+    const server = resolveTursoRulesServerFlag(context, resolvedOptions);
     const databaseOptions = resolveWorkerDatabasePrefix(
       resolvedOptions,
       crudRequest.prefix,
@@ -101,7 +107,7 @@ async function handleCrud(
       operation: resolveCrudRulesOperation(method, crudRequest),
       authentication,
       fetchDocument: async () => fetchDocumentForRules(connectedClient, crudRequest),
-      server: true,
+      server,
     });
     if (!result.allowed) {
       return context.json({
@@ -167,7 +173,7 @@ async function handleCrud(
         if (typeof row.id !== "string") continue;
         const permission = await engine.evaluate({
           target: "database", path: buildDatabaseRulesPath({ database: crudRequest.database, table: crudRequest.table, indexKey: row.id }),
-          operation: "get", authentication, server: true, fetchDocument: async () => row,
+          operation: "get", authentication, server, fetchDocument: async () => row,
         });
         if (permission.allowed) allowed.push(row);
       }

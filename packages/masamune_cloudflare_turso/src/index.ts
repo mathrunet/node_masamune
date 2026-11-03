@@ -13,6 +13,11 @@ export * from "@mathrunet/masamune_cloudflare";
 export * from "./functions";
 export * from "./lib/database_adapter";
 export * from "./lib/database_name";
+export * from "./lib/shared_client";
+export {
+  defaultTursoServerAccessHeader,
+  isTursoServerRequest,
+} from "./lib/server_request";
 export type {
   RulesAccessRule,
   RulesConfig,

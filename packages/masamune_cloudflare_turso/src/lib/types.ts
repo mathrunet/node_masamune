@@ -76,6 +76,33 @@ export interface TursoWorkersOptions extends WorkersOptions {
   schemaManifest?: TursoSchemaManifest | undefined;
   maxTtlSeconds?: number | undefined;
   serverTokenTtlSeconds?: number | undefined;
+  /**
+   * Shared secret that marks a request as a trusted server request.
+   *
+   * When this value (or the `TURSO_SERVER_ACCESS_TOKEN` environment variable)
+   * is set, or when [databaseBindings] is set, rules are evaluated with
+   * `server: true` only for requests that present the same value in
+   * [serverAccessHeader]. Without a configured token, requests to
+   * [databaseBindings] are always evaluated as client requests.
+   *
+   * Without both this value and [databaseBindings], the legacy behavior is
+   * kept and every request is evaluated with `server: true`.
+   */
+  serverAccessToken?: string | undefined;
+  /**
+   * Header name that carries [serverAccessToken]. Defaults to `x-masamune-server-token`.
+   * The `TURSO_SERVER_ACCESS_HEADER` environment variable takes precedence.
+   */
+  serverAccessHeader?: string | undefined;
+  /**
+   * Logical database names that this Worker must never create, connect to, or issue tokens for.
+   *
+   * Use this on the edge Worker to keep the logical name of a shared database
+   * served by the region Worker (e.g. `["shared"]`) from being auto-created as
+   * a per-user database. Requests for these names fail with HTTP 400
+   * `{ "error": "reserved_database" }`.
+   */
+  reservedDatabases?: readonly string[] | undefined;
 }
 
 export interface TursoSchemaColumn {

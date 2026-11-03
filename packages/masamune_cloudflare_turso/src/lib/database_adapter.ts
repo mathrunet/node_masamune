@@ -19,6 +19,7 @@ import {
   TursoClient,
 } from "./turso_client";
 import { parseTursoGroups } from "./env";
+import { resolveWorkerDatabaseBinding } from "./database_name";
 import { TursoGroupContext, TursoWorkersOptions } from "./types";
 
 declare const process: { env?: Record<string, string | undefined> } | undefined;
@@ -70,22 +71,36 @@ export class TursoDatabaseAdapter extends DatabaseAdapterBase {
    *
    * 直接注入するTursoクライアント。テスト時のみ使用し、このアダプターが処理する
    * すべてのデータベースパスで共有します。
+   *
+   * @param config.flavor
+   * Environment (`dev` / `prod`) used to select an entry of
+   * `options.databaseBindings`. Defaults to the `FLAVOR` environment variable.
+   * When `options.databaseBindings` is set, only the bound logical databases
+   * can be used and each one is connected to its fixed physical database.
    */
   constructor({
     options,
     client,
     groupContext,
+    flavor,
   }: {
     options?: TursoWorkersOptions | undefined;
     /** HTTP外での地域情報や認証情報。 */
     groupContext?: TursoGroupContext | undefined;
     client?: TursoClient | undefined;
+    flavor?: "dev" | "prod" | undefined;
   } = {}) {
     super();
     this.options = options ?? {};
     this.groupContext = groupContext;
     this.injectedClient = client ?? null;
+    this.flavor = flavor;
   }
+
+  /**
+   * Environment used to select `options.databaseBindings`.
+   */
+  readonly flavor?: "dev" | "prod";
 
   /**
    * Turso connection options.
@@ -102,9 +117,20 @@ export class TursoDatabaseAdapter extends DatabaseAdapterBase {
     if (this.injectedClient) {
       return this.injectedClient;
     }
+    let options = this.resolveOptions();
+    if (options.databaseBindings !== undefined) {
+      // Bound databases are fixed per environment and never auto-created.
+      const env = typeof process !== "undefined" ? (process.env ?? {}) : {};
+      options = resolveWorkerDatabaseBinding(
+        options,
+        undefined,
+        this.flavor ?? env["FLAVOR"],
+        database,
+      );
+    }
     const connection = await resolveDatabaseConnection(
       database,
-      this.resolveOptions(),
+      options,
       this.groupContext,
     );
     return createTursoClient(connection);
