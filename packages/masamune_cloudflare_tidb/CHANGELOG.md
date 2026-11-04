@@ -1,3 +1,15 @@
+## 3.10.0 (2026-11-04)
+
+
+### feat
+
+* **masamune_cloudflare_tidb:** allow declared additional grants for runtime users ([efdd15a](https://github.com/mathrunet/node_masamune/commit/efdd15adfb8183355bf785881a5927a506fb7693))
+
+
+### docs
+
+* **masamune_cloudflare_tidb:** document shared-cluster dev/prod layout ([d844246](https://github.com/mathrunet/node_masamune/commit/d844246f72bfe887abcb84a5b02ac031beedc5ab))
+
 ## Unreleased
 
 - **FEAT**: Add `additionalGrants` to `provisionRuntimeUser` so the runtime user and role can receive exact, declared privileges (a subset of `SELECT`/`INSERT`/`UPDATE`/`DELETE`) on tables outside the schema manifest. Existing grants on declared tables are accepted only when they match the declaration exactly; any other grant still stops provisioning.
