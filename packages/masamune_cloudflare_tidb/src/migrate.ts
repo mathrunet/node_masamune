@@ -24,8 +24,65 @@ export interface RuntimeUserProvisionInput {
   runtimePassword: string;
   runtimeRole: string;
   tables: Array<{ database: string; table: string }>;
+  /**
+   * Extra table grants for tables outside the schema manifest (for example tables created by custom
+   * migration scripts). Each table receives exactly the declared privileges, chosen from
+   * SELECT/INSERT/UPDATE/DELETE. Tables listed in [tables] must not be declared here.
+   */
+  additionalGrants?: RuntimeUserAdditionalGrant[];
   environment: "dev" | "prod";
   credentialState: Record<string, unknown>;
+}
+
+/** A table outside the schema manifest and the exact privileges the runtime user receives on it. */
+export interface RuntimeUserAdditionalGrant {
+  database: string;
+  table: string;
+  privileges: string[];
+}
+
+/** Lets the CLI detect that this package version understands [RuntimeUserProvisionInput.additionalGrants]. */
+export const supportsRuntimeUserAdditionalGrants = true;
+
+const runtimeTablePrivileges = ["SELECT", "INSERT", "UPDATE", "DELETE"] as const;
+
+/** Validates and normalizes additional grants (upper-case, de-duplicated, canonical order). */
+function normalizeAdditionalGrants(
+  value: unknown,
+  tables: Array<{ database: string; table: string }>,
+): Array<{ database: string; table: string; privileges: string[] }> {
+  if (value === undefined || value === null) return [];
+  if (!Array.isArray(value)) throw new Error("TiDB additional_grantsの形式が不正です。");
+  const manifestKeys = new Set(tables.map((item) => `${item.database}\0${item.table}`.toLowerCase()));
+  const seen = new Set<string>();
+  return value.map((raw) => {
+    const item = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+    if (typeof item.database !== "string" || typeof item.table !== "string" || !item.database || !item.table) {
+      throw new Error("TiDB additional_grantsのdatabase/tableが不正です。");
+    }
+    identifier(item.database);
+    identifier(item.table);
+    const name = `${item.database}.${item.table}`;
+    if (!Array.isArray(item.privileges) || !item.privileges.length ||
+        item.privileges.some((privilege) => typeof privilege !== "string")) {
+      throw new Error(`TiDB additional_grantsのprivilegesは空でない配列で指定してください: ${name}`);
+    }
+    const requested = new Set((item.privileges as string[]).map((privilege) => privilege.trim().toUpperCase()));
+    const unknown = [...requested].filter((privilege) => !(runtimeTablePrivileges as readonly string[]).includes(privilege));
+    if (unknown.length) {
+      throw new Error(`TiDB additional_grantsのprivilegesはSELECT/INSERT/UPDATE/DELETEから指定してください: ${name}`);
+    }
+    const key = `${item.database}\0${item.table}`.toLowerCase();
+    if (manifestKeys.has(key)) {
+      throw new Error(`TiDB additional_grantsにschema manifestのtableは指定できません: ${name}`);
+    }
+    if (seen.has(key)) throw new Error(`TiDB additional_grantsのtableが重複しています: ${name}`);
+    seen.add(key);
+    return {
+      database: item.database, table: item.table,
+      privileges: runtimeTablePrivileges.filter((privilege) => requested.has(privilege)),
+    };
+  });
 }
 function safePath(root: string, path: string): string {
   const file = resolve(root, path), delta = relative(resolve(root), file);
@@ -115,6 +172,7 @@ export async function provisionRuntimeUser(
   });
   // Check the entire manifest set before changing users or grants. A partial schema must be migrated first.
   const tables = [...new Map(input.tables.map((table) => [`${table.database}\0${table.table}`, table])).values()];
+  const additionalGrants = normalizeAdditionalGrants(input.additionalGrants, tables);
   const missing: string[] = [];
   for (const item of tables) {
     if (!item.database || !item.table) throw new Error("TiDB schema manifestのtable識別子が不正です。");
@@ -128,6 +186,17 @@ export async function provisionRuntimeUser(
   }
   if (missing.length) {
     throw new Error(`TiDB schema tableが未作成です。先にkatana migrate applyを実行してください: ${missing.join(", ")}`);
+  }
+  const missingAdditional: string[] = [];
+  for (const item of additionalGrants) {
+    const found = await db.execute(
+      "SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?",
+      [item.database, item.table],
+    );
+    if (!found.length) missingAdditional.push(`${item.database}.${item.table}`);
+  }
+  if (missingAdditional.length) {
+    throw new Error(`TiDB additional_grantsのtableが未作成です。先にtableを作成してください: ${missingAdditional.join(", ")}`);
   }
   await mkdir(resolve(input.root, "cloudflare"), { recursive: true });
   const lock = resolve(input.root, "cloudflare/.tidb-runtime-user.lock");
@@ -222,21 +291,28 @@ export async function provisionRuntimeUser(
     }
   }
   const owner = stored.owner;
-  const expectedPrivileges = ["delete", "insert", "select", "update"];
+  // Manifest tables must hold exactly CRUD; declared additional tables exactly their declared privileges.
+  const expectedGrants = new Map<string, string>();
+  for (const item of tables) {
+    expectedGrants.set(`${item.database}\0${item.table}`.toLowerCase(),
+      stableJson(runtimeTablePrivileges.map((privilege) => privilege.toLowerCase()).sort()));
+  }
+  for (const item of additionalGrants) {
+    expectedGrants.set(`${item.database}\0${item.table}`.toLowerCase(),
+      stableJson(item.privileges.map((privilege) => privilege.toLowerCase()).sort()));
+  }
   const hasOnlyExpectedTableGrants = (grant: string, principal: string): boolean => {
     const match = /^grant\s+(.+?)\s+on\s+(.+?)\s+to\s+(.+)$/i.exec(grant.replace(/\s+/g, " ").trim());
     if (!match) return false;
     const privileges = match[1].split(",").map((item) => item.trim().toLowerCase()).sort();
-    if (stableJson(privileges) !== stableJson(expectedPrivileges)) return false;
     const objectMatch = /^(`(?:``|[^`])+`|[A-Za-z0-9_$]+)\s*\.\s*(`(?:``|[^`])+`|[A-Za-z0-9_$]+)$/.exec(match[2].trim());
     if (!objectMatch) return false;
     const unquote = (part: string) => part.startsWith("`") ? part.slice(1, -1).replaceAll("``", "`") : part;
     const objectDatabase = unquote(objectMatch[1]).toLowerCase();
     const objectTable = unquote(objectMatch[2]).toLowerCase();
-    return tables.some((item) => {
-      return item.database.toLowerCase() === objectDatabase && item.table.toLowerCase() === objectTable &&
-        match[3].trim().toLowerCase() === `${quoteUser(principal)}@'%'`.toLowerCase();
-    });
+    const expected = expectedGrants.get(`${objectDatabase}\0${objectTable}`);
+    return expected !== undefined && expected === stableJson(privileges) &&
+      match[3].trim().toLowerCase() === `${quoteUser(principal)}@'%'`.toLowerCase();
   };
   const verifyRuntimeIdentity = async () => {
     const runtimeDb = runtimeConnection?.(runtimeUsername, runtimePassword) ?? createConnection({
@@ -299,6 +375,16 @@ export async function provisionRuntimeUser(
     // TiDB Serverless HTTPS SQL accepts table privileges but rejects role assignment (DCL).
     await db.execute(
       `GRANT SELECT, INSERT, UPDATE, DELETE ON ${quoteIdentifier(item.database)}.${quoteIdentifier(item.table)} TO ${quoteUser(runtimeUsername)}`,
+    );
+  }
+  // GRANT only adds privileges, so re-running with the same declaration is idempotent.
+  for (const item of additionalGrants) {
+    const privileges = item.privileges.join(", ");
+    await db.execute(
+      `GRANT ${privileges} ON ${quoteIdentifier(item.database)}.${quoteIdentifier(item.table)} TO ${quoteUser(runtimeRole)}`,
+    );
+    await db.execute(
+      `GRANT ${privileges} ON ${quoteIdentifier(item.database)}.${quoteIdentifier(item.table)} TO ${quoteUser(runtimeUsername)}`,
     );
   }
   await verifyRuntimeIdentity();

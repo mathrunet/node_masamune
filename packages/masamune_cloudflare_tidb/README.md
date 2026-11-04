@@ -91,6 +91,33 @@ Generate schemas using `@TidbSchema` → `katana code generate` and apply DDL wi
 
 The Data Service client, Digest authentication, CaC/endpoint generation, and compatibility with legacy settings are not provided. When upgrading a published app, update the annotation, builder, CLI, and Node package together.
 
+## Runtime User Grants for Extra Tables
+
+`katana apply` creates a least-privilege runtime SQL user and grants it exactly `SELECT`, `INSERT`, `UPDATE`, and `DELETE` on the tables in the schema manifest. Before reusing an existing user or role, it stops if any other table grant is present.
+
+When the app also uses tables created outside the manifest (for example by custom migration scripts), declare them in `katana.yaml` under `cloudflare.tidb.additional_grants`. Each declared table is granted exactly the listed privileges, and existing grants on it are accepted only when they match the declaration exactly. Grants with more or fewer privileges, or grants on undeclared tables, still stop the run.
+
+```yaml
+cloudflare:
+  tidb:
+    database:
+      dev: dev_shared
+      prod: shared
+    additional_grants:
+      - table: google_subscription_notification
+        privileges: [SELECT, INSERT, DELETE]
+      - table: query_embedding_cache
+        privileges: [SELECT, INSERT, UPDATE]
+      # Optional: grant on a different database (a string or a `dev`/`prod` map).
+      - table: audit_log
+        database:
+          dev: dev_audit
+          prod: audit
+        privileges: [SELECT]
+```
+
+`database` defaults to the database of the current flavor. `privileges` must be a non-empty subset of `SELECT`, `INSERT`, `UPDATE`, and `DELETE` (case-insensitive, duplicates ignored). Declaring a manifest table, declaring the same table twice, or declaring a table that does not exist yet is an error. To change the privileges of a table that already has grants, revoke the old grants manually first. The CLI passes the declaration to `provisionRuntimeUser` as `additionalGrants: [{ database, table, privileges }]`.
+
 ## Native Vectors
 
 Save, update, delete, and run `nearest` on fixed-dimension vectors in the declared schema. Supported distance metrics are `cosine` (default) and `euclidean`; dimensions range from 1 to 16383, and search limits range from 1 to 100 (default 10). Finite float32 values, dimensions, and metric consistency are validated; zero vectors are rejected for cosine distance.

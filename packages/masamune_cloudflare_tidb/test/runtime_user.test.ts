@@ -282,6 +282,101 @@ describe("provisionRuntimeUser", () => {
     }
   });
 
+  describe("additionalGrants", () => {
+    const additional = {
+      ...input,
+      additionalGrants: [
+        { database: "shared", table: "google_subscription_notification", privileges: ["select", "INSERT", "Delete", "SELECT"] },
+        { database: "shared", table: "query_embedding_cache", privileges: ["SELECT", "INSERT", "UPDATE"] },
+      ],
+    };
+    const existingTables = ["landmarks", "regions", "google_subscription_notification", "query_embedding_cache"];
+    const grantsFor = (extra: string[]) => (sql: string) =>
+      sql.startsWith("SHOW GRANTS FOR 'topolia_rw_abcd12'")
+        ? ["GRANT USAGE ON *.* TO 'topolia_rw_abcd12'@'%'", ...extra.map((grant) => `${grant} TO 'topolia_rw_abcd12'@'%'`)]
+        : ["GRANT USAGE ON *.* TO 'prefix.rt_abcd12'@'%'", ...extra.map((grant) => `${grant} TO 'prefix.rt_abcd12'@'%'`)];
+
+    test("grants exactly the declared privileges to the role and user, idempotently", async () => {
+      const fixture = connection(existingTables);
+      await expect(provisionRuntimeUser(additional, fixture.connection, runtimeConnection)).resolves.toEqual({
+        checkedTables: 2, role: input.runtimeRole,
+      });
+      for (const principal of ["topolia_rw_abcd12", "prefix.rt_abcd12"]) {
+        expect(fixture.statements).toContain(
+          `GRANT SELECT, INSERT, DELETE ON \`shared\`.\`google_subscription_notification\` TO '${principal}'`);
+        expect(fixture.statements).toContain(
+          `GRANT SELECT, INSERT, UPDATE ON \`shared\`.\`query_embedding_cache\` TO '${principal}'`);
+      }
+      const first = fixture.statements.filter((sql) => sql.startsWith("GRANT "));
+      fixture.statements.length = 0;
+      await provisionRuntimeUser(additional, fixture.connection, runtimeConnection);
+      expect(fixture.statements.filter((sql) => sql.startsWith("GRANT "))).toEqual(first);
+    });
+
+    test("accepts existing grants that exactly match the declaration on both user and role", async () => {
+      const fixture = connection(existingTables, [input.runtimeRole, input.runtimeUsername], grantsFor([
+        "GRANT Delete,Insert,Select,Update ON shared.landmarks",
+        "GRANT Delete,Insert,Select ON shared.google_subscription_notification",
+        "GRANT Insert,Select,Update ON `shared`.`query_embedding_cache`",
+      ]));
+      await expect(provisionRuntimeUser(additional, fixture.connection, runtimeConnection)).resolves.toEqual({
+        checkedTables: 2, role: input.runtimeRole,
+      });
+    });
+
+    const mismatches = [
+      ["more privileges than declared", "GRANT Delete,Insert,Select,Update ON shared.google_subscription_notification"],
+      ["fewer privileges than declared", "GRANT Insert,Select ON shared.query_embedding_cache"],
+      ["an undeclared table", "GRANT Select ON shared.audit_log"],
+    ];
+
+    test.each(mismatches)("rejects an existing role grant with %s", async (_, grant) => {
+      const fixture = connection(existingTables, [input.runtimeRole], grantsFor([grant]));
+      await expect(provisionRuntimeUser(additional, fixture.connection, runtimeConnection))
+        .rejects.toThrow("TiDB runtime roleにmanifest外または未知形式の権限があります。");
+      expect(fixture.statements.some((sql) => sql.startsWith("GRANT "))).toBe(false);
+    });
+
+    test.each(mismatches)("rejects an existing user grant with %s", async (_, grant) => {
+      const fixture = connection(existingTables, [input.runtimeUsername], grantsFor([grant]));
+      await expect(provisionRuntimeUser(additional, fixture.connection, runtimeConnection))
+        .rejects.toThrow("role以外または未知形式の権限");
+      expect(fixture.statements.some((sql) => sql.startsWith("GRANT ") || sql.startsWith("CREATE "))).toBe(false);
+    });
+
+    test("rejects grants on extra tables when they are not declared", async () => {
+      const fixture = connection(existingTables, [input.runtimeRole], grantsFor([
+        "GRANT Delete,Insert,Select ON shared.google_subscription_notification",
+      ]));
+      await expect(provisionRuntimeUser(input, fixture.connection, runtimeConnection))
+        .rejects.toThrow("manifest外または未知形式の権限");
+    });
+
+    test.each([
+      ["a manifest table", [{ database: "shared", table: "Landmarks", privileges: ["SELECT"] }], "schema manifestのtableは指定できません"],
+      ["a duplicate table", [
+        { database: "shared", table: "cache", privileges: ["SELECT"] },
+        { database: "shared", table: "CACHE", privileges: ["INSERT"] },
+      ], "tableが重複しています"],
+      ["an empty privilege list", [{ database: "shared", table: "cache", privileges: [] }], "空でない配列"],
+      ["an unsupported privilege", [{ database: "shared", table: "cache", privileges: ["SELECT", "DROP"] }], "SELECT/INSERT/UPDATE/DELETE"],
+      ["an unsafe identifier", [{ database: "shared", table: "cache; DROP USER x", privileges: ["SELECT"] }], "不正なSQL識別子"],
+      ["a non-array value", { database: "shared", table: "cache", privileges: ["SELECT"] }, "additional_grantsの形式"],
+    ] as Array<[string, unknown, string]>)("rejects %s before any change", async (_, additionalGrants, message) => {
+      const fixture = connection(existingTables);
+      await expect(provisionRuntimeUser({ ...input, additionalGrants } as typeof additional, fixture.connection))
+        .rejects.toThrow(message);
+      expect(fixture.statements.some((sql) => sql.startsWith("CREATE ") || sql.startsWith("GRANT "))).toBe(false);
+    });
+
+    test("checks that additional tables exist before any change", async () => {
+      const fixture = connection(["landmarks", "regions", "google_subscription_notification"]);
+      await expect(provisionRuntimeUser(additional, fixture.connection))
+        .rejects.toThrow("additional_grantsのtableが未作成です。先にtableを作成してください: shared.query_embedding_cache");
+      expect(fixture.statements.some((sql) => sql.startsWith("CREATE ") || sql.startsWith("GRANT "))).toBe(false);
+    });
+  });
+
   test("rejects an unexpected migration identity before generating credentials", async () => {
     const root = await mkdtemp(join(tmpdir(), "tidb-runtime-identity-"));
     try {

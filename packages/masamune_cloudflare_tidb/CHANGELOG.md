@@ -1,3 +1,7 @@
+## Unreleased
+
+- **FEAT**: Add `additionalGrants` to `provisionRuntimeUser` so the runtime user and role can receive exact, declared privileges (a subset of `SELECT`/`INSERT`/`UPDATE`/`DELETE`) on tables outside the schema manifest. Existing grants on declared tables are accepted only when they match the declaration exactly; any other grant still stops provisioning.
+
 ## 3.9.0 (2026-10-20)
 
 
