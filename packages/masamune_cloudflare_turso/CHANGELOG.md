@@ -1,3 +1,10 @@
+## 3.9.1 (2026-11-04)
+
+
+### fix
+
+* **masamune_cloudflare_turso:** omit the missing MIGRATION.md from published files ([8fcb770](https://github.com/mathrunet/node_masamune/commit/8fcb7708e47c4c08d58e6caf11e3bdc3b4dcbb15))
+
 ## 3.9.0 (2026-11-04)
 
 
