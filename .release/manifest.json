@@ -54,8 +54,8 @@
       "sourceSha": "cee6adbc327c5f4c727b7c7f5e08c49730537245"
     },
     "@mathrunet/masamune_cloudflare_tidb": {
-      "version": "3.9.0",
-      "sourceSha": "cee6adbc327c5f4c727b7c7f5e08c49730537245"
+      "version": "3.10.0",
+      "sourceSha": "efdd15adfb8183355bf785881a5927a506fb7693"
     },
     "@mathrunet/masamune_cloudflare_token_android": {
       "version": "3.1.5",
@@ -66,8 +66,8 @@
       "sourceSha": "cee6adbc327c5f4c727b7c7f5e08c49730537245"
     },
     "@mathrunet/masamune_cloudflare_turso": {
-      "version": "3.9.0",
-      "sourceSha": "d68db9bb5716548498d453902a6f68460e0f7d3f"
+      "version": "3.9.1",
+      "sourceSha": "efdd15adfb8183355bf785881a5927a506fb7693"
     },
     "@mathrunet/masamune_firebase": {
       "version": "3.2.1",
