@@ -310,6 +310,50 @@ describe("masamune_cloudflare_purchase", () => {
             expect(saved?.expiredTime).toBe(expiry);
             expect(saved?.userId).toBe("user1");
         });
+
+        test("期限切れのレシート: expired が true で保存される", async () => {
+            const privateKeyPem = await generatePrivateKeyPem();
+            const database = new InMemoryDatabaseAdapter();
+            const expiry = Date.now() - 60 * 1000;
+            (globalThis as { fetch: typeof fetch }).fetch = jest.fn(async (url: string) => {
+                if (url === "https://oauth2.googleapis.com/token") {
+                    return googleTokenResponse;
+                }
+                return {
+                    ok: true,
+                    status: 200,
+                    json: async () => ({
+                        startTimeMillis: `${expiry - 30 * 24 * 60 * 60 * 1000}`,
+                        expiryTimeMillis: `${expiry}`,
+                        orderId: "order-sub-2",
+                    }),
+                } as unknown as Response;
+            }) as unknown as typeof fetch;
+            const app = deploy([
+                Functions.subscriptionVerifyAndroid({
+                    auth: new NoneAuthAdapter(),
+                    androidServiceAccountEmail: "sa@example.iam.gserviceaccount.com",
+                    androidServiceAccountPrivateKey: privateKeyPem,
+                    subscriptionPath: "subscription",
+                    database: database,
+                }),
+            ]);
+            const response = await app.request("http://localhost/subscription_verify_android", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    packageName: "net.mathru.app",
+                    productId: "sub_monthly",
+                    purchaseToken: "sub-token-2",
+                    purchaseId: "purchase-2",
+                    userId: "user1",
+                }),
+            });
+            expect(response.status).toBe(200);
+            const saved = database.documents.get("subscription/sub-token-2");
+            expect(saved?.expired).toBe(true);
+            expect(saved?.expiredTime).toBe(expiry);
+        });
     });
 
     describe("purchase_webhook_android", () => {

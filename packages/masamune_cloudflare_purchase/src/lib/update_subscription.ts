@@ -86,7 +86,8 @@ export async function updateSubscription(request: UpdateSubscriptionRequest): Pr
     const segments = targetDocumentPath.split("/").filter((segment) => segment.length > 0);
     const data: UpdateSubscriptionData = {
         ...update,
-        expired: false,
+        // Treat receipts whose expiration date has already passed (e.g. restored old transactions) as expired.
+        expired: request.expiryDate <= Date.now(),
         paused: false,
         token: request.token,
         platform: request.platform,

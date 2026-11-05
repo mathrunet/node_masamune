@@ -87,7 +87,8 @@ export async function updateSubscription(request: UpdateSubscriptionRequest): Pr
     const targetCollectionPath = `${request.targetCollectionPath}/${request.targetDocumentId}`;
     const data: UpdateSubscriptionData = {
         ...update,
-        expired: false,
+        // Treat receipts whose expiration date has already passed (e.g. restored old transactions) as expired.
+        expired: request.expiryDate <= Date.now(),
         paused: false,
         token: request.token,
         platform: request.platform,
