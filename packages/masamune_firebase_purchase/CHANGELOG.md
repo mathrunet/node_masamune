@@ -1,3 +1,10 @@
+## 3.10.2 (2026-11-06)
+
+
+### fix
+
+* **purchase:** mark subscriptions with past expiry as expired on verification ([0ba1ab4](https://github.com/mathrunet/node_masamune/commit/0ba1ab4283bfb09530b20a17c5ebccb00506c860))
+
 ## 3.10.1 (2026-10-20)
 
 
