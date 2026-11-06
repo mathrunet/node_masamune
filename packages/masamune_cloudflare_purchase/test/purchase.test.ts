@@ -354,6 +354,64 @@ describe("masamune_cloudflare_purchase", () => {
             expect(saved?.expired).toBe(true);
             expect(saved?.expiredTime).toBe(expiry);
         });
+
+        test("プラン変更: linkedPurchaseToken の旧サブスクリプションが失効する", async () => {
+            const privateKeyPem = await generatePrivateKeyPem();
+            const database = new InMemoryDatabaseAdapter();
+            database.documents.set("subscription/old-token", {
+                token: "old-token",
+                productId: "sub_lite_monthly",
+                userId: "user1",
+                expired: false,
+            });
+            database.documents.set("subscription/other-token", {
+                token: "other-token",
+                productId: "sub_monthly",
+                userId: "user2",
+                expired: false,
+            });
+            const expiry = Date.now() + 24 * 60 * 60 * 1000;
+            (globalThis as { fetch: typeof fetch }).fetch = jest.fn(async (url: string) => {
+                if (url === "https://oauth2.googleapis.com/token") {
+                    return googleTokenResponse;
+                }
+                return {
+                    ok: true,
+                    status: 200,
+                    json: async () => ({
+                        startTimeMillis: `${Date.now() - 1000}`,
+                        expiryTimeMillis: `${expiry}`,
+                        orderId: "order-sub-3",
+                        linkedPurchaseToken: "old-token",
+                    }),
+                } as unknown as Response;
+            }) as unknown as typeof fetch;
+            const app = deploy([
+                Functions.subscriptionVerifyAndroid({
+                    auth: new NoneAuthAdapter(),
+                    androidServiceAccountEmail: "sa@example.iam.gserviceaccount.com",
+                    androidServiceAccountPrivateKey: privateKeyPem,
+                    subscriptionPath: "subscription",
+                    database: database,
+                }),
+            ]);
+            const response = await app.request("http://localhost/subscription_verify_android", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    packageName: "net.mathru.app",
+                    productId: "sub_monthly",
+                    purchaseToken: "new-token",
+                    purchaseId: "purchase-3",
+                    userId: "user1",
+                }),
+            });
+            expect(response.status).toBe(200);
+            expect(database.documents.get("subscription/new-token")?.expired).toBe(false);
+            expect(database.documents.get("subscription/old-token")?.expired).toBe(true);
+            expect(database.documents.get("subscription/old-token")?.productId).toBe("sub_lite_monthly");
+            expect(database.documents.get("subscription/other-token")?.expired).toBe(false);
+        });
     });
 
     describe("purchase_webhook_android", () => {

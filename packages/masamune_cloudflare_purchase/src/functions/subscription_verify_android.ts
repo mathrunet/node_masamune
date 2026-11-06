@@ -110,6 +110,24 @@ module.exports = (
                         expiryDate: expiryTimeMillis,
                         database: database,
                     });
+                    // A plan change (replacement) issues a new purchase token and ends the old one immediately,
+                    // so expire the subscription saved under the linked (old) token.
+                    const linkedPurchaseToken = res.linkedPurchaseToken;
+                    if (!res.expired && linkedPurchaseToken && linkedPurchaseToken !== body.purchaseToken) {
+                        const linkedSearch = await database.query(targetPath, {
+                            wheres: [{ type: "equalTo", key: "token", value: linkedPurchaseToken }],
+                            limit: 1,
+                        });
+                        const linkedDoc = linkedSearch.docs[0];
+                        if (linkedDoc && linkedDoc.data["expired"] !== true && (!linkedDoc.data["userId"] || linkedDoc.data["userId"] === body.userId)) {
+                            await database.saveDocument(linkedDoc.path, {
+                                expired: true,
+                                paused: false,
+                                "@time": new Date(),
+                            }, { merge: true });
+                            console.log(`Expired subscription: ${linkedDoc.data["productId"]}:${body.userId}`);
+                        }
+                    }
                 } catch (err) {
                     console.error(err);
                     throw new HttpError(500, "Unknown error.");

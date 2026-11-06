@@ -134,6 +134,23 @@ module.exports = (
                         expiryDate: expiryTimeMillis,
                         firestoreInstance: firestoreInstance,
                     });
+                    // A plan change (replacement) issues a new purchase token and ends the old one immediately,
+                    // so expire the subscription saved under the linked (old) token.
+                    const linkedPurchaseToken = res.linkedPurchaseToken;
+                    if (!res.expired && linkedPurchaseToken && linkedPurchaseToken !== query.data.purchaseToken) {
+                        const targetPath = query.data.path ?? process.env.PURCHASE_SUBSCRIPTIONPATH;
+                        const search = await firestoreInstance.collection(targetPath).where("token", "==", linkedPurchaseToken).load();
+                        const doc = search.docs[0];
+                        const linked = doc?.data();
+                        if (doc && linked && linked["expired"] !== true && (!linked["userId"] || linked["userId"] === query.data.userId)) {
+                            await firestoreInstance.doc(doc.ref.path).save({
+                                expired: true,
+                                paused: false,
+                                "@time": new Date(),
+                            }, { merge: true });
+                            console.log(`Expired subscription: ${linked["productId"]}:${query.data.userId}`);
+                        }
+                    }
                 } catch (err) {
                     error = err;
                 }
