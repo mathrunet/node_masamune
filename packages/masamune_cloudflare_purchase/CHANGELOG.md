@@ -1,3 +1,10 @@
+## 3.10.7 (2026-11-06)
+
+
+### fix
+
+* **purchase:** expire linked subscription on Android plan change ([e534782](https://github.com/mathrunet/node_masamune/commit/e5347827f3b33995ee478bc3b16c690e0406307f))
+
 ## 3.10.6 (2026-11-06)
 
 
