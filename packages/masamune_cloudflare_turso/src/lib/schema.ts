@@ -301,7 +301,16 @@ function isCompatibleType(existing: string, next: string): boolean {
   if (existing === "TEXT") {
     return true;
   }
+  // SQLite stores numbers by value regardless of the declared numeric affinity,
+  // so a column inferred as INTEGER can hold REAL values and vice versa.
+  if (isNumericType(existing) && isNumericType(next)) {
+    return true;
+  }
   return false;
+}
+
+function isNumericType(type: string): boolean {
+  return type === "INTEGER" || type === "REAL";
 }
 
 export function quoteIdentifier(identifier: string): string {

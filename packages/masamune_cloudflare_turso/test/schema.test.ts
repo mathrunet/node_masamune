@@ -105,6 +105,26 @@ test("native vector宣言を保持しTEXTとの型不一致を拒否する", asy
 });
 
 
+test("INTEGERとREALの列は互換として扱いALTERしない", async () => {
+  const execute = jest.fn(async (statement: string | { sql: string }) => {
+    const sql = typeof statement === "string" ? statement : statement.sql;
+    if (sql.startsWith("PRAGMA")) return { columns: ["name", "type"], rows: [["offset", "INTEGER"], ["level", "REAL"]] };
+    return { rows: [] };
+  });
+  const client = { execute, close: async () => {}, concurrent: async (cb: any) => cb() } as TursoClient;
+  await expect(ensureTableSchema({ client, table: "user", value: {}, autoCreateTable: false,
+    autoMigrateAddColumns: true, declaredColumns: [{ name: "offset", type: "REAL" }, { name: "level", type: "INTEGER" }] }))
+    .resolves.toBeUndefined();
+  expect(JSON.stringify(execute.mock.calls)).not.toContain("ALTER TABLE");
+});
+
+test("数値列にTEXTを宣言した場合は型不一致を拒否する", async () => {
+  const execute = jest.fn(async () => ({ columns: ["name", "type"], rows: [["offset", "INTEGER"]] }));
+  const client = { execute, close: async () => {}, concurrent: async (cb: any) => cb() } as TursoClient;
+  await expect(ensureTableSchema({ client, table: "user", value: {}, autoCreateTable: false,
+    autoMigrateAddColumns: true, declaredColumns: [{ name: "offset", type: "TEXT" }] })).rejects.toThrow("Column type mismatch");
+});
+
 test("TursoDBのPRAGMAが省略するvector次元をDDLで照合する", async () => {
   const execute = jest.fn(async (statement: string | { sql: string }) => {
     const sql = typeof statement === "string" ? statement : statement.sql;
