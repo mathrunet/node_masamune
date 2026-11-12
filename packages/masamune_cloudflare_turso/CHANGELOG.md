@@ -1,3 +1,10 @@
+## 3.9.2 (2026-11-13)
+
+
+### fix
+
+* **turso:** treat INTEGER and REAL columns as compatible ([9c67f6d](https://github.com/mathrunet/node_masamune/commit/9c67f6daa8a72f3914c560bbaae2c07dc5bb97cd))
+
 ## 3.9.1 (2026-11-04)
 
 
